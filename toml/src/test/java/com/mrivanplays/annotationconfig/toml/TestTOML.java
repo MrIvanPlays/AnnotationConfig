@@ -17,6 +17,7 @@ public class TestTOML {
 
   @After
   public void terminate() {
+    file.delete();
   }
 
   @Test
