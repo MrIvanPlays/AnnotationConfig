@@ -32,14 +32,10 @@ public class PropertiesTestSubject {
 
     @Override
     public Object toType(Object value, Field field) throws Exception {
-      if (value == null) {
-        return null;
-      }
-      String sValue = String.valueOf(value);
       try {
-        return MessageType.valueOf(sValue.toUpperCase());
+        return MessageType.valueOf(String.valueOf(value));
       } catch (IllegalArgumentException e) {
-        return null;
+        throw new IllegalArgumentException("Invalid message type: " + value);
       }
     }
 
