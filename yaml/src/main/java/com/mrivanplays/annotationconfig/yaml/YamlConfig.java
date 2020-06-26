@@ -14,9 +14,7 @@ import java.util.List;
 import java.util.Map;
 import org.yaml.snakeyaml.Yaml;
 
-/**
- * Represents configuration, utilising YAML
- */
+/** Represents configuration, utilising YAML */
 public final class YamlConfig {
 
   private static CustomAnnotationRegistry annotationRegistry = new CustomAnnotationRegistry();
@@ -60,7 +58,16 @@ public final class YamlConfig {
         return;
       }
       AnnotatedConfigResolver.setFields(
-          annotatedConfig, values, map, annotationRegistry, "# ", VALUE_WRITER, file, true, true);
+          annotatedConfig,
+          values,
+          map,
+          annotationRegistry,
+          "# ",
+          VALUE_WRITER,
+          file,
+          true,
+          true,
+          YamlConfig.class);
     } catch (IOException e) {
       throw new RuntimeException(e);
     }
@@ -91,7 +98,7 @@ public final class YamlConfig {
           } else if (v instanceof Map<?, ?>) {
             write(mapKey, v, writer, childIndents + 2);
           } else {
-            writer.println(intentPrefix + mapKey + ": "  + v);
+            writer.println(intentPrefix + mapKey + ": " + v);
           }
         }
       } else if (value instanceof List<?>) {

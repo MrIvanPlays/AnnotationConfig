@@ -7,6 +7,11 @@
 
 Make configurations with ease
 
+JavaDocs:
+- [core](https://mrivanplays.com/javadocs/annotationconfig/core/com/mrivanplays/annotationconfig/core/package-summary.html)
+- [toml](https://mrivanplays.com/javadocs/annotationconfig/toml/com/mrivanplays/annotationconfig/toml/package-summary.html)
+- [yaml](https://mrivanplays.com/javadocs/annotationconfig/yaml/com/mrivanplays/annotationconfig/yaml/package-summary.html)
+
 # Usage examples
 Can be found in the tests in each of the modules
 

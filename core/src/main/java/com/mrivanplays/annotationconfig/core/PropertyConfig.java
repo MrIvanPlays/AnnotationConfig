@@ -59,7 +59,16 @@ public final class PropertyConfig {
       toMap.put(String.valueOf(key), properties.get(key));
     }
     AnnotatedConfigResolver.setFields(
-        annotatedConfig, toMap, map, annotationRegistry, "# ", VALUE_WRITER, file, true, false);
+        annotatedConfig,
+        toMap,
+        map,
+        annotationRegistry,
+        "# ",
+        VALUE_WRITER,
+        file,
+        true,
+        false,
+        PropertyConfig.class);
   }
 
   private static final class PropertyValueWriter implements AnnotatedConfigResolver.ValueWriter {

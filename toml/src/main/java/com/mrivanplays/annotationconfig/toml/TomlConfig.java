@@ -72,7 +72,8 @@ public final class TomlConfig {
         valueWriter,
         file,
         false,
-        true);
+        true,
+        TomlConfig.class);
   }
 
   private static final class TomlValueWriter implements AnnotatedConfigResolver.ValueWriter {

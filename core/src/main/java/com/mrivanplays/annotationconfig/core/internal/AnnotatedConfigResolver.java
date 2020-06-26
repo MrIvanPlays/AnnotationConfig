@@ -119,14 +119,7 @@ public final class AnnotatedConfigResolver {
       if (holder.isClass()) {
         Class<?> theClass = annotatedConfig.getClass();
         for (AnnotationType type : entry.getValue()) {
-          if (type.is(AnnotationType.COMMENT)) {
-            writer.println(commentChar + theClass.getDeclaredAnnotation(Comment.class).value());
-          }
-          if (type.is(AnnotationType.COMMENTS)) {
-            for (Comment comment : theClass.getDeclaredAnnotation(Comments.class).value()) {
-              writer.println(commentChar + comment.value());
-            }
-          }
+          handleComments(type, null, theClass, commentChar, writer);
         }
         if (!isSection) {
           writer.append('\n');
@@ -212,29 +205,7 @@ public final class AnnotatedConfigResolver {
             annoResolver.write(annotationWriter, customAnnotationType.cast(annotation), context);
             for (Map.Entry<WriteFunction, Object> writeEntry :
                 annotationWriter.toWrite().entrySet()) {
-              WriteFunction func = writeEntry.getKey();
-              Object written = writeEntry.getValue();
-              switch (func) {
-                case WRITE:
-                  valueWriter.writeCustom(
-                      written, writer, annotation.annotationType().getSimpleName());
-                  break;
-                case APPEND:
-                  // but why this check when we have method only for appending character ?
-                  // this is here to prevent people who use the non intended for api map
-                  // I don't want to deal with abstracting the AnnotationWriter in order for this
-                  // not
-                  // to happen, but if I still do it then the people who are anti api would still
-                  // find
-                  // a way to bypass my little techniques. That's why this is here.
-                  if (!(written instanceof Character)) {
-                    throw new IllegalArgumentException(
-                        "Cannot append other than char for config: annotation '"
-                            + annotation.annotationType().getSimpleName()
-                            + "'");
-                  }
-                  writer.append((char) written);
-              }
+              handleCustomEntry(writeEntry, valueWriter, writer, annotation.annotationType().getSimpleName());
             }
           }
         } catch (IllegalAccessException e) {
@@ -257,7 +228,8 @@ public final class AnnotatedConfigResolver {
       ValueWriter valueWriter,
       File file,
       boolean shouldGenerateNonExistentFields,
-      boolean reverseFields) {
+      boolean reverseFields,
+      Class<?> configType) {
     for (Map.Entry<AnnotationHolder, List<AnnotationType>> entry : map) {
       AnnotationHolder holder = entry.getKey();
       if (holder.isClass()) {
@@ -272,23 +244,10 @@ public final class AnnotatedConfigResolver {
       Object section = null;
       for (AnnotationType type : entry.getValue()) {
         if (AnnotationType.isCustom(type)) {
-          if (annoRegistry == null) {
-            throw new IllegalArgumentException(
-                "Could not resolve custom annotation type '"
-                    + type.getRawType().getSimpleName()
-                    + "' ; registry not available.");
-          }
-          AnnotationResolver<? extends Annotation> resolver = annoRegistry.registry().get(type);
-          if (resolver == null) {
-            throw new IllegalArgumentException(
-                "Could not resolve custom annotation type '"
-                    + type.getRawType().getSimpleName()
-                    + "' ; unregistered.");
-          }
           if (constructedTypeResolver != null) {
             throw new IllegalArgumentException("A field can only have 1 custom annotation");
           }
-          constructedTypeResolver = resolver.typeResolver().get();
+          constructedTypeResolver = getResolver(annoRegistry, type).typeResolver().get();
         }
         if (type.is(AnnotationType.TYPE_RESOLVER)) {
           typeResolver = field.getDeclaredAnnotation(TypeResolver.class).value();
@@ -316,19 +275,35 @@ public final class AnnotatedConfigResolver {
             // config sections/objects we're not going to generate
             continue;
           }
+          AnnotationResolver annotationResolver = null;
+          Class<? extends Annotation> customAnnotationType = null;
           try (PrintWriter writer = new PrintWriter(new FileWriter(file, true))) {
             for (AnnotationType type : entry.getValue()) {
-              if (type.is(AnnotationType.COMMENT)) {
-                writer.println(commentChar + field.getDeclaredAnnotation(Comment.class).value());
-              }
-              if (type.is(AnnotationType.COMMENTS)) {
-                for (Comment comment : field.getDeclaredAnnotation(Comments.class).value()) {
-                  writer.println(commentChar + comment.value());
+              handleComments(type, field, null, commentChar, writer);
+              if (AnnotationType.isCustom(type)) {
+                if (annotationResolver != null) {
+                  throw new IllegalArgumentException("A field can only have 1 custom annotation");
                 }
+                annotationResolver = getResolver(annoRegistry, type);
+                customAnnotationType = type.getRawType();
               }
             }
             Object def = field.get(annotatedConfig);
-            valueWriter.write(keyName, def, writer);
+            if (annotationResolver == null) {
+              valueWriter.write(keyName, def, writer);
+            } else {
+              Annotation annotation = field.getDeclaredAnnotation(customAnnotationType);
+              AnnotationWriter annotationWriter = new AnnotationWriter();
+              AnnotationResolverContext context =
+                  new AnnotationResolverContext(
+                      configType, field, annotatedConfig, def, keyName, false);
+              annotationResolver.write(
+                  annotationWriter, customAnnotationType.cast(annotation), context);
+              for (Map.Entry<WriteFunction, Object> writeEntry :
+                  annotationWriter.toWrite().entrySet()) {
+                handleCustomEntry(writeEntry, valueWriter, writer, annotation.annotationType().getSimpleName());
+              }
+            }
           } catch (IOException e) {
             throw new RuntimeException(e);
           } catch (IllegalAccessException e) {
@@ -357,7 +332,8 @@ public final class AnnotatedConfigResolver {
             valueWriter,
             file,
             shouldGenerateNonExistentFields,
-            reverseFields);
+            reverseFields,
+            configType);
         continue;
       }
       if (typeResolver != null) {
@@ -395,7 +371,6 @@ public final class AnnotatedConfigResolver {
                   "Invalid type resolver found for \"" + field.getName() + "\"");
             }
             Object resolvedValue = constructedTypeResolver.toType(value, field);
-            field.setAccessible(true);
             field.set(annotatedConfig, resolvedValue);
           } catch (IllegalAccessException e) {
             throw new IllegalArgumentException(
@@ -411,7 +386,6 @@ public final class AnnotatedConfigResolver {
           // either I'm really tired or the only way we can check if the type is primitive type is
           // to do this spaghetti
           try {
-            field.setAccessible(true);
             if (fieldType.isAssignableFrom(boolean.class)
                 || fieldType.isAssignableFrom(Boolean.class)) {
               field.set(annotatedConfig, Boolean.parseBoolean(String.valueOf(value)));
@@ -442,6 +416,73 @@ public final class AnnotatedConfigResolver {
           }
         }
       }
+    }
+  }
+
+  private static AnnotationResolver<? extends Annotation> getResolver(
+      CustomAnnotationRegistry annoRegistry, AnnotationType type) {
+    if (annoRegistry == null) {
+      throw new IllegalArgumentException(
+          "Could not resolve custom annotation type '"
+              + type.getRawType().getSimpleName()
+              + "' ; registry not available.");
+    }
+    AnnotationResolver<? extends Annotation> resolver = annoRegistry.registry().get(type);
+    if (resolver == null) {
+      throw new IllegalArgumentException(
+          "Could not resolve custom annotation type '"
+              + type.getRawType().getSimpleName()
+              + "' ; unregistered.");
+    }
+    return resolver;
+  }
+
+  private static void handleCustomEntry(
+      Map.Entry<WriteFunction, Object> writeEntry,
+      ValueWriter valueWriter,
+      PrintWriter writer,
+      String annotationName)
+      throws IOException {
+    WriteFunction func = writeEntry.getKey();
+    Object written = writeEntry.getValue();
+    switch (func) {
+      case WRITE:
+        valueWriter.writeCustom(written, writer, annotationName);
+        break;
+      case APPEND:
+        // but why this check when we have method only for appending character ?
+        // this is here to prevent people who use the non intended for api map
+        // I don't want to deal with abstracting the AnnotationWriter in order for this
+        // not
+        // to happen, but if I still do it then the people who are anti api would still
+        // find
+        // a way to bypass my little techniques. That's why this is here.
+        if (!(written instanceof Character)) {
+          throw new IllegalArgumentException(
+              "Cannot append other than char for config: annotation '" + annotationName + "'");
+        }
+        writer.append((char) written);
+    }
+  }
+
+  private static void handleComments(
+      AnnotationType type, Field field, Class<?> aClass, String commentChar, PrintWriter writer) {
+    if (type.is(AnnotationType.COMMENT)) {
+      writer.println(commentChar + getAnnotation(field, aClass, Comment.class).value());
+    }
+    if (type.is(AnnotationType.COMMENTS)) {
+      for (Comment comment : getAnnotation(field, aClass, Comments.class).value()) {
+        writer.println(commentChar + comment.value());
+      }
+    }
+  }
+
+  private static <T extends Annotation> T getAnnotation(
+      Field field, Class<?> theClass, Class<T> annotationType) {
+    if (field != null) {
+      return field.getDeclaredAnnotation(annotationType);
+    } else {
+      return theClass.getDeclaredAnnotation(annotationType);
     }
   }
 
