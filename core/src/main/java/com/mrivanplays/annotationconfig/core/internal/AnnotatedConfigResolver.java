@@ -127,19 +127,13 @@ public final class AnnotatedConfigResolver {
       } else {
         Field field = holder.getField();
         field.setAccessible(true);
-        List<String> comments = new ArrayList<>();
         String keyName = field.getName();
         AnnotationResolver annoResolver = null;
         Class<? extends Annotation> customAnnotationType = null;
         boolean configObject = false;
         for (AnnotationType type : entry.getValue()) {
-          if (type.is(AnnotationType.COMMENT)) {
-            comments.add(field.getDeclaredAnnotation(Comment.class).value());
-          }
-          if (type.is(AnnotationType.COMMENTS)) {
-            for (Comment comment : field.getDeclaredAnnotation(Comments.class).value()) {
-              comments.add(comment.value());
-            }
+          if (!isSection) {
+            handleComments(type, field, null, commentChar, writer);
           }
           if (type.is(AnnotationType.KEY)) {
             keyName = field.getDeclaredAnnotation(Key.class).value();
@@ -185,11 +179,6 @@ public final class AnnotatedConfigResolver {
             throw new IllegalArgumentException(
                 "No default value for field '" + field.getName() + "'");
           }
-          if (!isSection) {
-            for (String comment : comments) {
-              writer.println(commentChar + comment);
-            }
-          }
           if (annoResolver == null) {
             if (!isSection) {
               valueWriter.write(keyName, defaultsToValueObject, writer);
@@ -205,7 +194,8 @@ public final class AnnotatedConfigResolver {
             annoResolver.write(annotationWriter, customAnnotationType.cast(annotation), context);
             for (Map.Entry<WriteFunction, Object> writeEntry :
                 annotationWriter.toWrite().entrySet()) {
-              handleCustomEntry(writeEntry, valueWriter, writer, annotation.annotationType().getSimpleName());
+              handleCustomEntry(
+                  writeEntry, valueWriter, writer, annotation.annotationType().getSimpleName());
             }
           }
         } catch (IllegalAccessException e) {
@@ -301,7 +291,8 @@ public final class AnnotatedConfigResolver {
                   annotationWriter, customAnnotationType.cast(annotation), context);
               for (Map.Entry<WriteFunction, Object> writeEntry :
                   annotationWriter.toWrite().entrySet()) {
-                handleCustomEntry(writeEntry, valueWriter, writer, annotation.annotationType().getSimpleName());
+                handleCustomEntry(
+                    writeEntry, valueWriter, writer, annotation.annotationType().getSimpleName());
               }
             }
           } catch (IOException e) {
@@ -359,9 +350,7 @@ public final class AnnotatedConfigResolver {
                   + field.getName()
                   + "\"");
         } catch (Exception e) {
-          throw new IllegalArgumentException(
-              "Could not resolve to type argument \"" + field.getName() + "\": " + e.getMessage(),
-              e);
+          e.printStackTrace();
         }
       } else {
         if (constructedTypeResolver != null) {
@@ -378,9 +367,7 @@ public final class AnnotatedConfigResolver {
                     + field.getName()
                     + "\" value; field not accessible anymore");
           } catch (Exception e) {
-            throw new IllegalArgumentException(
-                "Could not resolve to type argument \"" + field.getName() + "\": " + e.getMessage(),
-                e);
+            e.printStackTrace();
           }
         } else {
           // either I'm really tired or the only way we can check if the type is primitive type is
