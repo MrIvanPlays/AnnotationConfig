@@ -78,9 +78,10 @@ public final class PropertyConfig {
       if (value instanceof Map<?, ?>) {
         for (Map.Entry<?, ?> entry : ((Map<?, ?>) value).entrySet()) {
           if (entry.getKey() instanceof String) {
-            write(key, entry.getValue(), writer);
+            writer.println(key + "=" + value.toString());
           }
         }
+        return;
       }
       writer.println(key + "=" + value.toString());
       writer.append('\n');
