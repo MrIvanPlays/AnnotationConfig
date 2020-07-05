@@ -103,7 +103,11 @@ public final class YamlConfig {
           } else if (v instanceof Map<?, ?>) {
             write(mapKey, v, writer, childIndents + 2, sectionExists);
           } else {
-            writer.println(intentPrefix + mapKey + ": " + v);
+            if (!(v instanceof String)) {
+              writer.println(intentPrefix + mapKey + ": " + v);
+            } else {
+              writer.println(intentPrefix + mapKey + ": \"" + v + "\"");
+            }
           }
         }
       } else if (value instanceof List<?>) {
