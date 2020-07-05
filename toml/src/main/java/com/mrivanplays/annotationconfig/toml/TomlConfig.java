@@ -73,7 +73,9 @@ public final class TomlConfig {
         file,
         false,
         true,
-        TomlConfig.class);
+        TomlConfig.class,
+        false,
+        null);
   }
 
   private static final class TomlValueWriter implements AnnotatedConfigResolver.ValueWriter {
@@ -85,7 +87,7 @@ public final class TomlConfig {
     }
 
     @Override
-    public void write(String key, Object value, PrintWriter writer) throws IOException {
+    public void write(String key, Object value, PrintWriter writer, boolean sectionExists) throws IOException {
       tomlWriter.write(Collections.singletonMap(key, value), writer);
       writer.append('\n');
     }

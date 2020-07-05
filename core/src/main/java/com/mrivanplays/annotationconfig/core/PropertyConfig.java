@@ -68,17 +68,21 @@ public final class PropertyConfig {
         file,
         true,
         false,
-        PropertyConfig.class);
+        PropertyConfig.class,
+        false,
+        null);
   }
 
   private static final class PropertyValueWriter implements AnnotatedConfigResolver.ValueWriter {
 
     @Override
-    public void write(String key, Object value, PrintWriter writer) {
+    public void write(String key, Object value, PrintWriter writer, boolean sectionExists) {
       if (value instanceof Map<?, ?>) {
         for (Map.Entry<?, ?> entry : ((Map<?, ?>) value).entrySet()) {
-          if (entry.getKey() instanceof String) {
+          if (entry.getKey() instanceof String && !(entry.getValue() instanceof Map)) {
             writer.println(key + "=" + value.toString());
+          } else if (entry.getValue() instanceof Map) {
+            write(key, entry.getValue(), writer, sectionExists);
           }
         }
         return;

@@ -10,6 +10,7 @@ public final class AnnotationType {
   public static final AnnotationType TYPE_RESOLVER = new AnnotationType(TypeResolver.class);
   public static final AnnotationType KEY = new AnnotationType(Key.class);
   public static final AnnotationType CONFIG_OBJECT = new AnnotationType(ConfigObject.class);
+  public static final AnnotationType RETRIEVE = new AnnotationType(Retrieve.class);
 
   /**
    * Returns whether or not the annotation type specified is custom.
@@ -22,7 +23,8 @@ public final class AnnotationType {
         && !COMMENTS.is(type)
         && !TYPE_RESOLVER.is(type)
         && !KEY.is(type)
-        && !CONFIG_OBJECT.is(type);
+        && !CONFIG_OBJECT.is(type)
+        && !RETRIEVE.is(type);
   }
 
   /**
@@ -43,7 +45,7 @@ public final class AnnotationType {
                 ? KEY
                 : TYPE_RESOLVER.is(anno)
                     ? TYPE_RESOLVER
-                    : CONFIG_OBJECT.is(anno) ? CONFIG_OBJECT : null;
+                    : CONFIG_OBJECT.is(anno) ? CONFIG_OBJECT : RETRIEVE.is(anno) ? RETRIEVE : null;
   }
 
   /**

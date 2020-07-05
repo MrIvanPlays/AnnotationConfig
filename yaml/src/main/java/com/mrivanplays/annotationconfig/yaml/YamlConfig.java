@@ -67,7 +67,9 @@ public final class YamlConfig {
           file,
           true,
           true,
-          YamlConfig.class);
+          YamlConfig.class,
+          false,
+          null);
     } catch (IOException e) {
       throw new RuntimeException(e);
     }
@@ -76,18 +78,21 @@ public final class YamlConfig {
   private static final class YamlValueWriter implements AnnotatedConfigResolver.ValueWriter {
 
     @Override
-    public void write(String key, Object value, PrintWriter writer) {
-      write(key, value, writer, 2);
+    public void write(String key, Object value, PrintWriter writer, boolean sectionExists) {
+      write(key, value, writer, 2, sectionExists);
     }
 
-    private void write(String key, Object value, PrintWriter writer, int childIndents) {
+    private void write(
+        String key, Object value, PrintWriter writer, int childIndents, boolean sectionExists) {
       StringBuilder intentPrefixBuilder = new StringBuilder();
       for (int i = 0; i < childIndents; i++) {
         intentPrefixBuilder.append(" ");
       }
       String intentPrefix = intentPrefixBuilder.toString();
       if (value instanceof Map<?, ?>) {
-        writer.println(key + ":");
+        if (!sectionExists) {
+          writer.println(key + ":");
+        }
         for (Map.Entry<String, Object> entry : ((Map<String, Object>) value).entrySet()) {
           String mapKey = entry.getKey();
           Object v = entry.getValue();
@@ -96,7 +101,7 @@ public final class YamlConfig {
               writer.println(intentPrefix + "  - " + b);
             }
           } else if (v instanceof Map<?, ?>) {
-            write(mapKey, v, writer, childIndents + 2);
+            write(mapKey, v, writer, childIndents + 2, sectionExists);
           } else {
             writer.println(intentPrefix + mapKey + ": " + v);
           }
@@ -107,7 +112,11 @@ public final class YamlConfig {
           writer.println(intentPrefix + "- " + b);
         }
       } else {
-        writer.println(key + ": " + value);
+        if (!(value instanceof String)) {
+          writer.println(key + ": " + value);
+        } else {
+          writer.println(key + ": \"" + value + "\"");
+        }
       }
       writer.append('\n');
     }

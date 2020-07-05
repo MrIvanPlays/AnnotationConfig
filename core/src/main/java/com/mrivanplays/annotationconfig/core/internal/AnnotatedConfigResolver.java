@@ -93,7 +93,7 @@ public final class AnnotatedConfigResolver {
 
   public interface ValueWriter {
 
-    void write(String key, Object value, PrintWriter writer) throws IOException;
+    void write(String key, Object value, PrintWriter writer, boolean sectionExists) throws IOException;
 
     void writeCustom(Object value, PrintWriter writer, String annoName) throws IOException;
   }
@@ -181,7 +181,7 @@ public final class AnnotatedConfigResolver {
           }
           if (annoResolver == null) {
             if (!isSection) {
-              valueWriter.write(keyName, defaultsToValueObject, writer);
+              valueWriter.write(keyName, defaultsToValueObject, writer, false);
             } else {
               toWrite.put(keyName, defaultsToValueObject);
             }
@@ -205,7 +205,7 @@ public final class AnnotatedConfigResolver {
     }
 
     if (isSection) {
-      valueWriter.write(sectionKey, toWrite, writer);
+      valueWriter.write(sectionKey, toWrite, writer, false);
     }
   }
 
@@ -219,7 +219,9 @@ public final class AnnotatedConfigResolver {
       File file,
       boolean shouldGenerateNonExistentFields,
       boolean reverseFields,
-      Class<?> configType) {
+      Class<?> configType,
+      boolean isSection,
+      String sectionBaseName) {
     for (Map.Entry<AnnotationHolder, List<AnnotationType>> entry : map) {
       AnnotationHolder holder = entry.getKey();
       if (holder.isClass()) {
@@ -280,7 +282,16 @@ public final class AnnotatedConfigResolver {
             }
             Object def = field.get(annotatedConfig);
             if (annotationResolver == null) {
-              valueWriter.write(keyName, def, writer);
+              if (isSection) {
+                Map<String, Object> toWrite = new HashMap<>();
+                Map<String, Object> val = new HashMap<>();
+                values.put(keyName, def);
+                toWrite.put(sectionBaseName, val);
+                valueWriter.write(keyName, toWrite, writer, true);
+              } else {
+                writer.append('\n');
+                valueWriter.write(keyName, def, writer, false);
+              }
             } else {
               Annotation annotation = field.getDeclaredAnnotation(customAnnotationType);
               AnnotationWriter annotationWriter = new AnnotationWriter();
@@ -324,7 +335,9 @@ public final class AnnotatedConfigResolver {
             file,
             shouldGenerateNonExistentFields,
             reverseFields,
-            configType);
+            configType,
+            true,
+            keyName);
         continue;
       }
       if (typeResolver != null) {
