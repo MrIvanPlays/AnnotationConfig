@@ -97,8 +97,13 @@ public final class YamlConfig {
           String mapKey = entry.getKey();
           Object v = entry.getValue();
           if (v instanceof List<?>) {
+            writer.println(intentPrefix + mapKey + ":");
             for (Object b : (List<?>) v) {
-              writer.println(intentPrefix + "  - " + b);
+              if (!(b instanceof String)) {
+                writer.println(intentPrefix + "    - " + b);
+              } else {
+                writer.println(intentPrefix + "    - \"" + b + "\"");
+              }
             }
           } else if (v instanceof Map<?, ?>) {
             write(mapKey, v, writer, childIndents + 2, sectionExists);
@@ -113,7 +118,11 @@ public final class YamlConfig {
       } else if (value instanceof List<?>) {
         writer.println(key + ":");
         for (Object b : (List<?>) value) {
-          writer.println(intentPrefix + "- " + b);
+          if (!(b instanceof String)) {
+            writer.println(intentPrefix + "- " + b);
+          } else {
+            writer.println(intentPrefix + "- \"" + b + "\"");
+          }
         }
       } else {
         if (!(value instanceof String)) {
