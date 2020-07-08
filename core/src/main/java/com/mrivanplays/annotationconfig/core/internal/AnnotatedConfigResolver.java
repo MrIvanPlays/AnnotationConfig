@@ -22,16 +22,15 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
+import java.util.TreeMap;
 
 public final class AnnotatedConfigResolver {
 
-  public static List<Map.Entry<AnnotationHolder, List<AnnotationType>>> resolveAnnotations(
+  public static Map<AnnotationHolder, List<AnnotationType>> resolveAnnotations(
       Object annotatedClass, CustomAnnotationRegistry annoRegistry, boolean reverseFields) {
-    Map<AnnotationHolder, List<AnnotationType>> annotationData = new HashMap<>();
+    Map<AnnotationHolder, List<AnnotationType>> annotationData = new TreeMap<>();
     AnnotationHolder CLASS_ANNOTATION_HOLDER = new AnnotationHolder();
     Class<?> theClass = annotatedClass.getClass();
     for (Annotation annotation : theClass.getAnnotations()) {
@@ -57,14 +56,12 @@ public final class AnnotatedConfigResolver {
         order++;
       }
     }
-    return annotationData.entrySet().stream()
-        .sorted(Map.Entry.comparingByKey())
-        .collect(Collectors.toCollection(LinkedList::new));
+    return annotationData;
   }
 
   public static void dump(
       Object annotatedConfig,
-      List<Map.Entry<AnnotationHolder, List<AnnotationType>>> map,
+      Map<AnnotationHolder, List<AnnotationType>> map,
       File file,
       String commentChar,
       ValueWriter valueWriter,
@@ -93,7 +90,8 @@ public final class AnnotatedConfigResolver {
 
   public interface ValueWriter {
 
-    void write(String key, Object value, PrintWriter writer, boolean sectionExists) throws IOException;
+    void write(String key, Object value, PrintWriter writer, boolean sectionExists)
+        throws IOException;
 
     void writeCustom(Object value, PrintWriter writer, String annoName) throws IOException;
   }
@@ -101,7 +99,7 @@ public final class AnnotatedConfigResolver {
   private static void toWriter(
       Object annotatedConfig,
       PrintWriter writer,
-      List<Map.Entry<AnnotationHolder, List<AnnotationType>>> map,
+      Map<AnnotationHolder, List<AnnotationType>> map,
       String commentChar,
       CustomAnnotationRegistry annotationRegistry,
       Class<?> configType,
@@ -114,7 +112,7 @@ public final class AnnotatedConfigResolver {
     if (isSection) {
       toWrite = new HashMap<>();
     }
-    for (Map.Entry<AnnotationHolder, List<AnnotationType>> entry : map) {
+    for (Map.Entry<AnnotationHolder, List<AnnotationType>> entry : map.entrySet()) {
       AnnotationHolder holder = entry.getKey();
       if (holder.isClass()) {
         Class<?> theClass = annotatedConfig.getClass();
@@ -212,7 +210,7 @@ public final class AnnotatedConfigResolver {
   public static void setFields(
       Object annotatedConfig,
       Map<String, Object> values,
-      List<Map.Entry<AnnotationHolder, List<AnnotationType>>> map,
+      Map<AnnotationHolder, List<AnnotationType>> map,
       CustomAnnotationRegistry annoRegistry,
       String commentChar,
       ValueWriter valueWriter,
@@ -222,7 +220,7 @@ public final class AnnotatedConfigResolver {
       Class<?> configType,
       boolean isSection,
       String sectionBaseName) {
-    for (Map.Entry<AnnotationHolder, List<AnnotationType>> entry : map) {
+    for (Map.Entry<AnnotationHolder, List<AnnotationType>> entry : map.entrySet()) {
       AnnotationHolder holder = entry.getKey();
       if (holder.isClass()) {
         continue;

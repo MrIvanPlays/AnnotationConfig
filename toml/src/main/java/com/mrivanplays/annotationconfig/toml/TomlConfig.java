@@ -47,7 +47,7 @@ public final class TomlConfig {
    * @param tomlWriter toml writer
    */
   public static void load(Object annotatedConfig, File file, TomlWriter tomlWriter) {
-    List<Map.Entry<AnnotationHolder, List<AnnotationType>>> map =
+    Map<AnnotationHolder, List<AnnotationType>> map =
         AnnotatedConfigResolver.resolveAnnotations(annotatedConfig, annotationRegistry, true);
     AnnotatedConfigResolver.ValueWriter valueWriter = new TomlValueWriter(tomlWriter);
     if (!file.exists()) {

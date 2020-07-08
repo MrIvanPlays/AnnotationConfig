@@ -38,7 +38,7 @@ public final class YamlConfig {
    * @param file file
    */
   public static void load(Object annotatedConfig, File file) {
-    List<Map.Entry<AnnotationHolder, List<AnnotationType>>> map =
+    Map<AnnotationHolder, List<AnnotationType>> map =
         AnnotatedConfigResolver.resolveAnnotations(annotatedConfig, annotationRegistry, true);
     if (!file.exists()) {
       AnnotatedConfigResolver.dump(
