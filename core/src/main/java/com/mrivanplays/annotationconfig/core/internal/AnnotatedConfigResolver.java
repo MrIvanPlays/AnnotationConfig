@@ -123,6 +123,9 @@ public final class AnnotatedConfigResolver {
           writer.append('\n');
         }
       } else {
+        if (entry.getValue().size() == 1 && entry.getValue().get(0).is(AnnotationType.RETRIEVE)) {
+          continue;
+        }
         Field field = holder.getField();
         field.setAccessible(true);
         String keyName = field.getName();
@@ -223,6 +226,9 @@ public final class AnnotatedConfigResolver {
     for (Map.Entry<AnnotationHolder, List<AnnotationType>> entry : map.entrySet()) {
       AnnotationHolder holder = entry.getKey();
       if (holder.isClass()) {
+        continue;
+      }
+      if (entry.getValue().size() == 1 && entry.getValue().get(0).is(AnnotationType.RETRIEVE)) {
         continue;
       }
       Field field = holder.getField();

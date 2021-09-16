@@ -47,6 +47,7 @@ public final class PropertyConfig {
           annotationRegistry,
           PropertyConfig.class,
           false);
+      return;
     }
     Properties properties = new Properties();
     try (Reader reader = new FileReader(file)) {

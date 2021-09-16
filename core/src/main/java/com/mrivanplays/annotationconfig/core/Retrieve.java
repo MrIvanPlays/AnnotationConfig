@@ -7,8 +7,8 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
 /**
- * Annotation, which is marking fields to be retrieved whenever they don't have any of the other
- * annotations.
+ * Annotation, which is marking field(s) to be excluded from dumping in the config and modifying,
+ * whenever they don't have any of the other annotations.
  */
 @Documented
 @Target(ElementType.FIELD)

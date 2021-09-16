@@ -50,6 +50,7 @@ public final class YamlConfig {
           annotationRegistry,
           YamlConfig.class,
           true);
+      return;
     }
 
     try (Reader reader = new FileReader(file)) {

@@ -60,6 +60,7 @@ public final class TomlConfig {
           annotationRegistry,
           TomlConfig.class,
           true);
+      return;
     }
 
     Toml toml = new Toml().read(file);
