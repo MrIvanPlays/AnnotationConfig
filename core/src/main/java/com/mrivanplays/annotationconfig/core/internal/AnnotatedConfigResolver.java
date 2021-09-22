@@ -24,6 +24,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.TreeMap;
 
 public final class AnnotatedConfigResolver {
@@ -167,7 +168,7 @@ public final class AnnotatedConfigResolver {
             if (annoResolver != null) {
               throw new IllegalArgumentException("A field can only have 1 custom annotation.");
             }
-            annoResolver = annotationRegistry.registry().get(type);
+            annoResolver = annotationRegistry.getAnnotationResolver(type).orElse(null);
             customAnnotationType = type.getRawType();
           }
         }
@@ -193,6 +194,10 @@ public final class AnnotatedConfigResolver {
                 new AnnotationResolverContext(
                     configType, field, annotatedConfig, defaultsToValueObject, keyName, isSection);
             annoResolver.write(annotationWriter, customAnnotationType.cast(annotation), context);
+            if (annotationWriter.toWrite().isEmpty()) {
+              throw new RuntimeException(
+                  "Nothing to write; custom annotation: " + annotation.getClass().getSimpleName());
+            }
             for (Map.Entry<WriteFunction, Object> writeEntry :
                 annotationWriter.toWrite().entrySet()) {
               handleCustomEntry(
@@ -304,6 +309,11 @@ public final class AnnotatedConfigResolver {
                       configType, field, annotatedConfig, def, keyName, false);
               annotationResolver.write(
                   annotationWriter, customAnnotationType.cast(annotation), context);
+              if (annotationWriter.toWrite().isEmpty()) {
+                throw new RuntimeException(
+                    "Nothing to write; custom annotation: "
+                        + annotation.getClass().getSimpleName());
+              }
               for (Map.Entry<WriteFunction, Object> writeEntry :
                   annotationWriter.toWrite().entrySet()) {
                 handleCustomEntry(
@@ -431,14 +441,15 @@ public final class AnnotatedConfigResolver {
               + type.getRawType().getSimpleName()
               + "' ; registry not available.");
     }
-    AnnotationResolver<? extends Annotation> resolver = annoRegistry.registry().get(type);
-    if (resolver == null) {
+    Optional<AnnotationResolver<? extends Annotation>> resolver =
+        annoRegistry.getAnnotationResolver(type);
+    if (!resolver.isPresent()) {
       throw new IllegalArgumentException(
           "Could not resolve custom annotation type '"
               + type.getRawType().getSimpleName()
               + "' ; unregistered.");
     }
-    return resolver;
+    return resolver.get();
   }
 
   private static void handleCustomEntry(

@@ -2,8 +2,10 @@ package com.mrivanplays.annotationconfig.core;
 
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Field;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Optional;
 import java.util.function.Supplier;
 
 /** Represents annotation registry for custom annotations. */
@@ -133,10 +135,17 @@ public final class CustomAnnotationRegistry {
 
     private Map<WriteFunction, Object> toWrite = new HashMap<>();
 
-    /** @deprecated internal use only */
-    @Deprecated
+    /**
+     * Returns an unmodifiable copy of the map, containing the values the writer needs to write. If
+     * the map is empty, this will return {@link Collections#emptyMap()}
+     *
+     * @return map, probably with values
+     */
     public Map<WriteFunction, Object> toWrite() {
-      return toWrite;
+      if (toWrite.isEmpty()) {
+        return Collections.emptyMap();
+      }
+      return Collections.unmodifiableMap(toWrite);
     }
 
     /**
@@ -204,9 +213,54 @@ public final class CustomAnnotationRegistry {
     registry.put(new AnnotationType(rawAnnoType), annoWriter);
   }
 
-  /** @deprecated internal use only */
-  @Deprecated
-  public Map<AnnotationType, AnnotationResolver<? extends Annotation>> registry() {
-    return registry;
+  /**
+   * Returns an unmodifiable copy of the annotation registry map. If the map this {@link
+   * CustomAnnotationRegistry} has is empty, this method will return {@link Collections#emptyMap()}
+   *
+   * <p>It is recommended to use the map only when you want to loop. If you want to get the {@link
+   * AnnotationResolver} of a registered annotation, please use the appropriate API methods.
+   *
+   * @return annotation registry map
+   */
+  public Map<AnnotationType, AnnotationResolver<? extends Annotation>> registryMap() {
+    if (registry.isEmpty()) {
+      return Collections.emptyMap();
+    }
+    return Collections.unmodifiableMap(registry);
+  }
+
+  /**
+   * Returns the {@link AnnotationResolver} of the specified raw annotation. If there is none, it
+   * will return an empty {@link Optional}
+   *
+   * @param rawAnnoType the raw annotation type
+   * @return a populated optional with the value or an empty one
+   */
+  public Optional<AnnotationResolver<? extends Annotation>> getAnnotationResolver(
+      Class<? extends Annotation> rawAnnoType) {
+    if (registry.isEmpty()) {
+      return Optional.empty();
+    }
+    for (AnnotationType type : registry.keySet()) {
+      if (type.is(rawAnnoType)) {
+        return Optional.of(registry.get(type));
+      }
+    }
+    return Optional.empty();
+  }
+
+  /**
+   * Returns the {@link AnnotationResolver} of the specified {@link AnnotationType}. If there is
+   * none, it will return an empty {@link Optional}
+   *
+   * @param annotationType the annotation type you want the resolver for
+   * @return a populated optional with the value or an empty one
+   */
+  public Optional<AnnotationResolver<? extends Annotation>> getAnnotationResolver(
+      AnnotationType annotationType) {
+    if (registry.isEmpty()) {
+      return Optional.empty();
+    }
+    return Optional.ofNullable(registry.get(annotationType));
   }
 }

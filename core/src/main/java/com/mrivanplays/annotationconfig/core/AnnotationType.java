@@ -58,10 +58,10 @@ public final class AnnotationType {
    */
   public static AnnotationType match(
       Class<? extends Annotation> anno, CustomAnnotationRegistry annoRegistry) {
-    if (annoRegistry == null || annoRegistry.registry().isEmpty()) {
+    if (annoRegistry == null || annoRegistry.registryMap().isEmpty()) {
       return match(anno);
     }
-    for (AnnotationType type : annoRegistry.registry().keySet()) {
+    for (AnnotationType type : annoRegistry.registryMap().keySet()) {
       if (type.is(anno)) {
         return type;
       }
@@ -93,7 +93,7 @@ public final class AnnotationType {
    * @return boolean value, representing the outcome of this check
    */
   public boolean is(Class<? extends Annotation> anno) {
-    return anno.getSimpleName().equalsIgnoreCase(rawType.getSimpleName());
+    return anno.isAssignableFrom(rawType);
   }
 
   /**
