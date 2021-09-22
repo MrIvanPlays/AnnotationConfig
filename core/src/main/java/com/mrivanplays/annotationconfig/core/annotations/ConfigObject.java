@@ -1,4 +1,4 @@
-package com.mrivanplays.annotationconfig.core;
+package com.mrivanplays.annotationconfig.core.annotations;
 
 import java.lang.annotation.Documented;
 import java.lang.annotation.ElementType;

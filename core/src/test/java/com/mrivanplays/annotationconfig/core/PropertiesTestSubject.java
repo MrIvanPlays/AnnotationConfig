@@ -1,5 +1,10 @@
 package com.mrivanplays.annotationconfig.core;
 
+import com.mrivanplays.annotationconfig.core.annotations.Key;
+import com.mrivanplays.annotationconfig.core.annotations.comment.Comment;
+import com.mrivanplays.annotationconfig.core.serialization.ConfigDataObject;
+import com.mrivanplays.annotationconfig.core.serialization.FieldTypeSerializer;
+import com.mrivanplays.annotationconfig.core.serialization.SerializedObject;
 import java.lang.reflect.Field;
 
 @Comment("Test subject config. Can change at any time")
@@ -12,7 +17,6 @@ public class PropertiesTestSubject {
 
   @Comment("The message sending strategy with which the message will be sent")
   @Key("message.type")
-  @TypeResolver(MessageTypeResolver.class)
   private MessageType messageType = MessageType.STRING;
 
   public String getMessage() {
@@ -28,20 +32,20 @@ public class PropertiesTestSubject {
     STRING
   }
 
-  public static class MessageTypeResolver implements FieldTypeResolver {
+  public static class MessageTypeResolver implements FieldTypeSerializer<MessageType> {
 
     @Override
-    public Object toType(Object value, Field field) throws Exception {
+    public MessageType deserialize(ConfigDataObject data, Field field) throws Exception {
       try {
-        return MessageType.valueOf(String.valueOf(value));
+        return MessageType.valueOf(data.getAsString());
       } catch (IllegalArgumentException e) {
-        throw new IllegalArgumentException("Invalid message type: " + value);
+        throw new IllegalArgumentException("Invalid message type: " + data.getAsString());
       }
     }
 
     @Override
-    public boolean shouldResolve(Class<?> fieldType) {
-      return MessageType.class.isAssignableFrom(fieldType);
+    public SerializedObject serialize(MessageType value, Field field) throws Exception {
+      return SerializedObject.object(value.name());
     }
   }
 }

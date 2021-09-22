@@ -1,5 +1,6 @@
 package com.mrivanplays.annotationconfig.core;
 
+import com.mrivanplays.annotationconfig.core.annotations.type.AnnotationType;
 import com.mrivanplays.annotationconfig.core.internal.AnnotatedConfigResolver;
 import com.mrivanplays.annotationconfig.core.internal.AnnotationHolder;
 import java.io.File;
@@ -15,7 +16,7 @@ import java.util.Properties;
 /** Represents configuration, utilising .conf/.properties configuration type. */
 public final class PropertyConfig {
 
-  private static final AnnotatedConfigResolver.ValueWriter VALUE_WRITER = new PropertyValueWriter();
+  private static final ValueWriter VALUE_WRITER = new PropertyValueWriter();
 
   /**
    * Loads the config object from the file. If the file does not exist, it creates one.
@@ -44,7 +45,7 @@ public final class PropertyConfig {
         annotatedConfig, toMap, map, "# ", VALUE_WRITER, file, true, false, false, null);
   }
 
-  private static final class PropertyValueWriter implements AnnotatedConfigResolver.ValueWriter {
+  private static final class PropertyValueWriter implements ValueWriter {
 
     @Override
     public void write(String key, Object value, PrintWriter writer, boolean sectionExists) {

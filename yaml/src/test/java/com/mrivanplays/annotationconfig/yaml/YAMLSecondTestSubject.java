@@ -1,9 +1,8 @@
 package com.mrivanplays.annotationconfig.yaml;
 
-import com.mrivanplays.annotationconfig.core.Comment;
-import com.mrivanplays.annotationconfig.core.ConfigObject;
-import com.mrivanplays.annotationconfig.core.Key;
-import com.mrivanplays.annotationconfig.core.TypeResolver;
+import com.mrivanplays.annotationconfig.core.annotations.ConfigObject;
+import com.mrivanplays.annotationconfig.core.annotations.Key;
+import com.mrivanplays.annotationconfig.core.annotations.comment.Comment;
 import java.util.Arrays;
 import java.util.List;
 
@@ -23,7 +22,6 @@ public class YAMLSecondTestSubject {
   private String bar = "baz";
 
   @Comment("this is a list")
-  @TypeResolver(StringListResolver.class)
   private List<String> list = Arrays.asList("Hello", "bla bla");
 
   @Comment("baz")

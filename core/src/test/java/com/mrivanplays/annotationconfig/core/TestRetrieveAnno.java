@@ -1,5 +1,7 @@
 package com.mrivanplays.annotationconfig.core;
 
+import com.mrivanplays.annotationconfig.core.annotations.Retrieve;
+import com.mrivanplays.annotationconfig.core.annotations.comment.Comment;
 import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
@@ -15,8 +17,7 @@ public class TestRetrieveAnno {
   @Comment("This is on the top")
   static class RetrieveAnnoTestSubject {
 
-    @Retrieve
-    private boolean b = false;
+    @Retrieve private boolean b = false;
 
     @Comment("Hello my name is Ivan")
     private String name = "Ivan";

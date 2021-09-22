@@ -1,27 +1,37 @@
 package com.mrivanplays.annotationconfig.core.internal;
 
-import com.mrivanplays.annotationconfig.core.AnnotationType;
-import com.mrivanplays.annotationconfig.core.Comment;
-import com.mrivanplays.annotationconfig.core.Comments;
-import com.mrivanplays.annotationconfig.core.FieldTypeResolver;
-import com.mrivanplays.annotationconfig.core.Key;
-import com.mrivanplays.annotationconfig.core.TypeResolver;
+import com.mrivanplays.annotationconfig.core.ValueWriter;
+import com.mrivanplays.annotationconfig.core.annotations.Key;
+import com.mrivanplays.annotationconfig.core.annotations.comment.Comment;
+import com.mrivanplays.annotationconfig.core.annotations.comment.Comments;
+import com.mrivanplays.annotationconfig.core.annotations.type.AnnotationType;
+import com.mrivanplays.annotationconfig.core.serialization.ConfigDataObject;
+import com.mrivanplays.annotationconfig.core.serialization.FieldTypeSerializer;
+import com.mrivanplays.annotationconfig.core.serialization.SerializedObject;
+import com.mrivanplays.annotationconfig.core.serialization.registry.SerializerRegistry;
+import com.mrivanplays.annotationconfig.core.serialization.registry.primitive.PrimitiveSerializersRegistrar;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Field;
-import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.TreeMap;
 
 public final class AnnotatedConfigResolver {
+
+  static {
+    if (!PrimitiveSerializersRegistrar.hasRegistered()) {
+      PrimitiveSerializersRegistrar.register();
+    }
+  }
 
   public static Map<AnnotationHolder, List<AnnotationType>> resolveAnnotations(
       Object annotatedClass, boolean reverseFields) {
@@ -29,8 +39,11 @@ public final class AnnotatedConfigResolver {
     AnnotationHolder CLASS_ANNOTATION_HOLDER = new AnnotationHolder();
     Class<?> theClass = annotatedClass.getClass();
     for (Annotation annotation : theClass.getAnnotations()) {
-      AnnotationType annotationType = AnnotationType.match(annotation.annotationType());
-      populate(CLASS_ANNOTATION_HOLDER, annotationType, annotationData);
+      Optional<AnnotationType> typeOpt = AnnotationType.match(annotation.annotationType());
+      if (!typeOpt.isPresent()) {
+        continue;
+      }
+      populate(CLASS_ANNOTATION_HOLDER, typeOpt.get(), annotationData);
     }
 
     List<Field> fields = Arrays.asList(theClass.getDeclaredFields());
@@ -40,14 +53,25 @@ public final class AnnotatedConfigResolver {
 
     int order = 1;
     for (Field field : fields) {
-      if (field.getDeclaredAnnotations().length > 0) {
-        AnnotationHolder holder = new AnnotationHolder(field, order);
-        for (Annotation annotation : field.getDeclaredAnnotations()) {
-          AnnotationType annotationType = AnnotationType.match(annotation.annotationType());
-          populate(holder, annotationType, annotationData);
+      if (field.getDeclaredAnnotations().length == 1) {
+        Annotation anno = field.getDeclaredAnnotations()[0];
+        if (AnnotationType.RETRIEVE.is(anno.annotationType())) {
+          continue;
         }
-        order++;
       }
+      AnnotationHolder holder = new AnnotationHolder(field, order);
+      if (field.getDeclaredAnnotations().length == 0) {
+        annotationData.put(holder, Collections.emptyList());
+      } else {
+        for (Annotation annotation : field.getDeclaredAnnotations()) {
+          Optional<AnnotationType> typeOpt = AnnotationType.match(annotation.annotationType());
+          if (!typeOpt.isPresent()) {
+            continue;
+          }
+          populate(holder, typeOpt.get(), annotationData);
+        }
+      }
+      order++;
     }
     return annotationData;
   }
@@ -68,12 +92,6 @@ public final class AnnotatedConfigResolver {
     } catch (IOException e) {
       throw new RuntimeException(e);
     }
-  }
-
-  public interface ValueWriter {
-
-    void write(String key, Object value, PrintWriter writer, boolean sectionExists)
-        throws IOException;
   }
 
   private static void toWriter(
@@ -101,9 +119,6 @@ public final class AnnotatedConfigResolver {
           writer.append('\n');
         }
       } else {
-        if (entry.getValue().size() == 1 && entry.getValue().get(0).is(AnnotationType.RETRIEVE)) {
-          continue;
-        }
         Field field = holder.getField();
         field.setAccessible(true);
         String keyName = field.getName();
@@ -142,10 +157,36 @@ public final class AnnotatedConfigResolver {
           continue;
         }
         try {
+          Class<?> fieldType = field.getType();
+          Optional<FieldTypeSerializer<?>> serializerOpt =
+              SerializerRegistry.INSTANCE.getSerializer(fieldType);
           Object defaultsToValueObject = field.get(annotatedConfig);
           if (defaultsToValueObject == null) {
             throw new IllegalArgumentException(
                 "No default value for field '" + field.getName() + "'");
+          }
+          if (serializerOpt.isPresent()) {
+            FieldTypeSerializer serializer = serializerOpt.get();
+            try {
+              SerializedObject serialized = serializer.serialize(defaultsToValueObject, field);
+              switch (serialized.getPresentValue()) {
+                case LIST:
+                  defaultsToValueObject = serialized.getSerializedList();
+                  break;
+                case MAP:
+                  defaultsToValueObject = serialized.getSerializedMap();
+                  break;
+                case OBJECT:
+                  defaultsToValueObject = serialized.getSerializedObject();
+                  break;
+                default:
+                  throw new IllegalArgumentException(
+                      "Illegal serialized.getPresentValue() (AnnotatedConfigResolver#toWrite)");
+              }
+            } catch (Exception e) {
+              e.printStackTrace();
+              continue;
+            }
           }
           if (!isSection) {
             valueWriter.write(keyName, defaultsToValueObject, writer, false);
@@ -179,19 +220,12 @@ public final class AnnotatedConfigResolver {
       if (holder.isClass()) {
         continue;
       }
-      if (entry.getValue().size() == 1 && entry.getValue().get(0).is(AnnotationType.RETRIEVE)) {
-        continue;
-      }
       Field field = holder.getField();
       field.setAccessible(true);
-      Class<? extends FieldTypeResolver> typeResolver = null;
       String keyName = field.getName();
       boolean configObject = false;
       Object section = null;
       for (AnnotationType type : entry.getValue()) {
-        if (type.is(AnnotationType.TYPE_RESOLVER)) {
-          typeResolver = field.getDeclaredAnnotation(TypeResolver.class).value();
-        }
         if (type.is(AnnotationType.KEY)) {
           keyName = field.getDeclaredAnnotation(Key.class).value();
         }
@@ -262,61 +296,23 @@ public final class AnnotatedConfigResolver {
             keyName);
         continue;
       }
-      if (typeResolver != null) {
-        try {
-          FieldTypeResolver resolver = typeResolver.getDeclaredConstructor().newInstance();
-          if (!resolver.shouldResolve(fieldType)) {
-            throw new IllegalArgumentException(
-                "Invalid type resolver found for \"" + field.getName() + "\"");
-          }
-          Object resolvedValue = resolver.toType(value, field);
-          field.set(annotatedConfig, resolvedValue);
-        } catch (InstantiationException e) {
-          throw new IllegalArgumentException("Could not construct a type resolver");
-        } catch (IllegalAccessException e) {
-          throw new IllegalArgumentException(
-              "Could not construct a type resolver/set a field's value; field/constructor not accessible anymore");
-        } catch (InvocationTargetException e) {
-          throw new IllegalArgumentException(
-              "Could not construct a type resolver; constructor rejected execution");
-        } catch (NoSuchMethodException e) {
-          throw new IllegalArgumentException(
-              "Cannot find a no args constructor for field type resolver \""
-                  + field.getName()
-                  + "\"");
-        } catch (Exception e) {
-          e.printStackTrace();
-        }
-      } else {
-        // either I'm really tired or the only way we can check if the type is primitive type is
-        // to do this spaghetti
-        try {
-          if (fieldType.isAssignableFrom(boolean.class)
-              || fieldType.isAssignableFrom(Boolean.class)) {
-            field.set(annotatedConfig, Boolean.parseBoolean(String.valueOf(value)));
-          }
-          if (fieldType.isAssignableFrom(String.class)) {
-            field.set(annotatedConfig, String.valueOf(value));
-          }
-          if (fieldType.isAssignableFrom(byte.class) || fieldType.isAssignableFrom(Byte.class)) {
-            field.set(annotatedConfig, Byte.valueOf(String.valueOf(value)));
-          }
-          if (fieldType.isAssignableFrom(int.class) || fieldType.isAssignableFrom(Integer.class)) {
-            field.set(annotatedConfig, Integer.valueOf(String.valueOf(value)));
-          }
-          if (fieldType.isAssignableFrom(double.class)
-              || fieldType.isAssignableFrom(Double.class)) {
-            field.set(annotatedConfig, Double.valueOf(String.valueOf(value)));
-          }
-          if (fieldType.isAssignableFrom(float.class) || fieldType.isAssignableFrom(Float.class)) {
-            field.set(annotatedConfig, Float.valueOf(String.valueOf(value)));
-          }
-        } catch (IllegalAccessException e) {
-          throw new IllegalArgumentException(
-              "Could not set field \""
-                  + field.getName()
-                  + "\" value; field not accessible anymore");
-        }
+      Optional<FieldTypeSerializer<?>> serializerOpt =
+          SerializerRegistry.INSTANCE.getSerializer(fieldType);
+      if (!serializerOpt.isPresent()) {
+        throw new IllegalArgumentException(
+            "Cannot find serializer for field '"
+                + field.getName()
+                + "', field type: "
+                + fieldType.getSimpleName());
+      }
+      FieldTypeSerializer<?> serializer = serializerOpt.get();
+      try {
+        field.set(annotatedConfig, serializer.deserialize(new ConfigDataObject(value), field));
+      } catch (IllegalAccessException e) {
+        throw new IllegalArgumentException(
+            "Could not set a field's value ; field not accessible anymore");
+      } catch (Exception e) {
+        e.printStackTrace();
       }
     }
   }

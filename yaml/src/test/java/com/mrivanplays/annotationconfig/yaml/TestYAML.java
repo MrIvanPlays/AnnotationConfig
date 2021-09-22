@@ -1,5 +1,8 @@
 package com.mrivanplays.annotationconfig.yaml;
 
+import com.mrivanplays.annotationconfig.core.serialization.registry.SerializerRegistry;
+import com.mrivanplays.annotationconfig.yaml.YAMLTestSubject.LocationNoConfigObject;
+import com.mrivanplays.annotationconfig.yaml.YAMLTestSubject.LocationNoConfigObjectSerializer;
 import java.io.File;
 import org.junit.After;
 import org.junit.Assert;
@@ -13,6 +16,8 @@ public class TestYAML {
   @Before
   public void initialize() {
     file = new File("non-existing.yml");
+    SerializerRegistry.INSTANCE.registerSerializer(
+        LocationNoConfigObject.class, new LocationNoConfigObjectSerializer());
   }
 
   @After
@@ -30,6 +35,8 @@ public class TestYAML {
     Assert.assertEquals("No console!", config.getMessages().getNoConsole());
     Assert.assertEquals("This command is console only!", config.getMessages().getConsoleOnly());
     Assert.assertEquals("baz", config.getBar());
+    Assert.assertTrue(config.getList().contains("Hello"));
+    Assert.assertEquals(20, config.getLocationTwo().getX());
   }
 
   @Test

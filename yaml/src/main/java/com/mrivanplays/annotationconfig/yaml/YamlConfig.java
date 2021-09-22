@@ -1,6 +1,7 @@
 package com.mrivanplays.annotationconfig.yaml;
 
-import com.mrivanplays.annotationconfig.core.AnnotationType;
+import com.mrivanplays.annotationconfig.core.ValueWriter;
+import com.mrivanplays.annotationconfig.core.annotations.type.AnnotationType;
 import com.mrivanplays.annotationconfig.core.internal.AnnotatedConfigResolver;
 import com.mrivanplays.annotationconfig.core.internal.AnnotationHolder;
 import java.io.File;
@@ -17,7 +18,7 @@ import org.yaml.snakeyaml.Yaml;
 public final class YamlConfig {
 
   private static final Yaml YAML = new Yaml();
-  private static final AnnotatedConfigResolver.ValueWriter VALUE_WRITER = new YamlValueWriter();
+  private static final ValueWriter VALUE_WRITER = new YamlValueWriter();
 
   /**
    * Loads the config object from the file. If the file does not exist, it creates one.
@@ -45,7 +46,7 @@ public final class YamlConfig {
     }
   }
 
-  private static final class YamlValueWriter implements AnnotatedConfigResolver.ValueWriter {
+  private static final class YamlValueWriter implements ValueWriter {
 
     @Override
     public void write(String key, Object value, PrintWriter writer, boolean sectionExists) {
