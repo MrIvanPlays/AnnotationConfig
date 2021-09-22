@@ -59,6 +59,9 @@ public final class PropertyConfig {
         }
         return;
       }
+      if (value instanceof List<?>) {
+        throw new IllegalArgumentException(".properties does not support lists.");
+      }
       writer.println(key + "=" + value.toString());
       writer.append('\n');
     }

@@ -1,6 +1,6 @@
 package com.mrivanplays.annotationconfig.core;
 
-import com.mrivanplays.annotationconfig.core.annotations.Retrieve;
+import com.mrivanplays.annotationconfig.core.annotations.Ignore;
 import com.mrivanplays.annotationconfig.core.annotations.comment.Comment;
 import java.io.File;
 import java.io.FileReader;
@@ -12,12 +12,12 @@ import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 
-public class TestRetrieveAnno {
+public class TestIgnoreAnno {
 
   @Comment("This is on the top")
   static class RetrieveAnnoTestSubject {
 
-    @Retrieve private boolean b = false;
+    @Ignore private boolean b = false;
 
     @Comment("Hello my name is Ivan")
     private String name = "Ivan";

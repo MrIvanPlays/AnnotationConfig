@@ -55,7 +55,7 @@ public final class AnnotatedConfigResolver {
     for (Field field : fields) {
       if (field.getDeclaredAnnotations().length == 1) {
         Annotation anno = field.getDeclaredAnnotations()[0];
-        if (AnnotationType.RETRIEVE.is(anno.annotationType())) {
+        if (AnnotationType.IGNORE.is(anno.annotationType())) {
           continue;
         }
       }

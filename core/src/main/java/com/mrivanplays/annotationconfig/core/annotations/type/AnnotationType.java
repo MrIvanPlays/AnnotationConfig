@@ -2,7 +2,7 @@ package com.mrivanplays.annotationconfig.core.annotations.type;
 
 import com.mrivanplays.annotationconfig.core.annotations.ConfigObject;
 import com.mrivanplays.annotationconfig.core.annotations.Key;
-import com.mrivanplays.annotationconfig.core.annotations.Retrieve;
+import com.mrivanplays.annotationconfig.core.annotations.Ignore;
 import com.mrivanplays.annotationconfig.core.annotations.comment.Comment;
 import com.mrivanplays.annotationconfig.core.annotations.comment.Comments;
 import java.lang.annotation.Annotation;
@@ -16,7 +16,7 @@ public enum AnnotationType {
   COMMENTS(Comments.class),
   KEY(Key.class),
   CONFIG_OBJECT(ConfigObject.class),
-  RETRIEVE(Retrieve.class);
+  IGNORE(Ignore.class);
 
   private final Class<? extends Annotation> annotationType;
 
