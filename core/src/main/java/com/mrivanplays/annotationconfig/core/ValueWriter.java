@@ -35,6 +35,9 @@ import java.io.PrintWriter;
  * under {@code messages}, or just as a regular value.
  *
  * <p>In the end we want this to generate clean writes and configs.
+ *
+ * @since 2.0.0
+ * @author MrIvanPlays
  */
 @FunctionalInterface
 public interface ValueWriter {

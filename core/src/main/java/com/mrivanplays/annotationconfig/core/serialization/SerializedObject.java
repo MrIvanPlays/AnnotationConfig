@@ -3,17 +3,41 @@ package com.mrivanplays.annotationconfig.core.serialization;
 import java.util.List;
 import java.util.Map;
 
-/** Represents a serialized object, which is config dump friendly. */
+/**
+ * Represents a serialized object, which is config dump friendly.
+ *
+ * @since 2.0.0
+ * @author MrIvanPlays
+ */
 public final class SerializedObject {
 
+  /**
+   * Creates a {@link SerializedObject} of type map.
+   *
+   * @param serializedMap the map value that we need to serialize
+   * @return a serialized object
+   */
   public static SerializedObject map(Map<String, Object> serializedMap) {
     return new SerializedObject(serializedMap);
   }
 
+  /**
+   * Creates a {@link SerializedObject} of type list.
+   *
+   * @param serializedList the list value that we need to serialize
+   * @return a serialized object
+   */
   public static SerializedObject list(List<Object> serializedList) {
     return new SerializedObject(serializedList);
   }
 
+  /**
+   * Creates a {@link SerializedObject} of any primitive type. Please do not use this with maps or
+   * lists, use the appropriate methods above, or else you might break (de)serialization.
+   *
+   * @param serializedObject the primitive value that we need to serialize
+   * @return a serialized object
+   */
   public static SerializedObject object(Object serializedObject) {
     return new SerializedObject(serializedObject);
   }

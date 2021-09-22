@@ -7,6 +7,9 @@ import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * Represents a registry of all the serializers.
+ *
+ * @since 2.0.0
+ * @author MrIvanPlays
  */
 public final class SerializerRegistry {
 
@@ -25,13 +28,14 @@ public final class SerializerRegistry {
    * @param typeSerializer the serialized of the serializedType
    * @param <T> generic
    */
-  public <T> void registerSerializer(Class<T> serializedType, FieldTypeSerializer<T> typeSerializer) {
+  public <T> void registerSerializer(
+      Class<T> serializedType, FieldTypeSerializer<T> typeSerializer) {
     this.serializers.put(serializedType, typeSerializer);
   }
 
   /**
-   * Returns an {@link Optional} value, which may or may not be filled with a {@link FieldTypeSerializer},
-   * depending on if the {@code serializedType} has been registered or not.
+   * Returns an {@link Optional} value, which may or may not be filled with a {@link
+   * FieldTypeSerializer}, depending on if the {@code serializedType} has been registered or not.
    *
    * @param serializedType the type which is serialized you want the serializer of
    * @return an optional with value or an empty optional
