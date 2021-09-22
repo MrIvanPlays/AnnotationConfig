@@ -13,25 +13,7 @@ public final class AnnotationType {
   public static final AnnotationType RETRIEVE = new AnnotationType(Retrieve.class);
 
   /**
-   * Returns whether or not the annotation type specified is custom.
-   *
-   * @param type the type you want to check if its custom
-   * @return boolean value, representing the outcome of the check.
-   */
-  public static boolean isCustom(AnnotationType type) {
-    return !COMMENT.is(type)
-        && !COMMENTS.is(type)
-        && !TYPE_RESOLVER.is(type)
-        && !KEY.is(type)
-        && !CONFIG_OBJECT.is(type)
-        && !RETRIEVE.is(type);
-  }
-
-  /**
-   * Tries to match the annotation raw type to the built in annotation types.
-   *
-   * <p>If you're searching for a way to also match custom annotation types, use {@link
-   * #match(Class, CustomAnnotationRegistry)}
+   * Tries to match the annotation raw type to a {@link AnnotationType}.
    *
    * @param anno annotation raw type
    * @return matched annotation type, or null
@@ -46,28 +28,6 @@ public final class AnnotationType {
                 : TYPE_RESOLVER.is(anno)
                     ? TYPE_RESOLVER
                     : CONFIG_OBJECT.is(anno) ? CONFIG_OBJECT : RETRIEVE.is(anno) ? RETRIEVE : null;
-  }
-
-  /**
-   * Tries to match the annotation raw type to the annotation types in the {@link
-   * CustomAnnotationRegistry} and the built in annotation types.
-   *
-   * @param anno annotation raw type
-   * @param annoRegistry searched registry
-   * @return matched annotation type, or null
-   */
-  public static AnnotationType match(
-      Class<? extends Annotation> anno, CustomAnnotationRegistry annoRegistry) {
-    if (annoRegistry == null || annoRegistry.registryMap().isEmpty()) {
-      return match(anno);
-    }
-    for (AnnotationType type : annoRegistry.registryMap().keySet()) {
-      if (type.is(anno)) {
-        return type;
-      }
-    }
-
-    return match(anno);
   }
 
   private final Class<? extends Annotation> rawType;

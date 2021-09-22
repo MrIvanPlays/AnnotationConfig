@@ -1,7 +1,6 @@
 package com.mrivanplays.annotationconfig.yaml;
 
 import com.mrivanplays.annotationconfig.core.AnnotationType;
-import com.mrivanplays.annotationconfig.core.CustomAnnotationRegistry;
 import com.mrivanplays.annotationconfig.core.internal.AnnotatedConfigResolver;
 import com.mrivanplays.annotationconfig.core.internal.AnnotationHolder;
 import java.io.File;
@@ -17,17 +16,6 @@ import org.yaml.snakeyaml.Yaml;
 /** Represents configuration, utilising YAML */
 public final class YamlConfig {
 
-  private static CustomAnnotationRegistry annotationRegistry = new CustomAnnotationRegistry();
-
-  /**
-   * Returns the {@link CustomAnnotationRegistry} for this config.
-   *
-   * @return custom annotation registry
-   */
-  public static CustomAnnotationRegistry getAnnotationRegistry() {
-    return annotationRegistry;
-  }
-
   private static final Yaml YAML = new Yaml();
   private static final AnnotatedConfigResolver.ValueWriter VALUE_WRITER = new YamlValueWriter();
 
@@ -39,17 +27,9 @@ public final class YamlConfig {
    */
   public static void load(Object annotatedConfig, File file) {
     Map<AnnotationHolder, List<AnnotationType>> map =
-        AnnotatedConfigResolver.resolveAnnotations(annotatedConfig, annotationRegistry, true);
+        AnnotatedConfigResolver.resolveAnnotations(annotatedConfig, true);
     if (!file.exists()) {
-      AnnotatedConfigResolver.dump(
-          annotatedConfig,
-          map,
-          file,
-          "# ",
-          VALUE_WRITER,
-          annotationRegistry,
-          YamlConfig.class,
-          true);
+      AnnotatedConfigResolver.dump(annotatedConfig, map, file, "# ", VALUE_WRITER, true);
       return;
     }
 
@@ -59,18 +39,7 @@ public final class YamlConfig {
         return;
       }
       AnnotatedConfigResolver.setFields(
-          annotatedConfig,
-          values,
-          map,
-          annotationRegistry,
-          "# ",
-          VALUE_WRITER,
-          file,
-          true,
-          true,
-          YamlConfig.class,
-          false,
-          null);
+          annotatedConfig, values, map, "# ", VALUE_WRITER, file, true, true, false, null);
     } catch (IOException e) {
       throw new RuntimeException(e);
     }
@@ -133,19 +102,6 @@ public final class YamlConfig {
         }
       }
       writer.append('\n');
-    }
-
-    @Override
-    public void writeCustom(Object value, PrintWriter writer, String annoName) {
-      if (!(value instanceof String)
-          && !(value instanceof Character)
-          && !(value instanceof char[])) {
-        throw new IllegalArgumentException(
-            "Cannot write other than String, char and char[] for yaml config: annotation '"
-                + annoName
-                + "'");
-      }
-      writer.write(String.valueOf(value));
     }
   }
 }

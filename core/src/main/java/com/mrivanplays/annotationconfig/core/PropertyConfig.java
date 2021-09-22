@@ -15,18 +15,7 @@ import java.util.Properties;
 /** Represents configuration, utilising .conf/.properties configuration type. */
 public final class PropertyConfig {
 
-  private static CustomAnnotationRegistry annotationRegistry = new CustomAnnotationRegistry();
-
   private static final AnnotatedConfigResolver.ValueWriter VALUE_WRITER = new PropertyValueWriter();
-
-  /**
-   * Returns the {@link CustomAnnotationRegistry} for this config.
-   *
-   * @return custom annotation registry
-   */
-  public static CustomAnnotationRegistry getAnnotationRegistry() {
-    return annotationRegistry;
-  }
 
   /**
    * Loads the config object from the file. If the file does not exist, it creates one.
@@ -36,17 +25,9 @@ public final class PropertyConfig {
    */
   public static void load(Object annotatedConfig, File file) {
     Map<AnnotationHolder, List<AnnotationType>> map =
-        AnnotatedConfigResolver.resolveAnnotations(annotatedConfig, annotationRegistry, false);
+        AnnotatedConfigResolver.resolveAnnotations(annotatedConfig, false);
     if (!file.exists()) {
-      AnnotatedConfigResolver.dump(
-          annotatedConfig,
-          map,
-          file,
-          "# ",
-          VALUE_WRITER,
-          annotationRegistry,
-          PropertyConfig.class,
-          false);
+      AnnotatedConfigResolver.dump(annotatedConfig, map, file, "# ", VALUE_WRITER, false);
       return;
     }
     Properties properties = new Properties();
@@ -60,18 +41,7 @@ public final class PropertyConfig {
       toMap.put(String.valueOf(key), properties.get(key));
     }
     AnnotatedConfigResolver.setFields(
-        annotatedConfig,
-        toMap,
-        map,
-        annotationRegistry,
-        "# ",
-        VALUE_WRITER,
-        file,
-        true,
-        false,
-        PropertyConfig.class,
-        false,
-        null);
+        annotatedConfig, toMap, map, "# ", VALUE_WRITER, file, true, false, false, null);
   }
 
   private static final class PropertyValueWriter implements AnnotatedConfigResolver.ValueWriter {
@@ -90,19 +60,6 @@ public final class PropertyConfig {
       }
       writer.println(key + "=" + value.toString());
       writer.append('\n');
-    }
-
-    @Override
-    public void writeCustom(Object value, PrintWriter writer, String annoName) {
-      if (!(value instanceof String)
-          && !(value instanceof Character)
-          && !(value instanceof char[])) {
-        throw new IllegalArgumentException(
-            "Cannot write other than String, char and char[] for .properties/.conf config: annotation '"
-                + annoName
-                + "'");
-      }
-      writer.write(String.valueOf(value));
     }
   }
 }
