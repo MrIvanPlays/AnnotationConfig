@@ -126,10 +126,6 @@ public final class AnnotatedConfigResolver {
         field.setAccessible(true);
         String keyName = field.getName();
         boolean configObject = false;
-        /*
-        List<AnnotationType> types  = entry.getValue();
-        types.sort(Enum::compareTo);
-         */
         for (AnnotationType type : entry.getValue()) {
           if (!isSection) {
             handleComments(type, field, null, commentChar, writer);
@@ -145,8 +141,6 @@ public final class AnnotatedConfigResolver {
                 throw new IllegalArgumentException(
                     "Section not initialized for field '" + field.getName() + "'");
               }
-              System.out.println("Creating section " + section);
-              System.out.println("keyName: " + keyName);
               toWriter(
                   section,
                   writer,
@@ -266,10 +260,6 @@ public final class AnnotatedConfigResolver {
           field.setAccessible(true);
           String key = field.getName();
           boolean confObject = false;
-          /*
-          List<AnnotationType> types = entry.getValue();
-          types.sort(Enum::compareTo);
-           */
           for (AnnotationType type : entry.getValue()) {
             if (type.is(AnnotationType.KEY)) {
               key = field.getDeclaredAnnotation(Key.class).value();
