@@ -12,6 +12,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
+import java.util.Set;
 
 /** Represents configuration, utilising .conf/.properties configuration type. */
 public final class PropertyConfig {
@@ -25,7 +26,7 @@ public final class PropertyConfig {
    * @param file file
    */
   public static void load(Object annotatedConfig, File file) {
-    Map<AnnotationHolder, List<AnnotationType>> map =
+    Map<AnnotationHolder, Set<AnnotationType>> map =
         AnnotatedConfigResolver.resolveAnnotations(annotatedConfig, false);
     if (!file.exists()) {
       AnnotatedConfigResolver.dump(annotatedConfig, map, file, "# ", VALUE_WRITER, false);
@@ -52,7 +53,7 @@ public final class PropertyConfig {
       if (value instanceof Map<?, ?>) {
         for (Map.Entry<?, ?> entry : ((Map<?, ?>) value).entrySet()) {
           if (entry.getKey() instanceof String && !(entry.getValue() instanceof Map)) {
-            writer.println(key + "=" + value.toString());
+            writer.println(key + "=" + value);
           } else if (entry.getValue() instanceof Map) {
             write(key, entry.getValue(), writer, sectionExists);
           }
@@ -62,7 +63,7 @@ public final class PropertyConfig {
       if (value instanceof List<?>) {
         throw new IllegalArgumentException(".properties does not support lists.");
       }
-      writer.println(key + "=" + value.toString());
+      writer.println(key + "=" + value);
       writer.append('\n');
     }
   }

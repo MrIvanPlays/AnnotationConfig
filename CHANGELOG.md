@@ -82,3 +82,5 @@ Here are the changes that don't need too much attention, but are still important
 - `Retrieve` annotation was renamed to `Ignore` for more clearance
 - Annotations are in separate package, `annotationconfig.core.annotations`, the comment annotations are under `annotations.comment`
 - `ValueWriter` interface got exposed from `AnnotatedConfigResolver` to its own class and has been documented with lots of information, so you can't do something wrong.
+- The library now completely generates all kinds of config options if they are missing in an existing config.
+- Fixed a special case bug where `@Key` annotations aren't respected for fields annotated with `@ConfigObject`. This needed changing the `Map<AnnotationHolder, List<AnnotationType>>` to a `Map<AnnotationHolder, Set<AnnotationType>>` so this is yet another breaking change for all custom-made config types.

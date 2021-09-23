@@ -1,9 +1,13 @@
 package com.mrivanplays.annotationconfig.core.serialization.registry;
 
+import com.mrivanplays.annotationconfig.core.serialization.ConfigDataObject;
 import com.mrivanplays.annotationconfig.core.serialization.FieldTypeSerializer;
+import com.mrivanplays.annotationconfig.core.serialization.SerializedObject;
+import java.lang.reflect.Field;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.BiFunction;
 
 /**
  * Represents a registry of all the serializers.
@@ -31,6 +35,33 @@ public final class SerializerRegistry {
   public <T> void registerSerializer(
       Class<T> serializedType, FieldTypeSerializer<T> typeSerializer) {
     this.serializers.put(serializedType, typeSerializer);
+  }
+
+  /**
+   * Registers a new serializer.
+   *
+   * @param serializedType the field type that should be serialized
+   * @param deSerialize the deserialize method
+   * @param serialize the serialize method
+   * @param <T> generic
+   */
+  public <T> void registerSerializer(
+      Class<T> serializedType,
+      BiFunction<ConfigDataObject, Field, T> deSerialize,
+      BiFunction<T, Field, SerializedObject> serialize) {
+    this.registerSerializer(
+        serializedType,
+        new FieldTypeSerializer<T>() {
+          @Override
+          public T deserialize(ConfigDataObject data, Field field) {
+            return deSerialize.apply(data, field);
+          }
+
+          @Override
+          public SerializedObject serialize(T value, Field field) {
+            return serialize.apply(value, field);
+          }
+        });
   }
 
   /**

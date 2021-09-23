@@ -8,12 +8,12 @@ import java.lang.reflect.Field;
 class IntSerializer implements FieldTypeSerializer<Integer> {
 
   @Override
-  public Integer deserialize(ConfigDataObject data, Field field) throws Exception {
+  public Integer deserialize(ConfigDataObject data, Field field) {
     return data.getAsInt();
   }
 
   @Override
-  public SerializedObject serialize(Integer value, Field field) throws Exception {
+  public SerializedObject serialize(Integer value, Field field) {
     return SerializedObject.object(value);
   }
 }

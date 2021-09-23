@@ -11,7 +11,7 @@ public class DateResolver implements FieldTypeSerializer<Date> {
 
   /** {@inheritDoc} */
   @Override
-  public Date deserialize(ConfigDataObject data, Field field) throws Exception {
+  public Date deserialize(ConfigDataObject data, Field field) {
     // yes. that's right.
     // that's what toml does, that's what we will do too.
     return (Date) data.getRawData();
@@ -19,7 +19,7 @@ public class DateResolver implements FieldTypeSerializer<Date> {
 
   /** {@inheritDoc} */
   @Override
-  public SerializedObject serialize(Date value, Field field) throws Exception {
+  public SerializedObject serialize(Date value, Field field) {
     return SerializedObject.object(value);
   }
 }

@@ -8,12 +8,12 @@ import java.lang.reflect.Field;
 class BooleanSerializer implements FieldTypeSerializer<Boolean> {
 
   @Override
-  public Boolean deserialize(ConfigDataObject data, Field field) throws Exception {
+  public Boolean deserialize(ConfigDataObject data, Field field) {
     return data.getAsBoolean();
   }
 
   @Override
-  public SerializedObject serialize(Boolean value, Field field) throws Exception {
+  public SerializedObject serialize(Boolean value, Field field) {
     return SerializedObject.object(value);
   }
 }

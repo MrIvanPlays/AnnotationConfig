@@ -35,7 +35,7 @@ public class PropertiesTestSubject {
   public static class MessageTypeResolver implements FieldTypeSerializer<MessageType> {
 
     @Override
-    public MessageType deserialize(ConfigDataObject data, Field field) throws Exception {
+    public MessageType deserialize(ConfigDataObject data, Field field) {
       try {
         return MessageType.valueOf(data.getAsString());
       } catch (IllegalArgumentException e) {
@@ -44,7 +44,7 @@ public class PropertiesTestSubject {
     }
 
     @Override
-    public SerializedObject serialize(MessageType value, Field field) throws Exception {
+    public SerializedObject serialize(MessageType value, Field field) {
       return SerializedObject.object(value.name());
     }
   }

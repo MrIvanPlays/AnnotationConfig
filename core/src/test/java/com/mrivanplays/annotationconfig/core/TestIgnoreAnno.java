@@ -36,7 +36,7 @@ public class TestIgnoreAnno {
   }
 
   @Test
-  public void testRetrieveWorks() {
+  public void testIgnoreWorks() {
     RetrieveAnnoTestSubject config = new RetrieveAnnoTestSubject();
     PropertyConfig.load(config, file);
 

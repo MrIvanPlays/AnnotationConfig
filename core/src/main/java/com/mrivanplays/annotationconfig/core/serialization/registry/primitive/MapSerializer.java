@@ -9,12 +9,12 @@ import java.util.Map;
 class MapSerializer implements FieldTypeSerializer<Map> {
 
   @Override
-  public Map deserialize(ConfigDataObject data, Field field) throws Exception {
+  public Map deserialize(ConfigDataObject data, Field field) {
     return (Map) data.getRawData();
   }
 
   @Override
-  public SerializedObject serialize(Map value, Field field) throws Exception {
+  public SerializedObject serialize(Map value, Field field) {
     return SerializedObject.map(value);
   }
 }

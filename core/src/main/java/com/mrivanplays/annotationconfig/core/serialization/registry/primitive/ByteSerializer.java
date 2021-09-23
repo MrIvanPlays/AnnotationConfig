@@ -8,12 +8,12 @@ import java.lang.reflect.Field;
 class ByteSerializer implements FieldTypeSerializer<Byte> {
 
   @Override
-  public Byte deserialize(ConfigDataObject data, Field field) throws Exception {
+  public Byte deserialize(ConfigDataObject data, Field field) {
     return data.getAsByte();
   }
 
   @Override
-  public SerializedObject serialize(Byte value, Field field) throws Exception {
+  public SerializedObject serialize(Byte value, Field field) {
     return SerializedObject.object(value);
   }
 }

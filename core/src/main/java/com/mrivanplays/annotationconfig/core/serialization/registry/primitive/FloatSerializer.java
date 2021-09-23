@@ -8,12 +8,12 @@ import java.lang.reflect.Field;
 class FloatSerializer implements FieldTypeSerializer<Float> {
 
   @Override
-  public Float deserialize(ConfigDataObject data, Field field) throws Exception {
+  public Float deserialize(ConfigDataObject data, Field field) {
     return data.getAsFloat();
   }
 
   @Override
-  public SerializedObject serialize(Float value, Field field) throws Exception {
+  public SerializedObject serialize(Float value, Field field) {
     return SerializedObject.object(value);
   }
 }

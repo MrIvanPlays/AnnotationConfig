@@ -1,8 +1,6 @@
 package com.mrivanplays.annotationconfig.yaml;
 
 import com.mrivanplays.annotationconfig.core.serialization.registry.SerializerRegistry;
-import com.mrivanplays.annotationconfig.yaml.YAMLTestSubject.LocationNoConfigObject;
-import com.mrivanplays.annotationconfig.yaml.YAMLTestSubject.LocationNoConfigObjectSerializer;
 import java.io.File;
 import org.junit.After;
 import org.junit.Assert;

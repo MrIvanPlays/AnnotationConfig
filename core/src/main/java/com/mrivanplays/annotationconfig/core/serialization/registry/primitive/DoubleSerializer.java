@@ -8,12 +8,12 @@ import java.lang.reflect.Field;
 class DoubleSerializer implements FieldTypeSerializer<Double> {
 
   @Override
-  public Double deserialize(ConfigDataObject data, Field field) throws Exception {
+  public Double deserialize(ConfigDataObject data, Field field) {
     return data.getAsDouble();
   }
 
   @Override
-  public SerializedObject serialize(Double value, Field field) throws Exception {
+  public SerializedObject serialize(Double value, Field field) {
     return SerializedObject.object(value);
   }
 }

@@ -13,9 +13,9 @@ import java.io.IOException;
 import java.io.PrintWriter;
 import java.util.Collections;
 import java.util.Date;
-import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 
 /** Represents configuration, utilising TOML. */
 public final class TomlConfig {
@@ -48,7 +48,7 @@ public final class TomlConfig {
    * @param tomlWriter toml writer
    */
   public static void load(Object annotatedConfig, File file, TomlWriter tomlWriter) {
-    Map<AnnotationHolder, List<AnnotationType>> map =
+    Map<AnnotationHolder, Set<AnnotationType>> map =
         AnnotatedConfigResolver.resolveAnnotations(annotatedConfig, true);
     ValueWriter valueWriter = new TomlValueWriter(tomlWriter);
     if (!file.exists()) {

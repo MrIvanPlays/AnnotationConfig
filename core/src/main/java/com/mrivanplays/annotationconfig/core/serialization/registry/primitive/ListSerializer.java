@@ -9,12 +9,12 @@ import java.util.List;
 class ListSerializer implements FieldTypeSerializer<List> {
 
   @Override
-  public List deserialize(ConfigDataObject data, Field field) throws Exception {
+  public List deserialize(ConfigDataObject data, Field field) {
     return (List) data.getRawData();
   }
 
   @Override
-  public SerializedObject serialize(List value, Field field) throws Exception {
+  public SerializedObject serialize(List value, Field field) {
     return SerializedObject.list(value);
   }
 }

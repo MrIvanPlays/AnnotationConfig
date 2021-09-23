@@ -8,12 +8,12 @@ import java.lang.reflect.Field;
 class StringSerializer implements FieldTypeSerializer<String> {
 
   @Override
-  public String deserialize(ConfigDataObject data, Field field) throws Exception {
-    return String.valueOf(data.getRawData());
+  public String deserialize(ConfigDataObject data, Field field) {
+    return data.getAsString();
   }
 
   @Override
-  public SerializedObject serialize(String value, Field field) throws Exception {
+  public SerializedObject serialize(String value, Field field) {
     return SerializedObject.object(value);
   }
 }

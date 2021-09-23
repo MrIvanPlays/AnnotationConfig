@@ -17,15 +17,14 @@ import java.lang.reflect.Field;
 public interface FieldTypeSerializer<T> {
 
   /**
-   * AnnotationConfig invokes this call-back method during deserialization when it encounters a field
-   * of the specified type.
+   * AnnotationConfig invokes this call-back method during deserialization when it encounters a
+   * field of the specified type.
    *
    * @param data the data we received from the config
    * @param field the field we will attach this information to later on
    * @return the generic value, the implementation of this interface has specified
-   * @throws Exception if something goes wrong
    */
-  T deserialize(ConfigDataObject data, Field field) throws Exception;
+  T deserialize(ConfigDataObject data, Field field);
 
   /**
    * AnnotationConfig invokes this call-back method during serialization when it encounters a field
@@ -34,7 +33,6 @@ public interface FieldTypeSerializer<T> {
    * @param value the data we need serialized
    * @param field the field we got the value from
    * @return a serialized object which is useful for dumping into a configuration file
-   * @throws Exception if something goes wrong
    */
-  SerializedObject serialize(T value, Field field) throws Exception;
+  SerializedObject serialize(T value, Field field);
 }

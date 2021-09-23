@@ -23,8 +23,11 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.TreeMap;
+import java.util.TreeSet;
 
+@SuppressWarnings({"unchecked", "rawtypes"})
 public final class AnnotatedConfigResolver {
 
   static {
@@ -33,9 +36,9 @@ public final class AnnotatedConfigResolver {
     }
   }
 
-  public static Map<AnnotationHolder, List<AnnotationType>> resolveAnnotations(
+  public static Map<AnnotationHolder, Set<AnnotationType>> resolveAnnotations(
       Object annotatedClass, boolean reverseFields) {
-    Map<AnnotationHolder, List<AnnotationType>> annotationData = new TreeMap<>();
+    Map<AnnotationHolder, Set<AnnotationType>> annotationData = new TreeMap<>();
     AnnotationHolder CLASS_ANNOTATION_HOLDER = new AnnotationHolder();
     Class<?> theClass = annotatedClass.getClass();
     for (Annotation annotation : theClass.getAnnotations()) {
@@ -61,7 +64,7 @@ public final class AnnotatedConfigResolver {
       }
       AnnotationHolder holder = new AnnotationHolder(field, order);
       if (field.getDeclaredAnnotations().length == 0) {
-        annotationData.put(holder, Collections.emptyList());
+        annotationData.put(holder, Collections.emptySet());
       } else {
         for (Annotation annotation : field.getDeclaredAnnotations()) {
           Optional<AnnotationType> typeOpt = AnnotationType.match(annotation.annotationType());
@@ -78,7 +81,7 @@ public final class AnnotatedConfigResolver {
 
   public static void dump(
       Object annotatedConfig,
-      Map<AnnotationHolder, List<AnnotationType>> map,
+      Map<AnnotationHolder, Set<AnnotationType>> map,
       File file,
       String commentChar,
       ValueWriter valueWriter,
@@ -97,7 +100,7 @@ public final class AnnotatedConfigResolver {
   private static void toWriter(
       Object annotatedConfig,
       PrintWriter writer,
-      Map<AnnotationHolder, List<AnnotationType>> map,
+      Map<AnnotationHolder, Set<AnnotationType>> map,
       String commentChar,
       ValueWriter valueWriter,
       boolean isSection,
@@ -108,7 +111,7 @@ public final class AnnotatedConfigResolver {
     if (isSection) {
       toWrite = new HashMap<>();
     }
-    for (Map.Entry<AnnotationHolder, List<AnnotationType>> entry : map.entrySet()) {
+    for (Map.Entry<AnnotationHolder, Set<AnnotationType>> entry : map.entrySet()) {
       AnnotationHolder holder = entry.getKey();
       if (holder.isClass()) {
         Class<?> theClass = annotatedConfig.getClass();
@@ -123,6 +126,10 @@ public final class AnnotatedConfigResolver {
         field.setAccessible(true);
         String keyName = field.getName();
         boolean configObject = false;
+        /*
+        List<AnnotationType> types  = entry.getValue();
+        types.sort(Enum::compareTo);
+         */
         for (AnnotationType type : entry.getValue()) {
           if (!isSection) {
             handleComments(type, field, null, commentChar, writer);
@@ -138,6 +145,8 @@ public final class AnnotatedConfigResolver {
                 throw new IllegalArgumentException(
                     "Section not initialized for field '" + field.getName() + "'");
               }
+              System.out.println("Creating section " + section);
+              System.out.println("keyName: " + keyName);
               toWriter(
                   section,
                   writer,
@@ -167,25 +176,20 @@ public final class AnnotatedConfigResolver {
           }
           if (serializerOpt.isPresent()) {
             FieldTypeSerializer serializer = serializerOpt.get();
-            try {
-              SerializedObject serialized = serializer.serialize(defaultsToValueObject, field);
-              switch (serialized.getPresentValue()) {
-                case LIST:
-                  defaultsToValueObject = serialized.getSerializedList();
-                  break;
-                case MAP:
-                  defaultsToValueObject = serialized.getSerializedMap();
-                  break;
-                case OBJECT:
-                  defaultsToValueObject = serialized.getSerializedObject();
-                  break;
-                default:
-                  throw new IllegalArgumentException(
-                      "Illegal serialized.getPresentValue() (AnnotatedConfigResolver#toWrite)");
-              }
-            } catch (Exception e) {
-              e.printStackTrace();
-              continue;
+            SerializedObject serialized = serializer.serialize(defaultsToValueObject, field);
+            switch (serialized.getPresentValue()) {
+              case LIST:
+                defaultsToValueObject = serialized.getSerializedList();
+                break;
+              case MAP:
+                defaultsToValueObject = serialized.getSerializedMap();
+                break;
+              case OBJECT:
+                defaultsToValueObject = serialized.getSerializedObject();
+                break;
+              default:
+                throw new IllegalArgumentException(
+                    "Illegal serialized.getPresentValue() (AnnotatedConfigResolver#toWrite)");
             }
           }
           if (!isSection) {
@@ -204,10 +208,165 @@ public final class AnnotatedConfigResolver {
     }
   }
 
+  private static class WriteData {
+
+    private List<String> comments;
+    private Map<String, Object> writeData;
+
+    WriteData(List<String> comments, Map<String, Object> writeData) {
+      this.comments = comments;
+      this.writeData = writeData;
+    }
+
+    public List<String> getComments() {
+      return comments;
+    }
+
+    public Map<String, Object> getWriteData() {
+      return writeData;
+    }
+  }
+
+  private static WriteData getWriteData(
+      Object baseClass,
+      Field baseField,
+      String baseKey,
+      boolean reverseFields,
+      boolean configObject)
+      throws IllegalAccessException {
+    Object value = baseField.get(baseClass);
+    if (value == null) {
+      throw new IllegalArgumentException(
+          "No default value for field '" + baseField.getName() + "'");
+    }
+    List<String> comments = new ArrayList<>();
+    Map<String, Object> writeData = new HashMap<>();
+
+    if (configObject) {
+      Map<AnnotationHolder, Set<AnnotationType>> annotationData =
+          resolveAnnotations(value, reverseFields);
+
+      for (Map.Entry<AnnotationHolder, Set<AnnotationType>> entry : annotationData.entrySet()) {
+        AnnotationHolder holder = entry.getKey();
+        if (holder.isClass()) {
+          if (entry.getValue().size() == 1) {
+            AnnotationType first = entry.getValue().stream().findFirst().orElse(null);
+            comments.addAll(getComments(first, null, value.getClass()));
+          } else if (entry.getValue().size() > 1) {
+            // very unlikely though but lets be on the safe side
+            for (AnnotationType type : entry.getValue()) {
+              List<String> typeComments = getComments(type, null, value.getClass());
+              if (!typeComments.isEmpty()) {
+                comments.addAll(typeComments);
+              }
+            }
+          }
+        } else {
+          Field field = holder.getField();
+          field.setAccessible(true);
+          String key = field.getName();
+          boolean confObject = false;
+          /*
+          List<AnnotationType> types = entry.getValue();
+          types.sort(Enum::compareTo);
+           */
+          for (AnnotationType type : entry.getValue()) {
+            if (type.is(AnnotationType.KEY)) {
+              key = field.getDeclaredAnnotation(Key.class).value();
+            }
+            if (type.is(AnnotationType.CONFIG_OBJECT)) {
+              // ah shit, here we go again
+              confObject = true;
+              try {
+                Object section = field.get(value);
+                if (section == null) {
+                  throw new IllegalArgumentException(
+                      "Section not initialized for field '" + field.getName() + "'");
+                }
+
+                WriteData data = getWriteData(value, field, key, reverseFields, true);
+                writeData.put(key, data.getWriteData());
+              } catch (IllegalAccessException e) {
+                throw new IllegalArgumentException(
+                    "Could not config object value; field became inaccessible");
+              }
+            }
+          }
+          if (confObject) {
+            continue;
+          }
+          Optional<FieldTypeSerializer<?>> serializerOpt =
+              SerializerRegistry.INSTANCE.getSerializer(field.getType());
+          Object defaultValue = field.get(value);
+          if (defaultValue == null) {
+            throw new IllegalArgumentException(
+                "No default value for field '" + field.getName() + "'");
+          }
+          if (serializerOpt.isPresent()) {
+            FieldTypeSerializer serializer = serializerOpt.get();
+            SerializedObject serialized = serializer.serialize(defaultValue, field);
+            switch (serialized.getPresentValue()) {
+              case MAP:
+                defaultValue = serialized.getSerializedMap();
+                break;
+              case LIST:
+                defaultValue = serialized.getSerializedList();
+                break;
+              case OBJECT:
+                defaultValue = serialized.getSerializedObject();
+                break;
+              default:
+                throw new IllegalArgumentException(
+                    "Illegal serialized.getPresentValue() (AnnotatedConfigResolver#getWriteData)");
+            }
+          }
+          writeData.put(key, defaultValue);
+        }
+      }
+    } else {
+      Annotation[] annos = baseField.getDeclaredAnnotations();
+      if (annos.length > 0) {
+        for (Annotation anno : annos) {
+          Optional<AnnotationType> typeOpt = AnnotationType.match(anno.annotationType());
+          if (!typeOpt.isPresent()) {
+            continue;
+          }
+          AnnotationType type = typeOpt.get();
+          List<String> annoComment = getComments(type, baseField, null);
+          if (!annoComment.isEmpty()) {
+            comments.addAll(annoComment);
+          }
+        }
+      }
+      Optional<FieldTypeSerializer<?>> serializerOpt =
+          SerializerRegistry.INSTANCE.getSerializer(baseField.getType());
+      if (serializerOpt.isPresent()) {
+        FieldTypeSerializer serializer = serializerOpt.get();
+        SerializedObject serialized = serializer.serialize(value, baseField);
+        switch (serialized.getPresentValue()) {
+          case MAP:
+            value = serialized.getSerializedMap();
+            break;
+          case LIST:
+            value = serialized.getSerializedList();
+            break;
+          case OBJECT:
+            value = serialized.getSerializedObject();
+            break;
+          default:
+            throw new IllegalArgumentException(
+                "Illegal serialized.getPresentValue() (AnnotatedConfigResolver#getWriteData)");
+        }
+      }
+      writeData.put(baseKey, value);
+    }
+    return new WriteData(comments, writeData);
+  }
+
   public static void setFields(
       Object annotatedConfig,
       Map<String, Object> values,
-      Map<AnnotationHolder, List<AnnotationType>> map,
+      Map<AnnotationHolder, Set<AnnotationType>> map,
       String commentChar,
       ValueWriter valueWriter,
       File file,
@@ -215,7 +374,7 @@ public final class AnnotatedConfigResolver {
       boolean reverseFields,
       boolean isSection,
       String sectionBaseName) {
-    for (Map.Entry<AnnotationHolder, List<AnnotationType>> entry : map.entrySet()) {
+    for (Map.Entry<AnnotationHolder, Set<AnnotationType>> entry : map.entrySet()) {
       AnnotationHolder holder = entry.getKey();
       if (holder.isClass()) {
         continue;
@@ -245,24 +404,23 @@ public final class AnnotatedConfigResolver {
       Object value = values.get(keyName);
       if (value == null) {
         if (shouldGenerateNonExistentFields) {
-          if (configObject) {
-            // config sections/objects we're not going to generate
-            continue;
-          }
           try (PrintWriter writer = new PrintWriter(new FileWriter(file, true))) {
-            for (AnnotationType type : entry.getValue()) {
-              handleComments(type, field, null, commentChar, writer);
+            WriteData writeData =
+                getWriteData(annotatedConfig, field, keyName, reverseFields, configObject);
+            for (String comment : writeData.getComments()) {
+              writer.println(commentChar + comment);
             }
-            Object def = field.get(annotatedConfig);
             if (isSection) {
               Map<String, Object> toWrite = new HashMap<>();
-              Map<String, Object> val = new HashMap<>();
-              values.put(keyName, def);
-              toWrite.put(sectionBaseName, val);
+              toWrite.put(sectionBaseName, writeData.getWriteData());
               valueWriter.write(keyName, toWrite, writer, true);
             } else {
-              writer.append('\n');
-              valueWriter.write(keyName, def, writer, false);
+              Map<String, Object> toWrite = writeData.getWriteData();
+              if (toWrite.size() == 1) {
+                valueWriter.write(keyName, toWrite.get(keyName), writer, false);
+              } else {
+                valueWriter.write(keyName, toWrite, writer, false);
+              }
             }
           } catch (IOException e) {
             throw new RuntimeException(e);
@@ -311,20 +469,32 @@ public final class AnnotatedConfigResolver {
       } catch (IllegalAccessException e) {
         throw new IllegalArgumentException(
             "Could not set a field's value ; field not accessible anymore");
-      } catch (Exception e) {
-        e.printStackTrace();
       }
     }
   }
 
-  private static void handleComments(
-      AnnotationType type, Field field, Class<?> aClass, String commentChar, PrintWriter writer) {
+  private static List<String> getComments(AnnotationType type, Field field, Class<?> aClass) {
+    if (!type.is(AnnotationType.COMMENT) && !type.is(AnnotationType.COMMENTS)) {
+      return Collections.emptyList();
+    }
+    List<String> ret = new ArrayList<>();
     if (type.is(AnnotationType.COMMENT)) {
-      writer.println(commentChar + getAnnotation(field, aClass, Comment.class).value());
+      ret.add(getAnnotation(field, aClass, Comment.class).value());
     }
     if (type.is(AnnotationType.COMMENTS)) {
       for (Comment comment : getAnnotation(field, aClass, Comments.class).value()) {
-        writer.println(commentChar + comment.value());
+        ret.add(comment.value());
+      }
+    }
+    return ret;
+  }
+
+  private static void handleComments(
+      AnnotationType type, Field field, Class<?> aClass, String commentChar, PrintWriter writer) {
+    List<String> comments = getComments(type, field, aClass);
+    if (!comments.isEmpty()) {
+      for (String comment : comments) {
+        writer.println(commentChar + comment);
       }
     }
   }
@@ -341,13 +511,13 @@ public final class AnnotatedConfigResolver {
   private static void populate(
       AnnotationHolder holder,
       AnnotationType putData,
-      Map<AnnotationHolder, List<AnnotationType>> map) {
+      Map<AnnotationHolder, Set<AnnotationType>> map) {
     if (map.containsKey(holder)) {
-      List<AnnotationType> data = map.get(holder);
+      Set<AnnotationType> data = map.get(holder);
       data.add(putData);
       map.replace(holder, data);
     } else {
-      List<AnnotationType> data = new ArrayList<>();
+      Set<AnnotationType> data = new TreeSet<>();
       data.add(putData);
       map.put(holder, data);
     }

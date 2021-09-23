@@ -12,6 +12,7 @@ import java.io.Reader;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import org.yaml.snakeyaml.Yaml;
 
 /** Represents configuration, utilising YAML */
@@ -27,7 +28,7 @@ public final class YamlConfig {
    * @param file file
    */
   public static void load(Object annotatedConfig, File file) {
-    Map<AnnotationHolder, List<AnnotationType>> map =
+    Map<AnnotationHolder, Set<AnnotationType>> map =
         AnnotatedConfigResolver.resolveAnnotations(annotatedConfig, true);
     if (!file.exists()) {
       AnnotatedConfigResolver.dump(annotatedConfig, map, file, "# ", VALUE_WRITER, true);
