@@ -234,11 +234,12 @@ public final class AnnotatedConfigResolver {
           "No default value for field '" + baseField.getName() + "'");
     }
     List<String> comments = new ArrayList<>();
-    Map<String, Object> writeData = new HashMap<>();
 
     if (configObject) {
       Map<AnnotationHolder, Set<AnnotationType>> annotationData =
           resolveAnnotations(value, reverseFields);
+
+      Map<String, Object> objectWriteData = new HashMap<>();
 
       for (Map.Entry<AnnotationHolder, Set<AnnotationType>> entry : annotationData.entrySet()) {
         AnnotationHolder holder = entry.getKey();
@@ -275,7 +276,7 @@ public final class AnnotatedConfigResolver {
                 }
 
                 WriteData data = getWriteData(value, field, key, reverseFields, true);
-                writeData.put(key, data.getWriteData());
+                objectWriteData.put(key, data.getWriteData());
               } catch (IllegalAccessException e) {
                 throw new IllegalArgumentException(
                     "Could not config object value; field became inaccessible");
@@ -310,9 +311,10 @@ public final class AnnotatedConfigResolver {
                     "Illegal serialized.getPresentValue() (AnnotatedConfigResolver#getWriteData)");
             }
           }
-          writeData.put(key, defaultValue);
+          objectWriteData.put(key, defaultValue);
         }
       }
+      return new WriteData(comments, Collections.singletonMap(baseKey, objectWriteData));
     } else {
       Annotation[] annos = baseField.getDeclaredAnnotations();
       if (annos.length > 0) {
@@ -348,9 +350,8 @@ public final class AnnotatedConfigResolver {
                 "Illegal serialized.getPresentValue() (AnnotatedConfigResolver#getWriteData)");
         }
       }
-      writeData.put(baseKey, value);
+      return new WriteData(comments, Collections.singletonMap(baseKey, value));
     }
-    return new WriteData(comments, writeData);
   }
 
   public static void setFields(
@@ -406,11 +407,7 @@ public final class AnnotatedConfigResolver {
               valueWriter.write(keyName, toWrite, writer, true);
             } else {
               Map<String, Object> toWrite = writeData.getWriteData();
-              if (toWrite.size() == 1) {
-                valueWriter.write(keyName, toWrite.get(keyName), writer, false);
-              } else {
-                valueWriter.write(keyName, toWrite, writer, false);
-              }
+              valueWriter.write(keyName, toWrite.get(keyName), writer, false);
             }
           } catch (IOException e) {
             throw new RuntimeException(e);
