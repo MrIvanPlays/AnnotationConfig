@@ -2,6 +2,8 @@ package com.mrivanplays.annotationconfig.core.internal;
 
 import com.mrivanplays.annotationconfig.core.ValueWriter;
 import com.mrivanplays.annotationconfig.core.annotations.Key;
+import com.mrivanplays.annotationconfig.core.annotations.Max;
+import com.mrivanplays.annotationconfig.core.annotations.Min;
 import com.mrivanplays.annotationconfig.core.annotations.comment.Comment;
 import com.mrivanplays.annotationconfig.core.annotations.comment.Comments;
 import com.mrivanplays.annotationconfig.core.annotations.type.AnnotationType;
@@ -394,9 +396,17 @@ public final class AnnotatedConfigResolver {
       String keyName = field.getName();
       boolean configObject = false;
       Object section = null;
+      Number min = MinMaxHandler.START;
+      Number max = MinMaxHandler.START;
       for (AnnotationType type : entry.getValue()) {
         if (type.is(AnnotationType.KEY)) {
           keyName = field.getDeclaredAnnotation(Key.class).value();
+        }
+        if (type.is(AnnotationType.MIN)) {
+          min = MinMaxHandler.getNumber(field.getDeclaredAnnotation(Min.class));
+        }
+        if (type.is(AnnotationType.MAX)) {
+          max = MinMaxHandler.getNumber(field.getDeclaredAnnotation(Max.class));
         }
         if (type.is(AnnotationType.CONFIG_OBJECT)) {
           configObject = true;
@@ -470,11 +480,91 @@ public final class AnnotatedConfigResolver {
                 + fieldType.getSimpleName());
       }
       FieldTypeSerializer<?> serializer = serializerOpt.get();
+      Object deserialized = serializer.deserialize(new ConfigDataObject(value), field);
+      if (deserialized instanceof Number) {
+        Number comparable = (Number) deserialized;
+        byte comparison = MinMaxHandler.compare(min, max, comparable);
+        handleComparison(comparison, comparable, fieldType, min, max, Number.class);
+      }
+      if (deserialized instanceof String) {
+        String comparable = (String) deserialized;
+        byte comparison = MinMaxHandler.compare(min, max, comparable);
+        handleComparison(comparison, comparable.length(), fieldType, min, max, String.class);
+      }
       try {
-        field.set(annotatedConfig, serializer.deserialize(new ConfigDataObject(value), field));
+        field.set(annotatedConfig, deserialized);
       } catch (IllegalAccessException e) {
         throw new IllegalArgumentException(
             "Could not set a field's value ; field not accessible anymore");
+      }
+    }
+  }
+
+  private static void handleComparison(
+      byte comparison,
+      Number compared,
+      Class<?> fieldType,
+      Number min,
+      Number max,
+      Class<?> comparedType) {
+    if (comparison != MinMaxHandler.ALRIGHT) {
+      if (comparison == MinMaxHandler.INVALID_MIN) {
+        throw new IllegalArgumentException(
+            fieldType.getName()
+                + " ; invalid @Min specified - it should implement annotation member ( e.g @Min(minInt = -22) )");
+      }
+      if (comparison == MinMaxHandler.MORE_THAN_ONE_MIN) {
+        throw new IllegalArgumentException(
+            fieldType.getName()
+                + " ; invalid @Min specified - it should implement only one annotation member");
+      }
+      if (comparison == MinMaxHandler.INVALID_MAX) {
+        throw new IllegalArgumentException(
+            fieldType.getName()
+                + " ; invalid @Max specified - it should implement annotation member ( e.g. @Max(maxInt = 3) )");
+      }
+      if (comparison == MinMaxHandler.MORE_THAN_ONE_MAX) {
+        throw new IllegalArgumentException(
+            fieldType.getName()
+                + " ; invalid @Max specified - it should implement only one annotation member");
+      }
+      if (comparison == MinMaxHandler.UNDER_THE_MIN) {
+        String message;
+        if (comparedType.isAssignableFrom(String.class)) {
+          message =
+              fieldType.getName()
+                  + " ; deserialized String's length is under the minimal length allowed ("
+                  + min
+                  + ") ; string length: "
+                  + compared;
+        } else {
+          message =
+              fieldType.getName()
+                  + " ; deserialized value is under the minimal allowed ("
+                  + min
+                  + ") ; number: "
+                  + compared;
+        }
+        throw new IllegalArgumentException(message);
+      }
+      if (comparison == MinMaxHandler.ABOVE_THE_MAX) {
+        String message;
+        if (comparedType.isAssignableFrom(String.class)) {
+          message =
+              fieldType.getName()
+                  + " ; deserialized String's length is above the maximum length allowed ("
+                  + max
+                  + ") ; string length: "
+                  + compared;
+        } else {
+          message =
+              fieldType.getName()
+                  + " ; deserialized value is above the maximum allowed ("
+                  + max
+                  + ") ; number: "
+                  + compared;
+        }
+        throw new IllegalArgumentException(message);
       }
     }
   }

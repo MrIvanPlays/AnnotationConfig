@@ -77,4 +77,31 @@ public final class ConfigDataObject {
   public float getAsFloat() {
     return Float.parseFloat(getAsString());
   }
+
+  /**
+   * Returns the data we received as a {@link Long}
+   *
+   * @return data, represented as long
+   */
+  public long getAsLong() {
+    return Long.parseLong(getAsString());
+  }
+
+  /**
+   * Returns the data we received as a {@link Character}
+   *
+   * @return data, represented as character
+   */
+  public char getAsChar() {
+    return (char) getRawData();
+  }
+
+  /**
+   * Returns the data we received as a {@link Short}
+   *
+   * @return data, represented as short
+   */
+  public short getAsShort() {
+    return Short.parseShort(getAsString());
+  }
 }

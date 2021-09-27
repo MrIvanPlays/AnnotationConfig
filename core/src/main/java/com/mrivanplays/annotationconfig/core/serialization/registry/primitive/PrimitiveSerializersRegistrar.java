@@ -36,6 +36,18 @@ public final class PrimitiveSerializersRegistrar {
     registry.registerSerializer(byte.class, bite);
     registry.registerSerializer(Byte.class, bite);
 
+    CharSerializer character = new CharSerializer();
+    registry.registerSerializer(char.class, character);
+    registry.registerSerializer(Character.class, character);
+
+    LongSerializer tailong = new LongSerializer();
+    registry.registerSerializer(long.class, tailong);
+    registry.registerSerializer(Long.class, tailong);
+
+    ShortSerializer taishort = new ShortSerializer();
+    registry.registerSerializer(short.class, taishort);
+    registry.registerSerializer(Short.class, taishort);
+
     registry.registerSerializer(List.class, new ListSerializer());
     registry.registerSerializer(Map.class, new MapSerializer());
 

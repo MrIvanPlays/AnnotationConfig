@@ -3,6 +3,8 @@ package com.mrivanplays.annotationconfig.core.annotations.type;
 import com.mrivanplays.annotationconfig.core.annotations.ConfigObject;
 import com.mrivanplays.annotationconfig.core.annotations.Ignore;
 import com.mrivanplays.annotationconfig.core.annotations.Key;
+import com.mrivanplays.annotationconfig.core.annotations.Max;
+import com.mrivanplays.annotationconfig.core.annotations.Min;
 import com.mrivanplays.annotationconfig.core.annotations.comment.Comment;
 import com.mrivanplays.annotationconfig.core.annotations.comment.Comments;
 import java.lang.annotation.Annotation;
@@ -20,7 +22,9 @@ public enum AnnotationType {
   COMMENTS(Comments.class),
   KEY(Key.class),
   CONFIG_OBJECT(ConfigObject.class),
-  IGNORE(Ignore.class);
+  IGNORE(Ignore.class),
+  MAX(Max.class),
+  MIN(Min.class);
 
   private final Class<? extends Annotation> annotationType;
 

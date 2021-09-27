@@ -6,7 +6,6 @@ import com.mrivanplays.annotationconfig.core.ValueWriter;
 import com.mrivanplays.annotationconfig.core.annotations.type.AnnotationType;
 import com.mrivanplays.annotationconfig.core.internal.AnnotatedConfigResolver;
 import com.mrivanplays.annotationconfig.core.internal.AnnotationHolder;
-import com.mrivanplays.annotationconfig.core.serialization.FieldTypeSerializer;
 import com.mrivanplays.annotationconfig.core.serialization.registry.SerializerRegistry;
 import java.io.File;
 import java.io.IOException;
@@ -14,7 +13,6 @@ import java.io.PrintWriter;
 import java.util.Collections;
 import java.util.Date;
 import java.util.Map;
-import java.util.Optional;
 import java.util.Set;
 
 /** Represents configuration, utilising TOML. */
@@ -24,8 +22,7 @@ public final class TomlConfig {
 
   static {
     SerializerRegistry registry = SerializerRegistry.INSTANCE;
-    Optional<FieldTypeSerializer<?>> serializerOpt = registry.getSerializer(Date.class);
-    if (!serializerOpt.isPresent()) {
+    if (!registry.hasSerializer(Date.class)) {
       registry.registerSerializer(Date.class, new DateResolver());
     }
   }

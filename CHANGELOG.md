@@ -74,6 +74,10 @@ public class LocationSerializer implements FieldTypeSerializer<Location> {
 SerializerRegistry.INSTANCE.registerSerializer(Location.class, new LocationSerializer());
 ```
 
+### New Annotations
+There are two new annotations - `@Min` and `@Max` . They can be applied on `String` values and numbers.
+If applied on a number, they will validate the number ; if on a `String`, they will validate the string's length.
+
 ### Misc changes
 
 Here are the changes that don't need too much attention, but are still important.
