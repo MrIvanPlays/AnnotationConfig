@@ -2,60 +2,94 @@ package com.mrivanplays.annotationconfig.core.internal;
 
 import com.mrivanplays.annotationconfig.core.annotations.Max;
 import com.mrivanplays.annotationconfig.core.annotations.Min;
+import java.util.Optional;
 
 class MinMaxHandler {
 
-  static byte START = (byte) 0xBB433C;
-  static byte INVALID_MIN = (byte) 0xAA233A;
-  static byte INVALID_MAX = (byte) 0xBBBB686A;
-  static byte MORE_THAN_ONE_MIN = (byte) 0xAA3334AA;
-  static byte MORE_THAN_ONE_MAX = (byte) 0xAA3334AA;
-  static byte UNDER_THE_MIN = (byte) 0xCC87BF;
-  static byte ABOVE_THE_MAX = (byte) 0xDD997EE;
-  static byte ALRIGHT = (byte) 0xEE5546FF;
+  enum State {
+    START,
+    INVALID_MIN,
+    INVALID_MAX,
+    MORE_THAN_ONE_MIN,
+    MORE_THAN_ONE_MAX,
+    UNDER,
+    ABOVE,
+    ALRIGHT
+  }
 
-  static byte compare(Number min, Number max, String compareTo) {
+  static class NumberResult {
+
+    static NumberResult stateOnly(State state) {
+      return result(state, Optional.empty());
+    }
+
+    static NumberResult result(State state, Optional<Number> number) {
+      return new NumberResult(state, number);
+    }
+
+    private final State state;
+    private final Optional<Number> number;
+
+    private NumberResult(State state, Optional<Number> number) {
+      this.state = state;
+      this.number = number;
+    }
+
+    public boolean isStateOnly() {
+      return !number.isPresent();
+    }
+
+    public State getState() {
+      return state;
+    }
+
+    public Optional<Number> getNumber() {
+      return number;
+    }
+  }
+
+  static State compare(NumberResult min, NumberResult max, String compareTo) {
     return compare(min, max, compareTo.length());
   }
 
-  static byte compare(Number min, Number max, Number compareTo) {
-    if (min.byteValue() == INVALID_MIN) {
-      return INVALID_MIN;
+  static State compare(NumberResult minResult, NumberResult maxResult, Number compareTo) {
+    State minState = minResult.getState();
+    State maxState = maxResult.getState();
+    if (minResult.isStateOnly() && minState != State.START) {
+      return minResult.getState();
     }
-    if (min.byteValue() == MORE_THAN_ONE_MIN) {
-      return MORE_THAN_ONE_MIN;
+    if (maxResult.isStateOnly() && maxState != State.START) {
+      return maxResult.getState();
     }
-    if (max.byteValue() == INVALID_MAX) {
-      return INVALID_MAX;
-    }
-    if (max.byteValue() == MORE_THAN_ONE_MAX) {
-      return MORE_THAN_ONE_MAX;
-    }
-    if (min.byteValue() != START && max.byteValue() != START) {
+    if (minState != State.START && maxState != State.START) {
+      Number min = minResult.getNumber().get();
+      Number max = maxResult.getNumber().get();
       if (compareTo.intValue() < min.intValue()) {
-        return UNDER_THE_MIN;
+        return State.UNDER;
       }
       if (compareTo.intValue() > max.intValue()) {
-        return ABOVE_THE_MAX;
+        return State.ABOVE;
       }
-      return ALRIGHT;
+      return State.ALRIGHT;
     }
-    if (min.byteValue() != START) {
+    if (minState != State.START) {
+      Number min = minResult.getNumber().get();
       if (compareTo.intValue() < min.intValue()) {
-        return UNDER_THE_MIN;
+        return State.UNDER;
       }
     }
-    if (max.byteValue() != START) {
+    if (maxState != State.START) {
+      Number max = maxResult.getNumber().get();
       if (compareTo.intValue() > max.intValue()) {
-        return ABOVE_THE_MAX;
+        return State.ABOVE;
       }
     }
-    return ALRIGHT;
+    return State.ALRIGHT;
   }
 
-  static Number getNumber(Min min) {
+  static NumberResult getNumber(Min min) {
     if (!isValid(min)) {
-      return INVALID_MIN;
+      return NumberResult.stateOnly(State.INVALID_MIN);
     }
     if (min.minByte() != -1) {
       if (min.minLong() != -1
@@ -63,43 +97,43 @@ class MinMaxHandler {
           || min.minShort() != -1
           || min.minInt() != -1
           || min.minDouble() != -1) {
-        return MORE_THAN_ONE_MIN;
+        return NumberResult.stateOnly(State.MORE_THAN_ONE_MIN);
       }
-      return min.minByte();
+      return NumberResult.result(State.ALRIGHT, Optional.of(min.minByte()));
     }
     if (min.minLong() != -1) {
       if (min.minFloat() != -1
           || min.minShort() != -1
           || min.minInt() != -1
           || min.minDouble() != -1) {
-        return MORE_THAN_ONE_MIN;
+        return NumberResult.stateOnly(State.MORE_THAN_ONE_MIN);
       }
-      return min.minLong();
+      return NumberResult.result(State.ALRIGHT, Optional.of(min.minLong()));
     }
     if (min.minFloat() != -1) {
       if (min.minShort() != -1 || min.minInt() != -1 || min.minDouble() != -1) {
-        return MORE_THAN_ONE_MIN;
+        return NumberResult.stateOnly(State.MORE_THAN_ONE_MIN);
       }
-      return min.minFloat();
+      return NumberResult.result(State.ALRIGHT, Optional.of(min.minFloat()));
     }
     if (min.minShort() != -1) {
       if (min.minInt() != -1 || min.minDouble() != -1) {
-        return MORE_THAN_ONE_MIN;
+        return NumberResult.stateOnly(State.MORE_THAN_ONE_MIN);
       }
-      return min.minShort();
+      return NumberResult.result(State.ALRIGHT, Optional.of(min.minShort()));
     }
     if (min.minInt() != -1) {
       if (min.minDouble() != -1) {
-        return MORE_THAN_ONE_MIN;
+        return NumberResult.stateOnly(State.MORE_THAN_ONE_MIN);
       }
-      return min.minInt();
+      return NumberResult.result(State.ALRIGHT, Optional.of(min.minInt()));
     }
-    return min.minDouble();
+    return NumberResult.result(State.ALRIGHT, Optional.of(min.minDouble()));
   }
 
-  static Number getNumber(Max max) {
+  static NumberResult getNumber(Max max) {
     if (!isValid(max)) {
-      return INVALID_MAX;
+      return NumberResult.stateOnly(State.INVALID_MAX);
     }
     if (max.maxByte() != -1) {
       if (max.maxLong() != -1
@@ -107,38 +141,38 @@ class MinMaxHandler {
           || max.maxShort() != -1
           || max.maxInt() != -1
           || max.maxDouble() != -1) {
-        return MORE_THAN_ONE_MAX;
+        return NumberResult.stateOnly(State.MORE_THAN_ONE_MAX);
       }
-      return max.maxByte();
+      return NumberResult.result(State.ALRIGHT, Optional.of(max.maxByte()));
     }
     if (max.maxLong() != -1) {
       if (max.maxFloat() != -1
           || max.maxShort() != -1
           || max.maxInt() != -1
           || max.maxDouble() != -1) {
-        return MORE_THAN_ONE_MAX;
+        return NumberResult.stateOnly(State.MORE_THAN_ONE_MAX);
       }
-      return max.maxLong();
+      return NumberResult.result(State.ALRIGHT, Optional.of(max.maxLong()));
     }
     if (max.maxFloat() != -1) {
       if (max.maxShort() != -1 || max.maxInt() != -1 || max.maxDouble() != -1) {
-        return MORE_THAN_ONE_MAX;
+        return NumberResult.stateOnly(State.MORE_THAN_ONE_MAX);
       }
-      return max.maxFloat();
+      return NumberResult.result(State.ALRIGHT, Optional.of(max.maxFloat()));
     }
     if (max.maxShort() != -1) {
       if (max.maxInt() != -1 || max.maxDouble() != -1) {
-        return MORE_THAN_ONE_MAX;
+        return NumberResult.stateOnly(State.MORE_THAN_ONE_MAX);
       }
-      return max.maxShort();
+      return NumberResult.result(State.ALRIGHT, Optional.of(max.maxShort()));
     }
     if (max.maxInt() != -1) {
       if (max.maxDouble() != -1) {
-        return MORE_THAN_ONE_MAX;
+        return NumberResult.stateOnly(State.MORE_THAN_ONE_MAX);
       }
-      return max.maxInt();
+      return NumberResult.result(State.ALRIGHT, Optional.of(max.maxInt()));
     }
-    return max.maxDouble();
+    return NumberResult.result(State.ALRIGHT, Optional.of(max.maxDouble()));
   }
 
   private static boolean isValid(Min min) {

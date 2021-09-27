@@ -7,6 +7,8 @@ import com.mrivanplays.annotationconfig.core.annotations.Min;
 import com.mrivanplays.annotationconfig.core.annotations.comment.Comment;
 import com.mrivanplays.annotationconfig.core.annotations.comment.Comments;
 import com.mrivanplays.annotationconfig.core.annotations.type.AnnotationType;
+import com.mrivanplays.annotationconfig.core.internal.MinMaxHandler.NumberResult;
+import com.mrivanplays.annotationconfig.core.internal.MinMaxHandler.State;
 import com.mrivanplays.annotationconfig.core.serialization.ConfigDataObject;
 import com.mrivanplays.annotationconfig.core.serialization.FieldTypeSerializer;
 import com.mrivanplays.annotationconfig.core.serialization.SerializedObject;
@@ -293,38 +295,12 @@ public final class AnnotatedConfigResolver {
           if (confObject) {
             continue;
           }
-          Optional<FieldTypeSerializer<?>> serializerOpt =
-              SerializerRegistry.INSTANCE.getSerializer(field.getType());
           Object defaultValue = field.get(value);
           if (defaultValue == null) {
             throw new IllegalArgumentException(
                 "No default value for field '" + field.getName() + "'");
           }
-          if (serializerOpt.isPresent()) {
-            FieldTypeSerializer serializer = serializerOpt.get();
-            SerializedObject serialized = serializer.serialize(defaultValue, field);
-            if (serialized == null) {
-              throw new NullPointerException(
-                  "Expected SerializedObject, got null ; Field: "
-                      + field.getName()
-                      + " ; Field type: "
-                      + field.getType().getName());
-            }
-            switch (serialized.getPresentValue()) {
-              case MAP:
-                defaultValue = serialized.getSerializedMap();
-                break;
-              case LIST:
-                defaultValue = serialized.getSerializedList();
-                break;
-              case OBJECT:
-                defaultValue = serialized.getSerializedObject();
-                break;
-              default:
-                throw new IllegalArgumentException(
-                    "Illegal serialized.getPresentValue() (AnnotatedConfigResolver#getWriteData)");
-            }
-          }
+          defaultValue = getWriteDataValue(field, defaultValue);
           objectWriteData.put(key, defaultValue);
         }
       }
@@ -344,35 +320,40 @@ public final class AnnotatedConfigResolver {
           }
         }
       }
-      Optional<FieldTypeSerializer<?>> serializerOpt =
-          SerializerRegistry.INSTANCE.getSerializer(baseField.getType());
-      if (serializerOpt.isPresent()) {
-        FieldTypeSerializer serializer = serializerOpt.get();
-        SerializedObject serialized = serializer.serialize(value, baseField);
-        if (serialized == null) {
-          throw new NullPointerException(
-              "Expected SerializedObject, got null ; Field: "
-                  + baseField.getName()
-                  + " ; Field type: "
-                  + baseField.getType().getName());
-        }
-        switch (serialized.getPresentValue()) {
-          case MAP:
-            value = serialized.getSerializedMap();
-            break;
-          case LIST:
-            value = serialized.getSerializedList();
-            break;
-          case OBJECT:
-            value = serialized.getSerializedObject();
-            break;
-          default:
-            throw new IllegalArgumentException(
-                "Illegal serialized.getPresentValue() (AnnotatedConfigResolver#getWriteData)");
-        }
-      }
+      value = getWriteDataValue(baseField, value);
       return new WriteData(comments, Collections.singletonMap(baseKey, value));
     }
+  }
+
+  private static Object getWriteDataValue(Field baseField, Object value) {
+    Optional<FieldTypeSerializer<?>> serializerOpt =
+        SerializerRegistry.INSTANCE.getSerializer(baseField.getType());
+    if (serializerOpt.isPresent()) {
+      FieldTypeSerializer serializer = serializerOpt.get();
+      SerializedObject serialized = serializer.serialize(value, baseField);
+      if (serialized == null) {
+        throw new NullPointerException(
+            "Expected SerializedObject, got null ; Field: "
+                + baseField.getName()
+                + " ; Field type: "
+                + baseField.getType().getName());
+      }
+      switch (serialized.getPresentValue()) {
+        case MAP:
+          value = serialized.getSerializedMap();
+          break;
+        case LIST:
+          value = serialized.getSerializedList();
+          break;
+        case OBJECT:
+          value = serialized.getSerializedObject();
+          break;
+        default:
+          throw new IllegalArgumentException(
+              "Illegal serialized.getPresentValue() (AnnotatedConfigResolver#getWriteData)");
+      }
+    }
+    return value;
   }
 
   public static void setFields(
@@ -396,8 +377,8 @@ public final class AnnotatedConfigResolver {
       String keyName = field.getName();
       boolean configObject = false;
       Object section = null;
-      Number min = MinMaxHandler.START;
-      Number max = MinMaxHandler.START;
+      NumberResult min = NumberResult.stateOnly(State.START);
+      NumberResult max = NumberResult.stateOnly(State.START);
       for (AnnotationType type : entry.getValue()) {
         if (type.is(AnnotationType.KEY)) {
           keyName = field.getDeclaredAnnotation(Key.class).value();
@@ -483,13 +464,19 @@ public final class AnnotatedConfigResolver {
       Object deserialized = serializer.deserialize(new ConfigDataObject(value), field);
       if (deserialized instanceof Number) {
         Number comparable = (Number) deserialized;
-        byte comparison = MinMaxHandler.compare(min, max, comparable);
+        State comparison = MinMaxHandler.compare(min, max, comparable);
         handleComparison(comparison, comparable, fieldType, min, max, Number.class);
-      }
-      if (deserialized instanceof String) {
+      } else if (deserialized instanceof String) {
         String comparable = (String) deserialized;
-        byte comparison = MinMaxHandler.compare(min, max, comparable);
+        State comparison = MinMaxHandler.compare(min, max, comparable);
         handleComparison(comparison, comparable.length(), fieldType, min, max, String.class);
+      } else {
+        if (min.getState() != State.START) {
+          throw new IllegalArgumentException("@Min annotation placed on invalid field type");
+        }
+        if (max.getState() != State.START) {
+          throw new IllegalArgumentException("@Max annotation placed on invalid field type");
+        }
       }
       try {
         field.set(annotatedConfig, deserialized);
@@ -501,34 +488,35 @@ public final class AnnotatedConfigResolver {
   }
 
   private static void handleComparison(
-      byte comparison,
+      State comparison,
       Number compared,
       Class<?> fieldType,
-      Number min,
-      Number max,
+      NumberResult minResult,
+      NumberResult maxResult,
       Class<?> comparedType) {
-    if (comparison != MinMaxHandler.ALRIGHT) {
-      if (comparison == MinMaxHandler.INVALID_MIN) {
+    if (comparison != State.ALRIGHT) {
+      if (comparison == State.INVALID_MIN) {
         throw new IllegalArgumentException(
             fieldType.getName()
                 + " ; invalid @Min specified - it should implement annotation member ( e.g @Min(minInt = -22) )");
       }
-      if (comparison == MinMaxHandler.MORE_THAN_ONE_MIN) {
+      if (comparison == State.MORE_THAN_ONE_MIN) {
         throw new IllegalArgumentException(
             fieldType.getName()
                 + " ; invalid @Min specified - it should implement only one annotation member");
       }
-      if (comparison == MinMaxHandler.INVALID_MAX) {
+      if (comparison == State.INVALID_MAX) {
         throw new IllegalArgumentException(
             fieldType.getName()
                 + " ; invalid @Max specified - it should implement annotation member ( e.g. @Max(maxInt = 3) )");
       }
-      if (comparison == MinMaxHandler.MORE_THAN_ONE_MAX) {
+      if (comparison == State.MORE_THAN_ONE_MAX) {
         throw new IllegalArgumentException(
             fieldType.getName()
                 + " ; invalid @Max specified - it should implement only one annotation member");
       }
-      if (comparison == MinMaxHandler.UNDER_THE_MIN) {
+      if (comparison == State.UNDER) {
+        Number min = minResult.getNumber().get();
         String message;
         if (comparedType.isAssignableFrom(String.class)) {
           message =
@@ -547,7 +535,8 @@ public final class AnnotatedConfigResolver {
         }
         throw new IllegalArgumentException(message);
       }
-      if (comparison == MinMaxHandler.ABOVE_THE_MAX) {
+      if (comparison == State.ABOVE) {
+        Number max = maxResult.getNumber().get();
         String message;
         if (comparedType.isAssignableFrom(String.class)) {
           message =

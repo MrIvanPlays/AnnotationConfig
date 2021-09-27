@@ -6,16 +6,24 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
+/**
+ * Annotation, representing a minimal string length or a minimal int/double/byte/float/short/long
+ * value.
+ */
 @Documented
 @Retention(RetentionPolicy.RUNTIME)
 @Target(ElementType.FIELD)
 public @interface Min {
 
   int minInt() default -1;
-  double minDouble() default -1;
-  byte minByte() default -1;
-  float minFloat() default -1;
-  short minShort() default -1;
-  long minLong() default -1;
 
+  double minDouble() default -1;
+
+  byte minByte() default -1;
+
+  float minFloat() default -1;
+
+  short minShort() default -1;
+
+  long minLong() default -1;
 }
