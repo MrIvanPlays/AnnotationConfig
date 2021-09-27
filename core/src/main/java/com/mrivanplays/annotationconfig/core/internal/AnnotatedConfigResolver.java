@@ -169,6 +169,13 @@ public final class AnnotatedConfigResolver {
           if (serializerOpt.isPresent()) {
             FieldTypeSerializer serializer = serializerOpt.get();
             SerializedObject serialized = serializer.serialize(defaultsToValueObject, field);
+            if (serialized == null) {
+              throw new NullPointerException(
+                  "Expected SerializedObject, got null ; Field: "
+                      + field.getName()
+                      + " ; Field type: "
+                      + field.getType().getName());
+            }
             switch (serialized.getPresentValue()) {
               case LIST:
                 defaultsToValueObject = serialized.getSerializedList();
@@ -294,6 +301,13 @@ public final class AnnotatedConfigResolver {
           if (serializerOpt.isPresent()) {
             FieldTypeSerializer serializer = serializerOpt.get();
             SerializedObject serialized = serializer.serialize(defaultValue, field);
+            if (serialized == null) {
+              throw new NullPointerException(
+                  "Expected SerializedObject, got null ; Field: "
+                      + field.getName()
+                      + " ; Field type: "
+                      + field.getType().getName());
+            }
             switch (serialized.getPresentValue()) {
               case MAP:
                 defaultValue = serialized.getSerializedMap();
@@ -333,6 +347,13 @@ public final class AnnotatedConfigResolver {
       if (serializerOpt.isPresent()) {
         FieldTypeSerializer serializer = serializerOpt.get();
         SerializedObject serialized = serializer.serialize(value, baseField);
+        if (serialized == null) {
+          throw new NullPointerException(
+              "Expected SerializedObject, got null ; Field: "
+                  + baseField.getName()
+                  + " ; Field type: "
+                  + baseField.getType().getName());
+        }
         switch (serialized.getPresentValue()) {
           case MAP:
             value = serialized.getSerializedMap();
