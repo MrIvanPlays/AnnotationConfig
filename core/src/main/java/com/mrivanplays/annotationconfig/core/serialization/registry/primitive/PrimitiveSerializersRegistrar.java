@@ -8,11 +8,10 @@ public final class PrimitiveSerializersRegistrar {
 
   private static boolean registered = false;
 
-  public static boolean hasRegistered() {
-    return registered;
-  }
-
   public static void register() {
+    if (registered) {
+      return;
+    }
     SerializerRegistry registry = SerializerRegistry.INSTANCE;
 
     registry.registerSerializer(String.class, new StringSerializer());

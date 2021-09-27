@@ -14,8 +14,10 @@ public class TestYAML {
   @Before
   public void initialize() {
     file = new File("non-existing.yml");
-    SerializerRegistry.INSTANCE.registerSerializer(
-        LocationNoConfigObject.class, new LocationNoConfigObjectSerializer());
+    if (!SerializerRegistry.INSTANCE.hasSerializer(LocationNoConfigObject.class)) {
+      SerializerRegistry.INSTANCE.registerSerializer(
+          LocationNoConfigObject.class, new LocationNoConfigObjectSerializer());
+    }
   }
 
   @After

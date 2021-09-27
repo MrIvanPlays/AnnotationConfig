@@ -16,7 +16,9 @@ public class TestProperties {
   @Before
   public void initialize() {
     file = new File("non-existing.properties");
-    SerializerRegistry.INSTANCE.registerSerializer(MessageType.class, new MessageTypeResolver());
+    if (!SerializerRegistry.INSTANCE.hasSerializer(MessageType.class)) {
+      SerializerRegistry.INSTANCE.registerSerializer(MessageType.class, new MessageTypeResolver());
+    }
   }
 
   @After

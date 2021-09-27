@@ -15,13 +15,12 @@ import java.util.function.BiFunction;
  * @since 2.0.0
  * @author MrIvanPlays
  */
-public final class SerializerRegistry {
-
-  public static final SerializerRegistry INSTANCE = new SerializerRegistry();
+public enum SerializerRegistry {
+  INSTANCE;
 
   private Map<Class<?>, FieldTypeSerializer<?>> serializers;
 
-  private SerializerRegistry() {
+  SerializerRegistry() {
     this.serializers = new ConcurrentHashMap<>();
   }
 
@@ -31,9 +30,14 @@ public final class SerializerRegistry {
    * @param serializedType the field type that should be serialized
    * @param typeSerializer the serialized of the serializedType
    * @param <T> generic
+   * @throws IllegalArgumentException if a serializer for this type has been already registered
    */
   public <T> void registerSerializer(
       Class<T> serializedType, FieldTypeSerializer<T> typeSerializer) {
+    if (this.serializers.containsKey(serializedType)) {
+      throw new IllegalArgumentException(
+          "Serializer for " + serializedType.getName() + " already registered");
+    }
     this.serializers.put(serializedType, typeSerializer);
   }
 
@@ -62,6 +66,32 @@ public final class SerializerRegistry {
             return serialize.apply(value, field);
           }
         });
+  }
+
+  /**
+   * Unregisters the serializer of the specified serialized type
+   *
+   * @param serializedType the serialized type you want the serializer of unregistered
+   * @throws IllegalArgumentException if there isn't a serializer for the type specified
+   */
+  public void unregisterSerializer(Class<?> serializedType) {
+    if (!this.serializers.containsKey(serializedType)) {
+      throw new IllegalArgumentException(
+          "Cannot unregister "
+              + serializedType.getName()
+              + " because a serializer hasn't been registered.");
+    }
+    this.serializers.remove(serializedType);
+  }
+
+  /**
+   * Returns whether the specified type has a serializer registered.
+   *
+   * @param serializedType the serialized type you want to check
+   * @return a boolean value
+   */
+  public boolean hasSerializer(Class<?> serializedType) {
+    return this.serializers.containsKey(serializedType);
   }
 
   /**

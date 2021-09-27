@@ -31,9 +31,7 @@ import java.util.TreeSet;
 public final class AnnotatedConfigResolver {
 
   static {
-    if (!PrimitiveSerializersRegistrar.hasRegistered()) {
-      PrimitiveSerializersRegistrar.register();
-    }
+    PrimitiveSerializersRegistrar.register();
   }
 
   public static Map<AnnotationHolder, Set<AnnotationType>> resolveAnnotations(
