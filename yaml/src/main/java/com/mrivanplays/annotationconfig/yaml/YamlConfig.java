@@ -1,50 +1,75 @@
 package com.mrivanplays.annotationconfig.yaml;
 
+import com.mrivanplays.annotationconfig.core.ConfigResolver;
 import com.mrivanplays.annotationconfig.core.ValueWriter;
-import com.mrivanplays.annotationconfig.core.annotations.type.AnnotationType;
-import com.mrivanplays.annotationconfig.core.internal.AnnotatedConfigResolver;
-import com.mrivanplays.annotationconfig.core.internal.AnnotationHolder;
 import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.io.Reader;
+import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import org.yaml.snakeyaml.Yaml;
 
-/** Represents configuration, utilising YAML */
+/**
+ * Represents configuration, utilising YAML
+ *
+ * @since 1.0
+ * @author MrIvanPlays
+ */
 public final class YamlConfig {
 
   private static final Yaml YAML = new Yaml();
   private static final ValueWriter VALUE_WRITER = new YamlValueWriter();
+
+  private static ConfigResolver configResolver;
+
+  /**
+   * Returns the {@link ConfigResolver} instance of YamlConfig
+   *
+   * @return config resolver
+   */
+  public static ConfigResolver getConfigResolver() {
+    if (configResolver == null) {
+      generateConfigResolver();
+    }
+    return configResolver;
+  }
+
+  private static void generateConfigResolver() {
+    configResolver =
+        ConfigResolver.newBuilder()
+            .withValueWriter(VALUE_WRITER)
+            .shouldReverseFields(true)
+            .withCommentPrefix("# ")
+            .withValueReader(
+                file -> {
+                  try (Reader reader = new FileReader(file)) {
+                    Map<String, Object> values = YAML.loadAs(reader, LinkedHashMap.class);
+                    if (values == null) {
+                      return Collections.emptyMap();
+                    }
+                    return values;
+                  } catch (IOException e) {
+                    throw new RuntimeException(e);
+                  }
+                })
+            .build();
+  }
 
   /**
    * Loads the config object from the file. If the file does not exist, it creates one.
    *
    * @param annotatedConfig annotated config
    * @param file file
+   * @deprecated use {@link #getConfigResolver()}. it has a much better description of methods. the
+   *     equivalent of this method there is {@link ConfigResolver#loadOrDump(Object, File, boolean)}
    */
+  @Deprecated
   public static void load(Object annotatedConfig, File file) {
-    Map<AnnotationHolder, Set<AnnotationType>> map =
-        AnnotatedConfigResolver.resolveAnnotations(annotatedConfig, true);
-    if (!file.exists()) {
-      AnnotatedConfigResolver.dump(annotatedConfig, map, file, "# ", VALUE_WRITER, true);
-      return;
-    }
-
-    try (Reader reader = new FileReader(file)) {
-      Map<String, Object> values = YAML.loadAs(reader, LinkedHashMap.class);
-      if (values == null) {
-        return;
-      }
-      AnnotatedConfigResolver.setFields(
-          annotatedConfig, values, map, "# ", VALUE_WRITER, file, true, true, false, null);
-    } catch (IOException e) {
-      throw new RuntimeException(e);
-    }
+    getConfigResolver().loadOrDump(annotatedConfig, file, true);
   }
 
   private static final class YamlValueWriter implements ValueWriter {

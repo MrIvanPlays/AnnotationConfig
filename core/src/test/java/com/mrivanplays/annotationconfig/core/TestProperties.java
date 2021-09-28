@@ -29,7 +29,7 @@ public class TestProperties {
   @Test
   public void testCreatingFile() {
     PropertiesTestSubject config = new PropertiesTestSubject();
-    PropertyConfig.load(config, file);
+    PropertyConfig.getConfigResolver().loadOrDump(config, file, true);
 
     Assert.assertEquals("this is a message", config.getMessage());
     Assert.assertSame(config.getMessageType(), MessageType.STRING);

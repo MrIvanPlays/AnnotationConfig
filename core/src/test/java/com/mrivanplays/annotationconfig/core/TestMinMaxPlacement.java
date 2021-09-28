@@ -31,10 +31,10 @@ public class TestMinMaxPlacement {
   @Test
   public void testMinMaxInvalidPlacement() {
     MinMaxTest configSubject = new MinMaxTest();
-    PropertyConfig.load(configSubject, file);
+    PropertyConfig.getConfigResolver().dump(configSubject, file);
 
     try {
-      PropertyConfig.load(configSubject, file);
+      PropertyConfig.getConfigResolver().load(configSubject, file, true);
       Assert.fail();
     } catch (IllegalArgumentException e) {
       Assert.assertTrue(true);

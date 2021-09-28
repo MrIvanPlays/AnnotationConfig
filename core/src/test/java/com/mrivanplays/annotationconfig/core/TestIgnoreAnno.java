@@ -38,7 +38,7 @@ public class TestIgnoreAnno {
   @Test
   public void testIgnoreWorks() {
     RetrieveAnnoTestSubject config = new RetrieveAnnoTestSubject();
-    PropertyConfig.load(config, file);
+    PropertyConfig.getConfigResolver().loadOrDump(config, file, true);
 
     // now to make sure this works we have to read the file
     Properties properties = new Properties();

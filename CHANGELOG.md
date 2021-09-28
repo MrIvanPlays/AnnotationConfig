@@ -1,6 +1,7 @@
 # Change log
+This file summarises changes between major versions.
 
-## Version 2.0
+## Version 2.0.0
 
 ### Removed custom annotation support
 
@@ -49,7 +50,7 @@ private Location location = new Location("world", 20, 2, 1);
 public class LocationSerializer implements FieldTypeSerializer<Location> {
 
   @Override
-  public Location deserialize(ConfigDataObject data, Field field) throws Exception {
+  public Location deserialize(ConfigDataObject data, Field field) {
     Map<String, Object> map = (Map<String, Object>) data.getRawData();
     return new Location(
         String.valueOf(map.get("world")),
@@ -59,7 +60,7 @@ public class LocationSerializer implements FieldTypeSerializer<Location> {
   }
 
   @Override
-  public SerializedObject serialize(Location value, Field field) throws Exception {
+  public SerializedObject serialize(Location value, Field field) {
     Map<String, Object> map = new HashMap<>();
     map.put("world", value.getWorld());
     map.put("x", value.getX());
@@ -74,6 +75,23 @@ public class LocationSerializer implements FieldTypeSerializer<Location> {
 SerializerRegistry.INSTANCE.registerSerializer(Location.class, new LocationSerializer());
 ```
 
+### A way to implement new config types
+In 1.0, if you wanted other than the already implemented config types, you'd have to dive into the internal class AnnotatedConfigResolver and figure out how to implement it. Plus the thing that it required implementation of the interface called `ValueWriter`. This was an inner interface for AnnotatedConfigResolver, which made it even harder. No more!
+<br><br>In version 2.0.0 it was added a proper API called `ConfigResolver` to interact with this internal class. Also, `ValueWriter` interface got exposed from `AnnotatedConfigResolver` to its own class. Everything has been documented with lots of information, so you can more easily create them, and so you don't do something wrong.
+
+#### Example usage
+```java
+    ConfigResolver resolver =
+        ConfigResolver.newBuilder()
+            .withValueReader(/* value reader */)
+            .withValueWriter(/* value writer */)
+            .withCommentPrefix("# " /* the implemented config type's comment prefix */)
+            .shouldReverseFields(
+                true /* in some config types it is needed to reverse the fields so everything is in order with the config object we're reading from */)
+            .build();
+    // do stuff with the resolver instance
+```
+
 ### New Annotations
 There are two new annotations - `@Min` and `@Max` . They can be applied on `String` values and numbers.
 If applied on a number, they will validate the number ; if on a `String`, they will validate the string's length.
@@ -85,6 +103,6 @@ Here are the changes that don't need too much attention, but are still important
 - AnnotationType is now an enum and has been moved to `annotationconfig.core.annotations.type`
 - `Retrieve` annotation was renamed to `Ignore` for more clearance
 - Annotations are in separate package, `annotationconfig.core.annotations`, the comment annotations are under `annotations.comment`
-- `ValueWriter` interface got exposed from `AnnotatedConfigResolver` to its own class and has been documented with lots of information, so you can't do something wrong.
 - The library now completely generates all kinds of config options if they are missing in an existing config.
-- Fixed a special case bug where `@Key` annotations aren't respected for fields annotated with `@ConfigObject`. This needed changing the `Map<AnnotationHolder, List<AnnotationType>>` to a `Map<AnnotationHolder, Set<AnnotationType>>` so this is yet another breaking change for all custom-made config types.
+- Fixed a special case bug where `@Key` annotations aren't respected for fields annotated with `@ConfigObject`.
+- Made `TomlValueWriter` public, so you can create `ConfigResolver` instance for TOML easier. The `TomlConfig` class won't create such due to its current API.

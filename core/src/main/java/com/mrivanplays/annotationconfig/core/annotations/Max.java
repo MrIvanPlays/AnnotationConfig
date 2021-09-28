@@ -9,6 +9,9 @@ import java.lang.annotation.Target;
 /**
  * Annotation, representing the maximal string length or the maximal
  * int/double/byte/float/short/long value.
+ *
+ * @since 2.0.0
+ * @author MrIvanPlays
  */
 @Documented
 @Retention(RetentionPolicy.RUNTIME)

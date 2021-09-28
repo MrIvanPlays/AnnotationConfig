@@ -15,7 +15,12 @@ import java.util.Date;
 import java.util.Map;
 import java.util.Set;
 
-/** Represents configuration, utilising TOML. */
+/**
+ * Represents configuration, utilising TOML.
+ *
+ * @since 1.0
+ * @author MrIvanPlays
+ */
 public final class TomlConfig {
 
   private static final TomlWriter DEFAULT_TOML_WRITER = new TomlWriter();
@@ -45,6 +50,19 @@ public final class TomlConfig {
    * @param tomlWriter toml writer
    */
   public static void load(Object annotatedConfig, File file, TomlWriter tomlWriter) {
+    load(annotatedConfig, file, tomlWriter, false);
+  }
+
+  /**
+   * Loads the config object from the file. If the file does not exist, it creates one.
+   *
+   * @param annotatedConfig annotated config
+   * @param file file
+   * @param tomlWriter toml writer
+   * @param generateNewOptions whether to generate new options
+   */
+  public static void load(
+      Object annotatedConfig, File file, TomlWriter tomlWriter, boolean generateNewOptions) {
     Map<AnnotationHolder, Set<AnnotationType>> map =
         AnnotatedConfigResolver.resolveAnnotations(annotatedConfig, true);
     ValueWriter valueWriter = new TomlValueWriter(tomlWriter);
@@ -55,10 +73,26 @@ public final class TomlConfig {
 
     Toml toml = new Toml().read(file);
     AnnotatedConfigResolver.setFields(
-        annotatedConfig, toml.toMap(), map, "# ", valueWriter, file, false, true, false, null);
+        annotatedConfig,
+        toml.toMap(),
+        map,
+        "# ",
+        valueWriter,
+        file,
+        generateNewOptions,
+        true,
+        false,
+        null);
   }
 
-  private static final class TomlValueWriter implements ValueWriter {
+  /**
+   * Represents the default toml value writer
+   *
+   * <p>since: 1.0 ; but private -> public in 2.0.0
+   *
+   * @author MrIvanPlays
+   */
+  public static final class TomlValueWriter implements ValueWriter {
 
     private final TomlWriter tomlWriter;
 

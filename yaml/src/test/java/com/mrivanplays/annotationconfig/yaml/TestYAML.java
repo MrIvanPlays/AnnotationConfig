@@ -28,7 +28,7 @@ public class TestYAML {
   @Test
   public void testCreatingFile() {
     YAMLTestSubject config = new YAMLTestSubject();
-    YamlConfig.load(config, file);
+    YamlConfig.getConfigResolver().loadOrDump(config, file, true);
 
     Assert.assertEquals("Ivan", config.getName());
     Assert.assertEquals("bar", config.getFoo());
@@ -42,7 +42,7 @@ public class TestYAML {
   @Test
   public void testNonExistingField() {
     YAMLSecondTestSubject config = new YAMLSecondTestSubject();
-    YamlConfig.load(config, file);
+    YamlConfig.getConfigResolver().loadOrDump(config, file, true);
 
     Assert.assertEquals(1, config.getA());
   }

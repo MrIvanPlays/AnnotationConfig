@@ -40,15 +40,13 @@ public class TestMinMaxNumber {
   @Test
   public void testMin() {
     MinMaxTest configSubject = new MinMaxTest();
-    PropertyConfig.load(configSubject, file);
+    PropertyConfig.getConfigResolver().loadOrDump(configSubject, file, true);
 
     configSubject.setDoubleValue(-34.6);
     file.delete();
     try {
-      // yes we have to call it twice - one time to generate the file and one time to invoke field
-      // sets
-      PropertyConfig.load(configSubject, file);
-      PropertyConfig.load(configSubject, file);
+      PropertyConfig.getConfigResolver().dump(configSubject, file);
+      PropertyConfig.getConfigResolver().load(configSubject, file, true);
       Assert.fail();
     } catch (IllegalArgumentException e) {
       Assert.assertTrue(true);
@@ -58,15 +56,13 @@ public class TestMinMaxNumber {
   @Test
   public void testMax() {
     MinMaxTest configSubject = new MinMaxTest();
-    PropertyConfig.load(configSubject, file);
+    PropertyConfig.getConfigResolver().loadOrDump(configSubject, file, true);
 
     configSubject.setDoubleValue(45.2);
     file.delete();
     try {
-      // yes we have to call it twice - one time to generate the file and one time to invoke field
-      // sets
-      PropertyConfig.load(configSubject, file);
-      PropertyConfig.load(configSubject, file);
+      PropertyConfig.getConfigResolver().dump(configSubject, file);
+      PropertyConfig.getConfigResolver().load(configSubject, file, true);
       Assert.fail();
     } catch (IllegalArgumentException e) {
       Assert.assertTrue(true);

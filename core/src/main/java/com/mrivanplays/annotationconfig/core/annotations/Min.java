@@ -9,6 +9,9 @@ import java.lang.annotation.Target;
 /**
  * Annotation, representing a minimal string length or a minimal int/double/byte/float/short/long
  * value.
+ *
+ * @since 2.0.0
+ * @author MrIvanPlays
  */
 @Documented
 @Retention(RetentionPolicy.RUNTIME)
