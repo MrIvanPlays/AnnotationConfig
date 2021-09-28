@@ -12,8 +12,8 @@ JavaDocs:
 - [toml](https://mrivanplays.com/javadocs/annotationconfig/toml/com/mrivanplays/annotationconfig/toml/package-summary.html)
 - [yaml](https://mrivanplays.com/javadocs/annotationconfig/yaml/com/mrivanplays/annotationconfig/yaml/package-summary.html)
 
-# Usage example
-<details><summary>Code Example</summary>
+# Examples
+<details><summary>Config example</summary>
 <p>
 
 ```java
@@ -186,7 +186,7 @@ public class ExampleAnnotatedConfig {
 ```
 </p>
 </details>
-<details><summary>Code Example dump output (YAML)</summary>
+<details><summary>Config example output (YAML)</summary>
 <p>
 Keep in mind in order to show you all of the features of AnnotatedConfig, everything has been stuffed in 1 class. Don't forget that in Java you can do multiple classes ;) . Line count doesn't matter.
 
@@ -237,6 +237,48 @@ foo-map:
   baz: 3
 
 
+```
+
+</p>
+</details>
+<details><summary>Config dump/load</summary>
+<p>
+Keep in mind these are the simplest examples
+
+Base code for all examples:
+```java
+File file = // ...
+SerializerRegistry serializerRegistry = SerializerRegistry.INSTANCE;
+serializerRegistry.registerSerializer(ExampleAnnotatedConfig.SomethingToSerialize, new ExampleAnnotatedConfig.SomethingToSerializeSerializer());
+ExampleAnnotatedConfig annotatedConfig = new ExampleAnnotatedConfig();
+```
+
+YAML example:
+```java
+YamlConfig.getConfigResolver().loadOrDump(anotatedConfig, file, /* whether to generate new options */);
+```
+
+.conf/.properties example:
+```java
+PropertyConfig.getConfigResolver().loadOrDump(annotatedConfig, file, /* whether to generate new options */);
+```
+
+TOML example:
+```java
+TomlConfig.load(annotatedConfig, file);
+```
+
+Custom config type example:
+```java
+// all values specified in the builder should be for the specific config type
+ConfigResolver configResolver = ConfigResolver.newBuilder()
+    .withCommentPrefix("# ") // comment prefix for the config type
+    .withValueWriter(/* insert value writer here */)
+    .withValueReader(/* insert value reader here */)
+    .shouldReverseFields(true /* should we reverse fields */)
+    .build();
+
+configResolver.loadOrDump(annotatedConfig, file, /* whether to generate new options */);
 ```
 
 </p>
