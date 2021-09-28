@@ -465,11 +465,11 @@ public final class AnnotatedConfigResolver {
       if (deserialized instanceof Number) {
         Number comparable = (Number) deserialized;
         State comparison = MinMaxHandler.compare(min, max, comparable);
-        handleComparison(comparison, comparable, fieldType, min, max, Number.class);
+        handleComparison(comparison, keyName, comparable, fieldType, min, max, Number.class);
       } else if (deserialized instanceof String) {
         String comparable = (String) deserialized;
         State comparison = MinMaxHandler.compare(min, max, comparable);
-        handleComparison(comparison, comparable.length(), fieldType, min, max, String.class);
+        handleComparison(comparison, keyName, comparable.length(), fieldType, min, max, String.class);
       } else {
         if (min.getState() != State.START) {
           throw new IllegalArgumentException("@Min annotation placed on invalid field type");
@@ -489,6 +489,7 @@ public final class AnnotatedConfigResolver {
 
   private static void handleComparison(
       State comparison,
+      String key,
       Number compared,
       Class<?> fieldType,
       NumberResult minResult,
@@ -498,21 +499,29 @@ public final class AnnotatedConfigResolver {
       if (comparison == State.INVALID_MIN) {
         throw new IllegalArgumentException(
             fieldType.getName()
+                + " "
+                + key
                 + " ; invalid @Min specified - it should implement annotation member ( e.g @Min(minInt = -22) )");
       }
       if (comparison == State.MORE_THAN_ONE_MIN) {
         throw new IllegalArgumentException(
             fieldType.getName()
+                + " "
+                + key
                 + " ; invalid @Min specified - it should implement only one annotation member");
       }
       if (comparison == State.INVALID_MAX) {
         throw new IllegalArgumentException(
             fieldType.getName()
+                + " "
+                + key
                 + " ; invalid @Max specified - it should implement annotation member ( e.g. @Max(maxInt = 3) )");
       }
       if (comparison == State.MORE_THAN_ONE_MAX) {
         throw new IllegalArgumentException(
             fieldType.getName()
+                + " "
+                + key
                 + " ; invalid @Max specified - it should implement only one annotation member");
       }
       if (comparison == State.UNDER) {
