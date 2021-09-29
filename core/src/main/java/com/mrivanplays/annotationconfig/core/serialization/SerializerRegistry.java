@@ -1,8 +1,5 @@
-package com.mrivanplays.annotationconfig.core.serialization.registry;
+package com.mrivanplays.annotationconfig.core.serialization;
 
-import com.mrivanplays.annotationconfig.core.serialization.ConfigDataObject;
-import com.mrivanplays.annotationconfig.core.serialization.FieldTypeSerializer;
-import com.mrivanplays.annotationconfig.core.serialization.SerializedObject;
 import java.lang.reflect.Field;
 import java.util.Map;
 import java.util.Optional;
@@ -17,6 +14,8 @@ import java.util.function.BiFunction;
  */
 public enum SerializerRegistry {
   INSTANCE;
+
+  private static final DefaultSerializer DEFAULT = new DefaultSerializer();
 
   private Map<Class<?>, FieldTypeSerializer<?>> serializers;
 
@@ -51,18 +50,18 @@ public enum SerializerRegistry {
    */
   public <T> void registerSerializer(
       Class<T> serializedType,
-      BiFunction<ConfigDataObject, Field, T> deSerialize,
-      BiFunction<T, Field, SerializedObject> serialize) {
+      BiFunction<DataObject, Field, T> deSerialize,
+      BiFunction<T, Field, DataObject> serialize) {
     this.registerSerializer(
         serializedType,
         new FieldTypeSerializer<T>() {
           @Override
-          public T deserialize(ConfigDataObject data, Field field) {
+          public T deserialize(DataObject data, Field field) {
             return deSerialize.apply(data, field);
           }
 
           @Override
-          public SerializedObject serialize(T value, Field field) {
+          public DataObject serialize(T value, Field field) {
             return serialize.apply(value, field);
           }
         });
@@ -103,5 +102,15 @@ public enum SerializerRegistry {
    */
   public Optional<FieldTypeSerializer<?>> getSerializer(Class<?> serializedType) {
     return Optional.ofNullable(serializers.get(serializedType));
+  }
+
+  /**
+   * Returns the default serializer. This is used when there isn't a registered serializer available
+   * for a specific value.
+   *
+   * @return default serializer
+   */
+  public FieldTypeSerializer<Object> getDefaultSerializer() {
+    return DEFAULT;
   }
 }

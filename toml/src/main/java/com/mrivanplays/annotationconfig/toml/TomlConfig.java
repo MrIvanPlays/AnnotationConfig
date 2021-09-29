@@ -6,7 +6,7 @@ import com.mrivanplays.annotationconfig.core.ValueWriter;
 import com.mrivanplays.annotationconfig.core.annotations.type.AnnotationType;
 import com.mrivanplays.annotationconfig.core.internal.AnnotatedConfigResolver;
 import com.mrivanplays.annotationconfig.core.internal.AnnotationHolder;
-import com.mrivanplays.annotationconfig.core.serialization.registry.SerializerRegistry;
+import com.mrivanplays.annotationconfig.core.serialization.SerializerRegistry;
 import java.io.File;
 import java.io.IOException;
 import java.io.PrintWriter;

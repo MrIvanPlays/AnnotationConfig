@@ -9,11 +9,9 @@ import com.mrivanplays.annotationconfig.core.annotations.comment.Comments;
 import com.mrivanplays.annotationconfig.core.annotations.type.AnnotationType;
 import com.mrivanplays.annotationconfig.core.internal.MinMaxHandler.NumberResult;
 import com.mrivanplays.annotationconfig.core.internal.MinMaxHandler.State;
-import com.mrivanplays.annotationconfig.core.serialization.ConfigDataObject;
+import com.mrivanplays.annotationconfig.core.serialization.DataObject;
 import com.mrivanplays.annotationconfig.core.serialization.FieldTypeSerializer;
-import com.mrivanplays.annotationconfig.core.serialization.SerializedObject;
-import com.mrivanplays.annotationconfig.core.serialization.registry.SerializerRegistry;
-import com.mrivanplays.annotationconfig.core.serialization.registry.primitive.PrimitiveSerializersRegistrar;
+import com.mrivanplays.annotationconfig.core.serialization.SerializerRegistry;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
@@ -23,7 +21,7 @@ import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
-import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -33,10 +31,6 @@ import java.util.TreeSet;
 
 @SuppressWarnings({"unchecked", "rawtypes"})
 public final class AnnotatedConfigResolver {
-
-  static {
-    PrimitiveSerializersRegistrar.register();
-  }
 
   public static Map<AnnotationHolder, Set<AnnotationType>> resolveAnnotations(
       Object annotatedClass, boolean reverseFields) {
@@ -111,7 +105,7 @@ public final class AnnotatedConfigResolver {
       throws IOException {
     Map<String, Object> toWrite = null;
     if (isSection) {
-      toWrite = new HashMap<>();
+      toWrite = new LinkedHashMap<>();
     }
     for (Map.Entry<AnnotationHolder, Set<AnnotationType>> entry : map.entrySet()) {
       AnnotationHolder holder = entry.getKey();
@@ -162,39 +156,12 @@ public final class AnnotatedConfigResolver {
           continue;
         }
         try {
-          Class<?> fieldType = field.getType();
-          Optional<FieldTypeSerializer<?>> serializerOpt =
-              SerializerRegistry.INSTANCE.getSerializer(fieldType);
           Object defaultsToValueObject = field.get(annotatedConfig);
           if (defaultsToValueObject == null) {
             throw new IllegalArgumentException(
                 "No default value for field '" + field.getName() + "'");
           }
-          if (serializerOpt.isPresent()) {
-            FieldTypeSerializer serializer = serializerOpt.get();
-            SerializedObject serialized = serializer.serialize(defaultsToValueObject, field);
-            if (serialized == null) {
-              throw new NullPointerException(
-                  "Expected SerializedObject, got null ; Field: "
-                      + field.getName()
-                      + " ; Field type: "
-                      + field.getType().getName());
-            }
-            switch (serialized.getPresentValue()) {
-              case LIST:
-                defaultsToValueObject = serialized.getSerializedList();
-                break;
-              case MAP:
-                defaultsToValueObject = serialized.getSerializedMap();
-                break;
-              case OBJECT:
-                defaultsToValueObject = serialized.getSerializedObject();
-                break;
-              default:
-                throw new IllegalArgumentException(
-                    "Illegal serialized.getPresentValue() (AnnotatedConfigResolver#toWrite)");
-            }
-          }
+          defaultsToValueObject = getWriteValue(field, defaultsToValueObject);
           if (!isSection) {
             valueWriter.write(keyName, defaultsToValueObject, writer, false);
           } else {
@@ -248,7 +215,7 @@ public final class AnnotatedConfigResolver {
       Map<AnnotationHolder, Set<AnnotationType>> annotationData =
           resolveAnnotations(value, reverseFields);
 
-      Map<String, Object> objectWriteData = new HashMap<>();
+      Map<String, Object> objectWriteData = new LinkedHashMap<>();
 
       for (Map.Entry<AnnotationHolder, Set<AnnotationType>> entry : annotationData.entrySet()) {
         AnnotationHolder holder = entry.getKey();
@@ -300,7 +267,7 @@ public final class AnnotatedConfigResolver {
             throw new IllegalArgumentException(
                 "No default value for field '" + field.getName() + "'");
           }
-          defaultValue = getWriteDataValue(field, defaultValue);
+          defaultValue = getWriteValue(field, defaultValue);
           objectWriteData.put(key, defaultValue);
         }
       }
@@ -320,38 +287,32 @@ public final class AnnotatedConfigResolver {
           }
         }
       }
-      value = getWriteDataValue(baseField, value);
+      value = getWriteValue(baseField, value);
       return new WriteData(comments, Collections.singletonMap(baseKey, value));
     }
   }
 
-  private static Object getWriteDataValue(Field baseField, Object value) {
+  private static Object getWriteValue(Field baseField, Object value) {
     Optional<FieldTypeSerializer<?>> serializerOpt =
         SerializerRegistry.INSTANCE.getSerializer(baseField.getType());
+    FieldTypeSerializer serializer;
     if (serializerOpt.isPresent()) {
-      FieldTypeSerializer serializer = serializerOpt.get();
-      SerializedObject serialized = serializer.serialize(value, baseField);
-      if (serialized == null) {
-        throw new NullPointerException(
-            "Expected SerializedObject, got null ; Field: "
-                + baseField.getName()
-                + " ; Field type: "
-                + baseField.getType().getName());
-      }
-      switch (serialized.getPresentValue()) {
-        case MAP:
-          value = serialized.getSerializedMap();
-          break;
-        case LIST:
-          value = serialized.getSerializedList();
-          break;
-        case OBJECT:
-          value = serialized.getSerializedObject();
-          break;
-        default:
-          throw new IllegalArgumentException(
-              "Illegal serialized.getPresentValue() (AnnotatedConfigResolver#getWriteData)");
-      }
+      serializer = serializerOpt.get();
+    } else {
+      serializer = SerializerRegistry.INSTANCE.getDefaultSerializer();
+    }
+    DataObject serialized = serializer.serialize(value, baseField);
+    if (serialized == null) {
+      throw new NullPointerException(
+          "Expected DataObject, got null ; Field: "
+              + baseField.getName()
+              + " ; Field type: "
+              + baseField.getType().getName());
+    }
+    if (serialized.isSingleValue()) { // single value includes list
+      value = serialized.getAsObject();
+    } else {
+      value = serialized.getAsMap();
     }
     return value;
   }
@@ -412,7 +373,7 @@ public final class AnnotatedConfigResolver {
               writer.println(commentChar + comment);
             }
             if (isSection) {
-              Map<String, Object> toWrite = new HashMap<>();
+              Map<String, Object> toWrite = new LinkedHashMap<>();
               toWrite.put(sectionBaseName, writeData.getWriteData());
               valueWriter.write(keyName, toWrite, writer, true);
             } else {
@@ -453,15 +414,13 @@ public final class AnnotatedConfigResolver {
       }
       Optional<FieldTypeSerializer<?>> serializerOpt =
           SerializerRegistry.INSTANCE.getSerializer(fieldType);
+      FieldTypeSerializer<?> serializer;
       if (!serializerOpt.isPresent()) {
-        throw new IllegalArgumentException(
-            "Cannot find serializer for field '"
-                + field.getName()
-                + "', field type: "
-                + fieldType.getSimpleName());
+        serializer = SerializerRegistry.INSTANCE.getDefaultSerializer();
+      } else {
+        serializer = serializerOpt.get();
       }
-      FieldTypeSerializer<?> serializer = serializerOpt.get();
-      Object deserialized = serializer.deserialize(new ConfigDataObject(value), field);
+      Object deserialized = serializer.deserialize(new DataObject(value), field);
       if (deserialized instanceof Number) {
         Number comparable = (Number) deserialized;
         State comparison = MinMaxHandler.compare(min, max, comparable);
@@ -469,7 +428,8 @@ public final class AnnotatedConfigResolver {
       } else if (deserialized instanceof String) {
         String comparable = (String) deserialized;
         State comparison = MinMaxHandler.compare(min, max, comparable);
-        handleComparison(comparison, keyName, comparable.length(), fieldType, min, max, String.class);
+        handleComparison(
+            comparison, keyName, comparable.length(), fieldType, min, max, String.class);
       } else {
         if (min.getState() != State.START) {
           throw new IllegalArgumentException("@Min annotation placed on invalid field type");

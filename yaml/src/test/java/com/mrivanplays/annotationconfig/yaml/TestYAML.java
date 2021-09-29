@@ -1,6 +1,5 @@
 package com.mrivanplays.annotationconfig.yaml;
 
-import com.mrivanplays.annotationconfig.core.serialization.registry.SerializerRegistry;
 import java.io.File;
 import org.junit.After;
 import org.junit.Assert;
@@ -14,10 +13,6 @@ public class TestYAML {
   @Before
   public void initialize() {
     file = new File("non-existing.yml");
-    if (!SerializerRegistry.INSTANCE.hasSerializer(LocationNoConfigObject.class)) {
-      SerializerRegistry.INSTANCE.registerSerializer(
-          LocationNoConfigObject.class, new LocationNoConfigObjectSerializer());
-    }
   }
 
   @After

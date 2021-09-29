@@ -1,4 +1,5 @@
 # Change log
+
 This file summarises changes between major versions.
 
 ## Version 2.0.0
@@ -14,72 +15,116 @@ for and why the hell does it need this/that.
 The previous system was hard to understand because the FieldTypeResolver had some unnecessary stuff.
 This new system is much better, trust me!
 
-The `@TypeResolver` annotation was removed and replaced by a `SerializerRegistry`. 
+The `@TypeResolver` annotation was removed and replaced by a `SerializerRegistry`.
 <br>
 The `FieldTypeResolver` was renamed to `FieldTypeSerializer`, generalized and with methods changed
 to `serialize` and `deserialize`.
 <br>
-This means faster to type resolvers and much more control over what the library dumps in a config 
-file and what it resolves to. 
+This means faster to type resolvers and much more control over what the library dumps in a config
+file and what it resolves to.
+<br>
+Another cool thing is that the default serializer handles enums, maps and lists, and you won't need
+to create specific serializers for them.
 
 #### Example usage
+
 ```java
 // an object you have
 public class Location {
-  
+
   private String world;
   private int x, y, z;
-  
+
   public Location(String world, int x, int y, int z) {
     this.world = world;
     this.x = x;
     this.y = y;
     this.z = z;
   }
-  
+
   // getters
 }
 
-// this is in your base config
-// of course the annotations aren't mandatory
-@Comment("Location of player")
-@Key("player-location")
-private Location location = new Location("world", 20, 2, 1);
+  // this is in your base config
+  // of course the annotations aren't mandatory
+  @Comment("Location of player")
+  @Key("player-location")
+  private Location location = new Location("world", 20, 2, 1);
 
 // the serializer
 public class LocationSerializer implements FieldTypeSerializer<Location> {
 
   @Override
-  public Location deserialize(ConfigDataObject data, Field field) {
-    Map<String, Object> map = (Map<String, Object>) data.getRawData();
+  public Location deserialize(DataObject data, Field field) {
     return new Location(
-        String.valueOf(map.get("world")),
-        Integer.parseInt(String.valueOf(map.get("x"))),
-        Integer.parseInt(String.valueOf(map.get("y"))),
-        Integer.parseInt(String.valueOf(map.get("z"))));
+        data.get("world").getAsString(),
+        data.get("x").getAsInt(),
+        data.get("y").getAsInt(),
+        data.get("z").getAsInt()
+    );
   }
 
   @Override
-  public SerializedObject serialize(Location value, Field field) {
-    Map<String, Object> map = new HashMap<>();
-    map.put("world", value.getWorld());
-    map.put("x", value.getX());
-    map.put("y", value.getY());
-    map.put("z", value.getZ());
-    return SerializedObject.map(map);
+  public DataObject serialize(Location value, Field field) {
+    DataObject object = new DataObject();
+    object.put("world", value.getWorld());
+    object.put("x", value.getX());
+    object.put("y", value.getY());
+    object.put("z", value.getZ());
+    return object;
   }
-  
+
 }
 
 // this should be run before you load the config
 SerializerRegistry.INSTANCE.registerSerializer(Location.class, new LocationSerializer());
 ```
 
+Or, you can let the default config serializer handle serialization and deserialization. The
+following example will show how easy it is!
+
+```java
+// an object you have
+public class Location {
+
+  private String world;
+  private int x, y, z;
+
+  @DeserializeConstructor // the way the object is deserialized
+  public Location(String world, int x, int y, int z) {
+    this.world = world;
+    this.x = x;
+    this.y = y;
+    this.z = z;
+  }
+
+  // getters ( aren't mandatory for serialization/deserialization ) 
+}
+
+  // the code in the base config remains the same
+  // of course the annotations aren't mandatory
+  @Comment("Location of player")
+  @Key("player-location")
+  private Location location = new Location("world", 20, 2, 1);
+```
+
+It is also possible to have a empty constructor for the object rather than annotating a specific
+constructor. Keep in mind the constructor you annotate's parameters should match exactly the order
+of the fields, or something could go wrong.
+
 ### A way to implement new config types
-In 1.0, if you wanted other than the already implemented config types, you'd have to dive into the internal class AnnotatedConfigResolver and figure out how to implement it. Plus the thing that it required implementation of the interface called `ValueWriter`. This was an inner interface for AnnotatedConfigResolver, which made it even harder. No more!
-<br><br>In version 2.0.0 it was added a proper API called `ConfigResolver` to interact with this internal class. Also, `ValueWriter` interface got exposed from `AnnotatedConfigResolver` to its own class. Everything has been documented with lots of information, so you can more easily create them, and so you don't do something wrong.
+
+In 1.0, if you wanted other than the already implemented config types, you'd have to dive into the
+internal class AnnotatedConfigResolver and figure out how to implement it. Plus the thing that it
+required implementation of the interface called `ValueWriter`. This was an inner interface for
+AnnotatedConfigResolver, which made it even harder. No more!
+<br><br>In version 2.0.0 it was added a proper API called `ConfigResolver` to interact with this
+internal class. Also, `ValueWriter` interface got exposed from `AnnotatedConfigResolver` to its own
+class. Everything has been documented with lots of information, so you can more easily create them,
+and so you don't do something wrong.
 
 #### Example usage
+
 ```java
     ConfigResolver resolver =
         ConfigResolver.newBuilder()
@@ -93,8 +138,10 @@ In 1.0, if you wanted other than the already implemented config types, you'd hav
 ```
 
 ### New Annotations
-There are two new annotations - `@Min` and `@Max` . They can be applied on `String` values and numbers.
-If applied on a number, they will validate the number ; if on a `String`, they will validate the string's length.
+
+There are two new annotations - `@Min` and `@Max` . They can be applied on `String` values and
+numbers. If applied on a number, they will validate the number ; if on a `String`, they will
+validate the string's length.
 
 ### Misc changes
 
@@ -102,7 +149,11 @@ Here are the changes that don't need too much attention, but are still important
 
 - AnnotationType is now an enum and has been moved to `annotationconfig.core.annotations.type`
 - `Retrieve` annotation was renamed to `Ignore` for more clearance
-- Annotations are in separate package, `annotationconfig.core.annotations`, the comment annotations are under `annotations.comment`
-- The library now completely generates all kinds of config options if they are missing in an existing config.
-- Fixed a special case bug where `@Key` annotations aren't respected for fields annotated with `@ConfigObject`.
-- Made `TomlValueWriter` public, so you can create `ConfigResolver` instance for TOML easier. The `TomlConfig` class won't create such due to its current API.
+- Annotations are in separate package, `annotationconfig.core.annotations`, the comment annotations
+  are under `annotations.comment`
+- The library now completely generates all kinds of config options if they are missing in an
+  existing config.
+- Fixed a special case bug where `@Key` annotations aren't respected for fields annotated
+  with `@ConfigObject`.
+- Made `TomlValueWriter` public, so you can create `ConfigResolver` instance for TOML easier.
+  The `TomlConfig` class won't create such due to its current API.

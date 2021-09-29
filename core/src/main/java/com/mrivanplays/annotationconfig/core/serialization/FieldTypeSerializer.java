@@ -6,9 +6,7 @@ import java.lang.reflect.Field;
  * Interface representing a custom serializer and deserializer of a field type. You should write a
  * custom one if you are not happy with how AnnotationConfig serializes and deserializes by default.
  * You will also need to register your newly created class, implementing this interface, through
- * {@link
- * com.mrivanplays.annotationconfig.core.serialization.registry.SerializerRegistry#registerSerializer(Class,
- * FieldTypeSerializer)}
+ * {@link SerializerRegistry#registerSerializer(Class, FieldTypeSerializer)}
  *
  * @param <T> type for which this serializer is being registered.
  * @since 2.0.0
@@ -24,7 +22,7 @@ public interface FieldTypeSerializer<T> {
    * @param field the field we will attach this information to later on
    * @return the generic value, the implementation of this interface has specified
    */
-  T deserialize(ConfigDataObject data, Field field);
+  T deserialize(DataObject data, Field field);
 
   /**
    * AnnotationConfig invokes this call-back method during serialization when it encounters a field
@@ -34,5 +32,5 @@ public interface FieldTypeSerializer<T> {
    * @param field the field we got the value from
    * @return a serialized object which is useful for dumping into a configuration file
    */
-  SerializedObject serialize(T value, Field field);
+  DataObject serialize(T value, Field field);
 }

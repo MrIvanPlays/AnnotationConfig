@@ -13,6 +13,7 @@ JavaDocs:
 - [yaml](https://mrivanplays.com/javadocs/annotationconfig/yaml/com/mrivanplays/annotationconfig/yaml/package-summary.html)
 
 # Examples
+WARNING: You may want to read CHANGELOG.md before seeing anything from this section.
 <details><summary>Config example</summary>
 <p>
 
@@ -23,12 +24,12 @@ import com.mrivanplays.annotationconfig.core.annotations.Key;
 import com.mrivanplays.annotationconfig.core.annotations.Max;
 import com.mrivanplays.annotationconfig.core.annotations.Min;
 import com.mrivanplays.annotationconfig.core.annotations.comment.Comment;
-import com.mrivanplays.annotationconfig.core.serialization.ConfigDataObject;
+import com.mrivanplays.annotationconfig.core.serialization.DataObject;
+import com.mrivanplays.annotationconfig.core.serialization.DeserializeConstructor;
 import com.mrivanplays.annotationconfig.core.serialization.FieldTypeSerializer;
-import com.mrivanplays.annotationconfig.core.serialization.SerializedObject;
 import java.lang.reflect.Field;
 import java.util.Arrays;
-import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -104,21 +105,18 @@ public class ExampleAnnotatedConfig {
       implements FieldTypeSerializer<SomethingToSerialize> {
 
     @Override
-    public SomethingToSerialize deserialize(ConfigDataObject data, Field field) {
-      Map<String, Object> dataMap = (Map<String, Object>) data.getRawData();
+    public SomethingToSerialize deserialize(DataObject data, Field field) {
       return new SomethingToSerialize(
-          String.valueOf(dataMap.get("foo")),
-          Integer.parseInt(String.valueOf(dataMap.get("bar"))),
-          Byte.parseByte(String.valueOf(dataMap.get("baz"))));
+          data.get("foo").getAsString(), data.get("bar").getAsInt(), data.get("baz").getAsByte());
     }
 
     @Override
-    public SerializedObject serialize(SomethingToSerialize value, Field field) {
-      Map<String, Object> ret = new HashMap<>();
+    public DataObject serialize(SomethingToSerialize value, Field field) {
+      DataObject ret = new DataObject();
       ret.put("foo", value.getFoo());
       ret.put("bar", value.getBar());
       ret.put("baz", value.getBaz());
-      return SerializedObject.map(ret);
+      return ret;
     }
   }
 
@@ -138,13 +136,46 @@ public class ExampleAnnotatedConfig {
   @Comment("Same for maps, but a map can only be Map<String, Object>")
   @Comment("otherwise you will need another object")
   @Key("foo-map")
-  private Map<String, Object> fooMap = new HashMap<String, Object>() {
-    {
-      put("foo", 1);
-      put("bar", "This is a section value");
-      put("baz", 3);
+  private Map<String, Object> fooMap =
+      new LinkedHashMap<String, Object>() {
+        {
+          put("foo", 1);
+          put("bar", "This is a section value");
+          put("baz", 3);
+        }
+      };
+
+  @Comment("This doesn't have a serializer registered")
+  @Comment("so it gets serialized by the default serializer")
+  @Key("default-serializer-example")
+  private DefaultSerializationExample defaultSerExample =
+      new DefaultSerializationExample("bar", 1, 5.6);
+
+  public static final class DefaultSerializationExample {
+
+    private String foo;
+    private int bar;
+    private double baz;
+
+    @DeserializeConstructor
+    public DefaultSerializationExample(String foo, int bar, double baz) {
+      this.foo = foo;
+      this.bar = bar;
+      this.baz = baz;
     }
-  };
+
+    public String getFoo() {
+      return foo;
+    }
+
+    public int getBar() {
+      return bar;
+    }
+
+    public double getBaz() {
+      return baz;
+    }
+  }
 
   public int getFoo() {
     return foo;
@@ -181,6 +212,10 @@ public class ExampleAnnotatedConfig {
   public Map<String, Object> getFooMap() {
     return fooMap;
   }
+
+  public DefaultSerializationExample getDefaultSerExample() {
+    return defaultSerExample;
+  }
 }
 
 ```
@@ -202,14 +237,14 @@ bar: "This is some string"
 
 # All configurable messages
 messages:
-  no-spamming: "You can't spam this"
   no-permission: "You don't have permission to perform this command"
+  no-spamming: "You can't spam this"
 
 # This is also going to be serialized as a config object,
 # but it is much more controllable rather than @ConfigObject
 serialize:
-  bar: 1
   foo: "foo"
+  bar: 1
   baz: 2
 
 # This cannot have a negative value
@@ -232,9 +267,16 @@ bar-list:
 # Same for maps, but a map can only be Map<String, Object>
 # otherwise you will need another object
 foo-map:
-  bar: "This is a section value"
   foo: 1
+  bar: "This is a section value"
   baz: 3
+
+# This doesn't have a serializer registered
+# so it gets serialized by the default serializer
+default-serializer-example:
+  foo: "bar"
+  bar: 1
+  baz: 5.6
 
 
 ```
