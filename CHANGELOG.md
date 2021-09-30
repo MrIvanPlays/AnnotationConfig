@@ -80,37 +80,9 @@ public class LocationSerializer implements FieldTypeSerializer<Location> {
 SerializerRegistry.INSTANCE.registerSerializer(Location.class, new LocationSerializer());
 ```
 
-Or, you can let the default config serializer handle serialization and deserialization. The
-following example will show how easy it is!
-
-```java
-// an object you have
-public class Location {
-
-  private String world;
-  private int x, y, z;
-
-  @DeserializeConstructor // the way the object is deserialized
-  public Location(String world, int x, int y, int z) {
-    this.world = world;
-    this.x = x;
-    this.y = y;
-    this.z = z;
-  }
-
-  // getters ( aren't mandatory for serialization/deserialization ) 
-}
-
-  // the code in the base config remains the same
-  // of course the annotations aren't mandatory
-  @Comment("Location of player")
-  @Key("player-location")
-  private Location location = new Location("world", 20, 2, 1);
-```
-
-It is also possible to have a empty constructor for the object rather than annotating a specific
-constructor. Keep in mind the constructor you annotate's parameters should match exactly the order
-of the fields, or something could go wrong.
+Or, you can let the default config serializer handle serialization and deserialization. The default
+implementation is pretty good and there's no additional need for annotations or special
+constructors. All you need is a simple object with set fields and you're good to go!
 
 ### A way to implement new config types
 

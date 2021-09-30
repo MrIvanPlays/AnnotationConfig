@@ -1,11 +1,8 @@
 package com.mrivanplays.annotationconfig.core.serialization;
 
-import java.lang.annotation.Annotation;
-import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
@@ -44,48 +41,9 @@ class DefaultSerializer implements FieldTypeSerializer<Object> {
       }
       Object fieldTypeInstance;
       try {
-        Constructor<?> constructor = fieldType.getDeclaredConstructor();
-        constructor.setAccessible(true);
-        fieldTypeInstance = constructor.newInstance();
-      } catch (InvocationTargetException
-          | NoSuchMethodException
-          | InstantiationException
-          | IllegalAccessException e) {
-        try {
-          Constructor<?>[] constructors = fieldType.getDeclaredConstructors();
-          Constructor<?> found = null;
-          OUT:
-          for (Constructor<?> constructor : constructors) {
-            Annotation[] annotations = constructor.getDeclaredAnnotations();
-            if (annotations.length > 0) {
-              for (Annotation annotation : constructor.getDeclaredAnnotations()) {
-                if (annotation.annotationType().isAssignableFrom(DeserializeConstructor.class)) {
-                  found = constructor;
-                  break OUT;
-                }
-              }
-            }
-          }
-          if (found == null) {
-            throw new IllegalArgumentException(
-                "Cannot find constructor for "
-                    + fieldType.getName()
-                    + " ; you need to have a empty constructor or a constructor, annotated with @DeserializeConstructor.");
-          }
-          found.setAccessible(true);
-          int i = 0;
-          Class<?>[] parameterTypes = found.getParameterTypes();
-          Object[] values = new Object[parameterTypes.length];
-          for (Map.Entry<String, Object> entry : dataMap.entrySet()) {
-            values[i] = forcePrimitive(entry.getValue(), parameterTypes[i]);
-            i++;
-          }
-          return found.newInstance(values);
-        } catch (IllegalAccessException ia) {
-          throw new IllegalArgumentException("Constructor became inaccessible");
-        } catch (InvocationTargetException | InstantiationException e1) {
-          throw new RuntimeException(e1);
-        }
+        fieldTypeInstance = getUnsafeInstance().allocateInstance(fieldType);
+      } catch (InstantiationException e) {
+        throw new RuntimeException("Cannot instantiate " + fieldType.getName() + " ; ", e);
       }
       SerializerRegistry serializerRegistry = SerializerRegistry.INSTANCE;
       for (Field desField : fieldTypeInstance.getClass().getDeclaredFields()) {
@@ -99,13 +57,13 @@ class DefaultSerializer implements FieldTypeSerializer<Object> {
         if (serializerOpt.isPresent()) {
           FieldTypeSerializer serializer = serializerOpt.get();
           try {
-            desField.set(fieldTypeInstance, serializer.deserialize(new DataObject(val), field));
+            desField.set(fieldTypeInstance, serializer.deserialize(new DataObject(val), desField));
           } catch (IllegalAccessException e) {
             throw new IllegalArgumentException("A field became inaccessible");
           }
         } else {
           try {
-            desField.set(fieldTypeInstance, deserialize(new DataObject(val), field));
+            desField.set(fieldTypeInstance, deserialize(new DataObject(val), desField));
           } catch (IllegalAccessException e) {
             throw new IllegalArgumentException("A field became inaccessible");
           }
@@ -153,6 +111,17 @@ class DefaultSerializer implements FieldTypeSerializer<Object> {
       }
     }
     return object;
+  }
+
+  private sun.misc.Unsafe getUnsafeInstance() {
+    try {
+      Field field = sun.misc.Unsafe.class.getDeclaredField("theUnsafe");
+      field.setAccessible(true);
+      return (sun.misc.Unsafe) field.get(null);
+    } catch (NoSuchFieldException | IllegalAccessException e) {
+      // ignored
+      return null;
+    }
   }
 
   private Object forcePrimitive(Object val, Class<?> fieldType) {

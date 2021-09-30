@@ -25,7 +25,6 @@ import com.mrivanplays.annotationconfig.core.annotations.Max;
 import com.mrivanplays.annotationconfig.core.annotations.Min;
 import com.mrivanplays.annotationconfig.core.annotations.comment.Comment;
 import com.mrivanplays.annotationconfig.core.serialization.DataObject;
-import com.mrivanplays.annotationconfig.core.serialization.DeserializeConstructor;
 import com.mrivanplays.annotationconfig.core.serialization.FieldTypeSerializer;
 import java.lang.reflect.Field;
 import java.util.Arrays;
@@ -157,7 +156,6 @@ public class ExampleAnnotatedConfig {
     private int bar;
     private double baz;
 
-    @DeserializeConstructor
     public DefaultSerializationExample(String foo, int bar, double baz) {
       this.foo = foo;
       this.bar = bar;

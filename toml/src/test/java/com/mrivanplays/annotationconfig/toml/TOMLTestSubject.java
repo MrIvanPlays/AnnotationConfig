@@ -3,7 +3,6 @@ package com.mrivanplays.annotationconfig.toml;
 import com.mrivanplays.annotationconfig.core.annotations.ConfigObject;
 import com.mrivanplays.annotationconfig.core.annotations.Key;
 import com.mrivanplays.annotationconfig.core.annotations.comment.Comment;
-import com.mrivanplays.annotationconfig.core.serialization.DeserializeConstructor;
 import java.time.OffsetDateTime;
 import java.util.Date;
 
@@ -55,7 +54,6 @@ public class TOMLTestSubject {
     private int bar;
     private double baz;
 
-    @DeserializeConstructor
     public DefaultSerializerDump(String foo, int bar, double baz) {
       this.foo = foo;
       this.bar = bar;
