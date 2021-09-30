@@ -1,33 +1,30 @@
 package com.mrivanplays.annotationconfig.toml;
 
 import java.io.File;
-import org.junit.After;
-import org.junit.Assert;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
 
 public class TestTOML {
 
-  private File file;
+  private static final File file = new File("non-existing.toml");
 
-  @Before
-  public void initialize() {
-    file = new File("non-existing.toml");
-  }
-
-  @After
-  public void terminate() {
+  @AfterAll
+  public static void terminate() {
     file.delete();
   }
 
   @Test
   public void testCreatingFile() {
     TOMLTestSubject config = new TOMLTestSubject();
-    TomlConfig.load(config, file);
-
-    Assert.assertEquals("Ivan", config.getName());
-    Assert.assertFalse(config.isBar());
-    Assert.assertEquals("localhost", config.getServer().getHipi());
-    Assert.assertEquals(25565, config.getServer().getPort());
+    try {
+      // once to generate, 2nd time to load
+      TomlConfig.load(config, file);
+      TomlConfig.load(config, file);
+      Assertions.assertTrue(true);
+    } catch (Throwable e) {
+      e.printStackTrace();
+      Assertions.fail();
+    }
   }
 }

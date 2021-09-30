@@ -1,32 +1,30 @@
 package com.mrivanplays.annotationconfig.core;
 
-import com.mrivanplays.annotationconfig.core.PropertiesTestSubject.MessageType;
 import java.io.File;
-import org.junit.After;
-import org.junit.Assert;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
 
 public class TestProperties {
 
-  private File file;
+  private static final File file = new File("non-existing.properties");
+  private final ConfigResolver resolver = PropertyConfig.getConfigResolver();
 
-  @Before
-  public void initialize() {
-    file = new File("non-existing.properties");
-  }
-
-  @After
-  public void terminate() {
+  @AfterAll
+  public static void terminate() {
     file.delete();
   }
 
   @Test
   public void testCreatingFile() {
     PropertiesTestSubject config = new PropertiesTestSubject();
-    PropertyConfig.getConfigResolver().loadOrDump(config, file, true);
-
-    Assert.assertEquals("this is a message", config.getMessage());
-    Assert.assertSame(config.getMessageType(), MessageType.STRING);
+    try {
+      resolver.dump(config, file);
+      resolver.load(config, file, true);
+      Assertions.assertTrue(true);
+    } catch (Throwable e) {
+      e.printStackTrace();
+      Assertions.fail();
+    }
   }
 }

@@ -3,10 +3,9 @@ package com.mrivanplays.annotationconfig.core;
 import com.mrivanplays.annotationconfig.core.annotations.Max;
 import com.mrivanplays.annotationconfig.core.annotations.Min;
 import java.io.File;
-import org.junit.After;
-import org.junit.Assert;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
 
 public class TestMinMaxNumber {
 
@@ -25,47 +24,41 @@ public class TestMinMaxNumber {
     }
   }
 
-  private File file;
+  private static final File file = new File("min-max-number.properties");
+  private final ConfigResolver resolver = PropertyConfig.getConfigResolver();
 
-  @Before
-  public void initialize() {
-    file = new File("min-max-number.properties");
-  }
-
-  @After
-  public void terminate() {
+  @AfterAll
+  public static void terminate() {
     file.delete();
   }
 
   @Test
   public void testMin() {
-    MinMaxTest configSubject = new MinMaxTest();
-    PropertyConfig.getConfigResolver().loadOrDump(configSubject, file, true);
+    Assertions.assertThrows(
+        IllegalArgumentException.class,
+        () -> {
+          MinMaxTest configSubject = new MinMaxTest();
+          resolver.dump(configSubject, file);
 
-    configSubject.setDoubleValue(-34.6);
-    file.delete();
-    try {
-      PropertyConfig.getConfigResolver().dump(configSubject, file);
-      PropertyConfig.getConfigResolver().load(configSubject, file, true);
-      Assert.fail();
-    } catch (IllegalArgumentException e) {
-      Assert.assertTrue(true);
-    }
+          configSubject.setDoubleValue(-34.6);
+          file.delete();
+          resolver.dump(configSubject, file);
+          resolver.load(configSubject, file, true);
+        });
   }
 
   @Test
   public void testMax() {
-    MinMaxTest configSubject = new MinMaxTest();
-    PropertyConfig.getConfigResolver().loadOrDump(configSubject, file, true);
+    Assertions.assertThrows(
+        IllegalArgumentException.class,
+        () -> {
+          MinMaxTest configSubject = new MinMaxTest();
+          resolver.dump(configSubject, file);
 
-    configSubject.setDoubleValue(45.2);
-    file.delete();
-    try {
-      PropertyConfig.getConfigResolver().dump(configSubject, file);
-      PropertyConfig.getConfigResolver().load(configSubject, file, true);
-      Assert.fail();
-    } catch (IllegalArgumentException e) {
-      Assert.assertTrue(true);
-    }
+          configSubject.setDoubleValue(45.2);
+          file.delete();
+          resolver.dump(configSubject, file);
+          resolver.load(configSubject, file, true);
+        });
   }
 }

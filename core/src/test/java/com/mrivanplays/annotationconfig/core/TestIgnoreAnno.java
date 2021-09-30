@@ -7,15 +7,14 @@ import java.io.FileReader;
 import java.io.IOException;
 import java.io.Reader;
 import java.util.Properties;
-import org.junit.After;
-import org.junit.Assert;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
 
 public class TestIgnoreAnno {
 
   @Comment("This is on the top")
-  static class RetrieveAnnoTestSubject {
+  static class IgnoreAnnoTestSubject {
 
     @Ignore private boolean b = false;
 
@@ -23,22 +22,17 @@ public class TestIgnoreAnno {
     private String name = "Ivan";
   }
 
-  private File file;
+  private static final File file = new File("ignore-anno.properties");
 
-  @Before
-  public void initialize() {
-    file = new File("retrieve-anno.properties");
-  }
-
-  @After
-  public void terminate() {
+  @AfterAll
+  public static void terminate() {
     file.delete();
   }
 
   @Test
   public void testIgnoreWorks() {
-    RetrieveAnnoTestSubject config = new RetrieveAnnoTestSubject();
-    PropertyConfig.getConfigResolver().loadOrDump(config, file, true);
+    IgnoreAnnoTestSubject config = new IgnoreAnnoTestSubject();
+    PropertyConfig.getConfigResolver().dump(config, file);
 
     // now to make sure this works we have to read the file
     Properties properties = new Properties();
@@ -46,10 +40,10 @@ public class TestIgnoreAnno {
       properties.load(reader);
     } catch (IOException e) {
       e.printStackTrace();
-      Assert.fail();
+      Assertions.fail();
       return;
     }
-    Assert.assertFalse(properties.containsKey("b"));
-    Assert.assertTrue(properties.containsKey("name"));
+    Assertions.assertFalse(properties.containsKey("b"));
+    Assertions.assertTrue(properties.containsKey("name"));
   }
 }

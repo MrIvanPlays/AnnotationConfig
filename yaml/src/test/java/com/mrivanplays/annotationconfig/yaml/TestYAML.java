@@ -1,44 +1,44 @@
 package com.mrivanplays.annotationconfig.yaml;
 
+import com.mrivanplays.annotationconfig.core.ConfigResolver;
 import java.io.File;
-import org.junit.After;
-import org.junit.Assert;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
 
 public class TestYAML {
 
-  private File file;
+  private static final File file = new File("non-existing.yml");
+  private final ConfigResolver resolver = YamlConfig.getConfigResolver();
 
-  @Before
-  public void initialize() {
-    file = new File("non-existing.yml");
-  }
-
-  @After
-  public void terminate() {
+  @AfterAll
+  public static void terminate() {
     file.delete();
   }
 
   @Test
   public void testCreatingFile() {
     YAMLTestSubject config = new YAMLTestSubject();
-    YamlConfig.getConfigResolver().loadOrDump(config, file, true);
-
-    Assert.assertEquals("Ivan", config.getName());
-    Assert.assertEquals("bar", config.getFoo());
-    Assert.assertEquals("No console!", config.getMessages().getNoConsole());
-    Assert.assertEquals("This command is console only!", config.getMessages().getConsoleOnly());
-    Assert.assertEquals("baz", config.getBar());
-    Assert.assertTrue(config.getList().contains("Hello"));
-    Assert.assertEquals(20, config.getLocationTwo().getX());
+    try {
+      resolver.dump(config, file);
+      resolver.load(config, file, true);
+      Assertions.assertTrue(true);
+    } catch (Throwable e) {
+      e.printStackTrace();
+      Assertions.fail();
+    }
   }
 
   @Test
   public void testNonExistingField() {
     YAMLSecondTestSubject config = new YAMLSecondTestSubject();
-    YamlConfig.getConfigResolver().loadOrDump(config, file, true);
-
-    Assert.assertEquals(1, config.getA());
+    try {
+      resolver.dump(config, file);
+      resolver.load(config, file, true);
+      Assertions.assertTrue(true);
+    } catch (Throwable e) {
+      e.printStackTrace();
+      Assertions.fail();
+    }
   }
 }
