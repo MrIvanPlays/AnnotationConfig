@@ -5,6 +5,7 @@ import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
@@ -21,7 +22,7 @@ class DefaultSerializer implements FieldTypeSerializer<Object> {
     Class<?> fieldType = field.getType();
     if (!fieldType.isEnum()) {
       if (data.isSingleValue() && isPrimitive(dataRaw)) {
-        return forcePrimitive(data, fieldType);
+        return forcePrimitive(data.getAsObject(), fieldType);
       }
     }
     Map<String, Object> dataMap = data.getAsMap();
@@ -36,7 +37,7 @@ class DefaultSerializer implements FieldTypeSerializer<Object> {
           // ignored
         }
       }
-      return forcePrimitive(data, fieldType);
+      return forcePrimitive(data.getAsObject(), fieldType);
     } else {
       if (fieldType.isAssignableFrom(Map.class)) {
         return dataMap;
@@ -51,12 +52,6 @@ class DefaultSerializer implements FieldTypeSerializer<Object> {
           | InstantiationException
           | IllegalAccessException e) {
         try {
-          Object[] values = new Object[dataMap.size()];
-          int i = 0;
-          for (Map.Entry<String, Object> entry : dataMap.entrySet()) {
-            values[i] = entry.getValue();
-            i++;
-          }
           Constructor<?>[] constructors = fieldType.getDeclaredConstructors();
           Constructor<?> found = null;
           OUT:
@@ -78,6 +73,13 @@ class DefaultSerializer implements FieldTypeSerializer<Object> {
                     + " ; you need to have a empty constructor or a constructor, annotated with @DeserializeConstructor.");
           }
           found.setAccessible(true);
+          int i = 0;
+          Class<?>[] parameterTypes = found.getParameterTypes();
+          Object[] values = new Object[parameterTypes.length];
+          for (Map.Entry<String, Object> entry : dataMap.entrySet()) {
+            values[i] = forcePrimitive(entry.getValue(), parameterTypes[i]);
+            i++;
+          }
           return found.newInstance(values);
         } catch (IllegalAccessException ia) {
           throw new IllegalArgumentException("Constructor became inaccessible");
@@ -153,12 +155,12 @@ class DefaultSerializer implements FieldTypeSerializer<Object> {
     return object;
   }
 
-  private Object forcePrimitive(DataObject dataObject, Class<?> fieldType) {
+  private Object forcePrimitive(Object val, Class<?> fieldType) {
     Function<Object, ?> mapper = PrimitiveSerializers.getMapper(fieldType);
     if (mapper != null) {
-      return mapper.apply(dataObject.getAsObject());
+      return mapper.apply(val);
     }
-    return dataObject.getAsObject();
+    return val;
   }
 
   private boolean isPrimitive(Object value) {
