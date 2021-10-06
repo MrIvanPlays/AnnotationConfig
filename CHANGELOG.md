@@ -115,6 +115,14 @@ There are two new annotations - `@Min` and `@Max` . They can be applied on `Stri
 numbers. If applied on a number, they will validate the number ; if on a `String`, they will
 validate the string's length.
 
+### Specific TOML changes
+`mwanji/toml4j` has been replaced with `FasterXML/jackson-dataformats-text` (toml module), 
+meaning if you have used a custom `TomlWriter` from toml4j, it needs to be migrated to the `TomlMapper` 
+of jackson-dataformats-toml. 
+
+Made `TomlValueWriter` public, so you can create `ConfigResolver` instance for TOML easier.
+The `TomlConfig` class won't create such due to its current API.
+
 ### Misc changes
 
 Here are the changes that don't need too much attention, but are still important.
@@ -127,5 +135,3 @@ Here are the changes that don't need too much attention, but are still important
   existing config.
 - Fixed a special case bug where `@Key` annotations aren't respected for fields annotated
   with `@ConfigObject`.
-- Made `TomlValueWriter` public, so you can create `ConfigResolver` instance for TOML easier.
-  The `TomlConfig` class won't create such due to its current API.
