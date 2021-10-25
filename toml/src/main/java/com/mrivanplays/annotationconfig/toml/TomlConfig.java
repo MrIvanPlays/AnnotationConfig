@@ -2,10 +2,11 @@ package com.mrivanplays.annotationconfig.toml;
 
 import com.fasterxml.jackson.dataformat.toml.TomlMapper;
 import com.fasterxml.jackson.dataformat.toml.TomlReadFeature;
-import com.mrivanplays.annotationconfig.core.ValueWriter;
-import com.mrivanplays.annotationconfig.core.annotations.type.AnnotationType;
-import com.mrivanplays.annotationconfig.core.internal.AnnotatedConfigResolver;
-import com.mrivanplays.annotationconfig.core.internal.AnnotationHolder;
+import com.mrivanplays.annotationconfig.core.resolver.ConfigResolver;
+import com.mrivanplays.annotationconfig.core.resolver.ValueReader;
+import com.mrivanplays.annotationconfig.core.resolver.ValueWriter;
+import com.mrivanplays.annotationconfig.core.resolver.options.CustomOptions;
+import com.mrivanplays.annotationconfig.core.resolver.options.Option;
 import com.mrivanplays.annotationconfig.core.serialization.DataObject;
 import com.mrivanplays.annotationconfig.core.serialization.SerializerRegistry;
 import java.io.File;
@@ -19,7 +20,6 @@ import java.util.Collections;
 import java.util.Date;
 import java.util.LinkedHashMap;
 import java.util.Map;
-import java.util.Set;
 
 /**
  * Represents configuration, utilising TOML.
@@ -31,6 +31,45 @@ public final class TomlConfig {
 
   private static final TomlMapper DEFAULT_TOML_MAPPER =
       TomlMapper.builder().configure(TomlReadFeature.PARSE_JAVA_TIME, true).build();
+
+  /** Returns the key on which the mapper is stored. */
+  public static final String MAPPER_KEY = "mapper";
+
+  private static ConfigResolver configResolver;
+
+  /**
+   * Returns the {@link ConfigResolver} instance for toml config.
+   *
+   * @return config resolver
+   */
+  public static ConfigResolver getConfigResolver() {
+    if (configResolver == null) {
+      generateConfigResolver();
+    }
+    return configResolver;
+  }
+
+  private static void generateConfigResolver() {
+    configResolver =
+        ConfigResolver.newBuilder()
+            .withOption(MAPPER_KEY, Option.of(DEFAULT_TOML_MAPPER).markReplaceable())
+            .withValueWriter(new TomlValueWriter(DEFAULT_TOML_MAPPER))
+            .withCommentPrefix("# ")
+            .shouldReverseFields(true)
+            .withValueReader(
+                new ValueReader() {
+                  @Override
+                  public Map<String, Object> read(File file, CustomOptions options)
+                      throws IOException {
+                    return (Map<String, Object>)
+                        options
+                            .getAsOr(MAPPER_KEY, TomlMapper.class, DEFAULT_TOML_MAPPER)
+                            .reader()
+                            .readValue(file, LinkedHashMap.class);
+                  }
+                })
+            .build();
+  }
 
   static {
     SerializerRegistry registry = SerializerRegistry.INSTANCE;
@@ -68,7 +107,9 @@ public final class TomlConfig {
    *
    * @param annotatedConfig annotated config
    * @param file file
+   * @deprecated see {@link #load(Object, File, TomlMapper, boolean)}
    */
+  @Deprecated
   public static void load(Object annotatedConfig, File file) {
     load(annotatedConfig, file, DEFAULT_TOML_MAPPER);
   }
@@ -79,7 +120,9 @@ public final class TomlConfig {
    * @param annotatedConfig annotated config
    * @param file file
    * @param tomlMapper toml mapper
+   * @deprecated see {@link #load(Object, File, TomlMapper, boolean)}
    */
+  @Deprecated
   public static void load(Object annotatedConfig, File file, TomlMapper tomlMapper) {
     load(annotatedConfig, file, tomlMapper, false);
   }
@@ -91,54 +134,36 @@ public final class TomlConfig {
    * @param file file
    * @param tomlMapper toml mapper
    * @param generateNewOptions whether to generate new options
+   * @deprecated use {@link ConfigResolver}
    */
+  @Deprecated
   public static void load(
       Object annotatedConfig, File file, TomlMapper tomlMapper, boolean generateNewOptions) {
-    Map<AnnotationHolder, Set<AnnotationType>> map =
-        AnnotatedConfigResolver.resolveAnnotations(annotatedConfig, true);
-    ValueWriter valueWriter = new TomlValueWriter(tomlMapper);
-    if (!file.exists()) {
-      AnnotatedConfigResolver.dump(annotatedConfig, map, file, "# ", valueWriter, true);
-      return;
+    ConfigResolver resolver = getConfigResolver();
+    if (!resolver.options().has(MAPPER_KEY)) {
+      resolver.options().put(MAPPER_KEY, Option.of(tomlMapper).markReplaceable());
+    } else {
+      if (resolver.options().isReplaceable(MAPPER_KEY).orElse(false)) {
+        resolver.options().put(MAPPER_KEY, Option.of(tomlMapper).markReplaceable());
+      }
     }
-
-    Map<String, Object> values;
-    try {
-      values = tomlMapper.reader().readValue(file, LinkedHashMap.class);
-    } catch (IOException e) {
-      throw new RuntimeException(e);
-    }
-    AnnotatedConfigResolver.setFields(
-        annotatedConfig,
-        values,
-        map,
-        "# ",
-        valueWriter,
-        file,
-        generateNewOptions,
-        true,
-        false,
-        null);
+    resolver.loadOrDump(annotatedConfig, file, generateNewOptions);
   }
 
-  /**
-   * Represents the default toml value writer
-   *
-   * <p>since: 1.0 ; but private -> public in 2.0.0
-   *
-   * @author MrIvanPlays
-   */
-  public static final class TomlValueWriter implements ValueWriter {
+  private static final class TomlValueWriter implements ValueWriter {
 
-    private final TomlMapper tomlMapper;
+    private final TomlMapper defaultMapper;
 
-    TomlValueWriter(TomlMapper tomlMapper) {
-      this.tomlMapper = tomlMapper;
+    TomlValueWriter(TomlMapper defaultMapper) {
+      this.defaultMapper = defaultMapper;
     }
 
     @Override
-    public void write(String key, Object value, PrintWriter writer, boolean sectionExists)
+    public void write(
+        String key, Object value, PrintWriter writer, CustomOptions options, boolean sectionExists)
         throws IOException {
+      TomlMapper tomlMapper =
+          options.getAsOr(TomlConfig.MAPPER_KEY, TomlMapper.class, defaultMapper);
       writer.println(tomlMapper.writeValueAsString(Collections.singletonMap(key, value)));
     }
   }

@@ -1,6 +1,7 @@
 package com.mrivanplays.annotationconfig.core;
 
 import com.mrivanplays.annotationconfig.core.annotations.Min;
+import com.mrivanplays.annotationconfig.core.resolver.ConfigResolver;
 import java.io.File;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.Assertions;

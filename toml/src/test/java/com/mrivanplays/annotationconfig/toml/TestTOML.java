@@ -1,5 +1,6 @@
 package com.mrivanplays.annotationconfig.toml;
 
+import com.mrivanplays.annotationconfig.core.resolver.ConfigResolver;
 import java.io.File;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.Assertions;
@@ -17,10 +18,10 @@ public class TestTOML {
   @Test
   public void testCreatingFile() {
     TOMLTestSubject config = new TOMLTestSubject();
+    ConfigResolver resolver = TomlConfig.getConfigResolver();
     try {
-      // once to generate, 2nd time to load
-      TomlConfig.load(config, file);
-      TomlConfig.load(config, file);
+      resolver.dump(config, file);
+      resolver.load(config, file);
       Assertions.assertTrue(true);
     } catch (Throwable e) {
       e.printStackTrace();

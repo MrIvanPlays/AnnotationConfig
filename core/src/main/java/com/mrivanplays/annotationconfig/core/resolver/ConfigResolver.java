@@ -1,9 +1,9 @@
-package com.mrivanplays.annotationconfig.core;
+package com.mrivanplays.annotationconfig.core.resolver;
 
 import com.mrivanplays.annotationconfig.core.internal.ConfigResolverImpl;
+import com.mrivanplays.annotationconfig.core.resolver.options.CustomOptions;
+import com.mrivanplays.annotationconfig.core.resolver.options.Option;
 import java.io.File;
-import java.util.Map;
-import java.util.function.Function;
 
 /**
  * Represents a resolver of configurations.
@@ -23,6 +23,14 @@ public interface ConfigResolver {
   static ConfigResolver.Builder newBuilder() {
     return new ConfigResolver.Builder();
   }
+
+  /**
+   * Returns the {@link CustomOptions} instance.
+   *
+   * @return options
+   * @see CustomOptions
+   */
+  CustomOptions options();
 
   /**
    * Dumps the specified annotated config to the specified {@link File}. If the specified {@link
@@ -97,7 +105,8 @@ public interface ConfigResolver {
 
     private String commentPrefix;
     private ValueWriter valueWriter;
-    private Function<File, Map<String, Object>> valueReader;
+    private ValueReader valueReader;
+    private CustomOptions options;
     private boolean reverseFields = false;
 
     public Builder() {}
@@ -111,6 +120,7 @@ public interface ConfigResolver {
       this.commentPrefix = copy.commentPrefix;
       this.valueWriter = copy.valueWriter;
       this.valueReader = copy.valueReader;
+      this.options = copy.options;
       this.reverseFields = copy.reverseFields;
     }
 
@@ -153,8 +163,23 @@ public interface ConfigResolver {
      * @param val the value reader you want to set
      * @return this instance for chaining
      */
-    public Builder withValueReader(Function<File, Map<String, Object>> val) {
+    public Builder withValueReader(ValueReader val) {
       valueReader = val;
+      return this;
+    }
+
+    /**
+     * Binds the specified {@link Option} value to the specifed key.
+     *
+     * @param key the key you want this option to be bound to
+     * @param value the value bound
+     * @return this instance for chaining
+     */
+    public <T> Builder withOption(String key, Option<T> value) {
+      if (options == null) {
+        options = CustomOptions.empty();
+      }
+      options.put(key, value);
       return this;
     }
 
@@ -177,7 +202,8 @@ public interface ConfigResolver {
      * @return new config resolver instance
      */
     public ConfigResolver build() {
-      return new ConfigResolverImpl(commentPrefix, valueWriter, valueReader, reverseFields);
+      return new ConfigResolverImpl(
+          commentPrefix, valueWriter, valueReader, options, reverseFields);
     }
   }
 }

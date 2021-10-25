@@ -1,7 +1,9 @@
 package com.mrivanplays.annotationconfig.yaml;
 
-import com.mrivanplays.annotationconfig.core.ConfigResolver;
-import com.mrivanplays.annotationconfig.core.ValueWriter;
+import com.mrivanplays.annotationconfig.core.resolver.ConfigResolver;
+import com.mrivanplays.annotationconfig.core.resolver.ValueReader;
+import com.mrivanplays.annotationconfig.core.resolver.ValueWriter;
+import com.mrivanplays.annotationconfig.core.resolver.options.CustomOptions;
 import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
@@ -45,15 +47,16 @@ public final class YamlConfig {
             .shouldReverseFields(true)
             .withCommentPrefix("# ")
             .withValueReader(
-                file -> {
-                  try (Reader reader = new FileReader(file)) {
-                    Map<String, Object> values = YAML.loadAs(reader, LinkedHashMap.class);
-                    if (values == null) {
-                      return Collections.emptyMap();
+                new ValueReader() {
+                  @Override
+                  public Map<String, Object> read(File file) throws IOException {
+                    try (Reader reader = new FileReader(file)) {
+                      Map<String, Object> values = YAML.loadAs(reader, LinkedHashMap.class);
+                      if (values == null) {
+                        return Collections.emptyMap();
+                      }
+                      return values;
                     }
-                    return values;
-                  } catch (IOException e) {
-                    throw new RuntimeException(e);
                   }
                 })
             .build();
@@ -75,7 +78,12 @@ public final class YamlConfig {
   private static final class YamlValueWriter implements ValueWriter {
 
     @Override
-    public void write(String key, Object value, PrintWriter writer, boolean sectionExists) {
+    public void write(
+        String key,
+        Object value,
+        PrintWriter writer,
+        CustomOptions options,
+        boolean sectionExists) {
       write(key, value, writer, 2, sectionExists);
     }
 

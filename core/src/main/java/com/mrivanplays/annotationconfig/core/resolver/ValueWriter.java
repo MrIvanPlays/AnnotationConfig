@@ -1,5 +1,6 @@
-package com.mrivanplays.annotationconfig.core;
+package com.mrivanplays.annotationconfig.core.resolver;
 
+import com.mrivanplays.annotationconfig.core.resolver.options.CustomOptions;
 import java.io.IOException;
 import java.io.PrintWriter;
 
@@ -21,6 +22,9 @@ import java.io.PrintWriter;
  * The method has to handle the inputted value's type by its own and then write it to the {@link
  * PrintWriter} {@code writer} with the appropriate syntax for the specific config type.
  *
+ * <p>If you want, you can make stuff from your writer mutable by the {@link CustomOptions}. A
+ * {@link ConfigResolver} contains such an instance, which in there you can manipulate any options.
+ *
  * <p>The boolean value {@code sectionExists} represents if the method has to write specially about
  * an object, annotated with {@link com.mrivanplays.annotationconfig.core.annotations.ConfigObject}.
  * For an example, this is a configuration section in YAML:
@@ -41,6 +45,7 @@ import java.io.PrintWriter;
  */
 @FunctionalInterface
 public interface ValueWriter {
-  void write(String key, Object value, PrintWriter writer, boolean sectionExists)
+  void write(
+      String key, Object value, PrintWriter writer, CustomOptions options, boolean sectionExists)
       throws IOException;
 }

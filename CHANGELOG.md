@@ -94,6 +94,7 @@ AnnotatedConfigResolver, which made it even harder. No more!
 internal class. Also, `ValueWriter` interface got exposed from `AnnotatedConfigResolver` to its own
 class. Everything has been documented with lots of information, so you can more easily create them,
 and so you don't do something wrong.
+<br><br>You can also add custom options to a `ConfigResolver` to be accessed by the config reader and writer.
 
 #### Example usage
 
@@ -118,10 +119,7 @@ validate the string's length.
 ### Specific TOML changes
 `mwanji/toml4j` has been replaced with `FasterXML/jackson-dataformats-text` (toml module), 
 meaning if you have used a custom `TomlWriter` from toml4j, it needs to be migrated to the `TomlMapper` 
-of jackson-dataformats-toml. 
-
-Made `TomlValueWriter` public, so you can create `ConfigResolver` instance for TOML easier.
-The `TomlConfig` class won't create such due to its current API.
+of jackson-dataformats-toml.
 
 ### Misc changes
 

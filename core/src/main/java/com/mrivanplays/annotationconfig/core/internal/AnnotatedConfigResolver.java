@@ -1,6 +1,5 @@
 package com.mrivanplays.annotationconfig.core.internal;
 
-import com.mrivanplays.annotationconfig.core.ValueWriter;
 import com.mrivanplays.annotationconfig.core.annotations.Key;
 import com.mrivanplays.annotationconfig.core.annotations.Max;
 import com.mrivanplays.annotationconfig.core.annotations.Min;
@@ -9,6 +8,8 @@ import com.mrivanplays.annotationconfig.core.annotations.comment.Comments;
 import com.mrivanplays.annotationconfig.core.annotations.type.AnnotationType;
 import com.mrivanplays.annotationconfig.core.internal.MinMaxHandler.NumberResult;
 import com.mrivanplays.annotationconfig.core.internal.MinMaxHandler.State;
+import com.mrivanplays.annotationconfig.core.resolver.ValueWriter;
+import com.mrivanplays.annotationconfig.core.resolver.options.CustomOptions;
 import com.mrivanplays.annotationconfig.core.serialization.DataObject;
 import com.mrivanplays.annotationconfig.core.serialization.FieldTypeSerializer;
 import com.mrivanplays.annotationconfig.core.serialization.SerializerRegistry;
@@ -79,6 +80,7 @@ public final class AnnotatedConfigResolver {
       Object annotatedConfig,
       Map<AnnotationHolder, Set<AnnotationType>> map,
       File file,
+      CustomOptions options,
       String commentChar,
       ValueWriter valueWriter,
       boolean reverseFields) {
@@ -86,7 +88,15 @@ public final class AnnotatedConfigResolver {
       file.createNewFile();
       try (PrintWriter writer = new PrintWriter(new FileWriter(file))) {
         toWriter(
-            annotatedConfig, writer, map, commentChar, valueWriter, false, null, reverseFields);
+            annotatedConfig,
+            writer,
+            map,
+            commentChar,
+            valueWriter,
+            options,
+            false,
+            null,
+            reverseFields);
       }
     } catch (IOException e) {
       throw new RuntimeException(e);
@@ -99,6 +109,7 @@ public final class AnnotatedConfigResolver {
       Map<AnnotationHolder, Set<AnnotationType>> map,
       String commentChar,
       ValueWriter valueWriter,
+      CustomOptions options,
       boolean isSection,
       String sectionKey,
       boolean reverseFields)
@@ -143,6 +154,7 @@ public final class AnnotatedConfigResolver {
                   resolveAnnotations(section, reverseFields),
                   commentChar,
                   valueWriter,
+                  options,
                   true,
                   keyName,
                   reverseFields);
@@ -163,7 +175,7 @@ public final class AnnotatedConfigResolver {
           }
           defaultsToValueObject = getWriteValue(field, defaultsToValueObject);
           if (!isSection) {
-            valueWriter.write(keyName, defaultsToValueObject, writer, false);
+            valueWriter.write(keyName, defaultsToValueObject, writer, options, false);
           } else {
             toWrite.put(keyName, defaultsToValueObject);
           }
@@ -174,7 +186,7 @@ public final class AnnotatedConfigResolver {
     }
 
     if (isSection) {
-      valueWriter.write(sectionKey, toWrite, writer, false);
+      valueWriter.write(sectionKey, toWrite, writer, options, false);
     }
   }
 
@@ -324,6 +336,7 @@ public final class AnnotatedConfigResolver {
       String commentChar,
       ValueWriter valueWriter,
       File file,
+      CustomOptions options,
       boolean shouldGenerateNonExistentFields,
       boolean reverseFields,
       boolean isSection,
@@ -375,10 +388,10 @@ public final class AnnotatedConfigResolver {
             if (isSection) {
               Map<String, Object> toWrite = new LinkedHashMap<>();
               toWrite.put(sectionBaseName, writeData.getWriteData());
-              valueWriter.write(keyName, toWrite, writer, true);
+              valueWriter.write(keyName, toWrite, writer, options, true);
             } else {
               Map<String, Object> toWrite = writeData.getWriteData();
-              valueWriter.write(keyName, toWrite.get(keyName), writer, false);
+              valueWriter.write(keyName, toWrite.get(keyName), writer, options, false);
             }
           } catch (IOException e) {
             throw new RuntimeException(e);
@@ -406,6 +419,7 @@ public final class AnnotatedConfigResolver {
             commentChar,
             valueWriter,
             file,
+            options,
             shouldGenerateNonExistentFields,
             reverseFields,
             true,

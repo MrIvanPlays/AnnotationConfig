@@ -305,7 +305,7 @@ PropertyConfig.getConfigResolver().loadOrDump(annotatedConfig, file, /* whether 
 
 TOML example:
 ```java
-TomlConfig.load(annotatedConfig, file);
+TomlConfig.getConfigResolver().loadOrDump(annotatedConfig, file, /* whether to generate new options */);
 ```
 
 Custom config type example:
@@ -378,7 +378,7 @@ Maven:
     <dependency>
         <groupId>com.mrivanplays</groupId>
         <!-- Types: toml, yaml -->
-        <!-- If you want .conf/.properties configuration, you can set the type to core -->
+        <!-- If you want .conf/.properties, or custom implementation configuration, you can set the type to core -->
         <artifactId>annotationconfig-(type)</artifactId> <!-- Replace type -->
         <version>VERSION</version> <!-- Replace with latest version -->
         <scope>compile</scope>

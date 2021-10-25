@@ -1,5 +1,9 @@
 package com.mrivanplays.annotationconfig.core;
 
+import com.mrivanplays.annotationconfig.core.resolver.ConfigResolver;
+import com.mrivanplays.annotationconfig.core.resolver.ValueReader;
+import com.mrivanplays.annotationconfig.core.resolver.ValueWriter;
+import com.mrivanplays.annotationconfig.core.resolver.options.CustomOptions;
 import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
@@ -40,18 +44,19 @@ public final class PropertyConfig {
             .withCommentPrefix("# ")
             .withValueWriter(VALUE_WRITER)
             .withValueReader(
-                file -> {
-                  Properties properties = new Properties();
-                  try (Reader reader = new FileReader(file)) {
-                    properties.load(reader);
-                  } catch (IOException e) {
-                    throw new RuntimeException(e);
+                new ValueReader() {
+                  @Override
+                  public Map<String, Object> read(File file) throws IOException {
+                    Properties properties = new Properties();
+                    try (Reader reader = new FileReader(file)) {
+                      properties.load(reader);
+                    }
+                    Map<String, Object> ret = new LinkedHashMap<>();
+                    for (Object key : properties.keySet()) {
+                      ret.put(String.valueOf(key), properties.get(key));
+                    }
+                    return ret;
                   }
-                  Map<String, Object> ret = new LinkedHashMap<>();
-                  for (Object key : properties.keySet()) {
-                    ret.put(String.valueOf(key), properties.get(key));
-                  }
-                  return ret;
                 })
             .build();
   }
@@ -72,13 +77,18 @@ public final class PropertyConfig {
   private static final class PropertyValueWriter implements ValueWriter {
 
     @Override
-    public void write(String key, Object value, PrintWriter writer, boolean sectionExists) {
+    public void write(
+        String key,
+        Object value,
+        PrintWriter writer,
+        CustomOptions options,
+        boolean sectionExists) {
       if (value instanceof Map<?, ?>) {
         for (Map.Entry<?, ?> entry : ((Map<?, ?>) value).entrySet()) {
           if (entry.getKey() instanceof String && !(entry.getValue() instanceof Map)) {
             writer.println(key + "=" + value);
           } else if (entry.getValue() instanceof Map) {
-            write(key, entry.getValue(), writer, sectionExists);
+            write(key, entry.getValue(), writer, options, sectionExists);
           }
         }
         return;
