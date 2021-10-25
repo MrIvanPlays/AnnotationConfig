@@ -87,7 +87,7 @@ public final class CustomOptions {
       return Optional.empty();
     }
     if (value.value().getClass().isAssignableFrom(type)) {
-      return Optional.of(type.cast(value));
+      return Optional.of(type.cast(value.value()));
     }
     throw new IllegalArgumentException(
         "Value " + value.value() + " cannot be assigned to " + type.getName());
