@@ -9,6 +9,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Objects;
+import java.util.function.BiPredicate;
 
 /**
  * {@link Enum} serializer, which uses different tricks to serialize enum constants to user-friendly
@@ -67,9 +69,38 @@ public final class AdvancedEnumSerializer<E extends Enum<E>> implements FieldTyp
     return new AdvancedEnumSerializer<>(enumClass);
   }
 
+  /**
+   * Creates a new {@link AdvancedEnumSerializer} for the specified {@code enumClass} with the
+   * specified {@code matchesCondition}.
+   *
+   * <p>The matches condition is used when the deserializer does a last effort to try and return an
+   * enum value from the specified input.
+   *
+   * @param enumClass the enum class you want an advanced enum serializer
+   * @param matchesCondition matches condition
+   * @param <E> enum class
+   * @return advanced enum serializer
+   * @throws NullPointerException if null enumClass or null matchesCondition specified
+   * @throws IllegalArgumentException if the specified enumClass is not an {@link Enum}
+   */
+  public static <E extends Enum<E>> AdvancedEnumSerializer<E> forEnumWithCondition(
+      Class<E> enumClass, BiPredicate<Integer, List<String>> matchesCondition) {
+    return new AdvancedEnumSerializer<>(enumClass, matchesCondition);
+  }
+
+  /** The default matches condition */
+  public static final BiPredicate<Integer, List<String>> DEFAULT_MATCHES_CONDITION =
+      (matches, parts) -> matches == parts.size();
+
   private final Class<E> enumClass;
+  private final BiPredicate<Integer, List<String>> matchesCondition;
 
   private AdvancedEnumSerializer(Class<E> enumClass) {
+    this(enumClass, DEFAULT_MATCHES_CONDITION);
+  }
+
+  private AdvancedEnumSerializer(
+      Class<E> enumClass, BiPredicate<Integer, List<String>> matchesCondition) {
     if (enumClass == null) {
       throw new NullPointerException("enumClass");
     }
@@ -77,6 +108,7 @@ public final class AdvancedEnumSerializer<E extends Enum<E>> implements FieldTyp
       throw new IllegalArgumentException("Not an enum");
     }
     this.enumClass = enumClass;
+    this.matchesCondition = Objects.requireNonNull(matchesCondition, "matchesCondition");
   }
 
   /** {@inheritDoc} */
@@ -168,7 +200,7 @@ public final class AdvancedEnumSerializer<E extends Enum<E>> implements FieldTyp
           }
         }
       }
-      if (matches == parts.size()) {
+      if (matchesCondition.test(matches, parts)) {
         return entry.getKey();
       }
     }
