@@ -84,14 +84,7 @@ public final class PropertyConfig {
         CustomOptions options,
         boolean sectionExists) {
       if (value instanceof Map<?, ?>) {
-        for (Map.Entry<?, ?> entry : ((Map<?, ?>) value).entrySet()) {
-          if (entry.getKey() instanceof String && !(entry.getValue() instanceof Map)) {
-            writer.println(key + "=" + value);
-          } else if (entry.getValue() instanceof Map) {
-            write(key, entry.getValue(), writer, options, sectionExists);
-          }
-        }
-        return;
+        throw new IllegalArgumentException(".properties does not support maps.");
       }
       if (value instanceof List<?>) {
         throw new IllegalArgumentException(".properties does not support lists.");
