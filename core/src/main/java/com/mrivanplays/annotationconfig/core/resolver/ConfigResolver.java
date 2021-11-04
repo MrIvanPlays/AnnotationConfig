@@ -46,6 +46,18 @@ public interface ConfigResolver {
   void dump(Object annotatedConfig, File file);
 
   /**
+   * Loads the specified {@link File} to the specified annotated config.
+   *
+   * @param annotatedConfig the annotated config you want to load to
+   * @param file the file you want to load
+   * @param generateNewOptions whether to generate options which don't persist in the file
+   * @see #load(Object, File, boolean, NullReadHandleOption)
+   */
+  default void load(Object annotatedConfig, File file, boolean generateNewOptions) {
+    load(annotatedConfig, file, generateNewOptions, NullReadHandleOption.SET_NULL);
+  }
+
+  /**
    * Loads the specified {@link File} to the specified annotated config. If the {@link File} is
    * empty or no values have been read, it won't modify anything on the specified annotated config (
    * default implementation ).
@@ -57,8 +69,9 @@ public interface ConfigResolver {
    * @param annotatedConfig the annotated config you want to load to
    * @param file the file you want to load
    * @param generateNewOptions whether to generate options which don't persist in the file
+   * @param nullReadHandler how to handle null options
    */
-  void load(Object annotatedConfig, File file, boolean generateNewOptions);
+  void load(Object annotatedConfig, File file, boolean generateNewOptions, NullReadHandleOption nullReadHandler);
 
   /**
    * Loads the specific {@link File} to the specified annotated config.
@@ -74,14 +87,28 @@ public interface ConfigResolver {
   /**
    * Dumps the specified annotated config if the specified {@link File} doesn't exist or loads the
    * specified {@link File} to the specified annotated config if the specified {@link File} exists.
+   *
+   * @param annotatedConfig the annotated config you want to dump/load
+   * @param file the file you want to dump to or load from
+   * @param generateNewOptions whether to generate options which don't persist in the file
+   * @see #loadOrDump(Object, File, boolean, NullReadHandleOption)
+   */
+  default void loadOrDump(Object annotatedConfig, File file, boolean generateNewOptions) {
+    loadOrDump(annotatedConfig, file, generateNewOptions, NullReadHandleOption.SET_NULL);
+  }
+
+  /**
+   * Dumps the specified annotated config if the specified {@link File} doesn't exist or loads the
+   * specified {@link File} to the specified annotated config if the specified {@link File} exists.
    * If the {@link File} is empty or no values have been read, it won't modify anything on the
    * specified annotated config ( default implementation )
    *
    * @param annotatedConfig the annotated config you want to dump/load
    * @param file the file you want to dump to or load from
    * @param generateNewOptions whether to generate options which don't persist in the file
+   * @param nullReadHandler how to handle null options
    */
-  void loadOrDump(Object annotatedConfig, File file, boolean generateNewOptions);
+  void loadOrDump(Object annotatedConfig, File file, boolean generateNewOptions, NullReadHandleOption nullReadHandler);
 
   /**
    * Dumps the specified annotated config if the specified {@link File} doesn't exist or loads the

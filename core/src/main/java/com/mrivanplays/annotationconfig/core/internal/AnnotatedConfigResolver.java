@@ -8,6 +8,7 @@ import com.mrivanplays.annotationconfig.core.annotations.comment.Comments;
 import com.mrivanplays.annotationconfig.core.annotations.type.AnnotationType;
 import com.mrivanplays.annotationconfig.core.internal.MinMaxHandler.NumberResult;
 import com.mrivanplays.annotationconfig.core.internal.MinMaxHandler.State;
+import com.mrivanplays.annotationconfig.core.resolver.NullReadHandleOption;
 import com.mrivanplays.annotationconfig.core.resolver.ValueWriter;
 import com.mrivanplays.annotationconfig.core.resolver.options.CustomOptions;
 import com.mrivanplays.annotationconfig.core.serialization.DataObject;
@@ -337,6 +338,7 @@ public final class AnnotatedConfigResolver {
       ValueWriter valueWriter,
       File file,
       CustomOptions options,
+      NullReadHandleOption nullReadHandler,
       boolean shouldGenerateNonExistentFields,
       boolean reverseFields,
       boolean isSection,
@@ -420,6 +422,7 @@ public final class AnnotatedConfigResolver {
             valueWriter,
             file,
             options,
+            nullReadHandler,
             shouldGenerateNonExistentFields,
             reverseFields,
             true,
@@ -436,9 +439,9 @@ public final class AnnotatedConfigResolver {
       }
       Object deserialized = serializer.deserialize(new DataObject(value), field);
       if (deserialized == null) {
-        // fallback to the default value
-        // todo: make this behaviour configurable
-        continue;
+        if (nullReadHandler == NullReadHandleOption.USE_DEFAULT_VALUE) {
+          continue;
+        }
       }
       if (deserialized instanceof Number) {
         Number comparable = (Number) deserialized;

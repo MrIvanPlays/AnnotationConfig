@@ -2,6 +2,7 @@ package com.mrivanplays.annotationconfig.core.internal;
 
 import com.mrivanplays.annotationconfig.core.annotations.type.AnnotationType;
 import com.mrivanplays.annotationconfig.core.resolver.ConfigResolver;
+import com.mrivanplays.annotationconfig.core.resolver.NullReadHandleOption;
 import com.mrivanplays.annotationconfig.core.resolver.ValueReader;
 import com.mrivanplays.annotationconfig.core.resolver.ValueWriter;
 import com.mrivanplays.annotationconfig.core.resolver.options.CustomOptions;
@@ -59,7 +60,11 @@ public final class ConfigResolverImpl implements ConfigResolver {
   }
 
   @Override
-  public void load(Object annotatedConfig, File file, boolean generateNewOptions) {
+  public void load(
+      Object annotatedConfig,
+      File file,
+      boolean generateNewOptions,
+      NullReadHandleOption nullReadHandler) {
     if (!file.exists()) {
       return;
     }
@@ -82,6 +87,7 @@ public final class ConfigResolverImpl implements ConfigResolver {
         valueWriter,
         file,
         options,
+        nullReadHandler,
         generateNewOptions,
         reverseFields,
         false,
@@ -89,7 +95,11 @@ public final class ConfigResolverImpl implements ConfigResolver {
   }
 
   @Override
-  public void loadOrDump(Object annotatedConfig, File file, boolean generateNewOptions) {
+  public void loadOrDump(
+      Object annotatedConfig,
+      File file,
+      boolean generateNewOptions,
+      NullReadHandleOption nullReadHandler) {
     Map<AnnotationHolder, Set<AnnotationType>> resolvedAnnotations =
         AnnotatedConfigResolver.resolveAnnotations(annotatedConfig, reverseFields);
     if (!file.exists()) {
@@ -120,6 +130,7 @@ public final class ConfigResolverImpl implements ConfigResolver {
         valueWriter,
         file,
         options,
+        nullReadHandler,
         generateNewOptions,
         reverseFields,
         false,
