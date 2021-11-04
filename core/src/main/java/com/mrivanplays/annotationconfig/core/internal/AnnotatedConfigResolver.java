@@ -435,6 +435,11 @@ public final class AnnotatedConfigResolver {
         serializer = serializerOpt.get();
       }
       Object deserialized = serializer.deserialize(new DataObject(value), field);
+      if (deserialized == null) {
+        // fallback to the default value
+        // todo: make this behaviour configurable
+        continue;
+      }
       if (deserialized instanceof Number) {
         Number comparable = (Number) deserialized;
         State comparison = MinMaxHandler.compare(min, max, comparable);
