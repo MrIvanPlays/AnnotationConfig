@@ -56,6 +56,11 @@ public class AdvancedEnumSerializerTest {
     assertEquals(Values.DENY_ALL_TRUE, deserialize("true all deny"));
     assertEquals(Values.DENY_ALL_TRUE, deserialize("deny true all"));
     assertEquals(Values.DENY_ALL_BOTH, deserialize("deny all both"));
+    assertEquals(Values.ACCEPT_ALL_FALSE, deserialize("accept_all false"));
+    assertEquals(Values.ACCEPT_ALL_FALSE, deserialize("all_accept false"));
+    assertEquals(Values.ACCEPT_ALL_FALSE, deserialize("accept_false all"));
+    assertEquals(Values.ACCEPT_ALL_BOTH, deserialize("all accept_both"));
+    assertEquals(Values.DENY_ALL_FALSE, deserialize("deny_false all"));
   }
 
   @Test
