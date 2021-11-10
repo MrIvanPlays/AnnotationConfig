@@ -30,7 +30,7 @@ public class TestMinMaxPlacement {
         () -> {
           MinMaxTest configSubject = new MinMaxTest();
           resolver.dump(configSubject, file);
-          resolver.load(configSubject, file, true);
+          resolver.load(configSubject, file);
         });
   }
 }

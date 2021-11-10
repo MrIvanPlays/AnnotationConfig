@@ -44,7 +44,7 @@ public class TestMinMaxString {
           configSubject.setValue("a");
           file.delete();
           resolver.dump(configSubject, file);
-          resolver.load(configSubject, file, true);
+          resolver.load(configSubject, file);
         });
   }
 
@@ -59,7 +59,7 @@ public class TestMinMaxString {
           configSubject.setValue("This exceeds the max limit set");
           file.delete();
           resolver.dump(configSubject, file);
-          resolver.load(configSubject, file, true);
+          resolver.load(configSubject, file);
         });
   }
 }

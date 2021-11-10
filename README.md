@@ -295,17 +295,17 @@ ExampleAnnotatedConfig annotatedConfig = new ExampleAnnotatedConfig();
 
 YAML example:
 ```java
-YamlConfig.getConfigResolver().loadOrDump(anotatedConfig, file, /* whether to generate new options */);
+YamlConfig.getConfigResolver().loadOrDump(anotatedConfig, file, /* loader settings */);
 ```
 
 .conf/.properties example:
 ```java
-PropertyConfig.getConfigResolver().loadOrDump(annotatedConfig, file, /* whether to generate new options */);
+PropertyConfig.getConfigResolver().loadOrDump(annotatedConfig, file, /* loader settings */);
 ```
 
 TOML example:
 ```java
-TomlConfig.getConfigResolver().loadOrDump(annotatedConfig, file, /* whether to generate new options */);
+TomlConfig.getConfigResolver().loadOrDump(annotatedConfig, file, /* loader settings */);
 ```
 
 Custom config type example:
@@ -318,7 +318,7 @@ ConfigResolver configResolver = ConfigResolver.newBuilder()
     .shouldReverseFields(true /* should we reverse fields */)
     .build();
 
-configResolver.loadOrDump(annotatedConfig, file, /* whether to generate new options */);
+configResolver.loadOrDump(annotatedConfig, file, /* loader settings */);
 ```
 
 </p>

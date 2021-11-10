@@ -21,7 +21,7 @@ public class TestYAML {
     YAMLTestSubject config = new YAMLTestSubject();
     try {
       resolver.dump(config, file);
-      resolver.load(config, file, true);
+      resolver.load(config, file);
       Assertions.assertTrue(true);
     } catch (Throwable e) {
       e.printStackTrace();
@@ -34,7 +34,7 @@ public class TestYAML {
     YAMLSecondTestSubject config = new YAMLSecondTestSubject();
     try {
       resolver.dump(config, file);
-      resolver.load(config, file, true);
+      resolver.load(config, file);
       Assertions.assertTrue(true);
     } catch (Throwable e) {
       e.printStackTrace();

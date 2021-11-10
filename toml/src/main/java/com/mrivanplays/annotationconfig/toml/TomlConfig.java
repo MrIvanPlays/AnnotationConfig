@@ -3,6 +3,7 @@ package com.mrivanplays.annotationconfig.toml;
 import com.fasterxml.jackson.dataformat.toml.TomlMapper;
 import com.fasterxml.jackson.dataformat.toml.TomlReadFeature;
 import com.mrivanplays.annotationconfig.core.resolver.ConfigResolver;
+import com.mrivanplays.annotationconfig.core.resolver.LoadSetting;
 import com.mrivanplays.annotationconfig.core.resolver.ValueReader;
 import com.mrivanplays.annotationconfig.core.resolver.ValueWriter;
 import com.mrivanplays.annotationconfig.core.resolver.options.CustomOptions;
@@ -12,6 +13,7 @@ import com.mrivanplays.annotationconfig.core.serialization.SerializerRegistry;
 import java.io.File;
 import java.io.IOException;
 import java.io.PrintWriter;
+import java.io.Reader;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
@@ -53,19 +55,20 @@ public final class TomlConfig {
     configResolver =
         ConfigResolver.newBuilder()
             .withOption(MAPPER_KEY, Option.of(DEFAULT_TOML_MAPPER).markReplaceable())
+            .withLoadSetting(LoadSetting.GENERATE_NEW_OPTIONS, false)
             .withValueWriter(new TomlValueWriter(DEFAULT_TOML_MAPPER))
             .withCommentPrefix("# ")
             .shouldReverseFields(true)
             .withValueReader(
                 new ValueReader() {
                   @Override
-                  public Map<String, Object> read(File file, CustomOptions options)
+                  public Map<String, Object> read(Reader reader, CustomOptions options)
                       throws IOException {
                     return (Map<String, Object>)
                         options
                             .getAsOr(MAPPER_KEY, TomlMapper.class, DEFAULT_TOML_MAPPER)
                             .reader()
-                            .readValue(file, LinkedHashMap.class);
+                            .readValue(reader, LinkedHashMap.class);
                   }
                 })
             .build();
@@ -107,7 +110,7 @@ public final class TomlConfig {
    *
    * @param annotatedConfig annotated config
    * @param file file
-   * @deprecated see {@link #load(Object, File, TomlMapper, boolean)}
+   * @deprecated see {@link #load(Object, File, TomlMapper)}
    */
   @Deprecated
   public static void load(Object annotatedConfig, File file) {
@@ -120,25 +123,10 @@ public final class TomlConfig {
    * @param annotatedConfig annotated config
    * @param file file
    * @param tomlMapper toml mapper
-   * @deprecated see {@link #load(Object, File, TomlMapper, boolean)}
+   * @deprecated use {@link #getConfigResolver()}
    */
   @Deprecated
   public static void load(Object annotatedConfig, File file, TomlMapper tomlMapper) {
-    load(annotatedConfig, file, tomlMapper, false);
-  }
-
-  /**
-   * Loads the config object from the file. If the file does not exist, it creates one.
-   *
-   * @param annotatedConfig annotated config
-   * @param file file
-   * @param tomlMapper toml mapper
-   * @param generateNewOptions whether to generate new options
-   * @deprecated use {@link ConfigResolver}
-   */
-  @Deprecated
-  public static void load(
-      Object annotatedConfig, File file, TomlMapper tomlMapper, boolean generateNewOptions) {
     ConfigResolver resolver = getConfigResolver();
     if (!resolver.options().has(MAPPER_KEY)) {
       resolver.options().put(MAPPER_KEY, Option.of(tomlMapper).markReplaceable());
@@ -147,7 +135,7 @@ public final class TomlConfig {
         resolver.options().put(MAPPER_KEY, Option.of(tomlMapper).markReplaceable());
       }
     }
-    resolver.loadOrDump(annotatedConfig, file, generateNewOptions);
+    resolver.loadOrDump(annotatedConfig, file);
   }
 
   private static final class TomlValueWriter implements ValueWriter {

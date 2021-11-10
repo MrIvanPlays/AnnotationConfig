@@ -20,6 +20,7 @@ import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.PrintWriter;
+import java.io.Writer;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Field;
 import java.util.ArrayList;
@@ -104,6 +105,30 @@ public final class AnnotatedConfigResolver {
             null,
             reverseFields);
       }
+    } catch (IOException e) {
+      throw new RuntimeException(e);
+    }
+  }
+
+  public static void dump(
+      Object annotatedConfig,
+      Map<AnnotationHolder, Set<AnnotationType>> map,
+      Writer writerFeed,
+      CustomOptions options,
+      String commentChar,
+      ValueWriter valueWriter,
+      boolean reverseFields) {
+    try (PrintWriter writer = new PrintWriter(writerFeed)) {
+      toWriter(
+          annotatedConfig,
+          writer,
+          map,
+          commentChar,
+          valueWriter,
+          options,
+          false,
+          null,
+          reverseFields);
     } catch (IOException e) {
       throw new RuntimeException(e);
     }
@@ -339,6 +364,154 @@ public final class AnnotatedConfigResolver {
       Object annotatedConfig,
       Map<String, Object> values,
       Map<AnnotationHolder, Set<AnnotationType>> map,
+      NullReadHandleOption nullReadHandler,
+      CustomOptions options,
+      boolean reverseFields) {
+    for (Map.Entry<AnnotationHolder, Set<AnnotationType>> entry : map.entrySet()) {
+      AnnotationHolder holder = entry.getKey();
+      if (holder.isClass()) {
+        continue;
+      }
+      Field field = holder.getField();
+      field.setAccessible(true);
+      String keyName = field.getName();
+      boolean configObject = false;
+      Object section = null;
+      NumberResult min = NumberResult.stateOnly(State.START);
+      NumberResult max = NumberResult.stateOnly(State.START);
+      for (AnnotationType type : entry.getValue()) {
+        if (type.is(AnnotationType.KEY)) {
+          keyName = field.getDeclaredAnnotation(Key.class).value();
+        }
+        if (type.is(AnnotationType.MIN)) {
+          min = MinMaxHandler.getNumber(field.getDeclaredAnnotation(Min.class));
+        }
+        if (type.is(AnnotationType.MAX)) {
+          max = MinMaxHandler.getNumber(field.getDeclaredAnnotation(Max.class));
+        }
+        if (type.is(AnnotationType.CONFIG_OBJECT)) {
+          configObject = true;
+          try {
+            section = field.get(annotatedConfig);
+          } catch (IllegalAccessException e) {
+            throw new IllegalArgumentException(
+                "Could not get config object from annotated config '"
+                    + annotatedConfig.getClass().getSimpleName()
+                    + "'");
+          }
+        }
+      }
+      Object value = values.get(keyName);
+      if (value == null) {
+        continue;
+      }
+      if (configObject) {
+        if (section == null) {
+          throw new IllegalArgumentException(
+              "Non initialized config object found in annotated config '"
+                  + annotatedConfig.getClass().getSimpleName()
+                  + "'");
+        }
+        if (!(value instanceof Map)) {
+          // sections not supported, continue on
+          continue;
+        }
+        setFields(
+            section,
+            (Map<String, Object>) value,
+            resolveAnnotations(section, reverseFields),
+            nullReadHandler,
+            options,
+            reverseFields);
+        continue;
+      }
+      handleFieldSet(annotatedConfig, field, options, nullReadHandler, value, min, max, keyName);
+    }
+  }
+
+  private static void handleFieldSet(
+      Object annotatedConfig,
+      Field field,
+      CustomOptions options,
+      NullReadHandleOption nullReadHandler,
+      Object value,
+      NumberResult min,
+      NumberResult max,
+      String keyName) {
+    Class<?> fieldType = field.getType();
+    Optional<FieldTypeSerializer<?>> serializerOpt =
+        SerializerRegistry.INSTANCE.getSerializer(fieldType);
+    FieldTypeSerializer<?> serializer;
+    if (!serializerOpt.isPresent()) {
+      serializer = SerializerRegistry.INSTANCE.getDefaultSerializer();
+    } else {
+      serializer = serializerOpt.get();
+    }
+    Object deserialized = serializer.deserialize(new DataObject(value), field);
+    if (deserialized == null) {
+      if (nullReadHandler == NullReadHandleOption.USE_DEFAULT_VALUE) {
+        return;
+      }
+    }
+    if (deserialized instanceof Number) {
+      Number comparable = (Number) deserialized;
+      State comparison = MinMaxHandler.compare(min, max, comparable);
+      handleComparison(comparison, keyName, comparable, fieldType, min, max, Number.class);
+    } else if (deserialized instanceof String) {
+      String comparable = (String) deserialized;
+      State comparison = MinMaxHandler.compare(min, max, comparable);
+      handleComparison(comparison, keyName, comparable.length(), fieldType, min, max, String.class);
+    } else {
+      if (min.getState() != State.START) {
+        throw new IllegalArgumentException("@Min annotation placed on invalid field type");
+      }
+      if (max.getState() != State.START) {
+        throw new IllegalArgumentException("@Max annotation placed on invalid field type");
+      }
+    }
+    // check for custom annotations
+    CustomAnnotationRegistry cARegistry = CustomAnnotationRegistry.INSTANCE;
+    if (!cARegistry.isEmpty()) {
+      Throwable error = null;
+      boolean failed = false;
+      for (Annotation annotation : field.getAnnotations()) {
+        Class<? extends Annotation> type = annotation.annotationType();
+        if (AnnotationType.match(type).isPresent()) {
+          // do not handle any validation of our own annotations even if someone registered a
+          // validator for them.
+          continue;
+        }
+        Optional<AnnotationValidator<? extends Annotation>> validatorOpt =
+            cARegistry.getValidator(type);
+        if (validatorOpt.isPresent()) {
+          AnnotationValidator validator = validatorOpt.get();
+          if (!validator.validate(field.getAnnotation(type), deserialized, options, field)) {
+            failed = true;
+            error = validator.error();
+            break;
+          }
+        }
+      }
+      if (error != null) {
+        throw new RuntimeException(error);
+      }
+      // error wasn't thrown, so just silently skip if the checks failed
+      if (failed) {
+        return;
+      }
+    }
+    try {
+      field.set(annotatedConfig, deserialized);
+    } catch (IllegalAccessException e) {
+      throw new IllegalArgumentException(
+          "Could not set a field's value ; field not accessible anymore");
+    }
+  }
+
+  public static void setFields(
+      Object annotatedConfig,
+      Map<String, Object> values,
+      Map<AnnotationHolder, Set<AnnotationType>> map,
       String commentChar,
       ValueWriter valueWriter,
       File file,
@@ -382,7 +555,6 @@ public final class AnnotatedConfigResolver {
           }
         }
       }
-      Class<?> fieldType = field.getType();
       Object value = values.get(keyName);
       if (value == null) {
         if (shouldGenerateNonExistentFields) {
@@ -434,74 +606,7 @@ public final class AnnotatedConfigResolver {
             keyName);
         continue;
       }
-      Optional<FieldTypeSerializer<?>> serializerOpt =
-          SerializerRegistry.INSTANCE.getSerializer(fieldType);
-      FieldTypeSerializer<?> serializer;
-      if (!serializerOpt.isPresent()) {
-        serializer = SerializerRegistry.INSTANCE.getDefaultSerializer();
-      } else {
-        serializer = serializerOpt.get();
-      }
-      Object deserialized = serializer.deserialize(new DataObject(value), field);
-      if (deserialized == null) {
-        if (nullReadHandler == NullReadHandleOption.USE_DEFAULT_VALUE) {
-          continue;
-        }
-      }
-      if (deserialized instanceof Number) {
-        Number comparable = (Number) deserialized;
-        State comparison = MinMaxHandler.compare(min, max, comparable);
-        handleComparison(comparison, keyName, comparable, fieldType, min, max, Number.class);
-      } else if (deserialized instanceof String) {
-        String comparable = (String) deserialized;
-        State comparison = MinMaxHandler.compare(min, max, comparable);
-        handleComparison(
-            comparison, keyName, comparable.length(), fieldType, min, max, String.class);
-      } else {
-        if (min.getState() != State.START) {
-          throw new IllegalArgumentException("@Min annotation placed on invalid field type");
-        }
-        if (max.getState() != State.START) {
-          throw new IllegalArgumentException("@Max annotation placed on invalid field type");
-        }
-      }
-      // check for custom annotations
-      CustomAnnotationRegistry cARegistry = CustomAnnotationRegistry.INSTANCE;
-      if (!cARegistry.isEmpty()) {
-        Throwable error = null;
-        boolean failed = false;
-        for (Annotation annotation : field.getAnnotations()) {
-          Class<? extends Annotation> type = annotation.annotationType();
-          if (AnnotationType.match(type).isPresent()) {
-            // do not handle any validation of our own annotations even if someone registered a
-            // validator for them.
-            continue;
-          }
-          Optional<AnnotationValidator<? extends Annotation>> validatorOpt =
-              cARegistry.getValidator(type);
-          if (validatorOpt.isPresent()) {
-            AnnotationValidator validator = validatorOpt.get();
-            if (!validator.validate(field.getAnnotation(type), deserialized, options, field)) {
-              failed = true;
-              error = validator.error();
-              break;
-            }
-          }
-        }
-        if (error != null) {
-          throw new RuntimeException(error);
-        }
-        // error wasn't thrown, so just silently skip if the checks failed
-        if (failed) {
-          continue;
-        }
-      }
-      try {
-        field.set(annotatedConfig, deserialized);
-      } catch (IllegalAccessException e) {
-        throw new IllegalArgumentException(
-            "Could not set a field's value ; field not accessible anymore");
-      }
+      handleFieldSet(annotatedConfig, field, options, nullReadHandler, value, min, max, keyName);
     }
   }
 

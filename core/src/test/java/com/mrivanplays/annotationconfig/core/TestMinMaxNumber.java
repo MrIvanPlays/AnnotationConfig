@@ -44,7 +44,7 @@ public class TestMinMaxNumber {
           configSubject.setDoubleValue(-34.6);
           file.delete();
           resolver.dump(configSubject, file);
-          resolver.load(configSubject, file, true);
+          resolver.load(configSubject, file);
         });
   }
 
@@ -59,7 +59,7 @@ public class TestMinMaxNumber {
           configSubject.setDoubleValue(45.2);
           file.delete();
           resolver.dump(configSubject, file);
-          resolver.load(configSubject, file, true);
+          resolver.load(configSubject, file);
         });
   }
 }

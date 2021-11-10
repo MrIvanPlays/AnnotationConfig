@@ -1,12 +1,11 @@
 package com.mrivanplays.annotationconfig.yaml;
 
 import com.mrivanplays.annotationconfig.core.resolver.ConfigResolver;
+import com.mrivanplays.annotationconfig.core.resolver.LoadSettings;
 import com.mrivanplays.annotationconfig.core.resolver.ValueReader;
 import com.mrivanplays.annotationconfig.core.resolver.ValueWriter;
 import com.mrivanplays.annotationconfig.core.resolver.options.CustomOptions;
 import java.io.File;
-import java.io.FileReader;
-import java.io.IOException;
 import java.io.PrintWriter;
 import java.io.Reader;
 import java.util.Collections;
@@ -49,14 +48,12 @@ public final class YamlConfig {
             .withValueReader(
                 new ValueReader() {
                   @Override
-                  public Map<String, Object> read(File file) throws IOException {
-                    try (Reader reader = new FileReader(file)) {
-                      Map<String, Object> values = YAML.loadAs(reader, LinkedHashMap.class);
-                      if (values == null) {
-                        return Collections.emptyMap();
-                      }
-                      return values;
+                  public Map<String, Object> read(Reader reader) {
+                    Map<String, Object> values = YAML.loadAs(reader, LinkedHashMap.class);
+                    if (values == null) {
+                      return Collections.emptyMap();
                     }
+                    return values;
                   }
                 })
             .build();
@@ -68,11 +65,12 @@ public final class YamlConfig {
    * @param annotatedConfig annotated config
    * @param file file
    * @deprecated use {@link #getConfigResolver()}. it has a much better description of methods. the
-   *     equivalent of this method there is {@link ConfigResolver#loadOrDump(Object, File, boolean)}
+   *     equivalent of this method there is {@link ConfigResolver#loadOrDump(Object, File,
+   *     LoadSettings)}
    */
   @Deprecated
   public static void load(Object annotatedConfig, File file) {
-    getConfigResolver().loadOrDump(annotatedConfig, file, true);
+    getConfigResolver().loadOrDump(annotatedConfig, file);
   }
 
   private static final class YamlValueWriter implements ValueWriter {

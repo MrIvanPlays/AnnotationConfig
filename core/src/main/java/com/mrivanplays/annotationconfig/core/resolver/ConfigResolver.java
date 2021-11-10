@@ -4,6 +4,12 @@ import com.mrivanplays.annotationconfig.core.internal.ConfigResolverImpl;
 import com.mrivanplays.annotationconfig.core.resolver.options.CustomOptions;
 import com.mrivanplays.annotationconfig.core.resolver.options.Option;
 import java.io.File;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.io.OutputStream;
+import java.io.OutputStreamWriter;
+import java.io.Reader;
+import java.io.Writer;
 
 /**
  * Represents a resolver of configurations.
@@ -33,94 +39,147 @@ public interface ConfigResolver {
   CustomOptions options();
 
   /**
-   * Dumps the specified annotated config to the specified {@link File}. If the specified {@link
-   * File} exists, it will get deleted ( default implementation ).
+   * Dumps the specified {@code annotatedConfig} to the specified {@link File} {@code file}. If, at
+   * the time of calling this method, the file exists, it will get deleted ( default implementation
+   * ).
    *
-   * <p>If you are going to call {@link #load(Object, File, boolean)} after calling this method,
-   * consider using {@link #loadOrDump(Object, File, boolean)} rather than calling dump and load one
-   * after each other. This way you save CPU time by not making the library find annotations twice.
+   * <p>If you are going to call {@link #load(Object, File, LoadSettings)} after calling this
+   * method, consider using {@link #loadOrDump(Object, File, LoadSettings)} rather than calling dump
+   * and load one after each other. This way you save CPU time by not making the library find
+   * annotations twice.
    *
    * @param annotatedConfig the annotated config you want to dump
-   * @param file the file you want to dump the config to
+   * @param file the file you want to dump the annotated config to
    */
   void dump(Object annotatedConfig, File file);
 
   /**
-   * Loads the specified {@link File} to the specified annotated config.
+   * Dumps the specified {@code annotatedConfig} to the specified {@link OutputStream} {@code os}.
    *
-   * @param annotatedConfig the annotated config you want to load to
-   * @param file the file you want to load
-   * @param generateNewOptions whether to generate options which don't persist in the file
-   * @see #load(Object, File, boolean, NullReadHandleOption)
+   * @param annotatedConfig the annotated config you want to dump
+   * @param os the output stream to dump the annotated config to
    */
-  default void load(Object annotatedConfig, File file, boolean generateNewOptions) {
-    load(annotatedConfig, file, generateNewOptions, NullReadHandleOption.SET_NULL);
+  default void dump(Object annotatedConfig, OutputStream os) {
+    dump(annotatedConfig, new OutputStreamWriter(os));
   }
 
   /**
-   * Loads the specified {@link File} to the specified annotated config. If the {@link File} is
-   * empty or no values have been read, it won't modify anything on the specified annotated config (
-   * default implementation ).
+   * Dumps the specified {@code annotatedConfig} to the specified {@link Writer} {@code writer}.
+   *
+   * @param annotatedConfig the annotated config you want to dump
+   * @param writer the writer to dump the annotated config to
+   */
+  void dump(Object annotatedConfig, Writer writer);
+
+  /**
+   * Loads the specified {@code annotatedConfig} from the specified {@link File} {@code file} using
+   * the default {@link LoadSettings} from the builder of this config resolver, or {@link
+   * LoadSettings#getDefault()}.
    *
    * <p>If you have called {@link #dump(Object, File)} before calling this method, consider using
-   * {@link #loadOrDump(Object, File, boolean)} rather than calling dump and load one after each
-   * other. This way you save CPU time by not making the library find annotations twice.
+   * {@link #loadOrDump(Object, File)} rather than calling dump and load one after each other. This
+   * way you save CPU time by not making the library find annotations twice.
    *
    * @param annotatedConfig the annotated config you want to load to
    * @param file the file you want to load
-   * @param generateNewOptions whether to generate options which don't persist in the file
-   * @param nullReadHandler how to handle null options
    */
-  void load(Object annotatedConfig, File file, boolean generateNewOptions, NullReadHandleOption nullReadHandler);
+  void load(Object annotatedConfig, File file);
 
   /**
-   * Loads the specific {@link File} to the specified annotated config.
+   * Loads the specified {@code annotatedConfig} from the specified {@link File} {@code file} using
+   * the {@link LoadSettings} {@code loadSettings} specified.
+   *
+   * <p>If you have called {@link #dump(Object, File)} before calling this method, consider using
+   * {@link #loadOrDump(Object, File, LoadSettings)} rather than calling dump and load one after
+   * each other. This way you save CPU time by not making the library find annotations twice.
    *
    * @param annotatedConfig the annotated config you want to load to
    * @param file the file you want to load
-   * @see #load(Object, File, boolean)
+   * @param loadSettings the load settings
    */
-  default void load(Object annotatedConfig, File file) {
-    load(annotatedConfig, file, true);
+  void load(Object annotatedConfig, File file, LoadSettings loadSettings);
+
+  /**
+   * Loads the specified {@code annotatedConfig} from the specified {@link InputStream} {@code in}
+   * using the default {@link LoadSettings} from the builder of this config resolver, or {@link
+   * LoadSettings#getDefault()}.
+   *
+   * <p>If you have a {@link File} instance before calling that, consider using {@link #load(Object,
+   * File)}. This way you allow AnnotatedConfig to generate missing options if the load settings
+   * allow it.
+   *
+   * @param annotatedConfig the annotated config you want to load to
+   * @param in the input stream you want to load
+   */
+  default void load(Object annotatedConfig, InputStream in) {
+    load(annotatedConfig, new InputStreamReader(in));
   }
 
   /**
-   * Dumps the specified annotated config if the specified {@link File} doesn't exist or loads the
-   * specified {@link File} to the specified annotated config if the specified {@link File} exists.
+   * Loads the specified {@code annotatedConfig} from the specified {@link InputStream} {@code in}
+   * using the {@link LoadSettings} {@code loadSettings} specified.
    *
-   * @param annotatedConfig the annotated config you want to dump/load
-   * @param file the file you want to dump to or load from
-   * @param generateNewOptions whether to generate options which don't persist in the file
-   * @see #loadOrDump(Object, File, boolean, NullReadHandleOption)
+   * <p>If you have a {@link File} instance before calling that, consider using {@link #load(Object,
+   * File, LoadSettings)}. This way you allow AnnotatedConfig to generate missing options if the
+   * load settings allow it.
+   *
+   * @param annotatedConfig the annotated config you want to load to
+   * @param in the input stream you want to load
+   * @param loadSettings the load settings
    */
-  default void loadOrDump(Object annotatedConfig, File file, boolean generateNewOptions) {
-    loadOrDump(annotatedConfig, file, generateNewOptions, NullReadHandleOption.SET_NULL);
+  default void load(Object annotatedConfig, InputStream in, LoadSettings loadSettings) {
+    load(annotatedConfig, new InputStreamReader(in), loadSettings);
   }
 
   /**
-   * Dumps the specified annotated config if the specified {@link File} doesn't exist or loads the
-   * specified {@link File} to the specified annotated config if the specified {@link File} exists.
-   * If the {@link File} is empty or no values have been read, it won't modify anything on the
-   * specified annotated config ( default implementation )
+   * Loads the specified {@code annotatedConfig} from the specified {@link Reader} {@code reader}
+   * using the default {@link LoadSettings} from the builder of this config resolver, or {@link
+   * LoadSettings#getDefault()}.
    *
-   * @param annotatedConfig the annotated config you want to dump/load
-   * @param file the file you want to dump to or load from
-   * @param generateNewOptions whether to generate options which don't persist in the file
-   * @param nullReadHandler how to handle null options
+   * <p>If you have a {@link File} instance before calling that, consider using {@link #load(Object,
+   * File)}. This way you allow AnnotatedConfig to generate missing options if the load settings
+   * allow it.
+   *
+   * @param annotatedConfig the annotated config you want to load to
+   * @param reader the reader you want to load
    */
-  void loadOrDump(Object annotatedConfig, File file, boolean generateNewOptions, NullReadHandleOption nullReadHandler);
+  void load(Object annotatedConfig, Reader reader);
 
   /**
-   * Dumps the specified annotated config if the specified {@link File} doesn't exist or loads the
-   * specified {@link File} to the specified annotated config if the specified {@link File} exists.
+   * Loads the specified {@code annotatedConfig} from the specified {@link Reader} {@code reader}
+   * using the {@link LoadSettings} {@code loadSettings} specified.
    *
-   * @param annotatedConfig the annotated config you want to dump/load
-   * @param file the file you want to dump to or load from
-   * @see #loadOrDump(Object, File, boolean)
+   * <p>If you have a {@link File} instance before calling that, consider using {@link #load(Object,
+   * File, LoadSettings)}. This way you allow AnnotatedConfig to generate missing options if the
+   * load settings allow it.
+   *
+   * @param annotatedConfig the annotated config you want to load to
+   * @param reader the reader you want to load
+   * @param loadSettings the load settings
    */
-  default void loadOrDump(Object annotatedConfig, File file) {
-    loadOrDump(annotatedConfig, file, true);
-  }
+  void load(Object annotatedConfig, Reader reader, LoadSettings loadSettings);
+
+  /**
+   * Loads the specified {@code annotatedConfig} from the specified {@link File} {@code file}, if it
+   * exists, if not, dumps the specified {@code annotatedConfig} to the specified file, using the
+   * default {@link LoadSettings} from the builder of this config resolver, or {@link
+   * LoadSettings#getDefault()}.
+   *
+   * @param annotatedConfig the annotated config you want to load/dump
+   * @param file the file you want to load/dump to
+   */
+  void loadOrDump(Object annotatedConfig, File file);
+
+  /**
+   * Loads the specified {@code annotatedConfig} from the specified {@link File} {@code file}, if it
+   * exists, if not, dumps the specified {@code annotatedConfig} to the specified file, using the
+   * {@link LoadSettings} {@code loadSettings} specified.
+   *
+   * @param annotatedConfig the annotated config you want to load/dump
+   * @param file the file you want to load/dump to
+   * @param loadSettings the load settings
+   */
+  void loadOrDump(Object annotatedConfig, File file, LoadSettings loadSettings);
 
   /**
    * Represents a builder of a {@link ConfigResolver}
@@ -134,6 +193,7 @@ public interface ConfigResolver {
     private ValueWriter valueWriter;
     private ValueReader valueReader;
     private CustomOptions options;
+    private LoadSettings defaultLoadSettings;
     private boolean reverseFields = false;
 
     public Builder() {}
@@ -148,6 +208,7 @@ public interface ConfigResolver {
       this.valueWriter = copy.valueWriter;
       this.valueReader = copy.valueReader;
       this.options = copy.options;
+      this.defaultLoadSettings = copy.defaultLoadSettings;
       this.reverseFields = copy.reverseFields;
     }
 
@@ -200,6 +261,7 @@ public interface ConfigResolver {
      *
      * @param key the key you want this option to be bound to
      * @param value the value bound
+     * @param <T> value type
      * @return this instance for chaining
      */
     public <T> Builder withOption(String key, Option<T> value) {
@@ -207,6 +269,23 @@ public interface ConfigResolver {
         options = CustomOptions.empty();
       }
       options.put(key, value);
+      return this;
+    }
+
+    /**
+     * Binds the specified {@code value} to the specified {@link LoadSetting} {@code setting} in the
+     * default {@link LoadSettings}
+     *
+     * @param setting the setting you want this value to be bound to
+     * @param value the value bound
+     * @param <T> value type
+     * @return this instance for chaining
+     */
+    public <T> Builder withLoadSetting(LoadSetting<T> setting, T value) {
+      if (defaultLoadSettings == null) {
+        defaultLoadSettings = LoadSettings.getDefault().copy();
+      }
+      defaultLoadSettings.set(setting, value);
       return this;
     }
 
@@ -230,7 +309,7 @@ public interface ConfigResolver {
      */
     public ConfigResolver build() {
       return new ConfigResolverImpl(
-          commentPrefix, valueWriter, valueReader, options, reverseFields);
+          commentPrefix, valueWriter, valueReader, options, defaultLoadSettings, reverseFields);
     }
   }
 }
