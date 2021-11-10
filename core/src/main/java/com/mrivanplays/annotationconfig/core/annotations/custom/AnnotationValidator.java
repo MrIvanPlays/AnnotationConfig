@@ -17,6 +17,10 @@ public interface AnnotationValidator<T extends Annotation> {
    * bound to in order to determine whether the inputted {@code value} is valid for the custom
    * annotation with which the inputted {@link Field} {@code field} was annotated.
    *
+   * <p>If validation has not passed (this returns {@code false}) and {@link #error()} is not null,
+   * the return value of {@link #error()} will be thrown via a {@link RuntimeException}. If {@link
+   * #error()} is null, the field set will be silently skipped.
+   *
    * @param annotation the annotation this validator validates
    * @param value the value AnnotationConfig received
    * @param field the annotated field
