@@ -1,5 +1,6 @@
 package com.mrivanplays.annotationconfig.core.annotations.custom;
 
+import com.mrivanplays.annotationconfig.core.resolver.options.CustomOptions;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Field;
 
@@ -23,14 +24,15 @@ public interface AnnotationValidator<T extends Annotation> {
    *
    * @param annotation the annotation this validator validates
    * @param value the value AnnotationConfig received
+   * @param options the custom options for the config resolver
    * @param field the annotated field
    * @return true if value is valid, false otherwise
    */
-  boolean validate(T annotation, Object value, Field field);
+  boolean validate(T annotation, Object value, CustomOptions options, Field field);
 
   /**
    * AnnotationConfig throws the returned {@link Throwable} of this method, if not null, whenever
-   * the result of {@link #validate(Annotation, Object, Field)} is {@code false}.
+   * the result of {@link #validate(Annotation, Object, CustomOptions, Field)} is {@code false}.
    *
    * @return an error to throw if validate result is false
    */

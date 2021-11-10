@@ -480,7 +480,7 @@ public final class AnnotatedConfigResolver {
           Optional<AnnotationValidator<? extends Annotation>> validatorOpt = cARegistry.getValidator(type);
           if (validatorOpt.isPresent()) {
             AnnotationValidator validator = validatorOpt.get();
-            if (!validator.validate(field.getAnnotation(type), deserialized, field)) {
+            if (!validator.validate(field.getAnnotation(type), deserialized, options, field)) {
               failed = true;
               error = validator.error();
               break;

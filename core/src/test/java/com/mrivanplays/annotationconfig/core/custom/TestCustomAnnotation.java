@@ -4,6 +4,7 @@ import com.mrivanplays.annotationconfig.core.PropertyConfig;
 import com.mrivanplays.annotationconfig.core.annotations.custom.AnnotationValidator;
 import com.mrivanplays.annotationconfig.core.annotations.custom.CustomAnnotationRegistry;
 import com.mrivanplays.annotationconfig.core.resolver.ConfigResolver;
+import com.mrivanplays.annotationconfig.core.resolver.options.CustomOptions;
 import java.io.File;
 import java.lang.annotation.Documented;
 import java.lang.annotation.ElementType;
@@ -27,7 +28,8 @@ public class TestCustomAnnotation {
   static class HelloMessageValidator implements AnnotationValidator<HelloMessage> {
 
     @Override
-    public boolean validate(HelloMessage annotation, Object value, Field field) {
+    public boolean validate(
+        HelloMessage annotation, Object value, CustomOptions options, Field field) {
       if (!(value instanceof String)) {
         return false;
       }
