@@ -4,11 +4,38 @@ This file summarises changes between major versions.
 
 ## Version 2.0.0
 
-### Removed custom annotation support
+### Rewritten custom annotations
 
-This means you will no longer be able to register custom annotations. The implementation this
-library had about custom annotations was messy and nobody could ever understand what is this/that
-for and why the hell does it need this/that.
+The previous implementation we had about custom annotations was messy and nobody could ever 
+understand what is this/that for and why the hell does it need this/that.
+
+The new implementation is pretty straightforward: custom annotations as of right now can only be
+used for validation of a given annotated field's deserialized value.
+
+#### Example usage
+```java
+// an annotation you have
+public @interface MyAnnotation {}
+
+// a class which implements AnnotationValidator
+public class MyAnnotationValidator implements AnnotationValidator<MyAnnotation> {
+  
+  @Override
+  public boolean validate(MyAnnotation annotation, Object value, Field field) {
+    // value validation logic
+  }
+  
+  @Override
+  public Throwable error() {
+    // optional to override: if the method gives a return value, the returned exception
+    // will be thrown whenever the validation result is 'false'
+  }
+  
+}
+
+// then register the validator in the registry
+CustomAnnotationRegistry.INSTANCE.register(MyAnnotation.class, new MyAnnotationValidator());
+```
 
 ### Change FieldTypeResolver and `@TypeResolver` logic
 
@@ -133,3 +160,4 @@ Here are the changes that don't need too much attention, but are still important
   existing config.
 - Fixed a special case bug where `@Key` annotations aren't respected for fields annotated
   with `@ConfigObject`.
+- Handle fields which aren't annotated at all.

@@ -5,6 +5,8 @@ import com.mrivanplays.annotationconfig.core.annotations.Max;
 import com.mrivanplays.annotationconfig.core.annotations.Min;
 import com.mrivanplays.annotationconfig.core.annotations.comment.Comment;
 import com.mrivanplays.annotationconfig.core.annotations.comment.Comments;
+import com.mrivanplays.annotationconfig.core.annotations.custom.AnnotationValidator;
+import com.mrivanplays.annotationconfig.core.annotations.custom.CustomAnnotationRegistry;
 import com.mrivanplays.annotationconfig.core.annotations.type.AnnotationType;
 import com.mrivanplays.annotationconfig.core.internal.MinMaxHandler.NumberResult;
 import com.mrivanplays.annotationconfig.core.internal.MinMaxHandler.State;
@@ -70,6 +72,9 @@ public final class AnnotatedConfigResolver {
             continue;
           }
           populate(holder, typeOpt.get(), annotationData);
+        }
+        if (!annotationData.containsKey(holder)) {
+          annotationData.put(holder, Collections.emptySet());
         }
       }
       order++;
@@ -460,6 +465,36 @@ public final class AnnotatedConfigResolver {
           throw new IllegalArgumentException("@Max annotation placed on invalid field type");
         }
       }
+      // check for custom annotations
+      CustomAnnotationRegistry cARegistry = CustomAnnotationRegistry.INSTANCE;
+      if (!cARegistry.isEmpty()) {
+        Throwable error = null;
+        boolean failed = false;
+        for (Annotation annotation : field.getAnnotations()) {
+          Class<? extends Annotation> type = annotation.annotationType();
+          if (AnnotationType.match(type).isPresent()) {
+            // do not handle any validation of our own annotations even if someone registered a
+            // validator for them.
+            continue;
+          }
+          Optional<AnnotationValidator<? extends Annotation>> validatorOpt = cARegistry.getValidator(type);
+          if (validatorOpt.isPresent()) {
+            AnnotationValidator validator = validatorOpt.get();
+            if (!validator.validate(field.getAnnotation(type), deserialized, field)) {
+              failed = true;
+              error = validator.error();
+              break;
+            }
+          }
+        }
+        if (error != null) {
+          throw new RuntimeException(error);
+        }
+        // error wasn't thrown, so just silently skip if the checks failed
+        if (failed) {
+          continue;
+        }
+      }
       try {
         field.set(annotatedConfig, deserialized);
       } catch (IllegalAccessException e) {
@@ -597,5 +632,9 @@ public final class AnnotatedConfigResolver {
       data.add(putData);
       map.put(holder, data);
     }
+  }
+
+  private AnnotatedConfigResolver() {
+    throw new IllegalArgumentException("Initialisation of utility-type class.");
   }
 }
