@@ -5,10 +5,8 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.EnumSet;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
-import java.util.Map;
 import java.util.Objects;
 import java.util.function.BiPredicate;
 
@@ -170,7 +168,6 @@ public final class AdvancedEnumSerializer<E extends Enum<E>> implements FieldTyp
    * @return best match
    */
   private E findTheBestMatch(EnumSet<E> values, List<String> parts) {
-    Map<E, List<String>> partsMap = new HashMap<>();
     for (E val : values) {
       // this filters out even more the possible values
       String name = val.name();
@@ -188,20 +185,17 @@ public final class AdvancedEnumSerializer<E extends Enum<E>> implements FieldTyp
       if (list == null) {
         continue;
       }
-      partsMap.put(val, list);
-    }
 
-    for (Map.Entry<E, List<String>> entry : partsMap.entrySet()) {
       int matches = 0;
       for (String part : parts) {
-        for (String entryPart : entry.getValue()) {
-          if (part.equalsIgnoreCase(entryPart)) {
+        for (String listPart : list) {
+          if (part.equalsIgnoreCase(listPart)) {
             matches++;
           }
         }
       }
       if (matchesCondition.test(matches, parts)) {
-        return entry.getKey();
+        return val;
       }
     }
     // sorry but for sure this has been an invalid input
