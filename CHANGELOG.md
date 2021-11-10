@@ -21,7 +21,7 @@ public @interface MyAnnotation {}
 public class MyAnnotationValidator implements AnnotationValidator<MyAnnotation> {
   
   @Override
-  public boolean validate(MyAnnotation annotation, Object value, Field field) {
+  public boolean validate(MyAnnotation annotation, Object value, CustomOptions options, Field field) {
     // value validation logic
   }
   
