@@ -477,7 +477,8 @@ public final class AnnotatedConfigResolver {
             // validator for them.
             continue;
           }
-          Optional<AnnotationValidator<? extends Annotation>> validatorOpt = cARegistry.getValidator(type);
+          Optional<AnnotationValidator<? extends Annotation>> validatorOpt =
+              cARegistry.getValidator(type);
           if (validatorOpt.isPresent()) {
             AnnotationValidator validator = validatorOpt.get();
             if (!validator.validate(field.getAnnotation(type), deserialized, options, field)) {
