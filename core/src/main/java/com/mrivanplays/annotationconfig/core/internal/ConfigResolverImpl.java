@@ -113,7 +113,11 @@ public final class ConfigResolverImpl implements ConfigResolver {
         AnnotatedConfigResolver.resolveAnnotations(annotatedConfig, reverseFields);
     Map<String, Object> values;
     try {
-      values = valueReader.read(reader, options);
+      try {
+        values = valueReader.read(reader, options);
+      } finally {
+        reader.close();
+      }
     } catch (IOException e) {
       throw new RuntimeException(e);
     }
@@ -157,10 +161,8 @@ public final class ConfigResolverImpl implements ConfigResolver {
       File file,
       LoadSettings loadSettings) {
     Map<String, Object> values;
-    try {
-      values =
-          valueReader.read(
-              new InputStreamReader(new FileInputStream(file), StandardCharsets.UTF_8), options);
+    try (Reader reader = new InputStreamReader(new FileInputStream(file), StandardCharsets.UTF_8)) {
+      values = valueReader.read(reader, options);
     } catch (IOException e) {
       throw new RuntimeException(e);
     }
