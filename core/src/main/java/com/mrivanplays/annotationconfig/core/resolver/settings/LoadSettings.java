@@ -1,5 +1,6 @@
-package com.mrivanplays.annotationconfig.core.resolver;
+package com.mrivanplays.annotationconfig.core.resolver.settings;
 
+import com.mrivanplays.annotationconfig.core.resolver.ConfigResolver;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;

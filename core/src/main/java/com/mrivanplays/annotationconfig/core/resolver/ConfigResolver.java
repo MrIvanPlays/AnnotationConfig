@@ -3,6 +3,8 @@ package com.mrivanplays.annotationconfig.core.resolver;
 import com.mrivanplays.annotationconfig.core.internal.ConfigResolverImpl;
 import com.mrivanplays.annotationconfig.core.resolver.options.CustomOptions;
 import com.mrivanplays.annotationconfig.core.resolver.options.Option;
+import com.mrivanplays.annotationconfig.core.resolver.settings.LoadSetting;
+import com.mrivanplays.annotationconfig.core.resolver.settings.LoadSettings;
 import java.io.File;
 import java.io.InputStream;
 import java.io.InputStreamReader;

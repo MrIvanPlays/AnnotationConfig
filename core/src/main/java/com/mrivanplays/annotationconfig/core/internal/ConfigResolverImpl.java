@@ -2,12 +2,12 @@ package com.mrivanplays.annotationconfig.core.internal;
 
 import com.mrivanplays.annotationconfig.core.annotations.type.AnnotationType;
 import com.mrivanplays.annotationconfig.core.resolver.ConfigResolver;
-import com.mrivanplays.annotationconfig.core.resolver.LoadSetting;
-import com.mrivanplays.annotationconfig.core.resolver.LoadSettings;
-import com.mrivanplays.annotationconfig.core.resolver.NullReadHandleOption;
 import com.mrivanplays.annotationconfig.core.resolver.ValueReader;
 import com.mrivanplays.annotationconfig.core.resolver.ValueWriter;
 import com.mrivanplays.annotationconfig.core.resolver.options.CustomOptions;
+import com.mrivanplays.annotationconfig.core.resolver.settings.LoadSetting;
+import com.mrivanplays.annotationconfig.core.resolver.settings.LoadSettings;
+import com.mrivanplays.annotationconfig.core.resolver.settings.NullReadHandleOption;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
@@ -114,7 +114,7 @@ public final class ConfigResolverImpl implements ConfigResolver {
     Map<String, Object> values;
     try {
       try {
-        values = valueReader.read(reader, options);
+        values = valueReader.read(reader, options, loadSettings);
       } finally {
         reader.close();
       }
@@ -162,7 +162,7 @@ public final class ConfigResolverImpl implements ConfigResolver {
       LoadSettings loadSettings) {
     Map<String, Object> values;
     try (Reader reader = new InputStreamReader(new FileInputStream(file), StandardCharsets.UTF_8)) {
-      values = valueReader.read(reader, options);
+      values = valueReader.read(reader, options, loadSettings);
     } catch (IOException e) {
       throw new RuntimeException(e);
     }

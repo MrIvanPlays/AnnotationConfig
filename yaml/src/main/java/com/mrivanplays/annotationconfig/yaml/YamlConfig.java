@@ -1,7 +1,7 @@
 package com.mrivanplays.annotationconfig.yaml;
 
 import com.mrivanplays.annotationconfig.core.resolver.ConfigResolver;
-import com.mrivanplays.annotationconfig.core.resolver.LoadSettings;
+import com.mrivanplays.annotationconfig.core.resolver.settings.LoadSettings;
 import com.mrivanplays.annotationconfig.core.resolver.ValueReader;
 import com.mrivanplays.annotationconfig.core.resolver.ValueWriter;
 import com.mrivanplays.annotationconfig.core.resolver.options.CustomOptions;

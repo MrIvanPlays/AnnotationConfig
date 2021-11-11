@@ -3,7 +3,7 @@ package com.mrivanplays.annotationconfig.toml;
 import com.fasterxml.jackson.dataformat.toml.TomlMapper;
 import com.fasterxml.jackson.dataformat.toml.TomlReadFeature;
 import com.mrivanplays.annotationconfig.core.resolver.ConfigResolver;
-import com.mrivanplays.annotationconfig.core.resolver.LoadSetting;
+import com.mrivanplays.annotationconfig.core.resolver.settings.LoadSetting;
 import com.mrivanplays.annotationconfig.core.resolver.ValueReader;
 import com.mrivanplays.annotationconfig.core.resolver.ValueWriter;
 import com.mrivanplays.annotationconfig.core.resolver.options.CustomOptions;

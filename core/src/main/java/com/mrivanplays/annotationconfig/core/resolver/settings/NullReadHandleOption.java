@@ -1,4 +1,4 @@
-package com.mrivanplays.annotationconfig.core.resolver;
+package com.mrivanplays.annotationconfig.core.resolver.settings;
 
 /**
  * Represents a simple 2 option enum, which is telling the resolver how to handle null values, which

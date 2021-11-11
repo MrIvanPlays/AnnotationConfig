@@ -1,4 +1,4 @@
-package com.mrivanplays.annotationconfig.core.resolver;
+package com.mrivanplays.annotationconfig.core.resolver.settings;
 
 /**
  * Represents a basic load setting, which holds a {@link String} as a key identifier, and a {@link
@@ -11,11 +11,23 @@ package com.mrivanplays.annotationconfig.core.resolver;
 public final class LoadSetting<T> {
 
   /**
+   * Creates a new load setting.
+   *
+   * @param key the key of the load setting
+   * @param type the type of data this load setting handles
+   * @param <T> value type
+   * @return load setting instance
+   */
+  public static <T> LoadSetting<T> of(String key, Class<T> type) {
+    return new LoadSetting<>(key, type);
+  }
+
+  /**
    * A {@link Boolean} type load setting, representing whether to generate new/non-existing options
    * in a file.
    */
   public static final LoadSetting<Boolean> GENERATE_NEW_OPTIONS =
-      new LoadSetting<>("generate_new_options", Boolean.class);
+      of("generate_new_options", Boolean.class);
 
   /**
    * A load setting, value of which tells AnnotationConfig how to handle null read values.
@@ -24,7 +36,7 @@ public final class LoadSetting<T> {
    * deserialization return {@code null}.
    */
   public static final LoadSetting<NullReadHandleOption> NULL_READ_HANDLER =
-      new LoadSetting<>("null_read_handler", NullReadHandleOption.class);
+      of("null_read_handler", NullReadHandleOption.class);
 
   private final String key;
   private final Class<T> type;
