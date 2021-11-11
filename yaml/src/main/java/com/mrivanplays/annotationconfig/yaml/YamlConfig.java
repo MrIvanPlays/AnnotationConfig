@@ -1,10 +1,10 @@
 package com.mrivanplays.annotationconfig.yaml;
 
 import com.mrivanplays.annotationconfig.core.resolver.ConfigResolver;
-import com.mrivanplays.annotationconfig.core.resolver.settings.LoadSettings;
 import com.mrivanplays.annotationconfig.core.resolver.ValueReader;
 import com.mrivanplays.annotationconfig.core.resolver.ValueWriter;
 import com.mrivanplays.annotationconfig.core.resolver.options.CustomOptions;
+import com.mrivanplays.annotationconfig.core.resolver.settings.LoadSettings;
 import java.io.File;
 import java.io.PrintWriter;
 import java.io.Reader;

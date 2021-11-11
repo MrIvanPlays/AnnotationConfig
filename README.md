@@ -8,11 +8,13 @@
 Make configurations with ease
 
 JavaDocs:
+
 - [core](https://mrivanplays.com/javadocs/annotationconfig/core/com/mrivanplays/annotationconfig/core/package-summary.html)
 - [toml](https://mrivanplays.com/javadocs/annotationconfig/toml/com/mrivanplays/annotationconfig/toml/package-summary.html)
 - [yaml](https://mrivanplays.com/javadocs/annotationconfig/yaml/com/mrivanplays/annotationconfig/yaml/package-summary.html)
 
 # Examples
+
 WARNING: You may want to read CHANGELOG.md before seeing anything from this section.
 <details><summary>Config example</summary>
 <p>
@@ -217,6 +219,7 @@ public class ExampleAnnotatedConfig {
 }
 
 ```
+
 </p>
 </details>
 <details><summary>Config example output (YAML)</summary>
@@ -286,6 +289,7 @@ default-serializer-example:
 Keep in mind these are the simplest examples
 
 Base code for all examples:
+
 ```java
 File file = // ...
 SerializerRegistry serializerRegistry = SerializerRegistry.INSTANCE;
@@ -294,21 +298,25 @@ ExampleAnnotatedConfig annotatedConfig = new ExampleAnnotatedConfig();
 ```
 
 YAML example:
+
 ```java
 YamlConfig.getConfigResolver().loadOrDump(anotatedConfig, file, /* loader settings */);
 ```
 
 .conf/.properties example:
+
 ```java
 PropertyConfig.getConfigResolver().loadOrDump(annotatedConfig, file, /* loader settings */);
 ```
 
 TOML example:
+
 ```java
 TomlConfig.getConfigResolver().loadOrDump(annotatedConfig, file, /* loader settings */);
 ```
 
 Custom config type example:
+
 ```java
 // all values specified in the builder should be for the specific config type
 ConfigResolver configResolver = ConfigResolver.newBuilder()
@@ -327,60 +335,64 @@ configResolver.loadOrDump(annotatedConfig, file, /* loader settings */);
 # Installation
 
 Maven:
+
 ```xml
 
-    <build>
-        <plugins>
-            <plugin>
-                <version>3.7.0</version>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-compiler-plugin</artifactId>
-                <configuration>
-                    <source>1.8</source>
-                    <target>1.8</target>
-                    <compilerArgs>
-                        <arg>-parameters</arg>
-                    </compilerArgs>
-                </configuration>
-            </plugin>
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-shade-plugin</artifactId>
-                <version>3.1.1</version>
-                <configuration>
-                    <relocations>
-                        <!-- Relocating is only necessary if you're shading for other library addition -->
-                        <relocation>
-                            <pattern>com.mrivanplays.annotationconfig</pattern>
-                            <shadedPattern>[YOUR PLUGIN PACKAGE].annotationconfig</shadedPattern> <!-- Replace this -->
-                        </relocation>
-                    </relocations>
-                </configuration>
-                <executions>
-                    <execution>
-                        <phase>package</phase>
-                        <goals>
-                            <goal>shade</goal>
-                        </goals>
-                    </execution>
-                </executions>
-            </plugin>
-        </plugins>
-    </build>
+<build>
+  <plugins>
+    <plugin>
+      <version>3.7.0</version>
+      <groupId>org.apache.maven.plugins</groupId>
+      <artifactId>maven-compiler-plugin</artifactId>
+      <configuration>
+        <source>1.8</source>
+        <target>1.8</target>
+        <compilerArgs>
+          <arg>-parameters</arg>
+        </compilerArgs>
+      </configuration>
+    </plugin>
+    <plugin>
+      <groupId>org.apache.maven.plugins</groupId>
+      <artifactId>maven-shade-plugin</artifactId>
+      <version>3.1.1</version>
+      <configuration>
+        <relocations>
+          <!-- Relocating is only necessary if you're shading for other library addition -->
+          <relocation>
+            <pattern>com.mrivanplays.annotationconfig</pattern>
+            <shadedPattern>[YOUR PLUGIN PACKAGE].annotationconfig
+            </shadedPattern> <!-- Replace this -->
+          </relocation>
+        </relocations>
+      </configuration>
+      <executions>
+        <execution>
+          <phase>package</phase>
+          <goals>
+            <goal>shade</goal>
+          </goals>
+        </execution>
+      </executions>
+    </plugin>
+  </plugins>
+</build>
 
-    <repositories>
-        <repository>
-            <id>ivan</id>
-            <url>https://repo.mrivanplays.com/repository/ivan/</url>
-        </repository>
-    </repositories>
+<repositories>
+  <repository>
+    <id>ivan</id>
+    <url>https://repo.mrivanplays.com/repository/ivan/</url>
+  </repository>
+</repositories>
 
-    <dependency>
-        <groupId>com.mrivanplays</groupId>
-        <!-- Types: toml, yaml -->
-        <!-- If you want .conf/.properties, or custom implementation configuration, you can set the type to core -->
-        <artifactId>annotationconfig-(type)</artifactId> <!-- Replace type -->
-        <version>VERSION</version> <!-- Replace with latest version -->
-        <scope>compile</scope>
-    </dependency>
+<dependencies>
+  <dependency>
+    <groupId>com.mrivanplays</groupId>
+    <!-- Types: toml, yaml -->
+    <!-- If you want .conf/.properties, or custom implementation configuration, you can set the type to core -->
+    <artifactId>annotationconfig-(type)</artifactId> <!-- Replace type -->
+    <version>VERSION</version> <!-- Replace with latest version -->
+    <scope>compile</scope>
+  </dependency>
+</dependencies>
 ```

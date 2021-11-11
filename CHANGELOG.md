@@ -6,25 +6,27 @@ This file summarises changes between major versions.
 
 ### Rewritten custom annotations
 
-The previous implementation we had about custom annotations was messy and nobody could ever 
+The previous implementation we had about custom annotations was messy and nobody could ever
 understand what is this/that for and why the hell does it need this/that.
 
 The new implementation is pretty straightforward: custom annotations as of right now can only be
 used for validation of a given annotated field's deserialized value.
 
 #### Example usage
+
 ```java
 // an annotation you have
 public @interface MyAnnotation {}
 
 // a class which implements AnnotationValidator
 public class MyAnnotationValidator implements AnnotationValidator<MyAnnotation> {
-  
+
   @Override
-  public ValidationResponse validate(MyAnnotation annotation, Object value, CustomOptions options, Field field) {
+  public ValidationResponse validate(MyAnnotation annotation, Object value, CustomOptions options,
+      Field field) {
     // value validation logic
   }
-  
+
 }
 
 // then register the validator in the registry
@@ -98,7 +100,7 @@ public class LocationSerializer implements FieldTypeSerializer<Location> {
 }
 
 // this should be run before you load the config
-SerializerRegistry.INSTANCE.registerSerializer(Location.class, new LocationSerializer());
+SerializerRegistry.INSTANCE.registerSerializer(Location.class,new LocationSerializer());
 ```
 
 Or, you can let the default config serializer handle serialization and deserialization. The default
@@ -115,7 +117,8 @@ AnnotatedConfigResolver, which made it even harder. No more!
 internal class. Also, `ValueWriter` interface got exposed from `AnnotatedConfigResolver` to its own
 class. Everything has been documented with lots of information, so you can more easily create them,
 and so you don't do something wrong.
-<br><br>You can also add custom options to a `ConfigResolver` to be accessed by the config reader and writer.
+<br><br>You can also add custom options to a `ConfigResolver` to be accessed by the config reader
+and writer.
 
 #### Example usage
 
@@ -138,8 +141,9 @@ numbers. If applied on a number, they will validate the number ; if on a `String
 validate the string's length.
 
 ### Specific TOML changes
-`mwanji/toml4j` has been replaced with `FasterXML/jackson-dataformats-text` (toml module), 
-meaning if you have used a custom `TomlWriter` from toml4j, it needs to be migrated to the `TomlMapper` 
+
+`mwanji/toml4j` has been replaced with `FasterXML/jackson-dataformats-text` (toml module), meaning
+if you have used a custom `TomlWriter` from toml4j, it needs to be migrated to the `TomlMapper`
 of jackson-dataformats-toml.
 
 ### Misc changes

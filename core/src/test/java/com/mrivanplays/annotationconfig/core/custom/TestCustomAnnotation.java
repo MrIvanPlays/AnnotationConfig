@@ -20,7 +20,8 @@ public class TestCustomAnnotation {
   public void testSuccessful() {
     DummyConfig config = new DummyConfig();
     resolver.load(
-        config, getClass().getClassLoader().getResourceAsStream("custom/custom-anno-def.properties"));
+        config,
+        getClass().getClassLoader().getResourceAsStream("custom/custom-anno-def.properties"));
   }
 
   @Test
@@ -31,7 +32,9 @@ public class TestCustomAnnotation {
         () ->
             resolver.load(
                 config,
-                getClass().getClassLoader().getResourceAsStream("custom/custom-anno-fail.properties")));
+                getClass()
+                    .getClassLoader()
+                    .getResourceAsStream("custom/custom-anno-fail.properties")));
   }
 
   @Test
@@ -39,7 +42,8 @@ public class TestCustomAnnotation {
     resolver.options().put(OptsConstant.DUMMY_OPTION, OptsConstant.DUMMY_DEFAULT);
     DummyConfig config = new DummyConfig();
     resolver.load(
-        config, getClass().getClassLoader().getResourceAsStream("custom/custom-anno-def.properties"));
+        config,
+        getClass().getClassLoader().getResourceAsStream("custom/custom-anno-def.properties"));
     Assertions.assertTrue(
         resolver.options().getAsOr(OptsConstant.DUMMY_OPTION, Boolean.class, false));
   }
