@@ -7,12 +7,13 @@ import com.mrivanplays.annotationconfig.core.annotations.comment.Comment;
 import com.mrivanplays.annotationconfig.core.annotations.comment.Comments;
 import com.mrivanplays.annotationconfig.core.annotations.custom.AnnotationValidator;
 import com.mrivanplays.annotationconfig.core.annotations.custom.CustomAnnotationRegistry;
+import com.mrivanplays.annotationconfig.core.annotations.custom.ValidationResponse;
 import com.mrivanplays.annotationconfig.core.annotations.type.AnnotationType;
 import com.mrivanplays.annotationconfig.core.internal.MinMaxHandler.NumberResult;
 import com.mrivanplays.annotationconfig.core.internal.MinMaxHandler.State;
-import com.mrivanplays.annotationconfig.core.resolver.settings.NullReadHandleOption;
 import com.mrivanplays.annotationconfig.core.resolver.ValueWriter;
 import com.mrivanplays.annotationconfig.core.resolver.options.CustomOptions;
+import com.mrivanplays.annotationconfig.core.resolver.settings.NullReadHandleOption;
 import com.mrivanplays.annotationconfig.core.serialization.DataObject;
 import com.mrivanplays.annotationconfig.core.serialization.FieldTypeSerializer;
 import com.mrivanplays.annotationconfig.core.serialization.SerializerRegistry;
@@ -485,10 +486,18 @@ public final class AnnotatedConfigResolver {
             cARegistry.getValidator(type);
         if (validatorOpt.isPresent()) {
           AnnotationValidator validator = validatorOpt.get();
-          if (!validator.validate(field.getAnnotation(type), deserialized, options, field)) {
-            failed = true;
-            error = validator.error();
+          ValidationResponse validatorResponse =
+              validator.validate(field.getAnnotation(type), deserialized, options, field);
+          if (validatorResponse.throwError() != null) {
+            error = validatorResponse.throwError();
             break;
+          }
+          if (validatorResponse.shouldFailSilently()) {
+            failed = validatorResponse.shouldFailSilently();
+            break;
+          }
+          if (validatorResponse.onSuccess() != null) {
+            validatorResponse.onSuccess().run();
           }
         }
       }

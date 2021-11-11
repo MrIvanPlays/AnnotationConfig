@@ -11,6 +11,7 @@ import java.lang.reflect.Field;
  * @author MrIvanPlays
  * @since 2.0.0
  */
+@FunctionalInterface
 public interface AnnotationValidator<T extends Annotation> {
 
   /**
@@ -18,25 +19,12 @@ public interface AnnotationValidator<T extends Annotation> {
    * bound to in order to determine whether the inputted {@code value} is valid for the custom
    * annotation with which the inputted {@link Field} {@code field} was annotated.
    *
-   * <p>If validation has not passed (this returns {@code false}) and {@link #error()} is not null,
-   * the return value of {@link #error()} will be thrown via a {@link RuntimeException}. If {@link
-   * #error()} is null, the field set will be silently skipped.
-   *
    * @param annotation the annotation this validator validates
    * @param value the value AnnotationConfig received
    * @param options the custom options for the config resolver
    * @param field the annotated field
-   * @return true if value is valid, false otherwise
+   * @return validation response
+   * @see ValidationResponse
    */
-  boolean validate(T annotation, Object value, CustomOptions options, Field field);
-
-  /**
-   * AnnotationConfig throws the returned {@link Throwable} of this method, if not null, whenever
-   * the result of {@link #validate(Annotation, Object, CustomOptions, Field)} is {@code false}.
-   *
-   * @return an error to throw if validate result is false
-   */
-  default Throwable error() {
-    return null;
-  }
+  ValidationResponse validate(T annotation, Object value, CustomOptions options, Field field);
 }
