@@ -21,14 +21,8 @@ public @interface MyAnnotation {}
 public class MyAnnotationValidator implements AnnotationValidator<MyAnnotation> {
   
   @Override
-  public boolean validate(MyAnnotation annotation, Object value, CustomOptions options, Field field) {
+  public ValidationResponse validate(MyAnnotation annotation, Object value, CustomOptions options, Field field) {
     // value validation logic
-  }
-  
-  @Override
-  public Throwable error() {
-    // optional to override: if the method gives a return value, the returned exception
-    // will be thrown whenever the validation result is 'false'
   }
   
 }
