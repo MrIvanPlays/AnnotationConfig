@@ -15,11 +15,7 @@ public interface ValidationResponse {
    * @return validation response
    */
   static ValidationResponse fromBooleanValue(boolean successful) {
-    if (successful) {
-      return success();
-    } else {
-      return failSilently();
-    }
+    return successful ? success() : failSilently();
   }
 
   /**
@@ -31,11 +27,22 @@ public interface ValidationResponse {
    * @return validation response
    */
   static ValidationResponse fromBooleanValue(boolean successful, Throwable onFailError) {
-    if (successful) {
-      return success();
-    } else {
-      return fail(onFailError);
-    }
+    return successful ? success() : fail(onFailError);
+  }
+
+  /**
+   * Returns validation response given the boolean value. If it fails, the specified {@link
+   * Throwable} {@code onFailError} will be thrown via a wrapped {@link RuntimeException}. If it is
+   * successful, it will execute the specified {@link Runnable} {@code onSuccess}.
+   *
+   * @param successful whether successful
+   * @param onFailError error, thrown on fail
+   * @param onSuccess runnable, ran on success
+   * @return validation response
+   */
+  static ValidationResponse fromBooleanValue(
+      boolean successful, Throwable onFailError, Runnable onSuccess) {
+    return successful ? success(onSuccess) : fail(onFailError);
   }
 
   /**
