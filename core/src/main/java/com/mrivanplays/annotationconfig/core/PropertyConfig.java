@@ -1,31 +1,62 @@
 package com.mrivanplays.annotationconfig.core;
 
-import com.mrivanplays.annotationconfig.core.internal.AnnotatedConfigResolver;
-import com.mrivanplays.annotationconfig.core.internal.AnnotationHolder;
+import com.mrivanplays.annotationconfig.core.resolver.ConfigResolver;
+import com.mrivanplays.annotationconfig.core.resolver.ValueReader;
+import com.mrivanplays.annotationconfig.core.resolver.ValueWriter;
+import com.mrivanplays.annotationconfig.core.resolver.options.CustomOptions;
+import com.mrivanplays.annotationconfig.core.resolver.settings.LoadSettings;
 import java.io.File;
-import java.io.FileReader;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.io.Reader;
-import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 
-/** Represents configuration, utilising .conf/.properties configuration type. */
+/**
+ * Represents configuration, utilising .conf/.properties configuration type.
+ *
+ * @since 1.0
+ * @author MrIvanPlays
+ */
 public final class PropertyConfig {
 
-  private static CustomAnnotationRegistry annotationRegistry = new CustomAnnotationRegistry();
+  private static final ValueWriter VALUE_WRITER = new PropertyValueWriter();
 
-  private static final AnnotatedConfigResolver.ValueWriter VALUE_WRITER = new PropertyValueWriter();
+  private static ConfigResolver configResolver;
 
   /**
-   * Returns the {@link CustomAnnotationRegistry} for this config.
+   * Returns the {@link ConfigResolver} instance of PropertyConfig
    *
-   * @return custom annotation registry
+   * @return config resolver
    */
-  public static CustomAnnotationRegistry getAnnotationRegistry() {
-    return annotationRegistry;
+  public static ConfigResolver getConfigResolver() {
+    if (configResolver == null) {
+      generateConfigResolver();
+    }
+    return configResolver;
+  }
+
+  private static void generateConfigResolver() {
+    configResolver =
+        ConfigResolver.newBuilder()
+            .withCommentPrefix("# ")
+            .withValueWriter(VALUE_WRITER)
+            .withValueReader(
+                new ValueReader() {
+                  @Override
+                  public Map<String, Object> read(Reader reader) throws IOException {
+                    Properties properties = new Properties();
+                    properties.load(reader);
+                    Map<String, Object> ret = new LinkedHashMap<>();
+                    for (Object key : properties.keySet()) {
+                      ret.put(String.valueOf(key), properties.get(key));
+                    }
+                    return ret;
+                  }
+                })
+            .build();
   }
 
   /**
@@ -33,76 +64,32 @@ public final class PropertyConfig {
    *
    * @param annotatedConfig annotated config
    * @param file file
+   * @deprecated use {@link #getConfigResolver()}. it has a much better description of methods. the
+   *     equivalent of this method there is {@link ConfigResolver#loadOrDump(Object, File,
+   *     LoadSettings)}
    */
+  @Deprecated
   public static void load(Object annotatedConfig, File file) {
-    Map<AnnotationHolder, List<AnnotationType>> map =
-        AnnotatedConfigResolver.resolveAnnotations(annotatedConfig, annotationRegistry, false);
-    if (!file.exists()) {
-      AnnotatedConfigResolver.dump(
-          annotatedConfig,
-          map,
-          file,
-          "# ",
-          VALUE_WRITER,
-          annotationRegistry,
-          PropertyConfig.class,
-          false);
-      return;
-    }
-    Properties properties = new Properties();
-    try (Reader reader = new FileReader(file)) {
-      properties.load(reader);
-    } catch (IOException e) {
-      throw new RuntimeException(e);
-    }
-    Map<String, Object> toMap = new HashMap<>();
-    for (Object key : properties.keySet()) {
-      toMap.put(String.valueOf(key), properties.get(key));
-    }
-    AnnotatedConfigResolver.setFields(
-        annotatedConfig,
-        toMap,
-        map,
-        annotationRegistry,
-        "# ",
-        VALUE_WRITER,
-        file,
-        true,
-        false,
-        PropertyConfig.class,
-        false,
-        null);
+    getConfigResolver().loadOrDump(annotatedConfig, file);
   }
 
-  private static final class PropertyValueWriter implements AnnotatedConfigResolver.ValueWriter {
+  private static final class PropertyValueWriter implements ValueWriter {
 
     @Override
-    public void write(String key, Object value, PrintWriter writer, boolean sectionExists) {
+    public void write(
+        String key,
+        Object value,
+        PrintWriter writer,
+        CustomOptions options,
+        boolean sectionExists) {
       if (value instanceof Map<?, ?>) {
-        for (Map.Entry<?, ?> entry : ((Map<?, ?>) value).entrySet()) {
-          if (entry.getKey() instanceof String && !(entry.getValue() instanceof Map)) {
-            writer.println(key + "=" + value.toString());
-          } else if (entry.getValue() instanceof Map) {
-            write(key, entry.getValue(), writer, sectionExists);
-          }
-        }
-        return;
+        throw new IllegalArgumentException(".properties does not support maps.");
       }
-      writer.println(key + "=" + value.toString());
+      if (value instanceof List<?>) {
+        throw new IllegalArgumentException(".properties does not support lists.");
+      }
+      writer.println(key + "=" + value);
       writer.append('\n');
-    }
-
-    @Override
-    public void writeCustom(Object value, PrintWriter writer, String annoName) {
-      if (!(value instanceof String)
-          && !(value instanceof Character)
-          && !(value instanceof char[])) {
-        throw new IllegalArgumentException(
-            "Cannot write other than String, char and char[] for .properties/.conf config: annotation '"
-                + annoName
-                + "'");
-      }
-      writer.write(String.valueOf(value));
     }
   }
 }

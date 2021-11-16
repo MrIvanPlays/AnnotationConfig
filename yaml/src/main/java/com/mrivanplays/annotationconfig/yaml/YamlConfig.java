@@ -1,85 +1,87 @@
 package com.mrivanplays.annotationconfig.yaml;
 
-import com.mrivanplays.annotationconfig.core.AnnotationType;
-import com.mrivanplays.annotationconfig.core.CustomAnnotationRegistry;
-import com.mrivanplays.annotationconfig.core.internal.AnnotatedConfigResolver;
-import com.mrivanplays.annotationconfig.core.internal.AnnotationHolder;
+import com.mrivanplays.annotationconfig.core.resolver.ConfigResolver;
+import com.mrivanplays.annotationconfig.core.resolver.ValueReader;
+import com.mrivanplays.annotationconfig.core.resolver.ValueWriter;
+import com.mrivanplays.annotationconfig.core.resolver.options.CustomOptions;
+import com.mrivanplays.annotationconfig.core.resolver.settings.LoadSettings;
 import java.io.File;
-import java.io.FileReader;
-import java.io.IOException;
 import java.io.PrintWriter;
 import java.io.Reader;
+import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import org.yaml.snakeyaml.Yaml;
 
-/** Represents configuration, utilising YAML */
+/**
+ * Represents configuration, utilising YAML
+ *
+ * @since 1.0
+ * @author MrIvanPlays
+ */
 public final class YamlConfig {
 
-  private static CustomAnnotationRegistry annotationRegistry = new CustomAnnotationRegistry();
+  private static final Yaml YAML = new Yaml();
+  private static final ValueWriter VALUE_WRITER = new YamlValueWriter();
+
+  private static ConfigResolver configResolver;
 
   /**
-   * Returns the {@link CustomAnnotationRegistry} for this config.
+   * Returns the {@link ConfigResolver} instance of YamlConfig
    *
-   * @return custom annotation registry
+   * @return config resolver
    */
-  public static CustomAnnotationRegistry getAnnotationRegistry() {
-    return annotationRegistry;
+  public static ConfigResolver getConfigResolver() {
+    if (configResolver == null) {
+      generateConfigResolver();
+    }
+    return configResolver;
   }
 
-  private static final Yaml YAML = new Yaml();
-  private static final AnnotatedConfigResolver.ValueWriter VALUE_WRITER = new YamlValueWriter();
+  private static void generateConfigResolver() {
+    configResolver =
+        ConfigResolver.newBuilder()
+            .withValueWriter(VALUE_WRITER)
+            .shouldReverseFields(true)
+            .withCommentPrefix("# ")
+            .withValueReader(
+                new ValueReader() {
+                  @Override
+                  public Map<String, Object> read(Reader reader) {
+                    Map<String, Object> values = YAML.loadAs(reader, LinkedHashMap.class);
+                    if (values == null) {
+                      return Collections.emptyMap();
+                    }
+                    return values;
+                  }
+                })
+            .build();
+  }
 
   /**
    * Loads the config object from the file. If the file does not exist, it creates one.
    *
    * @param annotatedConfig annotated config
    * @param file file
+   * @deprecated use {@link #getConfigResolver()}. it has a much better description of methods. the
+   *     equivalent of this method there is {@link ConfigResolver#loadOrDump(Object, File,
+   *     LoadSettings)}
    */
+  @Deprecated
   public static void load(Object annotatedConfig, File file) {
-    Map<AnnotationHolder, List<AnnotationType>> map =
-        AnnotatedConfigResolver.resolveAnnotations(annotatedConfig, annotationRegistry, true);
-    if (!file.exists()) {
-      AnnotatedConfigResolver.dump(
-          annotatedConfig,
-          map,
-          file,
-          "# ",
-          VALUE_WRITER,
-          annotationRegistry,
-          YamlConfig.class,
-          true);
-      return;
-    }
-
-    try (Reader reader = new FileReader(file)) {
-      Map<String, Object> values = YAML.loadAs(reader, LinkedHashMap.class);
-      if (values == null) {
-        return;
-      }
-      AnnotatedConfigResolver.setFields(
-          annotatedConfig,
-          values,
-          map,
-          annotationRegistry,
-          "# ",
-          VALUE_WRITER,
-          file,
-          true,
-          true,
-          YamlConfig.class,
-          false,
-          null);
-    } catch (IOException e) {
-      throw new RuntimeException(e);
-    }
+    getConfigResolver().loadOrDump(annotatedConfig, file);
   }
 
-  private static final class YamlValueWriter implements AnnotatedConfigResolver.ValueWriter {
+  private static final class YamlValueWriter implements ValueWriter {
 
     @Override
-    public void write(String key, Object value, PrintWriter writer, boolean sectionExists) {
+    public void write(
+        String key,
+        Object value,
+        PrintWriter writer,
+        CustomOptions options,
+        boolean sectionExists) {
       write(key, value, writer, 2, sectionExists);
     }
 
@@ -133,19 +135,6 @@ public final class YamlConfig {
         }
       }
       writer.append('\n');
-    }
-
-    @Override
-    public void writeCustom(Object value, PrintWriter writer, String annoName) {
-      if (!(value instanceof String)
-          && !(value instanceof Character)
-          && !(value instanceof char[])) {
-        throw new IllegalArgumentException(
-            "Cannot write other than String, char and char[] for yaml config: annotation '"
-                + annoName
-                + "'");
-      }
-      writer.write(String.valueOf(value));
     }
   }
 }

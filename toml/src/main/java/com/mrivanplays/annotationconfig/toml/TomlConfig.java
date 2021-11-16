@@ -1,32 +1,108 @@
 package com.mrivanplays.annotationconfig.toml;
 
-import com.moandjiezana.toml.Toml;
-import com.moandjiezana.toml.TomlWriter;
-import com.mrivanplays.annotationconfig.core.AnnotationType;
-import com.mrivanplays.annotationconfig.core.CustomAnnotationRegistry;
-import com.mrivanplays.annotationconfig.core.internal.AnnotatedConfigResolver;
-import com.mrivanplays.annotationconfig.core.internal.AnnotationHolder;
+import com.fasterxml.jackson.dataformat.toml.TomlMapper;
+import com.fasterxml.jackson.dataformat.toml.TomlReadFeature;
+import com.mrivanplays.annotationconfig.core.resolver.ConfigResolver;
+import com.mrivanplays.annotationconfig.core.resolver.ValueReader;
+import com.mrivanplays.annotationconfig.core.resolver.ValueWriter;
+import com.mrivanplays.annotationconfig.core.resolver.options.CustomOptions;
+import com.mrivanplays.annotationconfig.core.resolver.options.Option;
+import com.mrivanplays.annotationconfig.core.resolver.settings.LoadSetting;
+import com.mrivanplays.annotationconfig.core.serialization.DataObject;
+import com.mrivanplays.annotationconfig.core.serialization.SerializerRegistry;
 import java.io.File;
 import java.io.IOException;
 import java.io.PrintWriter;
+import java.io.Reader;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
+import java.time.OffsetDateTime;
 import java.util.Collections;
-import java.util.List;
+import java.util.Date;
+import java.util.LinkedHashMap;
 import java.util.Map;
 
-/** Represents configuration, utilising TOML. */
+/**
+ * Represents configuration, utilising TOML.
+ *
+ * @since 1.0
+ * @author MrIvanPlays
+ */
 public final class TomlConfig {
 
-  private static CustomAnnotationRegistry annotationRegistry = new CustomAnnotationRegistry();
+  private static final TomlMapper DEFAULT_TOML_MAPPER =
+      TomlMapper.builder().configure(TomlReadFeature.PARSE_JAVA_TIME, true).build();
 
-  private static final TomlWriter DEFAULT_TOML_WRITER = new TomlWriter();
+  /** Returns the key on which the mapper is stored. */
+  public static final String MAPPER_KEY = "mapper";
+
+  private static ConfigResolver configResolver;
 
   /**
-   * Returns the {@link CustomAnnotationRegistry} for this config.
+   * Returns the {@link ConfigResolver} instance for toml config.
    *
-   * @return custom annotation registry
+   * @return config resolver
    */
-  public static CustomAnnotationRegistry getAnnotationRegistry() {
-    return annotationRegistry;
+  public static ConfigResolver getConfigResolver() {
+    if (configResolver == null) {
+      generateConfigResolver();
+    }
+    return configResolver;
+  }
+
+  private static void generateConfigResolver() {
+    configResolver =
+        ConfigResolver.newBuilder()
+            .withOption(MAPPER_KEY, Option.of(DEFAULT_TOML_MAPPER).markReplaceable())
+            .withLoadSetting(LoadSetting.GENERATE_NEW_OPTIONS, false)
+            .withValueWriter(new TomlValueWriter(DEFAULT_TOML_MAPPER))
+            .withCommentPrefix("# ")
+            .shouldReverseFields(true)
+            .withValueReader(
+                new ValueReader() {
+                  @Override
+                  public Map<String, Object> read(Reader reader, CustomOptions options)
+                      throws IOException {
+                    return (Map<String, Object>)
+                        options
+                            .getAsOr(MAPPER_KEY, TomlMapper.class, DEFAULT_TOML_MAPPER)
+                            .reader()
+                            .readValue(reader, LinkedHashMap.class);
+                  }
+                })
+            .build();
+  }
+
+  static {
+    SerializerRegistry registry = SerializerRegistry.INSTANCE;
+    if (!registry.hasSerializer(Date.class)) {
+      registry.registerSerializer(Date.class, new DateResolver());
+    }
+    if (!registry.hasSerializer(OffsetDateTime.class)) {
+      registry.registerSerializer(
+          OffsetDateTime.class,
+          (data, field) -> OffsetDateTime.parse(data.getAsString()),
+          (value, field) -> new DataObject(value.toString()));
+    }
+    if (!registry.hasSerializer(LocalDateTime.class)) {
+      registry.registerSerializer(
+          LocalDateTime.class,
+          (data, field) -> LocalDateTime.parse(data.getAsString()),
+          (value, field) -> new DataObject(value.toString()));
+    }
+    if (!registry.hasSerializer(LocalDate.class)) {
+      registry.registerSerializer(
+          LocalDate.class,
+          (data, field) -> LocalDate.parse(data.getAsString()),
+          (value, field) -> new DataObject(value.toString()));
+    }
+    if (!registry.hasSerializer(LocalTime.class)) {
+      registry.registerSerializer(
+          LocalTime.class,
+          (data, field) -> LocalTime.parse(data.getAsString()),
+          (value, field) -> new DataObject(value.toString()));
+    }
   }
 
   /**
@@ -34,9 +110,11 @@ public final class TomlConfig {
    *
    * @param annotatedConfig annotated config
    * @param file file
+   * @deprecated see {@link #load(Object, File, TomlMapper)}
    */
+  @Deprecated
   public static void load(Object annotatedConfig, File file) {
-    load(annotatedConfig, file, DEFAULT_TOML_WRITER);
+    load(annotatedConfig, file, DEFAULT_TOML_MAPPER);
   }
 
   /**
@@ -44,73 +122,37 @@ public final class TomlConfig {
    *
    * @param annotatedConfig annotated config
    * @param file file
-   * @param tomlWriter toml writer
+   * @param tomlMapper toml mapper
+   * @deprecated use {@link #getConfigResolver()}
    */
-  public static void load(Object annotatedConfig, File file, TomlWriter tomlWriter) {
-    Map<AnnotationHolder, List<AnnotationType>> map =
-        AnnotatedConfigResolver.resolveAnnotations(annotatedConfig, annotationRegistry, true);
-    AnnotatedConfigResolver.ValueWriter valueWriter = new TomlValueWriter(tomlWriter);
-    if (!file.exists()) {
-      AnnotatedConfigResolver.dump(
-          annotatedConfig,
-          map,
-          file,
-          "# ",
-          valueWriter,
-          annotationRegistry,
-          TomlConfig.class,
-          true);
-      return;
+  @Deprecated
+  public static void load(Object annotatedConfig, File file, TomlMapper tomlMapper) {
+    ConfigResolver resolver = getConfigResolver();
+    if (!resolver.options().has(MAPPER_KEY)) {
+      resolver.options().put(MAPPER_KEY, Option.of(tomlMapper).markReplaceable());
+    } else {
+      if (resolver.options().isReplaceable(MAPPER_KEY).orElse(false)) {
+        resolver.options().put(MAPPER_KEY, Option.of(tomlMapper).markReplaceable());
+      }
     }
-
-    Toml toml = new Toml().read(file);
-    AnnotatedConfigResolver.setFields(
-        annotatedConfig,
-        toml.toMap(),
-        map,
-        annotationRegistry,
-        "# ",
-        valueWriter,
-        file,
-        false,
-        true,
-        TomlConfig.class,
-        false,
-        null);
+    resolver.loadOrDump(annotatedConfig, file);
   }
 
-  private static final class TomlValueWriter implements AnnotatedConfigResolver.ValueWriter {
+  private static final class TomlValueWriter implements ValueWriter {
 
-    private TomlWriter tomlWriter;
+    private final TomlMapper defaultMapper;
 
-    TomlValueWriter(TomlWriter tomlWriter) {
-      this.tomlWriter = tomlWriter;
+    TomlValueWriter(TomlMapper defaultMapper) {
+      this.defaultMapper = defaultMapper;
     }
 
     @Override
-    public void write(String key, Object value, PrintWriter writer, boolean sectionExists) throws IOException {
-      tomlWriter.write(Collections.singletonMap(key, value), writer);
-      writer.append('\n');
-    }
-
-    @Override
-    public void writeCustom(Object value, PrintWriter writer, String annoName) throws IOException {
-      if (value instanceof Map) {
-        tomlWriter.write(value, writer);
-        writer.append('\n');
-        return;
-      }
-      if (value instanceof String && ((String) value).indexOf('=') != -1) {
-        String valueString = (String) value;
-        String[] arr = valueString.split("=");
-        tomlWriter.write(Collections.singletonMap(arr[0], arr[1]), writer);
-        writer.append('\n');
-        return;
-      }
-      throw new IllegalArgumentException(
-          "Invalid syntax for toml custom write: annotation '"
-              + annoName
-              + "'; written must be either a map or string in format key=value");
+    public void write(
+        String key, Object value, PrintWriter writer, CustomOptions options, boolean sectionExists)
+        throws IOException {
+      TomlMapper tomlMapper =
+          options.getAsOr(TomlConfig.MAPPER_KEY, TomlMapper.class, defaultMapper);
+      writer.println(tomlMapper.writeValueAsString(Collections.singletonMap(key, value)));
     }
   }
 }

@@ -1,4 +1,4 @@
-package com.mrivanplays.annotationconfig.core;
+package com.mrivanplays.annotationconfig.core.annotations;
 
 import java.lang.annotation.Documented;
 import java.lang.annotation.ElementType;
@@ -13,4 +13,4 @@ import java.lang.annotation.Target;
 @Documented
 @Target(ElementType.FIELD)
 @Retention(RetentionPolicy.RUNTIME)
-public @interface Retrieve {}
+public @interface Ignore {}
