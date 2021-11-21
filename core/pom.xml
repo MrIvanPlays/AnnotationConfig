@@ -10,19 +10,10 @@
   <modelVersion>4.0.0</modelVersion>
 
   <artifactId>annotationconfig-core</artifactId>
-  <version>2.0.0</version>
+  <version>2.0.1-SNAPSHOT</version>
 
   <name>AnnotationConfig-Core</name>
   <description>Core part of the AnnotationConfig framework.</description>
-
-  <dependencies>
-    <dependency>
-      <groupId>org.junit.jupiter</groupId>
-      <artifactId>junit-jupiter</artifactId>
-      <version>${junit.version}</version>
-      <scope>test</scope>
-    </dependency>
-  </dependencies>
 
 
 </project>
