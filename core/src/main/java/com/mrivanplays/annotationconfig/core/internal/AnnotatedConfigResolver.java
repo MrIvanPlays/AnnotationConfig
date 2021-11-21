@@ -205,7 +205,27 @@ public final class AnnotatedConfigResolver {
             throw new IllegalArgumentException(
                 "No default value for field '" + field.getName() + "'");
           }
-          defaultsToValueObject = getWriteValue(field, defaultsToValueObject);
+          Optional<FieldTypeSerializer<?>> serializerOpt =
+              SerializerRegistry.INSTANCE.getSerializer(field.getType());
+          FieldTypeSerializer serializer;
+          if (serializerOpt.isPresent()) {
+            serializer = serializerOpt.get();
+          } else {
+            serializer = SerializerRegistry.INSTANCE.getDefaultSerializer();
+          }
+          DataObject serialized = serializer.serialize(defaultsToValueObject, field);
+          if (serialized == null) {
+            throw new NullPointerException(
+                "Expected DataObject, got null ; Field: "
+                    + field.getName()
+                    + " ; Field type: "
+                    + field.getType().getName());
+          }
+          if (serialized.isSingleValue()) { // single value includes list
+            defaultsToValueObject = serialized.getAsObject();
+          } else {
+            defaultsToValueObject = serialized.getAsMap();
+          }
           if (!isSection) {
             valueWriter.write(keyName, defaultsToValueObject, writer, options, false);
           } else {
@@ -222,152 +242,15 @@ public final class AnnotatedConfigResolver {
     }
   }
 
-  private static class WriteData {
-
-    private List<String> comments;
-    private Map<String, Object> writeData;
-
-    WriteData(List<String> comments, Map<String, Object> writeData) {
-      this.comments = comments;
-      this.writeData = writeData;
-    }
-
-    public List<String> getComments() {
-      return comments;
-    }
-
-    public Map<String, Object> getWriteData() {
-      return writeData;
-    }
-  }
-
-  private static WriteData getWriteData(
-      Object baseClass,
-      Field baseField,
-      String baseKey,
-      boolean reverseFields,
-      boolean configObject)
-      throws IllegalAccessException {
-    Object value = baseField.get(baseClass);
-    if (value == null) {
-      throw new IllegalArgumentException(
-          "No default value for field '" + baseField.getName() + "'");
-    }
-    List<String> comments = new ArrayList<>();
-
-    if (configObject) {
-      Map<AnnotationHolder, Set<AnnotationType>> annotationData =
-          resolveAnnotations(value, reverseFields);
-
-      Map<String, Object> objectWriteData = new LinkedHashMap<>();
-
-      for (Map.Entry<AnnotationHolder, Set<AnnotationType>> entry : annotationData.entrySet()) {
-        AnnotationHolder holder = entry.getKey();
-        if (holder.isClass()) {
-          if (entry.getValue().size() == 1) {
-            AnnotationType first = entry.getValue().stream().findFirst().orElse(null);
-            comments.addAll(getComments(first, null, value.getClass()));
-          } else if (entry.getValue().size() > 1) {
-            // very unlikely though but lets be on the safe side
-            for (AnnotationType type : entry.getValue()) {
-              List<String> typeComments = getComments(type, null, value.getClass());
-              if (!typeComments.isEmpty()) {
-                comments.addAll(typeComments);
-              }
-            }
-          }
-        } else {
-          Field field = holder.getField();
-          field.setAccessible(true);
-          String key = field.getName();
-          boolean confObject = false;
-          for (AnnotationType type : entry.getValue()) {
-            if (type.is(AnnotationType.KEY)) {
-              key = field.getDeclaredAnnotation(Key.class).value();
-            }
-            if (type.is(AnnotationType.CONFIG_OBJECT)) {
-              // ah shit, here we go again
-              confObject = true;
-              try {
-                Object section = field.get(value);
-                if (section == null) {
-                  throw new IllegalArgumentException(
-                      "Section not initialized for field '" + field.getName() + "'");
-                }
-
-                WriteData data = getWriteData(value, field, key, reverseFields, true);
-                objectWriteData.put(key, data.getWriteData());
-              } catch (IllegalAccessException e) {
-                throw new IllegalArgumentException(
-                    "Could not config object value; field became inaccessible");
-              }
-            }
-          }
-          if (confObject) {
-            continue;
-          }
-          Object defaultValue = field.get(value);
-          if (defaultValue == null) {
-            throw new IllegalArgumentException(
-                "No default value for field '" + field.getName() + "'");
-          }
-          defaultValue = getWriteValue(field, defaultValue);
-          objectWriteData.put(key, defaultValue);
-        }
-      }
-      return new WriteData(comments, Collections.singletonMap(baseKey, objectWriteData));
-    } else {
-      Annotation[] annos = baseField.getDeclaredAnnotations();
-      if (annos.length > 0) {
-        for (Annotation anno : annos) {
-          Optional<AnnotationType> typeOpt = AnnotationType.match(anno.annotationType());
-          if (!typeOpt.isPresent()) {
-            continue;
-          }
-          AnnotationType type = typeOpt.get();
-          List<String> annoComment = getComments(type, baseField, null);
-          if (!annoComment.isEmpty()) {
-            comments.addAll(annoComment);
-          }
-        }
-      }
-      value = getWriteValue(baseField, value);
-      return new WriteData(comments, Collections.singletonMap(baseKey, value));
-    }
-  }
-
-  private static Object getWriteValue(Field baseField, Object value) {
-    Optional<FieldTypeSerializer<?>> serializerOpt =
-        SerializerRegistry.INSTANCE.getSerializer(baseField.getType());
-    FieldTypeSerializer serializer;
-    if (serializerOpt.isPresent()) {
-      serializer = serializerOpt.get();
-    } else {
-      serializer = SerializerRegistry.INSTANCE.getDefaultSerializer();
-    }
-    DataObject serialized = serializer.serialize(value, baseField);
-    if (serialized == null) {
-      throw new NullPointerException(
-          "Expected DataObject, got null ; Field: "
-              + baseField.getName()
-              + " ; Field type: "
-              + baseField.getType().getName());
-    }
-    if (serialized.isSingleValue()) { // single value includes list
-      value = serialized.getAsObject();
-    } else {
-      value = serialized.getAsMap();
-    }
-    return value;
-  }
-
-  public static void setFields(
+  // returns whether it's missing options
+  public static boolean setFields(
       Object annotatedConfig,
       Map<String, Object> values,
       Map<AnnotationHolder, Set<AnnotationType>> map,
       NullReadHandleOption nullReadHandler,
       CustomOptions options,
       boolean reverseFields) {
+    boolean missingOptions = false;
     for (Map.Entry<AnnotationHolder, Set<AnnotationType>> entry : map.entrySet()) {
       AnnotationHolder holder = entry.getKey();
       if (holder.isClass()) {
@@ -403,8 +286,12 @@ public final class AnnotatedConfigResolver {
         }
       }
       Object value = values.get(keyName);
+      boolean thisMissingOption = false;
       if (value == null) {
-        continue;
+        thisMissingOption = true;
+        if (!missingOptions) {
+          missingOptions = true;
+        }
       }
       if (configObject) {
         if (section == null) {
@@ -426,197 +313,86 @@ public final class AnnotatedConfigResolver {
             reverseFields);
         continue;
       }
-      handleFieldSet(annotatedConfig, field, options, nullReadHandler, value, min, max, keyName);
-    }
-  }
-
-  private static void handleFieldSet(
-      Object annotatedConfig,
-      Field field,
-      CustomOptions options,
-      NullReadHandleOption nullReadHandler,
-      Object value,
-      NumberResult min,
-      NumberResult max,
-      String keyName) {
-    Class<?> fieldType = field.getType();
-    Optional<FieldTypeSerializer<?>> serializerOpt =
-        SerializerRegistry.INSTANCE.getSerializer(fieldType);
-    FieldTypeSerializer<?> serializer;
-    if (!serializerOpt.isPresent()) {
-      serializer = SerializerRegistry.INSTANCE.getDefaultSerializer();
-    } else {
-      serializer = serializerOpt.get();
-    }
-    Object deserialized = serializer.deserialize(new DataObject(value), field);
-    if (deserialized == null) {
-      if (nullReadHandler == NullReadHandleOption.USE_DEFAULT_VALUE) {
-        return;
+      Class<?> fieldType = field.getType();
+      Optional<FieldTypeSerializer<?>> serializerOpt =
+          SerializerRegistry.INSTANCE.getSerializer(fieldType);
+      FieldTypeSerializer<?> serializer;
+      if (!serializerOpt.isPresent()) {
+        serializer = SerializerRegistry.INSTANCE.getDefaultSerializer();
+      } else {
+        serializer = serializerOpt.get();
       }
-    }
-    if (deserialized instanceof Number) {
-      Number comparable = (Number) deserialized;
-      State comparison = MinMaxHandler.compare(min, max, comparable);
-      handleComparison(comparison, keyName, comparable, fieldType, min, max, Number.class);
-    } else if (deserialized instanceof String) {
-      String comparable = (String) deserialized;
-      State comparison = MinMaxHandler.compare(min, max, comparable);
-      handleComparison(comparison, keyName, comparable.length(), fieldType, min, max, String.class);
-    } else {
-      if (min.getState() != State.START) {
-        throw new IllegalArgumentException("@Min annotation placed on invalid field type");
-      }
-      if (max.getState() != State.START) {
-        throw new IllegalArgumentException("@Max annotation placed on invalid field type");
-      }
-    }
-    // check for custom annotations
-    CustomAnnotationRegistry cARegistry = CustomAnnotationRegistry.INSTANCE;
-    if (!cARegistry.isEmpty()) {
-      Throwable error = null;
-      boolean failed = false;
-      for (Annotation annotation : field.getAnnotations()) {
-        Class<? extends Annotation> type = annotation.annotationType();
-        if (AnnotationType.match(type).isPresent()) {
-          // do not handle any validation of our own annotations even if someone registered a
-          // validator for them.
+      Object deserialized = serializer.deserialize(new DataObject(value), field);
+      if (deserialized == null && !thisMissingOption) {
+        if (nullReadHandler == NullReadHandleOption.USE_DEFAULT_VALUE) {
           continue;
         }
-        Optional<AnnotationValidator<? extends Annotation>> validatorOpt =
-            cARegistry.getValidator(type);
-        if (validatorOpt.isPresent()) {
-          AnnotationValidator validator = validatorOpt.get();
-          ValidationResponse validatorResponse =
-              validator.validate(field.getAnnotation(type), deserialized, options, field);
-          if (validatorResponse.throwError() != null) {
-            error = validatorResponse.throwError();
-            break;
-          }
-          if (validatorResponse.shouldFailSilently()) {
-            failed = validatorResponse.shouldFailSilently();
-            break;
-          }
-          if (validatorResponse.onSuccess() != null) {
-            validatorResponse.onSuccess().run();
-          }
-        }
-      }
-      if (error != null) {
-        throw new RuntimeException(error);
-      }
-      // error wasn't thrown, so just silently skip if the checks failed
-      if (failed) {
-        return;
-      }
-    }
-    try {
-      field.set(annotatedConfig, deserialized);
-    } catch (IllegalAccessException e) {
-      throw new IllegalArgumentException(
-          "Could not set a field's value ; field not accessible anymore");
-    }
-  }
-
-  public static void setFields(
-      Object annotatedConfig,
-      Map<String, Object> values,
-      Map<AnnotationHolder, Set<AnnotationType>> map,
-      String commentChar,
-      ValueWriter valueWriter,
-      File file,
-      CustomOptions options,
-      NullReadHandleOption nullReadHandler,
-      boolean shouldGenerateNonExistentFields,
-      boolean reverseFields,
-      boolean isSection,
-      String sectionBaseName) {
-    for (Map.Entry<AnnotationHolder, Set<AnnotationType>> entry : map.entrySet()) {
-      AnnotationHolder holder = entry.getKey();
-      if (holder.isClass()) {
+      } else if (deserialized == null) {
         continue;
       }
-      Field field = holder.getField();
-      field.setAccessible(true);
-      String keyName = field.getName();
-      boolean configObject = false;
-      Object section = null;
-      NumberResult min = NumberResult.stateOnly(State.START);
-      NumberResult max = NumberResult.stateOnly(State.START);
-      for (AnnotationType type : entry.getValue()) {
-        if (type.is(AnnotationType.KEY)) {
-          keyName = field.getDeclaredAnnotation(Key.class).value();
+      if (deserialized instanceof Number) {
+        Number comparable = (Number) deserialized;
+        State comparison = MinMaxHandler.compare(min, max, comparable);
+        handleComparison(comparison, keyName, comparable, fieldType, min, max, Number.class);
+      } else if (deserialized instanceof String) {
+        String comparable = (String) deserialized;
+        State comparison = MinMaxHandler.compare(min, max, comparable);
+        handleComparison(comparison, keyName, comparable.length(), fieldType, min, max, String.class);
+      } else {
+        if (min.getState() != State.START) {
+          throw new IllegalArgumentException("@Min annotation placed on invalid field type");
         }
-        if (type.is(AnnotationType.MIN)) {
-          min = MinMaxHandler.getNumber(field.getDeclaredAnnotation(Min.class));
-        }
-        if (type.is(AnnotationType.MAX)) {
-          max = MinMaxHandler.getNumber(field.getDeclaredAnnotation(Max.class));
-        }
-        if (type.is(AnnotationType.CONFIG_OBJECT)) {
-          configObject = true;
-          try {
-            section = field.get(annotatedConfig);
-          } catch (IllegalAccessException e) {
-            throw new IllegalArgumentException(
-                "Could not get config object from annotated config '"
-                    + annotatedConfig.getClass().getSimpleName()
-                    + "'");
-          }
+        if (max.getState() != State.START) {
+          throw new IllegalArgumentException("@Max annotation placed on invalid field type");
         }
       }
-      Object value = values.get(keyName);
-      if (value == null) {
-        if (shouldGenerateNonExistentFields) {
-          try (PrintWriter writer = new PrintWriter(new FileWriter(file, true))) {
-            WriteData writeData =
-                getWriteData(annotatedConfig, field, keyName, reverseFields, configObject);
-            for (String comment : writeData.getComments()) {
-              writer.println(commentChar + comment);
+      // check for custom annotations
+      CustomAnnotationRegistry cARegistry = CustomAnnotationRegistry.INSTANCE;
+      if (!cARegistry.isEmpty()) {
+        Throwable error = null;
+        boolean failed = false;
+        for (Annotation annotation : field.getAnnotations()) {
+          Class<? extends Annotation> type = annotation.annotationType();
+          if (AnnotationType.match(type).isPresent()) {
+            // do not handle any validation of our own annotations even if someone registered a
+            // validator for them.
+            continue;
+          }
+          Optional<AnnotationValidator<? extends Annotation>> validatorOpt =
+              cARegistry.getValidator(type);
+          if (validatorOpt.isPresent()) {
+            AnnotationValidator validator = validatorOpt.get();
+            ValidationResponse validatorResponse =
+                validator.validate(field.getAnnotation(type), deserialized, options, field);
+            if (validatorResponse.throwError() != null) {
+              error = validatorResponse.throwError();
+              break;
             }
-            if (isSection) {
-              Map<String, Object> toWrite = new LinkedHashMap<>();
-              toWrite.put(sectionBaseName, writeData.getWriteData());
-              valueWriter.write(keyName, toWrite, writer, options, true);
-            } else {
-              Map<String, Object> toWrite = writeData.getWriteData();
-              valueWriter.write(keyName, toWrite.get(keyName), writer, options, false);
+            if (validatorResponse.shouldFailSilently()) {
+              failed = validatorResponse.shouldFailSilently();
+              break;
             }
-          } catch (IOException e) {
-            throw new RuntimeException(e);
-          } catch (IllegalAccessException e) {
-            throw new IllegalArgumentException("Field became inaccessible");
+            if (validatorResponse.onSuccess() != null) {
+              validatorResponse.onSuccess().run();
+            }
           }
         }
-        continue;
-      }
-      if (configObject) {
-        if (section == null) {
-          throw new IllegalArgumentException(
-              "Non initialized config object found in annotated config '"
-                  + annotatedConfig.getClass().getSimpleName()
-                  + "'");
+        if (error != null) {
+          throw new RuntimeException(error);
         }
-        if (!(value instanceof Map)) {
-          // sections not supported, continue on
+        // error wasn't thrown, so just silently skip if the checks failed
+        if (failed) {
           continue;
         }
-        setFields(
-            section,
-            (Map<String, Object>) value,
-            resolveAnnotations(section, reverseFields),
-            commentChar,
-            valueWriter,
-            file,
-            options,
-            nullReadHandler,
-            shouldGenerateNonExistentFields,
-            reverseFields,
-            true,
-            keyName);
-        continue;
       }
-      handleFieldSet(annotatedConfig, field, options, nullReadHandler, value, min, max, keyName);
+      try {
+        field.set(annotatedConfig, deserialized);
+      } catch (IllegalAccessException e) {
+        throw new IllegalArgumentException(
+            "Could not set a field's value ; field not accessible anymore");
+      }
     }
+    return true;
   }
 
   private static void handleComparison(

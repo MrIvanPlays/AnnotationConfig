@@ -183,18 +183,19 @@ public final class ConfigResolverImpl implements ConfigResolver {
                 defaultLoadSettings
                     .get(LoadSetting.GENERATE_NEW_OPTIONS)
                     .orElse(LoadSettings.getDefault().get(LoadSetting.GENERATE_NEW_OPTIONS).get()));
-    AnnotatedConfigResolver.setFields(
-        annotatedConfig,
-        values,
-        resolvedAnnotations,
-        commentPrefix,
-        valueWriter,
-        file,
-        options,
-        nullReadHandler,
-        generateNewOptions,
-        reverseFields,
-        false,
-        null);
+    boolean missingOptions =
+        AnnotatedConfigResolver.setFields(
+            annotatedConfig, values, resolvedAnnotations, nullReadHandler, options, reverseFields);
+    if (missingOptions && generateNewOptions) {
+      file.delete();
+      AnnotatedConfigResolver.dump(
+          annotatedConfig,
+          resolvedAnnotations,
+          file,
+          options,
+          commentPrefix,
+          valueWriter,
+          reverseFields);
+    }
   }
 }
