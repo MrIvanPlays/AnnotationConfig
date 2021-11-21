@@ -24,8 +24,7 @@ public class TestYAML {
       resolver.load(config, file);
       Assertions.assertTrue(true);
     } catch (Throwable e) {
-      e.printStackTrace();
-      Assertions.fail();
+      Assertions.fail(e);
     }
   }
 
@@ -37,8 +36,7 @@ public class TestYAML {
       resolver.load(config, file);
       Assertions.assertTrue(true);
     } catch (Throwable e) {
-      e.printStackTrace();
-      Assertions.fail();
+      Assertions.fail(e);
     }
   }
 }

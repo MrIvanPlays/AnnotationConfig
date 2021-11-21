@@ -16,7 +16,7 @@ class DefaultSerializer implements FieldTypeSerializer<Object> {
   public Object deserialize(DataObject data, Field field) {
     PrimitiveSerializers.registerSerializers();
     Object dataRaw = data.getAsObject();
-    if (dataRaw == null) {
+    if (data.isSingleValue() && dataRaw == null) {
       return null;
     }
     Class<?> fieldType = field.getType();

@@ -39,8 +39,7 @@ public class TestIgnoreAnno {
     try (Reader reader = new FileReader(file)) {
       properties.load(reader);
     } catch (IOException e) {
-      e.printStackTrace();
-      Assertions.fail();
+      Assertions.fail(e);
       return;
     }
     Assertions.assertFalse(properties.containsKey("b"));
