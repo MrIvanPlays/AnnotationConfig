@@ -280,18 +280,18 @@ messages:
 # This cannot have a negative value
 barxtwo: 0.2
 
+# This is also going to be serialized as a config object,
+# but it is much more controllable rather than @ConfigObject
 serialize:
   foo: "foo"
   bar: 1
-  # This is also going to be serialized as a config object,
-  # but it is much more controllable rather than @ConfigObject
   baz: 2
 
+# Same for maps, but a map can only be Map<String, Object>
+# otherwise you will need another object
 foo-map:
   foo: 1
   bar: "This is a section value"
-  # Same for maps, but a map can only be Map<String, Object>
-  # otherwise you will need another object
   baz: 3
 
 # AnnotatedConfig can also read & write lists
@@ -301,11 +301,11 @@ foo-list:
   - "as an example"
   - "for list"
 
+# This doesn't have a serializer registered
+# so it gets serialized by the default serializer
 default-serializer-example:
   foo: "bar"
   bar: 1
-  # This doesn't have a serializer registered
-  # so it gets serialized by the default serializer
   baz: 5.6
 
 section-inside-section:

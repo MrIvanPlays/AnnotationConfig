@@ -69,6 +69,10 @@ public final class YamlValueWriter implements ValueWriter {
         toWriteComments.put(key, comments);
       } else {
         Map<String, Object> mapValue = MapUtils.getLastMap((Map<String, Object>) value);
+        if (mapValue.size() != 1) {
+          toWriteComments.put(key, comments);
+          return;
+        }
         if (!mapPartComments.containsKey(key)) {
           Map<String, List<String>> commentPart = new HashMap<>();
           commentPart.put(MapUtils.getLastKey(mapValue), comments);
@@ -113,10 +117,17 @@ public final class YamlValueWriter implements ValueWriter {
     }
     String intentPrefix = intentPrefixBuilder.toString();
     if (value instanceof Map<?, ?>) {
+      List<String> baseComments = toWriteComments.getOrDefault(key, Collections.emptyList());
       if (childComments == null) {
         childComments = mapPartComments.getOrDefault(key, Collections.emptyMap());
       }
-      writer.println((child ? intentPrefix.substring(0, childIndents - 2) : "") + key + ":");
+      String childPrefix = child ? intentPrefix.substring(0, childIndents - 2) : "";
+      if (!baseComments.isEmpty()) {
+        for (String comment : baseComments) {
+          writer.println(childPrefix + "# " + comment);
+        }
+      }
+      writer.println(childPrefix + key + ":");
       for (Map.Entry<String, Object> entry : ((Map<String, Object>) value).entrySet()) {
         String mapKey = entry.getKey();
         Object v = entry.getValue();
