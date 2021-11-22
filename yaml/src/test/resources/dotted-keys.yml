@@ -1,0 +1,7 @@
+# This is a test configuration in order to test handling of fields, annotate with
+# the @Key annotation and having as value a dotted key.
+
+dotted:
+  key:
+    test:
+      mashallah: "bar"

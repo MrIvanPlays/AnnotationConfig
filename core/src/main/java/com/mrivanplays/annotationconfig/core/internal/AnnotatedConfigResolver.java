@@ -12,6 +12,7 @@ import com.mrivanplays.annotationconfig.core.annotations.type.AnnotationType;
 import com.mrivanplays.annotationconfig.core.internal.MinMaxHandler.NumberResult;
 import com.mrivanplays.annotationconfig.core.internal.MinMaxHandler.State;
 import com.mrivanplays.annotationconfig.core.resolver.ValueWriter;
+import com.mrivanplays.annotationconfig.core.resolver.key.KeyResolver;
 import com.mrivanplays.annotationconfig.core.resolver.options.CustomOptions;
 import com.mrivanplays.annotationconfig.core.resolver.settings.NullReadHandleOption;
 import com.mrivanplays.annotationconfig.core.serialization.DataObject;
@@ -27,6 +28,7 @@ import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -91,6 +93,7 @@ public final class AnnotatedConfigResolver {
       CustomOptions options,
       String commentChar,
       ValueWriter valueWriter,
+      KeyResolver keyResolver,
       boolean reverseFields) {
     try {
       file.createNewFile();
@@ -102,6 +105,7 @@ public final class AnnotatedConfigResolver {
             commentChar,
             valueWriter,
             options,
+            keyResolver,
             false,
             null,
             reverseFields);
@@ -118,6 +122,7 @@ public final class AnnotatedConfigResolver {
       CustomOptions options,
       String commentChar,
       ValueWriter valueWriter,
+      KeyResolver keyResolver,
       boolean reverseFields) {
     try (PrintWriter writer = new PrintWriter(writerFeed)) {
       toWriter(
@@ -127,6 +132,7 @@ public final class AnnotatedConfigResolver {
           commentChar,
           valueWriter,
           options,
+          keyResolver,
           false,
           null,
           reverseFields);
@@ -142,6 +148,7 @@ public final class AnnotatedConfigResolver {
       String commentChar,
       ValueWriter valueWriter,
       CustomOptions options,
+      KeyResolver keyResolver,
       boolean isSection,
       String sectionKey,
       boolean reverseFields)
@@ -187,6 +194,7 @@ public final class AnnotatedConfigResolver {
                   commentChar,
                   valueWriter,
                   options,
+                  keyResolver,
                   true,
                   keyName,
                   reverseFields);
@@ -226,10 +234,22 @@ public final class AnnotatedConfigResolver {
           } else {
             defaultsToValueObject = serialized.getAsMap();
           }
+          // manipulate the defaultsToValueObject once again before sending it to the writer
+          Map<String, Object> dummyValues = new HashMap<>();
+          keyResolver.boxTo(keyName, defaultsToValueObject, dummyValues);
+          if (dummyValues.size() != 1) {
+            throw new IllegalArgumentException("Invalid key resolver.");
+          }
+          String keyToWrite = keyName;
+          Object valueToWrite = defaultsToValueObject;
+          for (Map.Entry<String, Object> dummyEntry : dummyValues.entrySet()) {
+            keyToWrite = dummyEntry.getKey();
+            valueToWrite = dummyEntry.getValue();
+          }
           if (!isSection) {
-            valueWriter.write(keyName, defaultsToValueObject, writer, options, false);
+            valueWriter.write(keyToWrite, valueToWrite, writer, options, false);
           } else {
-            toWrite.put(keyName, defaultsToValueObject);
+            toWrite.put(keyToWrite, valueToWrite);
           }
         } catch (IllegalAccessException e) {
           throw new IllegalArgumentException("lost access to field '" + field.getName() + "'");
@@ -249,6 +269,7 @@ public final class AnnotatedConfigResolver {
       Map<AnnotationHolder, Set<AnnotationType>> map,
       NullReadHandleOption nullReadHandler,
       CustomOptions options,
+      KeyResolver keyResolver,
       boolean reverseFields) {
     boolean missingOptions = false;
     for (Map.Entry<AnnotationHolder, Set<AnnotationType>> entry : map.entrySet()) {
@@ -285,7 +306,7 @@ public final class AnnotatedConfigResolver {
           }
         }
       }
-      Object value = values.get(keyName);
+      Object value = keyResolver.unbox(keyName, values);
       boolean thisMissingOption = false;
       if (value == null) {
         thisMissingOption = true;
@@ -310,6 +331,7 @@ public final class AnnotatedConfigResolver {
             resolveAnnotations(section, reverseFields),
             nullReadHandler,
             options,
+            keyResolver,
             reverseFields);
         continue;
       }

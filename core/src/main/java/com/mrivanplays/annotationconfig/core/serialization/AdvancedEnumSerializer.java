@@ -26,27 +26,23 @@ import java.util.function.BiPredicate;
  *
  * <p>Example: Say you have an enum of:
  *
- * <pre>
- *   <code>
- *     public enum Option {
- *       ACCEPT_TRUE,
- *       ACCEPT_FALSE,
- *       ACCEPT_BOTH,
- *       DO_NOT_ACCEPT_TRUE,
- *       DO_NOT_ACCEPT_FALSE,
- *       DO_NOT_ACCEPT_BOTH
- *     }
- *   </code>
- * </pre>
+ * <pre>{@code
+ * public enum Option {
+ *   ACCEPT_TRUE,
+ *   ACCEPT_FALSE,
+ *   ACCEPT_BOTH,
+ *   DO_NOT_ACCEPT_TRUE,
+ *   DO_NOT_ACCEPT_FALSE,
+ *   DO_NOT_ACCEPT_BOTH
+ * }
+ * }</pre>
  *
  * and you want to use AdvancedEnumSerializer to serialize it, you just register it using the {@link
  * SerializerRegistry}. An example of this is:
  *
- * <pre>
- *   <code>
- *     SerializerRegistry.INSTANCE.registerSerializer(Option.class, AdvancedEnumSerializer.forEnum(Option.class));
- *   </code>
- * </pre>
+ * <pre>{@code
+ * SerializerRegistry.INSTANCE.registerSerializer(Option.class, AdvancedEnumSerializer.forEnum(Option.class));
+ * }</pre>
  *
  * @since 2.0.0
  * @author MrIvanPlays

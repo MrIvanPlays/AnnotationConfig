@@ -38,6 +38,9 @@ import java.io.PrintWriter;
  * In this situation, {@code sectionExists} will tell you if you are writing {@code no-permission}
  * under {@code messages}, or just as a regular value.
  *
+ * <p>Currently, {@code sectionExists} will always return "false", this boolean value might be
+ * removed in a future release.
+ *
  * <p>In the end we want this to generate clean writes and configs.
  *
  * @since 2.0.0

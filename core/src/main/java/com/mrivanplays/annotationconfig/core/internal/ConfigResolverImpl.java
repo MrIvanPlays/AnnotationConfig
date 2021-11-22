@@ -4,6 +4,7 @@ import com.mrivanplays.annotationconfig.core.annotations.type.AnnotationType;
 import com.mrivanplays.annotationconfig.core.resolver.ConfigResolver;
 import com.mrivanplays.annotationconfig.core.resolver.ValueReader;
 import com.mrivanplays.annotationconfig.core.resolver.ValueWriter;
+import com.mrivanplays.annotationconfig.core.resolver.key.KeyResolver;
 import com.mrivanplays.annotationconfig.core.resolver.options.CustomOptions;
 import com.mrivanplays.annotationconfig.core.resolver.settings.LoadSetting;
 import com.mrivanplays.annotationconfig.core.resolver.settings.LoadSettings;
@@ -26,6 +27,7 @@ public final class ConfigResolverImpl implements ConfigResolver {
   private final ValueReader valueReader;
   private final CustomOptions options;
   private final LoadSettings defaultLoadSettings;
+  private final KeyResolver keyResolver;
   private final boolean reverseFields;
 
   public ConfigResolverImpl(
@@ -34,6 +36,7 @@ public final class ConfigResolverImpl implements ConfigResolver {
       ValueReader valueReader,
       CustomOptions options,
       LoadSettings loadSettings,
+      KeyResolver keyResolver,
       boolean reverseFields) {
     this.commentPrefix = Objects.requireNonNull(commentPrefix, "commentPrefix");
     this.valueWriter = Objects.requireNonNull(valueWriter, "valueWriter");
@@ -47,6 +50,11 @@ public final class ConfigResolverImpl implements ConfigResolver {
       this.defaultLoadSettings = LoadSettings.getDefault();
     } else {
       this.defaultLoadSettings = loadSettings;
+    }
+    if (keyResolver == null) {
+      this.keyResolver = KeyResolver.DEFAULT;
+    } else {
+      this.keyResolver = keyResolver;
     }
     this.reverseFields = reverseFields;
   }
@@ -70,6 +78,7 @@ public final class ConfigResolverImpl implements ConfigResolver {
         options,
         commentPrefix,
         valueWriter,
+        keyResolver,
         reverseFields);
   }
 
@@ -84,6 +93,7 @@ public final class ConfigResolverImpl implements ConfigResolver {
         options,
         commentPrefix,
         valueWriter,
+        keyResolver,
         reverseFields);
   }
 
@@ -129,7 +139,13 @@ public final class ConfigResolverImpl implements ConfigResolver {
                     .get(LoadSetting.NULL_READ_HANDLER)
                     .orElse(LoadSettings.getDefault().get(LoadSetting.NULL_READ_HANDLER).get()));
     AnnotatedConfigResolver.setFields(
-        annotatedConfig, values, resolvedAnnotations, nullReadHandler, options, reverseFields);
+        annotatedConfig,
+        values,
+        resolvedAnnotations,
+        nullReadHandler,
+        options,
+        keyResolver,
+        reverseFields);
   }
 
   @Override
@@ -149,6 +165,7 @@ public final class ConfigResolverImpl implements ConfigResolver {
           options,
           commentPrefix,
           valueWriter,
+          keyResolver,
           reverseFields);
       return;
     }
@@ -185,7 +202,13 @@ public final class ConfigResolverImpl implements ConfigResolver {
                     .orElse(LoadSettings.getDefault().get(LoadSetting.GENERATE_NEW_OPTIONS).get()));
     boolean missingOptions =
         AnnotatedConfigResolver.setFields(
-            annotatedConfig, values, resolvedAnnotations, nullReadHandler, options, reverseFields);
+            annotatedConfig,
+            values,
+            resolvedAnnotations,
+            nullReadHandler,
+            options,
+            keyResolver,
+            reverseFields);
     if (missingOptions && generateNewOptions) {
       file.delete();
       AnnotatedConfigResolver.dump(
@@ -195,6 +218,7 @@ public final class ConfigResolverImpl implements ConfigResolver {
           options,
           commentPrefix,
           valueWriter,
+          keyResolver,
           reverseFields);
     }
   }

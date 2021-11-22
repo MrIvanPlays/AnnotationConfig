@@ -1,6 +1,7 @@
 package com.mrivanplays.annotationconfig.core.resolver;
 
 import com.mrivanplays.annotationconfig.core.internal.ConfigResolverImpl;
+import com.mrivanplays.annotationconfig.core.resolver.key.KeyResolver;
 import com.mrivanplays.annotationconfig.core.resolver.options.CustomOptions;
 import com.mrivanplays.annotationconfig.core.resolver.options.Option;
 import com.mrivanplays.annotationconfig.core.resolver.settings.LoadSetting;
@@ -196,6 +197,7 @@ public interface ConfigResolver {
     private ValueReader valueReader;
     private CustomOptions options;
     private LoadSettings defaultLoadSettings;
+    private KeyResolver keyResolver;
     private boolean reverseFields = false;
 
     public Builder() {}
@@ -211,6 +213,7 @@ public interface ConfigResolver {
       this.valueReader = copy.valueReader;
       this.options = copy.options;
       this.defaultLoadSettings = copy.defaultLoadSettings;
+      this.keyResolver = copy.keyResolver;
       this.reverseFields = copy.reverseFields;
     }
 
@@ -292,6 +295,18 @@ public interface ConfigResolver {
     }
 
     /**
+     * Sets the {@link KeyResolver} for the config type you want to generate configs. If null, it
+     * will use the default {@link KeyResolver#DEFAULT}.
+     *
+     * @param resolver the resolver you want to set
+     * @return this instance for chaining
+     */
+    public Builder withKeyResolver(KeyResolver resolver) {
+      this.keyResolver = resolver;
+      return this;
+    }
+
+    /**
      * Sets whether to reverse fields when generating options. This is needed for some config types
      * so the generated options are chronological with the annotated config's fields. The default
      * value here is {@code false}.
@@ -311,7 +326,13 @@ public interface ConfigResolver {
      */
     public ConfigResolver build() {
       return new ConfigResolverImpl(
-          commentPrefix, valueWriter, valueReader, options, defaultLoadSettings, reverseFields);
+          commentPrefix,
+          valueWriter,
+          valueReader,
+          options,
+          defaultLoadSettings,
+          keyResolver,
+          reverseFields);
     }
   }
 }

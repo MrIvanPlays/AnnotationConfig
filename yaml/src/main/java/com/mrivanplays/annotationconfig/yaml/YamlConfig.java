@@ -3,6 +3,7 @@ package com.mrivanplays.annotationconfig.yaml;
 import com.mrivanplays.annotationconfig.core.resolver.ConfigResolver;
 import com.mrivanplays.annotationconfig.core.resolver.ValueReader;
 import com.mrivanplays.annotationconfig.core.resolver.ValueWriter;
+import com.mrivanplays.annotationconfig.core.resolver.key.DottedResolver;
 import com.mrivanplays.annotationconfig.core.resolver.options.CustomOptions;
 import com.mrivanplays.annotationconfig.core.resolver.settings.LoadSettings;
 import java.io.File;
@@ -42,6 +43,7 @@ public final class YamlConfig {
   private static void generateConfigResolver() {
     configResolver =
         ConfigResolver.newBuilder()
+            .withKeyResolver(DottedResolver.getInstance())
             .withValueWriter(VALUE_WRITER)
             .shouldReverseFields(true)
             .withCommentPrefix("# ")
@@ -82,11 +84,16 @@ public final class YamlConfig {
         PrintWriter writer,
         CustomOptions options,
         boolean sectionExists) {
-      write(key, value, writer, 2, sectionExists);
+      write(key, value, writer, 2, sectionExists, false);
     }
 
     private void write(
-        String key, Object value, PrintWriter writer, int childIndents, boolean sectionExists) {
+        String key,
+        Object value,
+        PrintWriter writer,
+        int childIndents,
+        boolean sectionExists,
+        boolean child) {
       StringBuilder intentPrefixBuilder = new StringBuilder();
       for (int i = 0; i < childIndents; i++) {
         intentPrefixBuilder.append(" ");
@@ -94,7 +101,7 @@ public final class YamlConfig {
       String intentPrefix = intentPrefixBuilder.toString();
       if (value instanceof Map<?, ?>) {
         if (!sectionExists) {
-          writer.println(key + ":");
+          writer.println((child ? intentPrefix.substring(0, childIndents - 2) : "") + key + ":");
         }
         for (Map.Entry<String, Object> entry : ((Map<String, Object>) value).entrySet()) {
           String mapKey = entry.getKey();
@@ -109,7 +116,7 @@ public final class YamlConfig {
               }
             }
           } else if (v instanceof Map<?, ?>) {
-            write(mapKey, v, writer, childIndents + 2, sectionExists);
+            write(mapKey, v, writer, childIndents + 2, sectionExists, true);
           } else {
             if (!(v instanceof String)) {
               writer.println(intentPrefix + mapKey + ": " + v);
@@ -134,7 +141,9 @@ public final class YamlConfig {
           writer.println(key + ": \"" + value + "\"");
         }
       }
-      writer.append('\n');
+      if (!child) {
+        writer.append('\n');
+      }
     }
   }
 }
