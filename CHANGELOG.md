@@ -2,6 +2,22 @@
 
 This file summarises changes between major versions.
 
+## Version 2.1.0
+
+### Comments inside sections
+Now you are able to do comments inside sections. This required breaking the ValueWriter, but
+it's for good. 
+
+## Version 2.0.1
+
+### Key resolver
+You are able to resolve keys. There's a default resolver and implementation for dotted keys which
+you can use. 
+
+### Misc changes
+
+- Simplified missing options generation
+
 ## Version 2.0.0
 
 ### Rewritten custom annotations
