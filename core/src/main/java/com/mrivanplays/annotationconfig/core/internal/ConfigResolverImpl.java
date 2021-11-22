@@ -19,11 +19,12 @@ import java.nio.charset.StandardCharsets;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.function.Supplier;
 
 public final class ConfigResolverImpl implements ConfigResolver {
 
   private final String commentPrefix;
-  private final ValueWriter valueWriter;
+  private final Supplier<ValueWriter> valueWriter;
   private final ValueReader valueReader;
   private final CustomOptions options;
   private final LoadSettings defaultLoadSettings;
@@ -32,7 +33,7 @@ public final class ConfigResolverImpl implements ConfigResolver {
 
   public ConfigResolverImpl(
       String commentPrefix,
-      ValueWriter valueWriter,
+      Supplier<ValueWriter> valueWriter,
       ValueReader valueReader,
       CustomOptions options,
       LoadSettings loadSettings,

@@ -4,7 +4,6 @@ import com.fasterxml.jackson.dataformat.toml.TomlMapper;
 import com.fasterxml.jackson.dataformat.toml.TomlReadFeature;
 import com.mrivanplays.annotationconfig.core.resolver.ConfigResolver;
 import com.mrivanplays.annotationconfig.core.resolver.ValueReader;
-import com.mrivanplays.annotationconfig.core.resolver.ValueWriter;
 import com.mrivanplays.annotationconfig.core.resolver.options.CustomOptions;
 import com.mrivanplays.annotationconfig.core.resolver.options.Option;
 import com.mrivanplays.annotationconfig.core.resolver.settings.LoadSetting;
@@ -12,13 +11,11 @@ import com.mrivanplays.annotationconfig.core.serialization.DataObject;
 import com.mrivanplays.annotationconfig.core.serialization.SerializerRegistry;
 import java.io.File;
 import java.io.IOException;
-import java.io.PrintWriter;
 import java.io.Reader;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.OffsetDateTime;
-import java.util.Collections;
 import java.util.Date;
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -56,7 +53,7 @@ public final class TomlConfig {
         ConfigResolver.newBuilder()
             .withOption(MAPPER_KEY, Option.of(DEFAULT_TOML_MAPPER).markReplaceable())
             .withLoadSetting(LoadSetting.GENERATE_NEW_OPTIONS, false)
-            .withValueWriter(new TomlValueWriter(DEFAULT_TOML_MAPPER))
+            .withValueWriter(() -> new TomlValueWriter(DEFAULT_TOML_MAPPER))
             .withCommentPrefix("# ")
             .shouldReverseFields(true)
             .withValueReader(
@@ -136,23 +133,5 @@ public final class TomlConfig {
       }
     }
     resolver.loadOrDump(annotatedConfig, file);
-  }
-
-  private static final class TomlValueWriter implements ValueWriter {
-
-    private final TomlMapper defaultMapper;
-
-    TomlValueWriter(TomlMapper defaultMapper) {
-      this.defaultMapper = defaultMapper;
-    }
-
-    @Override
-    public void write(
-        String key, Object value, PrintWriter writer, CustomOptions options, boolean sectionExists)
-        throws IOException {
-      TomlMapper tomlMapper =
-          options.getAsOr(TomlConfig.MAPPER_KEY, TomlMapper.class, defaultMapper);
-      writer.println(tomlMapper.writeValueAsString(Collections.singletonMap(key, value)));
-    }
   }
 }

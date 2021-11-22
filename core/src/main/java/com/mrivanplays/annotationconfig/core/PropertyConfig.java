@@ -9,6 +9,7 @@ import java.io.File;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.io.Reader;
+import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -42,7 +43,7 @@ public final class PropertyConfig {
     configResolver =
         ConfigResolver.newBuilder()
             .withCommentPrefix("# ")
-            .withValueWriter(VALUE_WRITER)
+            .withValueWriter(() -> VALUE_WRITER)
             .withValueReader(
                 new ValueReader() {
                   @Override
@@ -75,21 +76,57 @@ public final class PropertyConfig {
 
   private static final class PropertyValueWriter implements ValueWriter {
 
+    private Map<String, Object> toWrite = new HashMap<>();
+    private Map<String, List<String>> toWriteComments = new HashMap<>();
+
     @Override
-    public void write(
+    public void handleMapPart(
         String key,
-        Object value,
-        PrintWriter writer,
+        Map<String, Object> value,
         CustomOptions options,
-        boolean sectionExists) {
+        Map<String, List<String>> comments) {
+      // this is .properties what do you expect
+      throw new IllegalArgumentException(".properties does not support maps.");
+    }
+
+    @Override
+    public void handlePart(String key, Object value, CustomOptions options, List<String> comments) {
       if (value instanceof Map<?, ?>) {
         throw new IllegalArgumentException(".properties does not support maps.");
       }
       if (value instanceof List<?>) {
         throw new IllegalArgumentException(".properties does not support lists.");
       }
-      writer.println(key + "=" + value);
-      writer.append('\n');
+      if (!toWrite.containsKey(key)) {
+        toWrite.put(key, value);
+      } else {
+        throw new IllegalArgumentException("Duplicate key found!");
+      }
+      if (!comments.isEmpty()) {
+        toWriteComments.put(key, comments);
+      }
+    }
+
+    @Override
+    public void writeAndFlush(CustomOptions options, PrintWriter writer) {
+      try {
+        int index = 0;
+        for (Map.Entry<String, Object> entry : toWrite.entrySet()) {
+          if (toWriteComments.containsKey(entry.getKey())) {
+            for (String comment : toWriteComments.get(entry.getKey())) {
+              writer.println("# " + comment);
+            }
+          }
+          writer.println(entry.getKey() + "=" + entry.getValue());
+          if ((index + 1) != toWrite.size()) {
+            writer.append('\n');
+          }
+          index++;
+        }
+      } finally {
+        toWrite.clear();
+        toWriteComments.clear();
+      }
     }
   }
 }

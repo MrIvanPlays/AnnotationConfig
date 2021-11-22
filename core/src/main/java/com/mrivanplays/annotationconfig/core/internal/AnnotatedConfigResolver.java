@@ -18,6 +18,7 @@ import com.mrivanplays.annotationconfig.core.resolver.settings.NullReadHandleOpt
 import com.mrivanplays.annotationconfig.core.serialization.DataObject;
 import com.mrivanplays.annotationconfig.core.serialization.FieldTypeSerializer;
 import com.mrivanplays.annotationconfig.core.serialization.SerializerRegistry;
+import com.mrivanplays.annotationconfig.core.utils.MapUtils;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
@@ -36,6 +37,7 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.TreeMap;
 import java.util.TreeSet;
+import java.util.function.Supplier;
 
 @SuppressWarnings({"unchecked", "rawtypes"})
 public final class AnnotatedConfigResolver {
@@ -92,7 +94,7 @@ public final class AnnotatedConfigResolver {
       File file,
       CustomOptions options,
       String commentChar,
-      ValueWriter valueWriter,
+      Supplier<ValueWriter> valueWriter,
       KeyResolver keyResolver,
       boolean reverseFields) {
     try {
@@ -104,6 +106,7 @@ public final class AnnotatedConfigResolver {
             map,
             commentChar,
             valueWriter,
+            null,
             options,
             keyResolver,
             false,
@@ -121,7 +124,7 @@ public final class AnnotatedConfigResolver {
       Writer writerFeed,
       CustomOptions options,
       String commentChar,
-      ValueWriter valueWriter,
+      Supplier<ValueWriter> valueWriter,
       KeyResolver keyResolver,
       boolean reverseFields) {
     try (PrintWriter writer = new PrintWriter(writerFeed)) {
@@ -131,6 +134,7 @@ public final class AnnotatedConfigResolver {
           map,
           commentChar,
           valueWriter,
+          null,
           options,
           keyResolver,
           false,
@@ -146,16 +150,22 @@ public final class AnnotatedConfigResolver {
       PrintWriter writer,
       Map<AnnotationHolder, Set<AnnotationType>> map,
       String commentChar,
-      ValueWriter valueWriter,
+      Supplier<ValueWriter> valueWriterSupplier,
+      ValueWriter baseValueWriter,
       CustomOptions options,
       KeyResolver keyResolver,
       boolean isSection,
       String sectionKey,
       boolean reverseFields)
       throws IOException {
+    if (baseValueWriter == null) {
+      baseValueWriter = valueWriterSupplier.get();
+    }
     Map<String, Object> toWrite = null;
+    Map<String, List<String>> toWriteComments = null;
     if (isSection) {
       toWrite = new LinkedHashMap<>();
+      toWriteComments = new LinkedHashMap<>();
     }
     for (Map.Entry<AnnotationHolder, Set<AnnotationType>> entry : map.entrySet()) {
       AnnotationHolder holder = entry.getKey();
@@ -172,9 +182,10 @@ public final class AnnotatedConfigResolver {
         field.setAccessible(true);
         String keyName = field.getName();
         boolean configObject = false;
+        List<String> comments = Collections.emptyList();
         for (AnnotationType type : entry.getValue()) {
-          if (!isSection) {
-            handleComments(type, field, null, commentChar, writer);
+          if (comments.isEmpty()) {
+            comments = getComments(type, field, null);
           }
           if (type.is(AnnotationType.KEY)) {
             keyName = field.getDeclaredAnnotation(Key.class).value();
@@ -192,7 +203,8 @@ public final class AnnotatedConfigResolver {
                   writer,
                   resolveAnnotations(section, reverseFields),
                   commentChar,
-                  valueWriter,
+                  valueWriterSupplier,
+                  baseValueWriter,
                   options,
                   keyResolver,
                   true,
@@ -247,9 +259,30 @@ public final class AnnotatedConfigResolver {
             valueToWrite = dummyEntry.getValue();
           }
           if (!isSection) {
-            valueWriter.write(keyToWrite, valueToWrite, writer, options, false);
+            baseValueWriter.handlePart(keyToWrite, valueToWrite, options, comments);
           } else {
-            toWrite.put(keyToWrite, valueToWrite);
+            if (toWrite.containsKey(keyToWrite)) {
+              if (valueToWrite instanceof Map) {
+                Map<String, Object> map2 = (Map<String, Object>) valueToWrite;
+                Object stored = toWrite.get(keyToWrite);
+                if (!(stored instanceof Map)) {
+                  throw new IllegalArgumentException(
+                      "Something's wrong I can feel it ; check your annotated config.");
+                }
+                Map<String, Object> map1 = (Map<String, Object>) stored;
+                MapUtils.populateFirst(map1, map2);
+                toWrite.replace(keyToWrite, map1);
+              } else {
+                throw new IllegalArgumentException("Duplicate key");
+              }
+            } else {
+              toWrite.put(keyToWrite, valueToWrite);
+            }
+            if (valueToWrite instanceof Map) {
+              toWriteComments.put(MapUtils.getLastKey((Map<String, Object>) valueToWrite), comments);
+            } else {
+              toWriteComments.put(keyToWrite, comments);
+            }
           }
         } catch (IllegalAccessException e) {
           throw new IllegalArgumentException("lost access to field '" + field.getName() + "'");
@@ -258,8 +291,9 @@ public final class AnnotatedConfigResolver {
     }
 
     if (isSection) {
-      valueWriter.write(sectionKey, toWrite, writer, options, false);
+      baseValueWriter.handleMapPart(sectionKey, toWrite, options, toWriteComments);
     }
+    baseValueWriter.writeAndFlush(options, writer);
   }
 
   // returns whether it's missing options
@@ -359,7 +393,8 @@ public final class AnnotatedConfigResolver {
       } else if (deserialized instanceof String) {
         String comparable = (String) deserialized;
         State comparison = MinMaxHandler.compare(min, max, comparable);
-        handleComparison(comparison, keyName, comparable.length(), fieldType, min, max, String.class);
+        handleComparison(
+            comparison, keyName, comparable.length(), fieldType, min, max, String.class);
       } else {
         if (min.getState() != State.START) {
           throw new IllegalArgumentException("@Min annotation placed on invalid field type");

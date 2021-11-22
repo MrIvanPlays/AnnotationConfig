@@ -2,16 +2,12 @@ package com.mrivanplays.annotationconfig.yaml;
 
 import com.mrivanplays.annotationconfig.core.resolver.ConfigResolver;
 import com.mrivanplays.annotationconfig.core.resolver.ValueReader;
-import com.mrivanplays.annotationconfig.core.resolver.ValueWriter;
 import com.mrivanplays.annotationconfig.core.resolver.key.DottedResolver;
-import com.mrivanplays.annotationconfig.core.resolver.options.CustomOptions;
 import com.mrivanplays.annotationconfig.core.resolver.settings.LoadSettings;
 import java.io.File;
-import java.io.PrintWriter;
 import java.io.Reader;
 import java.util.Collections;
 import java.util.LinkedHashMap;
-import java.util.List;
 import java.util.Map;
 import org.yaml.snakeyaml.Yaml;
 
@@ -24,7 +20,6 @@ import org.yaml.snakeyaml.Yaml;
 public final class YamlConfig {
 
   private static final Yaml YAML = new Yaml();
-  private static final ValueWriter VALUE_WRITER = new YamlValueWriter();
 
   private static ConfigResolver configResolver;
 
@@ -44,7 +39,7 @@ public final class YamlConfig {
     configResolver =
         ConfigResolver.newBuilder()
             .withKeyResolver(DottedResolver.getInstance())
-            .withValueWriter(VALUE_WRITER)
+            .withValueWriter(YamlValueWriter::new)
             .shouldReverseFields(true)
             .withCommentPrefix("# ")
             .withValueReader(
@@ -73,77 +68,5 @@ public final class YamlConfig {
   @Deprecated
   public static void load(Object annotatedConfig, File file) {
     getConfigResolver().loadOrDump(annotatedConfig, file);
-  }
-
-  private static final class YamlValueWriter implements ValueWriter {
-
-    @Override
-    public void write(
-        String key,
-        Object value,
-        PrintWriter writer,
-        CustomOptions options,
-        boolean sectionExists) {
-      write(key, value, writer, 2, sectionExists, false);
-    }
-
-    private void write(
-        String key,
-        Object value,
-        PrintWriter writer,
-        int childIndents,
-        boolean sectionExists,
-        boolean child) {
-      StringBuilder intentPrefixBuilder = new StringBuilder();
-      for (int i = 0; i < childIndents; i++) {
-        intentPrefixBuilder.append(" ");
-      }
-      String intentPrefix = intentPrefixBuilder.toString();
-      if (value instanceof Map<?, ?>) {
-        if (!sectionExists) {
-          writer.println((child ? intentPrefix.substring(0, childIndents - 2) : "") + key + ":");
-        }
-        for (Map.Entry<String, Object> entry : ((Map<String, Object>) value).entrySet()) {
-          String mapKey = entry.getKey();
-          Object v = entry.getValue();
-          if (v instanceof List<?>) {
-            writer.println(intentPrefix + mapKey + ":");
-            for (Object b : (List<?>) v) {
-              if (!(b instanceof String)) {
-                writer.println(intentPrefix + "    - " + b);
-              } else {
-                writer.println(intentPrefix + "    - \"" + b + "\"");
-              }
-            }
-          } else if (v instanceof Map<?, ?>) {
-            write(mapKey, v, writer, childIndents + 2, sectionExists, true);
-          } else {
-            if (!(v instanceof String)) {
-              writer.println(intentPrefix + mapKey + ": " + v);
-            } else {
-              writer.println(intentPrefix + mapKey + ": \"" + v + "\"");
-            }
-          }
-        }
-      } else if (value instanceof List<?>) {
-        writer.println(key + ":");
-        for (Object b : (List<?>) value) {
-          if (!(b instanceof String)) {
-            writer.println(intentPrefix + "- " + b);
-          } else {
-            writer.println(intentPrefix + "- \"" + b + "\"");
-          }
-        }
-      } else {
-        if (!(value instanceof String)) {
-          writer.println(key + ": " + value);
-        } else {
-          writer.println(key + ": \"" + value + "\"");
-        }
-      }
-      if (!child) {
-        writer.append('\n');
-      }
-    }
   }
 }
