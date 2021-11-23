@@ -62,11 +62,6 @@ public final class TomlValueWriter implements ValueWriter {
               "Invalid key found (perhaps duplicate key). Check your annotated config.");
         }
         Map<String, Object> storedMap = (Map<String, Object>) stored;
-        String firstKey = getFirstKey(storedMap);
-        if (firstKey == null || !mapValue.containsKey(firstKey)) {
-          throw new IllegalArgumentException(
-              "Value map does not contain first key of containing map! Check your annotated config.");
-        }
         MapUtils.populateFirst(storedMap, mapValue);
         toWrite.replace(key, storedMap);
       } else {
@@ -76,10 +71,6 @@ public final class TomlValueWriter implements ValueWriter {
     if (!comments.isEmpty()) {
       toWriteComments.put(key, comments);
     }
-  }
-
-  private String getFirstKey(Map<String, Object> map) {
-    return map.keySet().stream().findFirst().orElse(null);
   }
 
   /** {@inheritDoc} */

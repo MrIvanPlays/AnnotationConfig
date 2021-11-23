@@ -4,7 +4,6 @@ import com.mrivanplays.annotationconfig.core.resolver.ValueWriter;
 import com.mrivanplays.annotationconfig.core.resolver.options.CustomOptions;
 import com.mrivanplays.annotationconfig.core.utils.MapUtils;
 import java.io.PrintWriter;
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -53,11 +52,6 @@ public final class YamlValueWriter implements ValueWriter {
               "Invalid key found (perhaps duplicate key). Check your annotated config.");
         }
         Map<String, Object> storedMap = (Map<String, Object>) stored;
-        String firstKey = getFirstKey(storedMap);
-        if (firstKey == null || !mapValue.containsKey(firstKey)) {
-          throw new IllegalArgumentException(
-              "Value map does not contain first key of containing map! Check your annotated config.");
-        }
         MapUtils.populateFirst(storedMap, mapValue);
         toWrite.replace(key, storedMap);
       } else {
@@ -84,10 +78,6 @@ public final class YamlValueWriter implements ValueWriter {
         }
       }
     }
-  }
-
-  private String getFirstKey(Map<String, Object> map) {
-    return map.keySet().stream().findFirst().orElse(null);
   }
 
   /** {@inheritDoc} */
