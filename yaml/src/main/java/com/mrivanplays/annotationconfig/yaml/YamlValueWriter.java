@@ -128,12 +128,17 @@ public final class YamlValueWriter implements ValueWriter {
           }
         }
         if (v instanceof List<?>) {
-          writer.println(intentPrefix + mapKey + ":");
-          for (Object b : (List<?>) v) {
-            if (!(b instanceof String)) {
-              writer.println(intentPrefix + "    - " + b);
-            } else {
-              writer.println(intentPrefix + "    - \"" + b + "\"");
+          List<?> vList = (List<?>) v;
+          if (vList.isEmpty()) {
+            writer.println(intentPrefix + mapKey + ": []");
+          } else {
+            writer.println(intentPrefix + mapKey + ":");
+            for (Object b : vList) {
+              if (!(b instanceof String)) {
+                writer.println(intentPrefix + "    - " + b);
+              } else {
+                writer.println(intentPrefix + "    - \"" + b + "\"");
+              }
             }
           }
         } else if (v instanceof Map<?, ?>) {
@@ -153,12 +158,17 @@ public final class YamlValueWriter implements ValueWriter {
           writer.println("# " + comment);
         }
       }
-      writer.println(key + ":");
-      for (Object b : (List<?>) value) {
-        if (!(b instanceof String)) {
-          writer.println(intentPrefix + "- " + b);
-        } else {
-          writer.println(intentPrefix + "- \"" + b + "\"");
+      List<?> valueList = (List<?>) value;
+      if (valueList.isEmpty()) {
+        writer.println(key + ": []");
+      } else {
+        writer.println(key + ":");
+        for (Object b : valueList) {
+          if (!(b instanceof String)) {
+            writer.println(intentPrefix + "- " + b);
+          } else {
+            writer.println(intentPrefix + "- \"" + b + "\"");
+          }
         }
       }
     } else {

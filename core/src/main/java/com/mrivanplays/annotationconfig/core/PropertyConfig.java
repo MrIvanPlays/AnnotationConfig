@@ -23,8 +23,6 @@ import java.util.Properties;
  */
 public final class PropertyConfig {
 
-  private static final ValueWriter VALUE_WRITER = new PropertyValueWriter();
-
   private static ConfigResolver configResolver;
 
   /**
@@ -43,7 +41,7 @@ public final class PropertyConfig {
     configResolver =
         ConfigResolver.newBuilder()
             .withCommentPrefix("# ")
-            .withValueWriter(() -> VALUE_WRITER)
+            .withValueWriter(PropertyValueWriter::new)
             .withValueReader(
                 new ValueReader() {
                   @Override
