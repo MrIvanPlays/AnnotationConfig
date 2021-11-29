@@ -226,7 +226,6 @@ public final class AnnotatedConfigResolver {
         configObject = true;
       }
     }
-    ret.getFieldComments().put(keyName, comments);
     if (configObject) {
       Object cfgObject = field.get(annotatedConfig);
       Map<AnnotationHolder, Set<AnnotationType>> annotations =
@@ -243,7 +242,11 @@ public final class AnnotatedConfigResolver {
         }
         combinedData.getFieldComments().putAll(childData.getFieldComments());
       }
-      ret.getToWrite().put(keyName, combinedData.getToWrite());
+      for (Map.Entry<String, Object> combinedDataWrite : combinedData.getToWrite().entrySet()) {
+        String combinedDataKey = combinedDataWrite.getKey();
+        Object combinedDataValue = combinedDataWrite.getValue();
+        combineMapToData(ret, combinedDataKey, combinedDataValue);
+      }
       for (Map.Entry<String, List<String>> fieldComment :
           combinedData.getFieldComments().entrySet()) {
         if (ret.getFieldComments().containsKey(fieldComment.getKey())) {
@@ -305,6 +308,18 @@ public final class AnnotatedConfigResolver {
       valueToWrite = dummyEntry.getValue();
     }
     combineMapToData(ret, keyToWrite, valueToWrite);
+    if (valueToWrite instanceof Map) {
+      Map<String, Object> lastMap = MapUtils.getLastMap((Map<String, Object>) valueToWrite);
+      String lastKey;
+      if (lastMap.size() == 1) {
+        lastKey = lastMap.entrySet().stream().findFirst().get().getKey();
+      } else {
+        lastKey = MapUtils.getLastKey(lastMap);
+      }
+      ret.getFieldComments().put(lastKey, comments);
+    } else {
+      ret.getFieldComments().put(keyToWrite, comments);
+    }
     return ret;
   }
 

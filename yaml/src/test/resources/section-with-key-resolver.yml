@@ -1,0 +1,11 @@
+commands:
+  subcommands:
+    help:
+      # Foo comment
+      foo: "pepega"
+    this:
+      # Bar comment
+      bar: "baz"
+      # baz
+      baz: 69420
+
