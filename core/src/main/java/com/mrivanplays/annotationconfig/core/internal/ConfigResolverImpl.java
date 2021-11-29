@@ -24,7 +24,7 @@ import java.util.function.Supplier;
 public final class ConfigResolverImpl implements ConfigResolver {
 
   private final String commentPrefix;
-  private final Supplier<ValueWriter> valueWriter;
+  private final ValueWriter valueWriter;
   private final ValueReader valueReader;
   private final CustomOptions options;
   private final LoadSettings defaultLoadSettings;
@@ -33,7 +33,7 @@ public final class ConfigResolverImpl implements ConfigResolver {
 
   public ConfigResolverImpl(
       String commentPrefix,
-      Supplier<ValueWriter> valueWriter,
+      ValueWriter valueWriter,
       ValueReader valueReader,
       CustomOptions options,
       LoadSettings loadSettings,

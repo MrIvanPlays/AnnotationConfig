@@ -14,11 +14,13 @@ import java.util.Map;
  */
 public final class MapUtils {
 
+  @Deprecated
   public static String getLastKey(Map<String, Object> map) {
     List<String> keys = new ArrayList<>(map.keySet());
     return keys.get(keys.size() - 1);
   }
 
+  @Deprecated
   public static Map<String, Object> getLastMap(Map<String, Object> map) {
     Map<String, Object> ret = map;
     for (Map.Entry<String, Object> entry : map.entrySet()) {

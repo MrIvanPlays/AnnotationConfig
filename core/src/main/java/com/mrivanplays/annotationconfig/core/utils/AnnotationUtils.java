@@ -1,5 +1,7 @@
 package com.mrivanplays.annotationconfig.core.utils;
 
+import com.mrivanplays.annotationconfig.core.annotations.ConfigObject;
+import com.mrivanplays.annotationconfig.core.annotations.Ignore;
 import com.mrivanplays.annotationconfig.core.annotations.Key;
 import com.mrivanplays.annotationconfig.core.annotations.comment.Comment;
 import com.mrivanplays.annotationconfig.core.annotations.comment.Comments;
@@ -35,6 +37,26 @@ public final class AnnotationUtils {
       }
     }
     return ret;
+  }
+
+  /**
+   * Returns whether the specified {@link Field} is ignored upon generation.
+   *
+   * @param field the field you want to check if ignored
+   * @return true or false
+   */
+  public static boolean isIgnored(Field field) {
+    return field.getDeclaredAnnotation(Ignore.class) != null;
+  }
+
+  /**
+   * Returns whether the specified {@link Field} is a config object.
+   *
+   * @param field the field you want to check if config object
+   * @return true or false
+   */
+  public static boolean isConfigObject(Field field) {
+    return field.getDeclaredAnnotation(ConfigObject.class) != null;
   }
 
   /**

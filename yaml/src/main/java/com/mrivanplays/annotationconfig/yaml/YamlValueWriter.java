@@ -2,10 +2,8 @@ package com.mrivanplays.annotationconfig.yaml;
 
 import com.mrivanplays.annotationconfig.core.resolver.ValueWriter;
 import com.mrivanplays.annotationconfig.core.resolver.options.CustomOptions;
-import com.mrivanplays.annotationconfig.core.utils.MapUtils;
 import java.io.PrintWriter;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -17,80 +15,14 @@ import java.util.Map;
  */
 public final class YamlValueWriter implements ValueWriter {
 
-  private Map<String, Object> toWrite = new HashMap<>();
-  private Map<String, List<String>> toWriteComments = new HashMap<>();
-  private Map<String, Map<String, List<String>>> mapPartComments = new HashMap<>();
-
-  /** {@inheritDoc} */
   @Override
-  public void handleMapPart(
-      String key,
-      Map<String, Object> value,
-      CustomOptions options,
-      Map<String, List<String>> comments) {
-    if (!toWrite.containsKey(key)) {
-      toWrite.put(key, value);
-    } else {
-      throw new IllegalArgumentException("Duplicate key!");
-    }
-    if (!comments.isEmpty()) {
-      mapPartComments.put(key, comments);
-    }
-  }
-
-  /** {@inheritDoc} */
-  @Override
-  public void handlePart(String key, Object value, CustomOptions options, List<String> comments) {
-    if (!toWrite.containsKey(key)) {
-      toWrite.put(key, value);
-    } else {
-      if (value instanceof Map) {
-        Map<String, Object> mapValue = (Map<String, Object>) value;
-        Object stored = toWrite.get(key);
-        if (!(stored instanceof Map)) {
-          throw new IllegalArgumentException(
-              "Invalid key found (perhaps duplicate key). Check your annotated config.");
-        }
-        Map<String, Object> storedMap = (Map<String, Object>) stored;
-        MapUtils.populateFirst(storedMap, mapValue);
-        toWrite.replace(key, storedMap);
-      } else {
-        throw new IllegalArgumentException("Duplicate key!");
-      }
-    }
-    if (!comments.isEmpty()) {
-      if (!(value instanceof Map)) {
-        toWriteComments.put(key, comments);
-      } else {
-        Map<String, Object> mapValue = MapUtils.getLastMap((Map<String, Object>) value);
-        if (mapValue.size() != 1) {
-          toWriteComments.put(key, comments);
-          return;
-        }
-        if (!mapPartComments.containsKey(key)) {
-          Map<String, List<String>> commentPart = new HashMap<>();
-          commentPart.put(MapUtils.getLastKey(mapValue), comments);
-          mapPartComments.put(key, commentPart);
-        } else {
-          Map<String, List<String>> commentPart = mapPartComments.get(key);
-          commentPart.put(MapUtils.getLastKey(mapValue), comments);
-          mapPartComments.replace(key, commentPart);
-        }
-      }
-    }
-  }
-
-  /** {@inheritDoc} */
-  @Override
-  public void writeAndFlush(CustomOptions options, PrintWriter writer) {
-    try {
-      for (Map.Entry<String, Object> entry : toWrite.entrySet()) {
-        write(entry.getKey(), entry.getValue(), writer, 2, false, null);
-      }
-    } finally {
-      toWrite.clear();
-      toWriteComments.clear();
-      mapPartComments.clear();
+  public void write(
+      Map<String, Object> values,
+      Map<String, List<String>> fieldComments,
+      PrintWriter writer,
+      CustomOptions options) {
+    for (Map.Entry<String, Object> entry : values.entrySet()) {
+      write(entry.getKey(), entry.getValue(), writer, fieldComments, 2, false);
     }
   }
 
@@ -98,18 +30,18 @@ public final class YamlValueWriter implements ValueWriter {
       String key,
       Object value,
       PrintWriter writer,
+      Map<String, List<String>> commentsMap,
       int childIndents,
-      boolean child,
-      Map<String, List<String>> childComments) {
+      boolean child) {
     StringBuilder intentPrefixBuilder = new StringBuilder();
     for (int i = 0; i < childIndents; i++) {
       intentPrefixBuilder.append(" ");
     }
     String intentPrefix = intentPrefixBuilder.toString();
     if (value instanceof Map<?, ?>) {
-      List<String> baseComments = toWriteComments.getOrDefault(key, Collections.emptyList());
-      if (childComments == null) {
-        childComments = mapPartComments.getOrDefault(key, Collections.emptyMap());
+      List<String> baseComments = commentsMap.getOrDefault(key, Collections.emptyList());
+      if (baseComments.isEmpty()) {
+        baseComments = commentsMap.getOrDefault(key + ".cl", Collections.emptyList());
       }
       String childPrefix = child ? intentPrefix.substring(0, childIndents - 2) : "";
       if (!baseComments.isEmpty()) {
@@ -121,13 +53,8 @@ public final class YamlValueWriter implements ValueWriter {
       for (Map.Entry<String, Object> entry : ((Map<String, Object>) value).entrySet()) {
         String mapKey = entry.getKey();
         Object v = entry.getValue();
-        List<String> comments = childComments.getOrDefault(mapKey, Collections.emptyList());
-        if (!comments.isEmpty()) {
-          for (String comment : comments) {
-            writer.println(intentPrefix + "# " + comment);
-          }
-        }
         if (v instanceof List<?>) {
+          writeCommentsInsideMap(key, writer, commentsMap, intentPrefix, mapKey);
           List<?> vList = (List<?>) v;
           if (vList.isEmpty()) {
             writer.println(intentPrefix + mapKey + ": []");
@@ -142,8 +69,9 @@ public final class YamlValueWriter implements ValueWriter {
             }
           }
         } else if (v instanceof Map<?, ?>) {
-          write(mapKey, v, writer, childIndents + 2, true, childComments);
+          write(mapKey, v, writer, commentsMap, childIndents + 2, true);
         } else {
+          writeCommentsInsideMap(key, writer, commentsMap, intentPrefix, mapKey);
           if (!(v instanceof String)) {
             writer.println(intentPrefix + mapKey + ": " + v);
           } else {
@@ -152,12 +80,7 @@ public final class YamlValueWriter implements ValueWriter {
         }
       }
     } else if (value instanceof List<?>) {
-      List<String> comments = toWriteComments.getOrDefault(key, Collections.emptyList());
-      if (!comments.isEmpty()) {
-        for (String comment : comments) {
-          writer.println("# " + comment);
-        }
-      }
+      writeComments(key, writer, commentsMap);
       List<?> valueList = (List<?>) value;
       if (valueList.isEmpty()) {
         writer.println(key + ": []");
@@ -172,12 +95,7 @@ public final class YamlValueWriter implements ValueWriter {
         }
       }
     } else {
-      List<String> comments = toWriteComments.getOrDefault(key, Collections.emptyList());
-      if (!comments.isEmpty()) {
-        for (String comment : comments) {
-          writer.println("# " + comment);
-        }
-      }
+      writeComments(key, writer, commentsMap);
       if (!(value instanceof String)) {
         writer.println(key + ": " + value);
       } else {
@@ -186,6 +104,39 @@ public final class YamlValueWriter implements ValueWriter {
     }
     if (!child) {
       writer.append('\n');
+    }
+  }
+
+  private void writeComments(
+      String key, PrintWriter writer, Map<String, List<String>> commentsMap) {
+    List<String> comments = commentsMap.getOrDefault(key, Collections.emptyList());
+    if (comments.isEmpty()) {
+      comments = commentsMap.getOrDefault(key + ".cl", Collections.emptyList());
+    }
+    if (!comments.isEmpty()) {
+      for (String comment : comments) {
+        writer.println("# " + comment);
+      }
+    }
+  }
+
+  private void writeCommentsInsideMap(
+      String key,
+      PrintWriter writer,
+      Map<String, List<String>> commentsMap,
+      String intentPrefix,
+      String mapKey) {
+    List<String> comments = commentsMap.getOrDefault(key + "." + mapKey, Collections.emptyList());
+    if (comments.isEmpty()) {
+      comments = commentsMap.getOrDefault(mapKey, Collections.emptyList());
+      if (comments.isEmpty()) {
+        comments = commentsMap.getOrDefault(key + ".cl", Collections.emptyList());
+      }
+    }
+    if (!comments.isEmpty()) {
+      for (String comment : comments) {
+        writer.println(intentPrefix + "# " + comment);
+      }
     }
   }
 }

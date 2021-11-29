@@ -41,7 +41,6 @@ public class MapUtilsTest {
   public void testMapUtils() {
     MapUtils.populateFirst(map1, map2);
 
-    System.out.println(map1);
     Assertions.assertNotEquals(map1, map2);
   }
 }

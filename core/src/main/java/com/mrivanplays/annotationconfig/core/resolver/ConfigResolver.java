@@ -13,7 +13,6 @@ import java.io.OutputStream;
 import java.io.OutputStreamWriter;
 import java.io.Reader;
 import java.io.Writer;
-import java.util.function.Supplier;
 
 /**
  * Represents a resolver of configurations.
@@ -194,7 +193,7 @@ public interface ConfigResolver {
   class Builder {
 
     private String commentPrefix;
-    private Supplier<ValueWriter> valueWriter;
+    private ValueWriter valueWriter;
     private ValueReader valueReader;
     private CustomOptions options;
     private LoadSettings defaultLoadSettings;
@@ -240,13 +239,13 @@ public interface ConfigResolver {
     }
 
     /**
-     * Sets a {@link Supplier} for {@link ValueWriter ValueWeriters} for the config type you want to
-     * generate configs. This cannot be null.
+     * Sets a {@link ValueWriter} for the config type you want to generate configs. This cannot be
+     * null.
      *
      * @param val the value writer supplier you want to set
      * @return this instance for chaining
      */
-    public Builder withValueWriter(Supplier<ValueWriter> val) {
+    public Builder withValueWriter(ValueWriter val) {
       valueWriter = val;
       return this;
     }

@@ -9,7 +9,6 @@ import java.io.File;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.io.Reader;
-import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -37,11 +36,13 @@ public final class PropertyConfig {
     return configResolver;
   }
 
+  private static final ValueWriter PROPERTIES_VALUE_WRITER = new PropertyValueWriter();
+
   private static void generateConfigResolver() {
     configResolver =
         ConfigResolver.newBuilder()
             .withCommentPrefix("# ")
-            .withValueWriter(PropertyValueWriter::new)
+            .withValueWriter(PROPERTIES_VALUE_WRITER)
             .withValueReader(
                 new ValueReader() {
                   @Override
@@ -74,56 +75,30 @@ public final class PropertyConfig {
 
   private static final class PropertyValueWriter implements ValueWriter {
 
-    private Map<String, Object> toWrite = new HashMap<>();
-    private Map<String, List<String>> toWriteComments = new HashMap<>();
-
     @Override
-    public void handleMapPart(
-        String key,
-        Map<String, Object> value,
-        CustomOptions options,
-        Map<String, List<String>> comments) {
-      // this is .properties what do you expect
-      throw new IllegalArgumentException(".properties does not support maps.");
-    }
-
-    @Override
-    public void handlePart(String key, Object value, CustomOptions options, List<String> comments) {
-      if (value instanceof Map<?, ?>) {
-        throw new IllegalArgumentException(".properties does not support maps.");
-      }
-      if (value instanceof List<?>) {
-        throw new IllegalArgumentException(".properties does not support lists.");
-      }
-      if (!toWrite.containsKey(key)) {
-        toWrite.put(key, value);
-      } else {
-        throw new IllegalArgumentException("Duplicate key found!");
-      }
-      if (!comments.isEmpty()) {
-        toWriteComments.put(key, comments);
-      }
-    }
-
-    @Override
-    public void writeAndFlush(CustomOptions options, PrintWriter writer) {
-      try {
-        int index = 0;
-        for (Map.Entry<String, Object> entry : toWrite.entrySet()) {
-          if (toWriteComments.containsKey(entry.getKey())) {
-            for (String comment : toWriteComments.get(entry.getKey())) {
-              writer.println("# " + comment);
-            }
-          }
-          writer.println(entry.getKey() + "=" + entry.getValue());
-          if ((index + 1) != toWrite.size()) {
-            writer.append('\n');
-          }
-          index++;
+    public void write(
+        Map<String, Object> values,
+        Map<String, List<String>> fieldComments,
+        PrintWriter writer,
+        CustomOptions options) {
+      int index = 0;
+      for (Map.Entry<String, Object> entry : values.entrySet()) {
+        if (entry.getValue() instanceof Map<?, ?>) {
+          throw new IllegalArgumentException(".properties does not support maps");
         }
-      } finally {
-        toWrite.clear();
-        toWriteComments.clear();
+        if (entry.getValue() instanceof List<?>) {
+          throw new IllegalArgumentException(".properties does not support lists");
+        }
+        if (fieldComments.containsKey(entry.getKey())) {
+          for (String comment : fieldComments.get(entry.getKey())) {
+            writer.println("# " + comment);
+          }
+        }
+        writer.println(entry.getKey() + "=" + entry.getValue());
+        if ((index + 1) != values.size()) {
+          writer.append('\n');
+        }
+        index++;
       }
     }
   }

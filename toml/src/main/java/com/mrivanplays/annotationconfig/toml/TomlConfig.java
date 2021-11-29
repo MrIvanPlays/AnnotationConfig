@@ -4,6 +4,7 @@ import com.fasterxml.jackson.dataformat.toml.TomlMapper;
 import com.fasterxml.jackson.dataformat.toml.TomlReadFeature;
 import com.mrivanplays.annotationconfig.core.resolver.ConfigResolver;
 import com.mrivanplays.annotationconfig.core.resolver.ValueReader;
+import com.mrivanplays.annotationconfig.core.resolver.ValueWriter;
 import com.mrivanplays.annotationconfig.core.resolver.options.CustomOptions;
 import com.mrivanplays.annotationconfig.core.resolver.options.Option;
 import com.mrivanplays.annotationconfig.core.resolver.settings.LoadSetting;
@@ -48,12 +49,14 @@ public final class TomlConfig {
     return configResolver;
   }
 
+  private static final ValueWriter TOML_VALUE_WRITER = new TomlValueWriter(DEFAULT_TOML_MAPPER);
+
   private static void generateConfigResolver() {
     configResolver =
         ConfigResolver.newBuilder()
             .withOption(MAPPER_KEY, Option.of(DEFAULT_TOML_MAPPER).markReplaceable())
             .withLoadSetting(LoadSetting.GENERATE_NEW_OPTIONS, false)
-            .withValueWriter(() -> new TomlValueWriter(DEFAULT_TOML_MAPPER))
+            .withValueWriter(TOML_VALUE_WRITER)
             .withCommentPrefix("# ")
             .shouldReverseFields(true)
             .withValueReader(

@@ -2,6 +2,7 @@ package com.mrivanplays.annotationconfig.yaml;
 
 import com.mrivanplays.annotationconfig.core.resolver.ConfigResolver;
 import com.mrivanplays.annotationconfig.core.resolver.ValueReader;
+import com.mrivanplays.annotationconfig.core.resolver.ValueWriter;
 import com.mrivanplays.annotationconfig.core.resolver.key.DottedResolver;
 import com.mrivanplays.annotationconfig.core.resolver.settings.LoadSettings;
 import java.io.File;
@@ -35,11 +36,13 @@ public final class YamlConfig {
     return configResolver;
   }
 
+  private static final ValueWriter YAML_VALUE_WRITER = new YamlValueWriter();
+
   private static void generateConfigResolver() {
     configResolver =
         ConfigResolver.newBuilder()
             .withKeyResolver(DottedResolver.getInstance())
-            .withValueWriter(YamlValueWriter::new)
+            .withValueWriter(YAML_VALUE_WRITER)
             .shouldReverseFields(true)
             .withCommentPrefix("# ")
             .withValueReader(
