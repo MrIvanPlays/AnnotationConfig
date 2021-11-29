@@ -33,7 +33,7 @@ public final class MapUtils {
 
   public static Map<String, Object> getLastCommonMap(
       Map<String, Object> map1, Map<String, Object> map2) {
-    Map<String, Object> ret = null;
+    Map<String, Object> ret = map2;
     for (Map.Entry<String, Object> entry : map1.entrySet()) {
       if (map2.containsKey(entry.getKey())) {
         Object val = map2.get(entry.getKey());

@@ -242,11 +242,7 @@ public final class AnnotatedConfigResolver {
         }
         combinedData.getFieldComments().putAll(childData.getFieldComments());
       }
-      for (Map.Entry<String, Object> combinedDataWrite : combinedData.getToWrite().entrySet()) {
-        String combinedDataKey = combinedDataWrite.getKey();
-        Object combinedDataValue = combinedDataWrite.getValue();
-        combineMapToData(ret, combinedDataKey, combinedDataValue);
-      }
+      ret.getToWrite().put(keyName, combinedData.getToWrite());
       for (Map.Entry<String, List<String>> fieldComment :
           combinedData.getFieldComments().entrySet()) {
         if (ret.getFieldComments().containsKey(fieldComment.getKey())) {

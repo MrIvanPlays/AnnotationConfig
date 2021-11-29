@@ -39,9 +39,9 @@ public final class YamlValueWriter implements ValueWriter {
     }
     String intentPrefix = intentPrefixBuilder.toString();
     if (value instanceof Map<?, ?>) {
-      List<String> baseComments = commentsMap.getOrDefault(key, Collections.emptyList());
+      List<String> baseComments = commentsMap.getOrDefault(key + ".cl", Collections.emptyList());
       if (baseComments.isEmpty()) {
-        baseComments = commentsMap.getOrDefault(key + ".cl", Collections.emptyList());
+        baseComments = commentsMap.getOrDefault(key, Collections.emptyList());
       }
       String childPrefix = child ? intentPrefix.substring(0, childIndents - 2) : "";
       if (!baseComments.isEmpty()) {

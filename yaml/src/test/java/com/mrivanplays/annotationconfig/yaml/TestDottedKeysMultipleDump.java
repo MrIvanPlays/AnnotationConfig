@@ -10,8 +10,6 @@ import org.junit.jupiter.api.Test;
 public class TestDottedKeysMultipleDump {
 
   @Comment("Generated using AnnotationConfig v2.1.0-SNAPSHOT")
-  @Comment("This test at the date and time of show (Nov 22 11:05 AM UTC + 2)")
-  @Comment("changes for have not been committed to the repository.")
   private static final class Subject {
 
     @ConfigObject private BarSection bar = new BarSection();
@@ -49,8 +47,6 @@ public class TestDottedKeysMultipleDump {
 
     String expected =
         "# Generated using AnnotationConfig v2.1.0-SNAPSHOT\n"
-            + "# This test at the date and time of show (Nov 22 11:05 AM UTC + 2)\n"
-            + "# changes for have not been committed to the repository.\n"
             + "\n"
             + "# This is a test comment on top of a section\n"
             + "bar:\n"
