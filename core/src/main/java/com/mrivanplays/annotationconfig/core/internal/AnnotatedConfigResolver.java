@@ -493,7 +493,7 @@ public final class AnnotatedConfigResolver {
             "Could not set a field's value ; field not accessible anymore");
       }
     }
-    return true;
+    return missingOptions;
   }
 
   private static void handleComparison(
