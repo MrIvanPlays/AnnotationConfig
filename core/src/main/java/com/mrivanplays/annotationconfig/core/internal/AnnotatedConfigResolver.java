@@ -403,7 +403,7 @@ public final class AnnotatedConfigResolver {
           // sections not supported, continue on
           continue;
         }
-        setFields(
+        boolean thMissing = setFields(
             section,
             (Map<String, Object>) value,
             resolveAnnotations(section, reverseFields),
@@ -411,6 +411,9 @@ public final class AnnotatedConfigResolver {
             options,
             keyResolver,
             reverseFields);
+        if (thMissing && !missingOptions) {
+          missingOptions = true;
+        }
         continue;
       }
       Class<?> fieldType = field.getType();
