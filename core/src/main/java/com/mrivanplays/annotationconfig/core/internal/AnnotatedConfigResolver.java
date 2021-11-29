@@ -26,6 +26,7 @@ import java.io.PrintWriter;
 import java.io.Writer;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Field;
+import java.lang.reflect.Type;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -271,7 +272,7 @@ public final class AnnotatedConfigResolver {
       throw new IllegalArgumentException("No default value for field '" + field.getName() + "'");
     }
     Optional<FieldTypeSerializer<?>> serializerOpt =
-        SerializerRegistry.INSTANCE.getSerializer(field.getType());
+        SerializerRegistry.INSTANCE.getSerializer(field.getGenericType());
     FieldTypeSerializer serializer;
     if (serializerOpt.isPresent()) {
       serializer = serializerOpt.get();
@@ -416,7 +417,7 @@ public final class AnnotatedConfigResolver {
         }
         continue;
       }
-      Class<?> fieldType = field.getType();
+      Type fieldType = field.getGenericType();
       Optional<FieldTypeSerializer<?>> serializerOpt =
           SerializerRegistry.INSTANCE.getSerializer(fieldType);
       FieldTypeSerializer<?> serializer;
@@ -503,35 +504,35 @@ public final class AnnotatedConfigResolver {
       State comparison,
       String key,
       Number compared,
-      Class<?> fieldType,
+      Type fieldType,
       NumberResult minResult,
       NumberResult maxResult,
       Class<?> comparedType) {
     if (comparison != State.ALRIGHT) {
       if (comparison == State.INVALID_MIN) {
         throw new IllegalArgumentException(
-            fieldType.getName()
+            fieldType.getTypeName()
                 + " "
                 + key
                 + " ; invalid @Min specified - it should implement annotation member ( e.g @Min(minInt = -22) )");
       }
       if (comparison == State.MORE_THAN_ONE_MIN) {
         throw new IllegalArgumentException(
-            fieldType.getName()
+            fieldType.getTypeName()
                 + " "
                 + key
                 + " ; invalid @Min specified - it should implement only one annotation member");
       }
       if (comparison == State.INVALID_MAX) {
         throw new IllegalArgumentException(
-            fieldType.getName()
+            fieldType.getTypeName()
                 + " "
                 + key
                 + " ; invalid @Max specified - it should implement annotation member ( e.g. @Max(maxInt = 3) )");
       }
       if (comparison == State.MORE_THAN_ONE_MAX) {
         throw new IllegalArgumentException(
-            fieldType.getName()
+            fieldType.getTypeName()
                 + " "
                 + key
                 + " ; invalid @Max specified - it should implement only one annotation member");
@@ -541,14 +542,14 @@ public final class AnnotatedConfigResolver {
         String message;
         if (comparedType.isAssignableFrom(String.class)) {
           message =
-              fieldType.getName()
+              fieldType.getTypeName()
                   + " ; deserialized String's length is under the minimal length allowed ("
                   + min
                   + ") ; string length: "
                   + compared;
         } else {
           message =
-              fieldType.getName()
+              fieldType.getTypeName()
                   + " ; deserialized value is under the minimal allowed ("
                   + min
                   + ") ; number: "
@@ -561,14 +562,14 @@ public final class AnnotatedConfigResolver {
         String message;
         if (comparedType.isAssignableFrom(String.class)) {
           message =
-              fieldType.getName()
+              fieldType.getTypeName()
                   + " ; deserialized String's length is above the maximum length allowed ("
                   + max
                   + ") ; string length: "
                   + compared;
         } else {
           message =
-              fieldType.getName()
+              fieldType.getTypeName()
                   + " ; deserialized value is above the maximum allowed ("
                   + max
                   + ") ; number: "
