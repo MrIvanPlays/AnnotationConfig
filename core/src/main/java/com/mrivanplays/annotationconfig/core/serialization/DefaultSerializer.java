@@ -15,11 +15,14 @@ class DefaultSerializer implements FieldTypeSerializer<Object> {
   @Override
   public Object deserialize(DataObject data, Field field) {
     PrimitiveSerializers.registerSerializers();
+    Class<?> fieldType = field.getType();
+    if (fieldType.isAssignableFrom(DataObject.class)) {
+      return data;
+    }
     Object dataRaw = data.getAsObject();
     if (data.isSingleValue() && dataRaw == null) {
       return null;
     }
-    Class<?> fieldType = field.getType();
     if (!fieldType.isEnum()) {
       if (data.isSingleValue() && isPrimitive(dataRaw)) {
         return forcePrimitive(data.getAsObject(), fieldType);
@@ -81,6 +84,9 @@ class DefaultSerializer implements FieldTypeSerializer<Object> {
   public DataObject serialize(Object value, Field field) {
     if (isPrimitive(value)) {
       return new DataObject(value);
+    }
+    if (value instanceof DataObject) {
+      return (DataObject) value;
     }
     Class<?> fieldType = field.getType();
     if (fieldType.isEnum()) {
