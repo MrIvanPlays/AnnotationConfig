@@ -315,10 +315,13 @@ public final class DataObject {
 
   @Override
   public boolean equals(Object o) {
-    if (!(o instanceof DataObject)) {
+    if (o == null || getClass() != o.getClass()) {
       return false;
     }
     DataObject other = (DataObject) o;
+    if (this == other) {
+      return true;
+    }
     if (other.isSingleValue() && this.isSingleValue()) {
       return other.data.equals(this.data);
     } else if (!other.isSingleValue() && this.isSingleValue()) {
