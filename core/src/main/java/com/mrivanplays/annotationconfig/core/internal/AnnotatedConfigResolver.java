@@ -159,6 +159,15 @@ public final class AnnotatedConfigResolver {
         writer.append('\n');
         continue;
       }
+      if (entry.getValue().size() > 1) {
+        if (entry.getValue().contains(AnnotationType.RAW_CONFIG)) {
+          throw new IllegalArgumentException(
+              "Found illegal annotation placement ; @RawConfig on a field with other annotations except @RawConfig.");
+        }
+      } else if (entry.getValue().size() == 1
+          && entry.getValue().contains(AnnotationType.RAW_CONFIG)) {
+        continue;
+      }
       try {
         WriteData current = getWriteData(annotatedConfig, entry, keyResolver, reverseFields);
         for (Map.Entry<String, Object> childDataWrite : current.getToWrite().entrySet()) {
@@ -358,12 +367,28 @@ public final class AnnotatedConfigResolver {
       }
       Field field = holder.getField();
       field.setAccessible(true);
+      Set<AnnotationType> annotationTypes = entry.getValue();
+      if (annotationTypes.size() > 1 && annotationTypes.contains(AnnotationType.RAW_CONFIG)) {
+        throw new IllegalArgumentException(
+            "Found illegal annotation placement ; @RawConfig on a field with other annotations except @RawConfig.");
+      } else if (annotationTypes.size() == 1 && annotationTypes.contains(AnnotationType.RAW_CONFIG)) {
+        if (!field.getType().isAssignableFrom(DataObject.class)) {
+          throw new IllegalArgumentException("@RawConfig on a field which is not DataObject");
+        }
+        try {
+          field.set(annotatedConfig, new DataObject(values));
+        } catch (IllegalAccessException e) {
+          throw new IllegalArgumentException(
+              "Could not set a field's value ; field not accessible anymore");
+        }
+        continue;
+      }
       String keyName = field.getName();
       boolean configObject = false;
       Object section = null;
       NumberResult min = NumberResult.stateOnly(State.START);
       NumberResult max = NumberResult.stateOnly(State.START);
-      for (AnnotationType type : entry.getValue()) {
+      for (AnnotationType type : annotationTypes) {
         if (type.is(AnnotationType.KEY)) {
           keyName = field.getDeclaredAnnotation(Key.class).value();
         }
@@ -404,14 +429,15 @@ public final class AnnotatedConfigResolver {
           // sections not supported, continue on
           continue;
         }
-        boolean thMissing = setFields(
-            section,
-            (Map<String, Object>) value,
-            resolveAnnotations(section, reverseFields),
-            nullReadHandler,
-            options,
-            keyResolver,
-            reverseFields);
+        boolean thMissing =
+            setFields(
+                section,
+                (Map<String, Object>) value,
+                resolveAnnotations(section, reverseFields),
+                nullReadHandler,
+                options,
+                keyResolver,
+                reverseFields);
         if (thMissing && !missingOptions) {
           missingOptions = true;
         }

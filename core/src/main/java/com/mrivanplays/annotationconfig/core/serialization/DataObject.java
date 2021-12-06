@@ -304,6 +304,39 @@ public final class DataObject {
     return ret;
   }
 
+  @Override
+  public String toString() {
+    if (isSingleValue()) {
+      return "DataObject{value=" + data + "}";
+    } else {
+      return "DataObject{value=" + serialize + "}";
+    }
+  }
+
+  @Override
+  public boolean equals(Object o) {
+    if (!(o instanceof DataObject)) {
+      return false;
+    }
+    DataObject other = (DataObject) o;
+    if (other.isSingleValue() && this.isSingleValue()) {
+      return other.data.equals(this.data);
+    } else if (!other.isSingleValue() && this.isSingleValue()) {
+      return false;
+    } else if (other.isSingleValue()) {
+      return false;
+    } else {
+      return other.serialize.equals(this.serialize);
+    }
+  }
+
+  @Override
+  public int hashCode() {
+    int result = serialize != null ? serialize.hashCode() : 0;
+    result = 31 * result + (data != null ? data.hashCode() : 0);
+    return result;
+  }
+
   private void checkNonNullData(String action) {
     if (this.data != null) {
       throw new IllegalArgumentException(

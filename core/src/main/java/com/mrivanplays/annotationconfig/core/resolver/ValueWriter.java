@@ -14,6 +14,7 @@ import java.util.Map;
  * @since 2.0.0 but heavily modified in 2.1.0
  * @author MrIvanPlays
  */
+@FunctionalInterface
 public interface ValueWriter {
 
   /**

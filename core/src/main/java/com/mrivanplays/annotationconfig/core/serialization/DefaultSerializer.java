@@ -56,7 +56,7 @@ class DefaultSerializer implements FieldTypeSerializer<Object> {
           continue;
         }
         Optional<FieldTypeSerializer<?>> serializerOpt =
-            serializerRegistry.getSerializer(desField.getType());
+            serializerRegistry.getSerializer(desField.getGenericType());
         if (serializerOpt.isPresent()) {
           FieldTypeSerializer serializer = serializerOpt.get();
           try {
@@ -102,7 +102,7 @@ class DefaultSerializer implements FieldTypeSerializer<Object> {
           continue;
         }
         Optional<FieldTypeSerializer<?>> serializerOpt =
-            serializerRegistry.getSerializer(desField.getType());
+            serializerRegistry.getSerializer(desField.getGenericType());
         if (serializerOpt.isPresent()) {
           FieldTypeSerializer serializer = serializerOpt.get();
           object.putAll(desField.getName(), serializer.serialize(def, desField));
