@@ -5,6 +5,7 @@ import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 
 /**
  * A class, which stores read from config values or serialized values in a developer friendly way.
@@ -13,6 +14,15 @@ import java.util.Map;
  * @author MrIvanPlays
  */
 public final class DataObject {
+
+  /**
+   * Creates a new {@link DataObjectBuilder}.
+   *
+   * @return new builder
+   */
+  public static DataObjectBuilder builder() {
+    return new DataObjectBuilder();
+  }
 
   private Map<String, DataObject> serialize;
   private final Object data;
@@ -40,19 +50,25 @@ public final class DataObject {
    * Constructs a data object, which holds the specified data. If the data is of map type, it gets
    * converted, so it's values are accessible.
    *
-   * <p>The {@code immutable} tag if set to {@code true} will make the data held in the created
-   * data object and in the created data object delegates immutable/unmodifiable.
+   * <p>The {@code immutable} tag if set to {@code true} will make the data held in the created data
+   * object and in the created data object delegates immutable/unmodifiable.
    *
    * @param data the data which is stored
    * @param immutable whether immutable
    */
   public DataObject(Object data, boolean immutable) {
     this.immutable = immutable;
+    if (data == null) {
+      this.data = null;
+      this.serialize = null;
+      return;
+    }
     if (data instanceof Map) {
       Map<Object, Object> map = (Map<Object, Object>) data;
       this.serialize = new LinkedHashMap<>();
       for (Map.Entry<Object, Object> entry : map.entrySet()) {
-        this.serialize.put(String.valueOf(entry.getKey()), new DataObject(entry.getValue(), immutable));
+        this.serialize.put(
+            String.valueOf(entry.getKey()), new DataObject(entry.getValue(), immutable));
       }
       this.data = null;
       return;
@@ -72,8 +88,8 @@ public final class DataObject {
   /**
    * Constructs a data object, which holds the specified map data.
    *
-   * <p>The {@code immutable} tag if set to {@code true} will make the data held in the created
-   * data object and in the created data object delegates immutable/unmodifiable.
+   * <p>The {@code immutable} tag if set to {@code true} will make the data held in the created data
+   * object and in the created data object delegates immutable/unmodifiable.
    *
    * @param data the data which is stored
    * @param immutable whether immutable
@@ -82,9 +98,27 @@ public final class DataObject {
     this.data = null;
     this.serialize = new LinkedHashMap<>();
     this.immutable = immutable;
-    for (Map.Entry<String, Object> entry : data.entrySet()) {
-      this.serialize.put(entry.getKey(), new DataObject(entry.getValue(), immutable));
+    if (data != null) {
+      for (Map.Entry<String, Object> entry : data.entrySet()) {
+        this.serialize.put(entry.getKey(), new DataObject(entry.getValue(), immutable));
+      }
     }
+  }
+
+  /**
+   * Returns whether this data object is empty.
+   *
+   * @return boolean value
+   */
+  public boolean isEmpty() {
+    if (!isSingleValue()) {
+      if (this.serialize != null) {
+        return this.serialize.isEmpty();
+      } else {
+        return true;
+      }
+    }
+    return false;
   }
 
   /**
@@ -112,6 +146,7 @@ public final class DataObject {
    * @return boolean value
    */
   public boolean has(String key) {
+    Objects.requireNonNull(key, "key");
     if (this.serialize == null) {
       return false;
     }
@@ -126,6 +161,7 @@ public final class DataObject {
    * @return data object or null
    */
   public DataObject get(String key) {
+    Objects.requireNonNull(key, "key");
     if (this.serialize == null) {
       return null;
     }
@@ -139,6 +175,8 @@ public final class DataObject {
    * @param value the value you want bound
    */
   public void put(String key, String value) {
+    Objects.requireNonNull(key, "key");
+    Objects.requireNonNull(value, "value");
     checkImmutable("put");
     checkNonNullData("put");
     this.serialize.put(key, new DataObject(value));
@@ -151,6 +189,7 @@ public final class DataObject {
    * @param value the value you want bound
    */
   public void put(String key, boolean value) {
+    Objects.requireNonNull(key, "key");
     checkImmutable("put");
     checkNonNullData("put");
     this.serialize.put(key, new DataObject(value));
@@ -163,6 +202,8 @@ public final class DataObject {
    * @param value the value you want bound
    */
   public void put(String key, Number value) {
+    Objects.requireNonNull(key, "key");
+    Objects.requireNonNull(value, "value");
     checkImmutable("put");
     checkNonNullData("put");
     this.serialize.put(key, new DataObject(value));
@@ -175,6 +216,7 @@ public final class DataObject {
    * @return the value removed or null if no value was present
    */
   public DataObject remove(String key) {
+    Objects.requireNonNull(key, "key");
     checkImmutable("remove");
     checkNonNullData("remove");
     return this.serialize.remove(key);
@@ -187,6 +229,8 @@ public final class DataObject {
    * @param object the value you want bound
    */
   public void putAll(String key, DataObject object) {
+    Objects.requireNonNull(key, "key");
+    Objects.requireNonNull(object, "object");
     checkImmutable("putAll");
     checkNonNullData("putAll");
     this.serialize.put(key, object);
@@ -222,6 +266,27 @@ public final class DataObject {
    */
   public Object getAsObject() {
     return data;
+  }
+
+  /**
+   * Returns the held value by this data object as the specified {@code type}, if the held data is
+   * of that type. If it holds a map, the returned value is null.
+   *
+   * @param type the type to transform to
+   * @param <T> generic
+   * @return transformed type or null if data is null
+   * @throws IllegalArgumentException if the held data's type is not the specified type
+   */
+  public <T> T getAs(Class<T> type) {
+    if (data != null) {
+      if (data.getClass().isAssignableFrom(type)) {
+        return type.cast(data);
+      } else {
+        throw new IllegalArgumentException(
+            "Cannot assign " + data.getClass().getName() + " data type to " + type.getName());
+      }
+    }
+    return null;
   }
 
   /**
