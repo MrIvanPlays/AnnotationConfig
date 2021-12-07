@@ -63,13 +63,13 @@ class DefaultSerializer implements FieldTypeSerializer<Object> {
         if (serializerOpt.isPresent()) {
           FieldTypeSerializer serializer = serializerOpt.get();
           try {
-            desField.set(fieldTypeInstance, serializer.deserialize(new DataObject(val), desField));
+            desField.set(fieldTypeInstance, serializer.deserialize(new DataObject(val, true), desField));
           } catch (IllegalAccessException e) {
             throw new IllegalArgumentException("A field became inaccessible");
           }
         } else {
           try {
-            desField.set(fieldTypeInstance, deserialize(new DataObject(val), desField));
+            desField.set(fieldTypeInstance, deserialize(new DataObject(val, true), desField));
           } catch (IllegalAccessException e) {
             throw new IllegalArgumentException("A field became inaccessible");
           }

@@ -3,6 +3,7 @@ package com.mrivanplays.annotationconfig.core.utils;
 import com.mrivanplays.annotationconfig.core.annotations.ConfigObject;
 import com.mrivanplays.annotationconfig.core.annotations.Ignore;
 import com.mrivanplays.annotationconfig.core.annotations.Key;
+import com.mrivanplays.annotationconfig.core.annotations.RawConfig;
 import com.mrivanplays.annotationconfig.core.annotations.comment.Comment;
 import com.mrivanplays.annotationconfig.core.annotations.comment.Comments;
 import com.mrivanplays.annotationconfig.core.annotations.type.AnnotationType;
@@ -57,6 +58,19 @@ public final class AnnotationUtils {
    */
   public static boolean isConfigObject(Field field) {
     return field.getDeclaredAnnotation(ConfigObject.class) != null;
+  }
+
+  /**
+   * Returns whether the specified {@link Field} is an accessor of the raw config.
+   *
+   * <p>The raw config in the terminology of AnnotationConfig is the raw values, read from the
+   * config.
+   *
+   * @param field the field you want to check if raw config
+   * @return true or false
+   */
+  public static boolean isRawConfigAccess(Field field) {
+    return field.getDeclaredAnnotation(RawConfig.class) != null;
   }
 
   /**

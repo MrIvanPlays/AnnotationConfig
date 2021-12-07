@@ -17,10 +17,13 @@ public final class DataObject {
   private Map<String, DataObject> serialize;
   private final Object data;
 
+  private final boolean immutable;
+
   /** Constructs a empty data object */
   public DataObject() {
     this.serialize = null;
     this.data = null;
+    this.immutable = false;
   }
 
   /**
@@ -30,11 +33,26 @@ public final class DataObject {
    * @param data the data which is stored
    */
   public DataObject(Object data) {
+    this(data, false);
+  }
+
+  /**
+   * Constructs a data object, which holds the specified data. If the data is of map type, it gets
+   * converted, so it's values are accessible.
+   *
+   * <p>The {@code immutable} tag if set to {@code true} will make the data held in the created
+   * data object and in the created data object delegates immutable/unmodifiable.
+   *
+   * @param data the data which is stored
+   * @param immutable whether immutable
+   */
+  public DataObject(Object data, boolean immutable) {
+    this.immutable = immutable;
     if (data instanceof Map) {
       Map<Object, Object> map = (Map<Object, Object>) data;
       this.serialize = new LinkedHashMap<>();
       for (Map.Entry<Object, Object> entry : map.entrySet()) {
-        this.serialize.put(String.valueOf(entry.getKey()), new DataObject(entry.getValue()));
+        this.serialize.put(String.valueOf(entry.getKey()), new DataObject(entry.getValue(), immutable));
       }
       this.data = null;
       return;
@@ -48,10 +66,24 @@ public final class DataObject {
    * @param data the data which is stored
    */
   public DataObject(Map<String, Object> data) {
+    this(data, false);
+  }
+
+  /**
+   * Constructs a data object, which holds the specified map data.
+   *
+   * <p>The {@code immutable} tag if set to {@code true} will make the data held in the created
+   * data object and in the created data object delegates immutable/unmodifiable.
+   *
+   * @param data the data which is stored
+   * @param immutable whether immutable
+   */
+  public DataObject(Map<String, Object> data, boolean immutable) {
     this.data = null;
     this.serialize = new LinkedHashMap<>();
+    this.immutable = immutable;
     for (Map.Entry<String, Object> entry : data.entrySet()) {
-      this.serialize.put(entry.getKey(), new DataObject(entry.getValue()));
+      this.serialize.put(entry.getKey(), new DataObject(entry.getValue(), immutable));
     }
   }
 
@@ -62,6 +94,15 @@ public final class DataObject {
    */
   public boolean isSingleValue() {
     return this.serialize == null && this.data != null;
+  }
+
+  /**
+   * Returns whether this data object is immutable/unmodifiable.
+   *
+   * @return boolean value
+   */
+  public boolean isImmutable() {
+    return immutable;
   }
 
   /**
@@ -98,6 +139,7 @@ public final class DataObject {
    * @param value the value you want bound
    */
   public void put(String key, String value) {
+    checkImmutable("put");
     checkNonNullData("put");
     this.serialize.put(key, new DataObject(value));
   }
@@ -109,6 +151,7 @@ public final class DataObject {
    * @param value the value you want bound
    */
   public void put(String key, boolean value) {
+    checkImmutable("put");
     checkNonNullData("put");
     this.serialize.put(key, new DataObject(value));
   }
@@ -120,6 +163,7 @@ public final class DataObject {
    * @param value the value you want bound
    */
   public void put(String key, Number value) {
+    checkImmutable("put");
     checkNonNullData("put");
     this.serialize.put(key, new DataObject(value));
   }
@@ -131,6 +175,7 @@ public final class DataObject {
    * @return the value removed or null if no value was present
    */
   public DataObject remove(String key) {
+    checkImmutable("remove");
     checkNonNullData("remove");
     return this.serialize.remove(key);
   }
@@ -142,6 +187,7 @@ public final class DataObject {
    * @param object the value you want bound
    */
   public void putAll(String key, DataObject object) {
+    checkImmutable("putAll");
     checkNonNullData("putAll");
     this.serialize.put(key, object);
   }
@@ -307,9 +353,9 @@ public final class DataObject {
   @Override
   public String toString() {
     if (isSingleValue()) {
-      return "DataObject{value=" + data + "}";
+      return "DataObject{value=" + data + ", immutable=" + immutable + "}";
     } else {
-      return "DataObject{value=" + serialize + "}";
+      return "DataObject{value=" + serialize + ", immutable=" + immutable + "}";
     }
   }
 
@@ -347,6 +393,12 @@ public final class DataObject {
     }
     if (this.serialize == null) {
       this.serialize = new LinkedHashMap<>();
+    }
+  }
+
+  private void checkImmutable(String action) {
+    if (immutable) {
+      throw new UnsupportedOperationException("Cannot " + action + " in a immutable DataObject");
     }
   }
 }

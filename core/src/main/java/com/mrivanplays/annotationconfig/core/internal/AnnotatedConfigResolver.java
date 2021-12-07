@@ -376,7 +376,7 @@ public final class AnnotatedConfigResolver {
           throw new IllegalArgumentException("@RawConfig on a field which is not DataObject");
         }
         try {
-          field.set(annotatedConfig, new DataObject(values));
+          field.set(annotatedConfig, new DataObject(values, true));
         } catch (IllegalAccessException e) {
           throw new IllegalArgumentException(
               "Could not set a field's value ; field not accessible anymore");
@@ -452,7 +452,7 @@ public final class AnnotatedConfigResolver {
       } else {
         serializer = serializerOpt.get();
       }
-      Object deserialized = serializer.deserialize(new DataObject(value), field);
+      Object deserialized = serializer.deserialize(new DataObject(value, true), field);
       if (deserialized == null && !thisMissingOption) {
         if (nullReadHandler == NullReadHandleOption.USE_DEFAULT_VALUE) {
           continue;
