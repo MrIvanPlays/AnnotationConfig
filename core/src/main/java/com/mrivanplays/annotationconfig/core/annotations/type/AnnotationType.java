@@ -5,6 +5,7 @@ import com.mrivanplays.annotationconfig.core.annotations.Ignore;
 import com.mrivanplays.annotationconfig.core.annotations.Key;
 import com.mrivanplays.annotationconfig.core.annotations.Max;
 import com.mrivanplays.annotationconfig.core.annotations.Min;
+import com.mrivanplays.annotationconfig.core.annotations.Multiline;
 import com.mrivanplays.annotationconfig.core.annotations.RawConfig;
 import com.mrivanplays.annotationconfig.core.annotations.comment.Comment;
 import com.mrivanplays.annotationconfig.core.annotations.comment.Comments;
@@ -26,7 +27,8 @@ public enum AnnotationType {
   IGNORE(Ignore.class),
   MAX(Max.class),
   MIN(Min.class),
-  RAW_CONFIG(RawConfig.class);
+  RAW_CONFIG(RawConfig.class),
+  MULTILINE(Multiline.class);
 
   private final Class<? extends Annotation> annotationType;
 

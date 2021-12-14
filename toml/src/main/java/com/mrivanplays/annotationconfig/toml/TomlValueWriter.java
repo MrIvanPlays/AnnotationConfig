@@ -1,6 +1,7 @@
 package com.mrivanplays.annotationconfig.toml;
 
 import com.fasterxml.jackson.dataformat.toml.TomlMapper;
+import com.mrivanplays.annotationconfig.core.resolver.MultilineString;
 import com.mrivanplays.annotationconfig.core.resolver.ValueWriter;
 import com.mrivanplays.annotationconfig.core.resolver.options.CustomOptions;
 import java.io.IOException;
@@ -40,9 +41,14 @@ public final class TomlValueWriter implements ValueWriter {
           writer.println("# " + comment);
         }
       }
+      Object toWrite;
+      if (entry.getValue() instanceof MultilineString) {
+        toWrite = ((MultilineString) entry.getValue()).getString();
+      } else {
+        toWrite = entry.getValue();
+      }
       writer.println(
-          tomlMapper.writeValueAsString(
-              Collections.singletonMap(entry.getKey(), entry.getValue())));
+          tomlMapper.writeValueAsString(Collections.singletonMap(entry.getKey(), toWrite)));
     }
   }
 

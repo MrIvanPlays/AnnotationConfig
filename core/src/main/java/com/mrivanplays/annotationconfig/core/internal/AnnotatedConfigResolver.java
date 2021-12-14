@@ -3,6 +3,7 @@ package com.mrivanplays.annotationconfig.core.internal;
 import com.mrivanplays.annotationconfig.core.annotations.Key;
 import com.mrivanplays.annotationconfig.core.annotations.Max;
 import com.mrivanplays.annotationconfig.core.annotations.Min;
+import com.mrivanplays.annotationconfig.core.annotations.Multiline;
 import com.mrivanplays.annotationconfig.core.annotations.comment.Comment;
 import com.mrivanplays.annotationconfig.core.annotations.comment.Comments;
 import com.mrivanplays.annotationconfig.core.annotations.custom.AnnotationValidator;
@@ -11,6 +12,7 @@ import com.mrivanplays.annotationconfig.core.annotations.custom.ValidationRespon
 import com.mrivanplays.annotationconfig.core.annotations.type.AnnotationType;
 import com.mrivanplays.annotationconfig.core.internal.MinMaxHandler.NumberResult;
 import com.mrivanplays.annotationconfig.core.internal.MinMaxHandler.State;
+import com.mrivanplays.annotationconfig.core.resolver.MultilineString;
 import com.mrivanplays.annotationconfig.core.resolver.ValueWriter;
 import com.mrivanplays.annotationconfig.core.resolver.key.KeyResolver;
 import com.mrivanplays.annotationconfig.core.resolver.options.CustomOptions;
@@ -225,6 +227,7 @@ public final class AnnotatedConfigResolver {
     String keyName = field.getName();
     List<String> comments = Collections.emptyList();
     boolean configObject = false;
+    Character multilineCharacter = null;
     for (AnnotationType type : entry.getValue()) {
       if (comments.isEmpty()) {
         comments = getComments(type, field, null);
@@ -234,6 +237,9 @@ public final class AnnotatedConfigResolver {
       }
       if (type.is(AnnotationType.CONFIG_OBJECT)) {
         configObject = true;
+      }
+      if (type.is(AnnotationType.MULTILINE)) {
+        multilineCharacter = field.getDeclaredAnnotation(Multiline.class).value();
       }
     }
     if (configObject) {
@@ -300,6 +306,13 @@ public final class AnnotatedConfigResolver {
       defaultsToValueObject = serialized.getAsObject();
     } else {
       defaultsToValueObject = serialized.getAsMap();
+    }
+    // check for multiline string
+    if (multilineCharacter != null) {
+      if (!(defaultsToValueObject instanceof String)) {
+        throw new IllegalArgumentException("@Multiline put on a value which is not a String!");
+      }
+      defaultsToValueObject = new MultilineString((String) defaultsToValueObject, multilineCharacter);
     }
     // manipulate the defaultsToValueObject once again before sending it to the writer
     Map<String, Object> dummyValues = new HashMap<>();

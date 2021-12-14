@@ -68,6 +68,9 @@ class DefaultSerializer implements FieldTypeSerializer<Object> {
           // ignored
         }
       }
+      if (data.getAsObject() == null) {
+        return null;
+      }
       return forcePrimitive(data.getAsObject(), fieldType);
     } else {
       if (fieldType.isAssignableFrom(Map.class)) {

@@ -1,6 +1,7 @@
 package com.mrivanplays.annotationconfig.core;
 
 import com.mrivanplays.annotationconfig.core.resolver.ConfigResolver;
+import com.mrivanplays.annotationconfig.core.resolver.MultilineString;
 import com.mrivanplays.annotationconfig.core.resolver.ValueReader;
 import com.mrivanplays.annotationconfig.core.resolver.ValueWriter;
 import com.mrivanplays.annotationconfig.core.resolver.options.CustomOptions;
@@ -94,7 +95,13 @@ public final class PropertyConfig {
             writer.println("# " + comment);
           }
         }
-        writer.println(entry.getKey() + "=" + entry.getValue());
+        String toWrite;
+        if (entry.getValue() instanceof MultilineString) {
+          toWrite = ((MultilineString) entry.getValue()).getString();
+        } else {
+          toWrite = String.valueOf(entry.getValue());
+        }
+        writer.println(entry.getKey() + "=" + toWrite);
         if ((index + 1) != values.size()) {
           writer.append('\n');
         }

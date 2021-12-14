@@ -1,5 +1,6 @@
 package com.mrivanplays.annotationconfig.yaml;
 
+import com.mrivanplays.annotationconfig.core.resolver.MultilineString;
 import com.mrivanplays.annotationconfig.core.resolver.ValueWriter;
 import com.mrivanplays.annotationconfig.core.resolver.options.CustomOptions;
 import java.io.PrintWriter;
@@ -98,7 +99,33 @@ public final class YamlValueWriter implements ValueWriter {
         } else {
           writeCommentsInsideMap(key, writer, commentsMap, intentPrefix, mapKey);
           if (!(v instanceof String)) {
-            writer.println(intentPrefix + mapKey + ": " + v);
+            if (v instanceof MultilineString) {
+              MultilineString multiline = (MultilineString) v;
+              String toWrite = multiline.getString();
+              char c = multiline.getMarkerChar();
+              if (toWrite.indexOf('\n') != -1) {
+                String[] parts = toWrite.split("\n");
+                if (c == '|' || c == '>') {
+                  writer.println(intentPrefix + mapKey + ": " + c);
+                } else if (c != '"') {
+                  throw new IllegalArgumentException("Invalid multiline string character '" + c + "' for YAML");
+                } else {
+                  writer.println(intentPrefix + mapKey + ": \"");
+                }
+                for (int i = 0; i < parts.length; i++) {
+                  String part = parts[i];
+                  if ((i + 1) == parts.length && c == '"') {
+                    writer.println(intentPrefix + part + "\"");
+                  } else {
+                    writer.println(intentPrefix + part + "\\n");
+                  }
+                }
+              } else {
+                writer.println(intentPrefix + mapKey + ": \"" + toWrite + "\"");
+              }
+            } else {
+              writer.println(intentPrefix + mapKey + ": " + v);
+            }
           } else {
             writer.println(intentPrefix + mapKey + ": \"" + v + "\"");
           }
@@ -147,7 +174,33 @@ public final class YamlValueWriter implements ValueWriter {
     } else {
       writeComments(key, writer, commentsMap);
       if (!(value instanceof String)) {
-        writer.println(key + ": " + value);
+        if (value instanceof MultilineString) {
+          MultilineString multiline = (MultilineString) value;
+          String toWrite = multiline.getString();
+          char c = multiline.getMarkerChar();
+          if (toWrite.indexOf('\n') != -1) {
+            String[] parts = toWrite.split("\n");
+            if (c == '|' || c == '>') {
+              writer.println(key + ": " + c);
+            } else if (c != '"') {
+              throw new IllegalArgumentException("Invalid multiline string character '" + c + "' for YAML");
+            } else {
+              writer.println(key + ": \"");
+            }
+            for (int i = 0; i < parts.length; i++) {
+              String part = parts[i];
+              if ((i + 1) == parts.length && c == '"') {
+                writer.println(part + "\"");
+              } else {
+                writer.println(part + "\\n");
+              }
+            }
+          } else {
+            writer.println(key + ": \"" + toWrite + "\"");
+          }
+        } else {
+          writer.println(key + ": " + value);
+        }
       } else {
         writer.println(key + ": \"" + value + "\"");
       }
