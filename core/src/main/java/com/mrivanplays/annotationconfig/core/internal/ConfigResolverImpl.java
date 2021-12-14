@@ -19,7 +19,6 @@ import java.nio.charset.StandardCharsets;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
-import java.util.function.Supplier;
 
 public final class ConfigResolverImpl implements ConfigResolver {
 
@@ -111,6 +110,35 @@ public final class ConfigResolverImpl implements ConfigResolver {
     Map<AnnotationHolder, Set<AnnotationType>> resolvedAnnotations =
         AnnotatedConfigResolver.resolveAnnotations(annotatedConfig, reverseFields);
     handleFileLoad(annotatedConfig, resolvedAnnotations, file, loadSettings);
+  }
+
+  @Override
+  public void load(Object annotatedConfig, Map<String, Object> values) {
+    load(annotatedConfig, values, this.defaultLoadSettings);
+  }
+
+  @Override
+  public void load(Object annotatedConfig, Map<String, Object> values, LoadSettings loadSettings) {
+    if (values.isEmpty()) {
+      return;
+    }
+    Map<AnnotationHolder, Set<AnnotationType>> resolvedAnnotations =
+        AnnotatedConfigResolver.resolveAnnotations(annotatedConfig, reverseFields);
+    NullReadHandleOption nullReadHandler =
+        loadSettings
+            .get(LoadSetting.NULL_READ_HANDLER)
+            .orElse(
+                defaultLoadSettings
+                    .get(LoadSetting.NULL_READ_HANDLER)
+                    .orElse(LoadSettings.getDefault().get(LoadSetting.NULL_READ_HANDLER).get()));
+    AnnotatedConfigResolver.setFields(
+        annotatedConfig,
+        values,
+        resolvedAnnotations,
+        nullReadHandler,
+        options,
+        keyResolver,
+        reverseFields);
   }
 
   @Override

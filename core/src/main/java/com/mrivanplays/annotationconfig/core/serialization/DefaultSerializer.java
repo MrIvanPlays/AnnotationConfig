@@ -3,6 +3,8 @@ package com.mrivanplays.annotationconfig.core.serialization;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import java.lang.reflect.ParameterizedType;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
@@ -16,9 +18,6 @@ class DefaultSerializer implements FieldTypeSerializer<Object> {
   public Object deserialize(DataObject data, Field field) {
     PrimitiveSerializers.registerSerializers();
     Class<?> fieldType = field.getType();
-    if (fieldType.isAssignableFrom(DataObject.class)) {
-      return data;
-    }
     Object dataRaw = data.getAsObject();
     if (data.isSingleValue() && dataRaw == null) {
       return null;
@@ -26,6 +25,35 @@ class DefaultSerializer implements FieldTypeSerializer<Object> {
     if (!fieldType.isEnum()) {
       if (data.isSingleValue() && isPrimitive(dataRaw)) {
         return forcePrimitive(data.getAsObject(), fieldType);
+      }
+    }
+    if (fieldType.isAssignableFrom(DataObject.class)) {
+      return data;
+    }
+    if (data.isSingleValue() && dataRaw instanceof List) {
+      List<Object> read = (List<Object>) dataRaw;
+      if (read.isEmpty()) {
+        return new ArrayList<>();
+      } else {
+        List<Object> ret = new ArrayList<>();
+        SerializerRegistry serializerRegistry = SerializerRegistry.INSTANCE;
+        for (Object o : read) {
+          if (isPrimitive(o, false)) {
+            ret.add(o);
+          } else {
+            Optional<FieldTypeSerializer<?>> serializerOpt =
+                serializerRegistry.getSerializer(o.getClass());
+            if (serializerOpt.isPresent()) {
+              FieldTypeSerializer serializer = serializerOpt.get();
+              // if a field is really needed, would need to register a serializer specifically for
+              // this list type.
+              ret.add(serializer.deserialize(new DataObject(o), field));
+            } else {
+              ret.add(deserialize(new DataObject(o), field));
+            }
+          }
+        }
+        return ret;
       }
     }
     Map<String, Object> dataMap = data.getAsMap();
@@ -45,9 +73,14 @@ class DefaultSerializer implements FieldTypeSerializer<Object> {
       if (fieldType.isAssignableFrom(Map.class)) {
         return dataMap;
       }
+      Class<?> neededInstanceAllocation = fieldType;
+      if (fieldType.isAssignableFrom(List.class)) {
+        neededInstanceAllocation =
+            (Class<?>) ((ParameterizedType) field.getGenericType()).getActualTypeArguments()[0];
+      }
       Object fieldTypeInstance;
       try {
-        fieldTypeInstance = getUnsafeInstance().allocateInstance(fieldType);
+        fieldTypeInstance = getUnsafeInstance().allocateInstance(neededInstanceAllocation);
       } catch (InstantiationException e) {
         throw new RuntimeException("Cannot instantiate " + fieldType.getName() + " ; ", e);
       }
@@ -63,7 +96,8 @@ class DefaultSerializer implements FieldTypeSerializer<Object> {
         if (serializerOpt.isPresent()) {
           FieldTypeSerializer serializer = serializerOpt.get();
           try {
-            desField.set(fieldTypeInstance, serializer.deserialize(new DataObject(val, true), desField));
+            desField.set(
+                fieldTypeInstance, serializer.deserialize(new DataObject(val, true), desField));
           } catch (IllegalAccessException e) {
             throw new IllegalArgumentException("A field became inaccessible");
           }
@@ -98,8 +132,41 @@ class DefaultSerializer implements FieldTypeSerializer<Object> {
         return new DataObject(value.toString());
       }
     }
-    DataObject object = new DataObject();
     SerializerRegistry serializerRegistry = SerializerRegistry.INSTANCE;
+    if (value instanceof List) {
+      List<Object> values = (List<Object>) value;
+      if (values.isEmpty()) {
+        return new DataObject(values);
+      } else {
+        List<Object> toSerialize = new ArrayList<>();
+        for (Object val : values) {
+          if (isPrimitive(val)) {
+            toSerialize.add(val);
+          } else {
+            Optional<FieldTypeSerializer<?>> serializerOpt =
+                serializerRegistry.getSerializer(val.getClass());
+            if (serializerOpt.isPresent()) {
+              FieldTypeSerializer serializer = serializerOpt.get();
+              DataObject serialized = serializer.serialize(val, field);
+              if (serialized.isSingleValue()) {
+                toSerialize.add(serialized.getAsObject());
+              } else {
+                toSerialize.add(serialized.getAsMap());
+              }
+            } else {
+              DataObject serialized = serialize(val, field);
+              if (serialized.isSingleValue()) {
+                toSerialize.add(serialized.getAsObject());
+              } else {
+                toSerialize.add(serialized.getAsMap());
+              }
+            }
+          }
+        }
+        return new DataObject(toSerialize);
+      }
+    }
+    DataObject object = new DataObject();
     for (Field desField : value.getClass().getDeclaredFields()) {
       desField.setAccessible(true);
       try {
@@ -142,6 +209,10 @@ class DefaultSerializer implements FieldTypeSerializer<Object> {
   }
 
   private boolean isPrimitive(Object value) {
+    return isPrimitive(value, true);
+  }
+
+  private boolean isPrimitive(Object value, boolean checkMap) {
     Class<?> valClass = value.getClass();
     return valClass.isPrimitive()
         || valClass.isAssignableFrom(String.class)
@@ -153,8 +224,7 @@ class DefaultSerializer implements FieldTypeSerializer<Object> {
         || valClass.isAssignableFrom(Integer.class)
         || valClass.isAssignableFrom(Short.class)
         || valClass.isAssignableFrom(Long.class)
-        || value instanceof List
-        || value instanceof Map;
+        || (checkMap && value instanceof Map);
   }
 
   private static final class PrimitiveSerializers {

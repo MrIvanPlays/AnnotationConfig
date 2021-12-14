@@ -62,7 +62,32 @@ public final class YamlValueWriter implements ValueWriter {
             writer.println(intentPrefix + mapKey + ":");
             for (Object b : vList) {
               if (!(b instanceof String)) {
-                writer.println(intentPrefix + "    - " + b);
+                if (b instanceof Map) {
+                  Map<String, Object> map = (Map<String, Object>) b;
+                  boolean firstValue = true;
+                  for (Map.Entry<String, Object> e : map.entrySet()) {
+                    if (e.getValue() instanceof Map) {
+                      throw new IllegalArgumentException("Illegal list object!! list entry map with map value a map!");
+                    }
+                    if (e.getValue() instanceof List) {
+                      throw new IllegalArgumentException("Illegal list object!! list entry map with map value a list!");
+                    }
+                    StringBuilder valueAppend = new StringBuilder();
+                    if (e.getValue() instanceof String) {
+                      valueAppend.append('"').append(e.getValue()).append('"');
+                    } else {
+                      valueAppend.append(e.getValue());
+                    }
+                    if (firstValue) {
+                      writer.println(intentPrefix + "    - " + e.getKey() + ": " + valueAppend);
+                      firstValue = false;
+                    } else {
+                      writer.println(intentPrefix + "      " + e.getKey() + ": " + valueAppend);
+                    }
+                  }
+                } else {
+                  writer.println(intentPrefix + "    - " + b);
+                }
               } else {
                 writer.println(intentPrefix + "    - \"" + b + "\"");
               }
@@ -88,7 +113,32 @@ public final class YamlValueWriter implements ValueWriter {
         writer.println(key + ":");
         for (Object b : valueList) {
           if (!(b instanceof String)) {
-            writer.println(intentPrefix + "- " + b);
+            if (b instanceof Map) {
+              Map<String, Object> map = (Map<String, Object>) b;
+              boolean firstValue = true;
+              for (Map.Entry<String, Object> e : map.entrySet()) {
+                if (e.getValue() instanceof Map) {
+                  throw new IllegalArgumentException("Illegal list object!! list entry map with map value a map!");
+                }
+                if (e.getValue() instanceof List) {
+                  throw new IllegalArgumentException("Illegal list object!! list entry map with map value a list!");
+                }
+                StringBuilder valueAppend = new StringBuilder();
+                if (e.getValue() instanceof String) {
+                  valueAppend.append('"').append(e.getValue()).append('"');
+                } else {
+                  valueAppend.append(e.getValue());
+                }
+                if (firstValue) {
+                  writer.println(intentPrefix + "- " + e.getKey() + ": " + valueAppend);
+                  firstValue = false;
+                } else {
+                  writer.println(intentPrefix + "  " + e.getKey() + ": " + valueAppend);
+                }
+              }
+            } else {
+              writer.println(intentPrefix + "- " + b);
+            }
           } else {
             writer.println(intentPrefix + "- \"" + b + "\"");
           }

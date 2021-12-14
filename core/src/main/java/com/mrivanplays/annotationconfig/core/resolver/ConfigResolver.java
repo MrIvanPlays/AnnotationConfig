@@ -13,6 +13,7 @@ import java.io.OutputStream;
 import java.io.OutputStreamWriter;
 import java.io.Reader;
 import java.io.Writer;
+import java.util.Map;
 
 /**
  * Represents a resolver of configurations.
@@ -101,6 +102,26 @@ public interface ConfigResolver {
    * @param loadSettings the load settings
    */
   void load(Object annotatedConfig, File file, LoadSettings loadSettings);
+
+  /**
+   * Loads the specified {@code annotatedConfig} from the specified {@link Map} {@code values} using
+   * the default {@link LoadSettings} from the builder of this config resolver, or {@link
+   * LoadSettings#getDefault()}
+   *
+   * @param annotatedConfig the annotated config you want to load to
+   * @param values the values you want to load
+   */
+  void load(Object annotatedConfig, Map<String, Object> values);
+
+  /**
+   * Loads the specified {@code annotatedConfig} from the specified {@link Map} {@code values} using
+   * the {@link LoadSettings} {@code loadSettings} specified.
+   *
+   * @param annotatedConfig the annotated you config you want to load to
+   * @param values the values you want to load
+   * @param loadSettings the load settings
+   */
+  void load(Object annotatedConfig, Map<String, Object> values, LoadSettings loadSettings);
 
   /**
    * Loads the specified {@code annotatedConfig} from the specified {@link InputStream} {@code in}
