@@ -35,6 +35,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.TreeMap;
@@ -312,7 +313,60 @@ public final class AnnotatedConfigResolver {
       if (!(defaultsToValueObject instanceof String)) {
         throw new IllegalArgumentException("@Multiline put on a value which is not a String!");
       }
-      defaultsToValueObject = new MultilineString((String) defaultsToValueObject, multilineCharacter);
+      defaultsToValueObject =
+          new MultilineString((String) defaultsToValueObject, multilineCharacter);
+    }
+    // check for custom annotations writeValue implementations
+    CustomAnnotationRegistry caRegistry = CustomAnnotationRegistry.INSTANCE;
+    if (!caRegistry.isEmpty()) {
+      Class<?> foundWriteAnnotation = null;
+      for (Annotation annotation : field.getDeclaredAnnotations()) {
+        Class<? extends Annotation> type = annotation.annotationType();
+        if (AnnotationType.match(type).isPresent()) {
+          continue;
+        }
+        Optional<AnnotationValidator<? extends Annotation>> validatorOpt =
+            caRegistry.getValidator(type);
+        if (validatorOpt.isPresent()) {
+          AnnotationValidator validator = validatorOpt.get();
+          Object val = validator.writeValue(defaultsToValueObject);
+          if (val == null || Objects.equals(val, defaultsToValueObject)) {
+            continue;
+          }
+          if (foundWriteAnnotation == null) {
+            foundWriteAnnotation = type;
+            Optional<FieldTypeSerializer<?>> newSerializerOpt =
+                SerializerRegistry.INSTANCE.getSerializer(val.getClass());
+            FieldTypeSerializer newSerializer;
+            if (newSerializerOpt.isPresent()) {
+              newSerializer = newSerializerOpt.get();
+            } else {
+              newSerializer = SerializerRegistry.INSTANCE.getDefaultSerializer();
+            }
+            DataObject newSerialized = newSerializer.serialize(val, field);
+            if (newSerialized == null) {
+              throw new NullPointerException(
+                  "Expected DataObject, but got null ; Field: "
+                      + field.getName()
+                      + " ; Field type: "
+                      + val.getClass().getName());
+            }
+            if (newSerialized.isSingleValue()) {
+              defaultsToValueObject = newSerialized.getAsObject();
+            } else {
+              defaultsToValueObject = newSerialized.getAsMap();
+            }
+          } else {
+            throw new IllegalArgumentException(
+                "Found 2 custom annotations on field '"
+                    + field.getName()
+                    + "' which implement 'writeValue': @"
+                    + foundWriteAnnotation.getSimpleName()
+                    + " and @"
+                    + type.getSimpleName());
+          }
+        }
+      }
     }
     // manipulate the defaultsToValueObject once again before sending it to the writer
     Map<String, Object> dummyValues = new HashMap<>();
@@ -384,7 +438,8 @@ public final class AnnotatedConfigResolver {
       if (annotationTypes.size() > 1 && annotationTypes.contains(AnnotationType.RAW_CONFIG)) {
         throw new IllegalArgumentException(
             "Found illegal annotation placement ; @RawConfig on a field with other annotations except @RawConfig.");
-      } else if (annotationTypes.size() == 1 && annotationTypes.contains(AnnotationType.RAW_CONFIG)) {
+      } else if (annotationTypes.size() == 1
+          && annotationTypes.contains(AnnotationType.RAW_CONFIG)) {
         if (!field.getType().isAssignableFrom(DataObject.class)) {
           throw new IllegalArgumentException("@RawConfig on a field which is not DataObject");
         }
