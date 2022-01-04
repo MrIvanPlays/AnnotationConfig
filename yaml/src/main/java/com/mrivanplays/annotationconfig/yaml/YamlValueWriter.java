@@ -4,6 +4,7 @@ import com.mrivanplays.annotationconfig.core.resolver.MultilineString;
 import com.mrivanplays.annotationconfig.core.resolver.ValueWriter;
 import com.mrivanplays.annotationconfig.core.resolver.options.CustomOptions;
 import java.io.PrintWriter;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -14,6 +15,7 @@ import java.util.Map;
  * @author MrIvanPlays
  * @since 2.1.0
  */
+@SuppressWarnings("unchecked")
 public final class YamlValueWriter implements ValueWriter {
 
   @Override
@@ -34,7 +36,7 @@ public final class YamlValueWriter implements ValueWriter {
       Map<String, List<String>> commentsMap,
       int childIndents,
       boolean child,
-      boolean list) {
+      boolean additional2Spaces) {
     StringBuilder intentPrefixBuilder = new StringBuilder();
     for (int i = 0; i < childIndents; i++) {
       intentPrefixBuilder.append(" ");
@@ -51,7 +53,7 @@ public final class YamlValueWriter implements ValueWriter {
           writer.println(childPrefix + "# " + comment);
         }
       }
-      writer.println(childPrefix + (list ? " - " : "") + key + ":");
+      writer.println((additional2Spaces ? intentPrefix : childPrefix) + key + ":");
       for (Map.Entry<String, Object> entry : ((Map<String, Object>) value).entrySet()) {
         String mapKey = entry.getKey();
         Object v = entry.getValue();
@@ -59,24 +61,33 @@ public final class YamlValueWriter implements ValueWriter {
           writeCommentsInsideMap(key, writer, commentsMap, intentPrefix, mapKey);
           List<?> vList = (List<?>) v;
           if (vList.isEmpty()) {
-            writer.println(intentPrefix + (list ? " - " : "") + mapKey + ": []");
+            writer.println(intentPrefix + mapKey + ": []");
           } else {
-            writer.println(intentPrefix + (list ? " - " : "") + mapKey + ":");
+            boolean hasMapInsideMap = false;
+            OUT:
+            for (Object b : vList) {
+              if (b instanceof Map) {
+                Map<String, Object> map = (Map<String, Object>) b;
+                for (Map.Entry<String, Object> e1 : map.entrySet()) {
+                  if (e1.getValue() instanceof Map) {
+                    hasMapInsideMap = true;
+                    break OUT;
+                  }
+                }
+              }
+            }
+            if (!hasMapInsideMap) {
+              writer.println(intentPrefix + mapKey + ":");
+            }
             for (Object b : vList) {
               if (!(b instanceof String)) {
                 if (b instanceof Map) {
                   Map<String, Object> map = (Map<String, Object>) b;
                   boolean firstValue = true;
+                  List<Map.Entry<String, Object>> reservedObjectsForLater = new ArrayList<>();
                   for (Map.Entry<String, Object> e : map.entrySet()) {
                     if (e.getValue() instanceof Map || e.getValue() instanceof List) {
-                      write(
-                          e.getKey(),
-                          e.getValue(),
-                          writer,
-                          commentsMap,
-                          childIndents + 2,
-                          true,
-                          true);
+                      reservedObjectsForLater.add(e);
                       continue;
                     }
                     StringBuilder valueAppend = new StringBuilder();
@@ -86,11 +97,21 @@ public final class YamlValueWriter implements ValueWriter {
                       valueAppend.append(e.getValue());
                     }
                     if (firstValue) {
-                      writer.println(intentPrefix + "    - " + e.getKey() + ": " + valueAppend);
+                      writer.println(intentPrefix + "- " + e.getKey() + ": " + valueAppend);
                       firstValue = false;
                     } else {
-                      writer.println(intentPrefix + "      " + e.getKey() + ": " + valueAppend);
+                      writer.println(intentPrefix + "  " + e.getKey() + ": " + valueAppend);
                     }
+                  }
+                  for (Map.Entry<String, Object> reserved : reservedObjectsForLater) {
+                    write(
+                        reserved.getKey(),
+                        reserved.getValue(),
+                        writer,
+                        commentsMap,
+                        childIndents + 2,
+                        true,
+                        true);
                   }
                 } else {
                   writer.println(intentPrefix + "    - " + b);
@@ -101,7 +122,7 @@ public final class YamlValueWriter implements ValueWriter {
             }
           }
         } else if (v instanceof Map<?, ?>) {
-          write(mapKey, v, writer, commentsMap, childIndents + 2, true, list);
+          write(mapKey, v, writer, commentsMap, childIndents + 2, true, additional2Spaces);
         } else {
           writeCommentsInsideMap(key, writer, commentsMap, intentPrefix, mapKey);
           if (!(v instanceof String)) {
@@ -128,13 +149,20 @@ public final class YamlValueWriter implements ValueWriter {
                   }
                 }
               } else {
-                writer.println(intentPrefix + mapKey + ": \"" + toWrite + "\"");
+                writer.println(
+                    intentPrefix
+                        + (additional2Spaces ? "  " : "")
+                        + mapKey
+                        + ": \""
+                        + toWrite
+                        + "\"");
               }
             } else {
-              writer.println(intentPrefix + mapKey + ": " + v);
+              writer.println(intentPrefix + (additional2Spaces ? "  " : "") + mapKey + ": " + v);
             }
           } else {
-            writer.println(intentPrefix + mapKey + ": \"" + v + "\"");
+            writer.println(
+                intentPrefix + (additional2Spaces ? "  " : "") + mapKey + ": \"" + v + "\"");
           }
         }
       }
@@ -142,18 +170,33 @@ public final class YamlValueWriter implements ValueWriter {
       writeComments(key, writer, commentsMap);
       List<?> valueList = (List<?>) value;
       if (valueList.isEmpty()) {
-        writer.println((list ? " - " : "") + key + ": []");
+        writer.println((child ? intentPrefix : "") + key + ": []");
       } else {
-        writer.println((list ? " - " : "") + key + ":");
+        boolean hasMapInsideMap = false;
+        OUT:
+        for (Object b : valueList) {
+          if (b instanceof Map) {
+            Map<String, Object> map = (Map<String, Object>) b;
+            for (Map.Entry<String, Object> e1 : map.entrySet()) {
+              if (e1.getValue() instanceof Map) {
+                hasMapInsideMap = true;
+                break OUT;
+              }
+            }
+          }
+        }
+        if (!hasMapInsideMap) {
+          writer.println((child ? intentPrefix : "") + key + ":");
+        }
         for (Object b : valueList) {
           if (!(b instanceof String)) {
             if (b instanceof Map) {
               Map<String, Object> map = (Map<String, Object>) b;
               boolean firstValue = true;
+              List<Map.Entry<String, Object>> reservedObjectsForLater = new ArrayList<>();
               for (Map.Entry<String, Object> e : map.entrySet()) {
                 if (e.getValue() instanceof Map || e.getValue() instanceof List) {
-                  write(
-                      e.getKey(), e.getValue(), writer, commentsMap, childIndents + 2, true, true);
+                  reservedObjectsForLater.add(e);
                   continue;
                 }
                 StringBuilder valueAppend = new StringBuilder();
@@ -168,6 +211,16 @@ public final class YamlValueWriter implements ValueWriter {
                 } else {
                   writer.println(intentPrefix + "  " + e.getKey() + ": " + valueAppend);
                 }
+              }
+              for (Map.Entry<String, Object> reserved : reservedObjectsForLater) {
+                write(
+                    reserved.getKey(),
+                    reserved.getValue(),
+                    writer,
+                    commentsMap,
+                    childIndents + 2,
+                    true,
+                    true);
               }
             } else {
               writer.println(intentPrefix + "- " + b);
@@ -187,29 +240,29 @@ public final class YamlValueWriter implements ValueWriter {
           if (toWrite.indexOf('\n') != -1) {
             String[] parts = toWrite.split("\n");
             if (c == '|' || c == '>') {
-              writer.println(key + ": " + c);
+              writer.println((child ? intentPrefix : "") + key + ": " + c);
             } else if (c != '"') {
               throw new IllegalArgumentException(
                   "Invalid multiline string character '" + c + "' for YAML");
             } else {
-              writer.println(key + ": \"");
+              writer.println((child ? intentPrefix : "") + key + ": \"");
             }
             for (int i = 0; i < parts.length; i++) {
               String part = parts[i];
               if ((i + 1) == parts.length && c == '"') {
-                writer.println(part + "\"");
+                writer.println((child ? intentPrefix : "") + part + "\"");
               } else {
-                writer.println(part + "\\n");
+                writer.println((child ? intentPrefix : "") + part + "\\n");
               }
             }
           } else {
-            writer.println(key + ": \"" + toWrite + "\"");
+            writer.println((child ? intentPrefix : "") + key + ": \"" + toWrite + "\"");
           }
         } else {
-          writer.println(key + ": " + value);
+          writer.println((child ? intentPrefix : "") + key + ": " + value);
         }
       } else {
-        writer.println(key + ": \"" + value + "\"");
+        writer.println((child ? intentPrefix : "") + key + ": \"" + value + "\"");
       }
     }
     if (!child) {
