@@ -23,7 +23,7 @@ public final class YamlValueWriter implements ValueWriter {
       PrintWriter writer,
       CustomOptions options) {
     for (Map.Entry<String, Object> entry : values.entrySet()) {
-      write(entry.getKey(), entry.getValue(), writer, fieldComments, 2, false);
+      write(entry.getKey(), entry.getValue(), writer, fieldComments, 2, false, false);
     }
   }
 
@@ -33,7 +33,8 @@ public final class YamlValueWriter implements ValueWriter {
       PrintWriter writer,
       Map<String, List<String>> commentsMap,
       int childIndents,
-      boolean child) {
+      boolean child,
+      boolean list) {
     StringBuilder intentPrefixBuilder = new StringBuilder();
     for (int i = 0; i < childIndents; i++) {
       intentPrefixBuilder.append(" ");
@@ -50,7 +51,7 @@ public final class YamlValueWriter implements ValueWriter {
           writer.println(childPrefix + "# " + comment);
         }
       }
-      writer.println(childPrefix + key + ":");
+      writer.println(childPrefix + (list ? " - " : "") + key + ":");
       for (Map.Entry<String, Object> entry : ((Map<String, Object>) value).entrySet()) {
         String mapKey = entry.getKey();
         Object v = entry.getValue();
@@ -58,20 +59,25 @@ public final class YamlValueWriter implements ValueWriter {
           writeCommentsInsideMap(key, writer, commentsMap, intentPrefix, mapKey);
           List<?> vList = (List<?>) v;
           if (vList.isEmpty()) {
-            writer.println(intentPrefix + mapKey + ": []");
+            writer.println(intentPrefix + (list ? " - " : "") + mapKey + ": []");
           } else {
-            writer.println(intentPrefix + mapKey + ":");
+            writer.println(intentPrefix + (list ? " - " : "") + mapKey + ":");
             for (Object b : vList) {
               if (!(b instanceof String)) {
                 if (b instanceof Map) {
                   Map<String, Object> map = (Map<String, Object>) b;
                   boolean firstValue = true;
                   for (Map.Entry<String, Object> e : map.entrySet()) {
-                    if (e.getValue() instanceof Map) {
-                      throw new IllegalArgumentException("Illegal list object!! list entry map with map value a map!");
-                    }
-                    if (e.getValue() instanceof List) {
-                      throw new IllegalArgumentException("Illegal list object!! list entry map with map value a list!");
+                    if (e.getValue() instanceof Map || e.getValue() instanceof List) {
+                      write(
+                          e.getKey(),
+                          e.getValue(),
+                          writer,
+                          commentsMap,
+                          childIndents + 2,
+                          true,
+                          true);
+                      continue;
                     }
                     StringBuilder valueAppend = new StringBuilder();
                     if (e.getValue() instanceof String) {
@@ -95,7 +101,7 @@ public final class YamlValueWriter implements ValueWriter {
             }
           }
         } else if (v instanceof Map<?, ?>) {
-          write(mapKey, v, writer, commentsMap, childIndents + 2, true);
+          write(mapKey, v, writer, commentsMap, childIndents + 2, true, list);
         } else {
           writeCommentsInsideMap(key, writer, commentsMap, intentPrefix, mapKey);
           if (!(v instanceof String)) {
@@ -108,7 +114,8 @@ public final class YamlValueWriter implements ValueWriter {
                 if (c == '|' || c == '>') {
                   writer.println(intentPrefix + mapKey + ": " + c);
                 } else if (c != '"') {
-                  throw new IllegalArgumentException("Invalid multiline string character '" + c + "' for YAML");
+                  throw new IllegalArgumentException(
+                      "Invalid multiline string character '" + c + "' for YAML");
                 } else {
                   writer.println(intentPrefix + mapKey + ": \"");
                 }
@@ -135,20 +142,19 @@ public final class YamlValueWriter implements ValueWriter {
       writeComments(key, writer, commentsMap);
       List<?> valueList = (List<?>) value;
       if (valueList.isEmpty()) {
-        writer.println(key + ": []");
+        writer.println((list ? " - " : "") + key + ": []");
       } else {
-        writer.println(key + ":");
+        writer.println((list ? " - " : "") + key + ":");
         for (Object b : valueList) {
           if (!(b instanceof String)) {
             if (b instanceof Map) {
               Map<String, Object> map = (Map<String, Object>) b;
               boolean firstValue = true;
               for (Map.Entry<String, Object> e : map.entrySet()) {
-                if (e.getValue() instanceof Map) {
-                  throw new IllegalArgumentException("Illegal list object!! list entry map with map value a map!");
-                }
-                if (e.getValue() instanceof List) {
-                  throw new IllegalArgumentException("Illegal list object!! list entry map with map value a list!");
+                if (e.getValue() instanceof Map || e.getValue() instanceof List) {
+                  write(
+                      e.getKey(), e.getValue(), writer, commentsMap, childIndents + 2, true, true);
+                  continue;
                 }
                 StringBuilder valueAppend = new StringBuilder();
                 if (e.getValue() instanceof String) {
@@ -183,7 +189,8 @@ public final class YamlValueWriter implements ValueWriter {
             if (c == '|' || c == '>') {
               writer.println(key + ": " + c);
             } else if (c != '"') {
-              throw new IllegalArgumentException("Invalid multiline string character '" + c + "' for YAML");
+              throw new IllegalArgumentException(
+                  "Invalid multiline string character '" + c + "' for YAML");
             } else {
               writer.println(key + ": \"");
             }
