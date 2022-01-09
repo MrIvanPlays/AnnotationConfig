@@ -25,11 +25,12 @@ public final class YamlValueWriter implements ValueWriter {
       PrintWriter writer,
       CustomOptions options) {
     for (Map.Entry<String, Object> entry : values.entrySet()) {
-      write(entry.getKey(), entry.getValue(), writer, fieldComments, 2, false, false);
+      write(null, entry.getKey(), entry.getValue(), writer, fieldComments, 2, false, false);
     }
   }
 
   private void write(
+      String parentKey,
       String key,
       Object value,
       PrintWriter writer,
@@ -42,9 +43,11 @@ public final class YamlValueWriter implements ValueWriter {
       intentPrefixBuilder.append(" ");
     }
     String intentPrefix = intentPrefixBuilder.toString();
+    String parentSpec = parentKey != null ? parentKey.concat("." + key) : key;
     if (value instanceof Map<?, ?>) {
-      List<String> baseComments = commentsMap.getOrDefault(key + ".cl", Collections.emptyList());
-      if (baseComments.isEmpty()) {
+      String firstCheck = parentKey != null ? parentKey + "." + key : key;
+      List<String> baseComments = commentsMap.getOrDefault(firstCheck, Collections.emptyList());
+      if (baseComments.isEmpty() && !firstCheck.equalsIgnoreCase(key)) {
         baseComments = commentsMap.getOrDefault(key, Collections.emptyList());
       }
       String childPrefix = child ? intentPrefix.substring(0, childIndents - 2) : "";
@@ -58,7 +61,7 @@ public final class YamlValueWriter implements ValueWriter {
         String mapKey = entry.getKey();
         Object v = entry.getValue();
         if (v instanceof List<?>) {
-          writeCommentsInsideMap(key, writer, commentsMap, intentPrefix, mapKey);
+          writeCommentsInsideMap(parentKey, key, writer, commentsMap, intentPrefix, mapKey);
           List<?> vList = (List<?>) v;
           if (vList.isEmpty()) {
             writer.println(intentPrefix + mapKey + ": []");
@@ -105,6 +108,7 @@ public final class YamlValueWriter implements ValueWriter {
                   }
                   for (Map.Entry<String, Object> reserved : reservedObjectsForLater) {
                     write(
+                        parentSpec,
                         reserved.getKey(),
                         reserved.getValue(),
                         writer,
@@ -122,9 +126,17 @@ public final class YamlValueWriter implements ValueWriter {
             }
           }
         } else if (v instanceof Map<?, ?>) {
-          write(mapKey, v, writer, commentsMap, childIndents + 2, true, additional2Spaces);
+          write(
+              parentSpec,
+              mapKey,
+              v,
+              writer,
+              commentsMap,
+              childIndents + 2,
+              true,
+              additional2Spaces);
         } else {
-          writeCommentsInsideMap(key, writer, commentsMap, intentPrefix, mapKey);
+          writeCommentsInsideMap(parentKey, key, writer, commentsMap, intentPrefix, mapKey);
           if (!(v instanceof String)) {
             if (v instanceof MultilineString) {
               MultilineString multiline = (MultilineString) v;
@@ -214,6 +226,7 @@ public final class YamlValueWriter implements ValueWriter {
               }
               for (Map.Entry<String, Object> reserved : reservedObjectsForLater) {
                 write(
+                    parentSpec,
                     reserved.getKey(),
                     reserved.getValue(),
                     writer,
@@ -273,9 +286,6 @@ public final class YamlValueWriter implements ValueWriter {
   private void writeComments(
       String key, PrintWriter writer, Map<String, List<String>> commentsMap) {
     List<String> comments = commentsMap.getOrDefault(key, Collections.emptyList());
-    if (comments.isEmpty()) {
-      comments = commentsMap.getOrDefault(key + ".cl", Collections.emptyList());
-    }
     if (!comments.isEmpty()) {
       for (String comment : comments) {
         writer.println("# " + comment);
@@ -284,18 +294,16 @@ public final class YamlValueWriter implements ValueWriter {
   }
 
   private void writeCommentsInsideMap(
+      String parentKey,
       String key,
       PrintWriter writer,
       Map<String, List<String>> commentsMap,
       String intentPrefix,
       String mapKey) {
-    List<String> comments = commentsMap.getOrDefault(key + "." + mapKey, Collections.emptyList());
-    if (comments.isEmpty()) {
-      comments = commentsMap.getOrDefault(mapKey, Collections.emptyList());
-      if (comments.isEmpty()) {
-        comments = commentsMap.getOrDefault(key + ".cl", Collections.emptyList());
-      }
-    }
+    List<String> comments =
+        commentsMap.getOrDefault(
+            (parentKey != null ? parentKey + "." : "") + key + "." + mapKey,
+            Collections.emptyList());
     if (!comments.isEmpty()) {
       for (String comment : comments) {
         writer.println(intentPrefix + "# " + comment);

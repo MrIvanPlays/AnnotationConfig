@@ -35,6 +35,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
@@ -157,7 +158,12 @@ public final class AnnotatedConfigResolver {
       if (holder.isClass()) {
         Class<?> theClass = annotatedConfig.getClass();
         for (AnnotationType type : entry.getValue()) {
-          handleComments(type, null, theClass, commentChar, writer);
+          List<String> comments = getComments(type, null, theClass);
+          if (!comments.isEmpty()) {
+            for (String comment : comments) {
+              writer.println(commentChar + comment);
+            }
+          }
         }
         writer.append('\n');
         continue;
@@ -262,22 +268,13 @@ public final class AnnotatedConfigResolver {
       ret.getToWrite().put(keyName, combinedData.getToWrite());
       for (Map.Entry<String, List<String>> fieldComment :
           combinedData.getFieldComments().entrySet()) {
-        if (ret.getFieldComments().containsKey(fieldComment.getKey())) {
-          ret.getFieldComments()
-              .put(keyName + "." + fieldComment.getKey(), fieldComment.getValue());
-        } else {
-          ret.getFieldComments().put(fieldComment.getKey(), fieldComment.getValue());
-        }
+        ret.getFieldComments().put(keyName + "." + fieldComment.getKey(), fieldComment.getValue());
       }
-      if (!combinedData.getClassComments().isEmpty()) {
-        if (ret.getFieldComments().containsKey(keyName)) {
-          List<String> curr = ret.getFieldComments().get(keyName);
-          if (!curr.isEmpty()) {
-            ret.getFieldComments().put(keyName + ".cl", combinedData.getClassComments());
-          } else {
-            ret.getFieldComments().replace(keyName, combinedData.getClassComments());
-          }
-        } else {
+
+      if (!comments.isEmpty()) {
+        ret.getFieldComments().put(keyName, comments);
+      } else {
+        if (!combinedData.getClassComments().isEmpty()) {
           ret.getFieldComments().put(keyName, combinedData.getClassComments());
         }
       }
@@ -381,18 +378,8 @@ public final class AnnotatedConfigResolver {
       valueToWrite = dummyEntry.getValue();
     }
     combineMapToData(ret, keyToWrite, valueToWrite);
-    if (valueToWrite instanceof Map) {
-      Map<String, Object> lastMap = MapUtils.getLastMap((Map<String, Object>) valueToWrite);
-      String lastKey;
-      if (lastMap.size() == 1) {
-        lastKey = lastMap.entrySet().stream().findFirst().get().getKey();
-      } else {
-        lastKey = MapUtils.getLastKey(lastMap);
-      }
-      ret.getFieldComments().put(lastKey, comments);
-    } else {
-      ret.getFieldComments().put(keyToWrite, comments);
-    }
+
+    ret.getFieldComments().put(keyName, comments);
     return ret;
   }
 
@@ -688,16 +675,6 @@ public final class AnnotatedConfigResolver {
       }
     }
     return ret;
-  }
-
-  private static void handleComments(
-      AnnotationType type, Field field, Class<?> aClass, String commentChar, PrintWriter writer) {
-    List<String> comments = getComments(type, field, aClass);
-    if (!comments.isEmpty()) {
-      for (String comment : comments) {
-        writer.println(commentChar + comment);
-      }
-    }
   }
 
   private static <T extends Annotation> T getAnnotation(

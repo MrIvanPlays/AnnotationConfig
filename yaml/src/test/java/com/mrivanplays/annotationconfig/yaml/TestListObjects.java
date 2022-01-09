@@ -55,8 +55,6 @@ public class TestListObjects {
     Subject config = new Subject();
     YamlConfig.getConfigResolver().load(config, getClass().getClassLoader().getResourceAsStream("list-objects.yml"));
 
-    System.out.println(config.objects);
-
     Assertions.assertEquals(3, config.objects.size());
     Assertions.assertEquals("asdfp", config.objects.get(0).name);
     Assertions.assertEquals("electricity", config.objects.get(2).value);
