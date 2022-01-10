@@ -14,7 +14,6 @@ public class TestDottedKeys {
     @Comment("Mashallah")
     @Key("dotted.key.test.mashallah")
     private String mashallah = "foo";
-
   }
 
   private static final File file = new File("dotted-key-generate.yml");

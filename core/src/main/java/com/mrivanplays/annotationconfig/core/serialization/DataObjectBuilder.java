@@ -13,9 +13,7 @@ public final class DataObjectBuilder {
 
   private final DataObject object;
 
-  /**
-   * Creates a new {@link DataObjectBuilder}
-   */
+  /** Creates a new {@link DataObjectBuilder} */
   public DataObjectBuilder() {
     this.object = new DataObject();
   }

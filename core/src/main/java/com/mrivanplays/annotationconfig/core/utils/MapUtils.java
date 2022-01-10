@@ -19,6 +19,7 @@ public final class MapUtils {
     return keys.get(keys.size() - 1);
   }
 
+  @Deprecated
   public static Map<String, Object> getLastMap(Map<String, Object> map) {
     Map<String, Object> ret = map;
     for (Map.Entry<String, Object> entry : map.entrySet()) {

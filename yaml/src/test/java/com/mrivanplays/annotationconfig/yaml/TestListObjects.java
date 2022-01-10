@@ -26,10 +26,7 @@ public class TestListObjects {
 
     @Override
     public String toString() {
-      return "Serialized{" +
-          "name='" + name + '\'' +
-          ", value=" + value +
-          '}';
+      return "Serialized{" + "name='" + name + '\'' + ", value=" + value + '}';
     }
   }
 
@@ -53,7 +50,8 @@ public class TestListObjects {
   @Test
   public void testLoad() {
     Subject config = new Subject();
-    YamlConfig.getConfigResolver().load(config, getClass().getClassLoader().getResourceAsStream("list-objects.yml"));
+    YamlConfig.getConfigResolver()
+        .load(config, getClass().getClassLoader().getResourceAsStream("list-objects.yml"));
 
     Assertions.assertEquals(3, config.objects.size());
     Assertions.assertEquals("asdfp", config.objects.get(0).name);

@@ -23,8 +23,7 @@ public class DateResolver implements FieldTypeSerializer<Date> {
   /** {@inheritDoc} */
   @Override
   public Date deserialize(DataObject data, Field field) {
-    System.err.println(
-        "WARNING: Stop using Date for dates. Heck, its 2021, we have java 17, and java 8 in 2014 implemented a new time api. USE THAT");
+    printWarning();
     String input = data.getAsString();
     if (input.indexOf('T') != -1) {
       String[] dateTimePart = input.split("T");
@@ -74,7 +73,15 @@ public class DateResolver implements FieldTypeSerializer<Date> {
   /** {@inheritDoc} */
   @Override
   public DataObject serialize(Date value, Field field) {
+    printWarning();
     return new DataObject(formatter.format(value));
+  }
+
+  private void printWarning() {
+    System.err.println(
+        "[AnnotationConfig] WARNING: Stop using Date for dates. Heck, its 2022, we have java 17, and java 8 in 2014 implemented a new time api. USE THAT");
+    System.err.println(
+        "[AnnotationConfig] WARNING: Date serializer is kept and maintained for backwards compatibility, migrate to the new java time API.");
   }
 
   private static DateFormat getFormatter() {

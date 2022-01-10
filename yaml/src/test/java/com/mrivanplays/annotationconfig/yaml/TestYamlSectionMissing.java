@@ -20,7 +20,6 @@ public class TestYamlSectionMissing {
     public static final class TestSection {
 
       private String foo = "foo";
-
     }
 
     public TestSection sect() {
@@ -41,7 +40,6 @@ public class TestYamlSectionMissing {
       private String foo = "baz";
 
       private String bar = "bar";
-
     }
 
     public TestSection sect() {

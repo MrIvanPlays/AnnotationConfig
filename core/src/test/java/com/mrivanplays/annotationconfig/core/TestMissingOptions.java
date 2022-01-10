@@ -74,5 +74,4 @@ public class TestMissingOptions {
     Assertions.assertEquals("foo", properties.get("foo"));
     Assertions.assertEquals("bar", properties.get("bar"));
   }
-
 }

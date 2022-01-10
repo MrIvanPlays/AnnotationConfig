@@ -35,14 +35,13 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Map.Entry;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.TreeMap;
 import java.util.TreeSet;
 
-@SuppressWarnings({"unchecked", "rawtypes"})
+@SuppressWarnings({"unchecked", "rawtypes", "FieldMayBeFinal"})
 public final class AnnotatedConfigResolver {
 
   public static Map<AnnotationHolder, Set<AnnotationType>> resolveAnnotations(

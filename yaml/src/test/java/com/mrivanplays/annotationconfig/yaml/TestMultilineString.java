@@ -23,10 +23,12 @@ public class TestMultilineString {
 
   @Test
   public void testFailSubject() {
-    Assertions.assertThrowsExactly(IllegalArgumentException.class, () -> {
-      FailSubject subject = new FailSubject();
-      YamlConfig.getConfigResolver().dump(subject, new StringWriter());
-    });
+    Assertions.assertThrowsExactly(
+        IllegalArgumentException.class,
+        () -> {
+          FailSubject subject = new FailSubject();
+          YamlConfig.getConfigResolver().dump(subject, new StringWriter());
+        });
   }
 
   @Test
