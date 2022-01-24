@@ -5,6 +5,7 @@ import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.lang.reflect.ParameterizedType;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
@@ -23,7 +24,13 @@ class DefaultSerializer implements FieldTypeSerializer<Object> {
       return null;
     }
     if (!fieldType.isEnum()) {
-      if (data.isSingleValue() && isPrimitive(dataRaw)) {
+      if (data.isSingleValue()
+          && isPrimitive(dataRaw)
+          && dataRaw.getClass().isAssignableFrom(fieldType)) {
+        return forcePrimitive(data.getAsObject(), fieldType);
+      }
+
+      if (data.isSingleValue() && isPrimitiveClass(fieldType)) {
         return forcePrimitive(data.getAsObject(), fieldType);
       }
     }
@@ -54,6 +61,19 @@ class DefaultSerializer implements FieldTypeSerializer<Object> {
           }
         }
         return ret;
+      }
+    }
+    // deserialize asked value list from a received value not a list as a singleton list
+    if (data.isSingleValue() && fieldType.isAssignableFrom(List.class)) {
+      Class<?> listValueNeeded =
+          (Class<?>) ((ParameterizedType) field.getGenericType()).getActualTypeArguments()[0];
+      if (isPrimitiveClass(listValueNeeded)) {
+        return Collections.singletonList(forcePrimitive(data.getAsObject(), listValueNeeded));
+      } else {
+        throw new IllegalArgumentException(
+            "Found a list value asking for a non primitive type with a received "
+                + data
+                + " to deserialize!");
       }
     }
     Map<String, Object> dataMap = data.getAsMap();
@@ -215,8 +235,7 @@ class DefaultSerializer implements FieldTypeSerializer<Object> {
     return isPrimitive(value, true);
   }
 
-  private boolean isPrimitive(Object value, boolean checkMap) {
-    Class<?> valClass = value.getClass();
+  private boolean isPrimitiveClass(Class<?> valClass) {
     return valClass.isPrimitive()
         || valClass.isAssignableFrom(String.class)
         || valClass.isAssignableFrom(Boolean.class)
@@ -226,8 +245,12 @@ class DefaultSerializer implements FieldTypeSerializer<Object> {
         || valClass.isAssignableFrom(Float.class)
         || valClass.isAssignableFrom(Integer.class)
         || valClass.isAssignableFrom(Short.class)
-        || valClass.isAssignableFrom(Long.class)
-        || (checkMap && value instanceof Map);
+        || valClass.isAssignableFrom(Long.class);
+  }
+
+  private boolean isPrimitive(Object value, boolean checkMap) {
+    Class<?> valClass = value.getClass();
+    return isPrimitiveClass(valClass) || (checkMap && value instanceof Map);
   }
 
   private static final class PrimitiveSerializers {
