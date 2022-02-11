@@ -9,7 +9,7 @@
   </parent>
   <modelVersion>4.0.0</modelVersion>
 
-  <artifactId>annotationconfg-yaml</artifactId>
+  <artifactId>annotationconfig-yaml</artifactId>
 
   <name>AnnotationConfig-YAML</name>
   <description>YAML implementation of the AnnotationConfig</description>
