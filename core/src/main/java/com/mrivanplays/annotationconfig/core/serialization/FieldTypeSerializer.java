@@ -22,7 +22,22 @@ public interface FieldTypeSerializer<T> {
    * @param field the field we will attach this information to later on
    * @return the generic value, the implementation of this interface has specified
    */
-  T deserialize(DataObject data, Field field);
+  default T deserialize(DataObject data, Field field) {
+    throw new IllegalArgumentException("FieldTypeSerializer#deserialize not implemented");
+  }
+
+  /**
+   * AnnotationConfig invokes this call-back method during deserialization when it encounters a
+   * field of the specified type.
+   *
+   * @param data the data we received from the config
+   * @param field the field we will attach this information to later on
+   * @param annotatedConfig the annotated config this field was retrieved from
+   * @return the generic value, the implementation of this interface has specified
+   */
+  default T deserialize(DataObject data, Field field, Object annotatedConfig) {
+    return deserialize(data, field);
+  }
 
   /**
    * AnnotationConfig invokes this call-back method during serialization when it encounters a field

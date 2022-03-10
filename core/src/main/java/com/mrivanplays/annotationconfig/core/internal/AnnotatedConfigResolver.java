@@ -506,7 +506,8 @@ public final class AnnotatedConfigResolver {
       } else {
         serializer = serializerOpt.get();
       }
-      Object deserialized = serializer.deserialize(new DataObject(value, true), field);
+      Object deserialized =
+          serializer.deserialize(new DataObject(value, true), field, annotatedConfig);
       if (deserialized == null && !thisMissingOption) {
         if (nullReadHandler == NullReadHandleOption.USE_DEFAULT_VALUE) {
           continue;

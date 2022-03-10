@@ -166,4 +166,17 @@ public enum SerializerRegistry {
   public FieldTypeSerializer<Object> getDefaultSerializer() {
     return DEFAULT;
   }
+
+  /**
+   * @deprecated internal use only
+   */
+  @Deprecated
+  public Object tryDeserialize(
+      DataObject data,
+      Field field,
+      Object annotatedConfig,
+      Type neededTypeGeneric,
+      Class<?> neededType) {
+    return DEFAULT.deserialize(data, field, annotatedConfig, neededTypeGeneric, neededType);
+  }
 }
