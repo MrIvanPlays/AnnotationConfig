@@ -19,19 +19,6 @@ public final class MapUtils {
     return keys.get(keys.size() - 1);
   }
 
-  @Deprecated
-  public static Map<String, Object> getLastMap(Map<String, Object> map) {
-    Map<String, Object> ret = map;
-    for (Map.Entry<String, Object> entry : map.entrySet()) {
-      Object val = entry.getValue();
-      if (!(val instanceof Map)) {
-        break;
-      }
-      ret = getLastMap((Map<String, Object>) val);
-    }
-    return ret;
-  }
-
   public static Map<String, Object> getLastCommonMap(
       Map<String, Object> map1, Map<String, Object> map2) {
     Map<String, Object> ret = map2;

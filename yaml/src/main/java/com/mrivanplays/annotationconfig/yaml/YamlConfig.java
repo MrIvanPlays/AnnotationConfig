@@ -58,18 +58,4 @@ public final class YamlConfig {
                 })
             .build();
   }
-
-  /**
-   * Loads the config object from the file. If the file does not exist, it creates one.
-   *
-   * @param annotatedConfig annotated config
-   * @param file file
-   * @deprecated use {@link #getConfigResolver()}. it has a much better description of methods. the
-   *     equivalent of this method there is {@link ConfigResolver#loadOrDump(Object, File,
-   *     LoadSettings)}
-   */
-  @Deprecated
-  public static void load(Object annotatedConfig, File file) {
-    getConfigResolver().loadOrDump(annotatedConfig, file);
-  }
 }

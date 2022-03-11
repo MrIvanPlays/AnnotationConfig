@@ -52,29 +52,6 @@ public final class TomlConfig {
   private static final ValueWriter TOML_VALUE_WRITER = new TomlValueWriter(DEFAULT_TOML_MAPPER);
 
   private static void generateConfigResolver() {
-    configResolver =
-        ConfigResolver.newBuilder()
-            .withOption(MAPPER_KEY, Option.of(DEFAULT_TOML_MAPPER).markReplaceable())
-            .withLoadSetting(LoadSetting.GENERATE_NEW_OPTIONS, false)
-            .withValueWriter(TOML_VALUE_WRITER)
-            .withCommentPrefix("# ")
-            .shouldReverseFields(true)
-            .withValueReader(
-                new ValueReader() {
-                  @Override
-                  public Map<String, Object> read(Reader reader, CustomOptions options)
-                      throws IOException {
-                    return (Map<String, Object>)
-                        options
-                            .getAsOr(MAPPER_KEY, TomlMapper.class, DEFAULT_TOML_MAPPER)
-                            .reader()
-                            .readValue(reader, LinkedHashMap.class);
-                  }
-                })
-            .build();
-  }
-
-  static {
     SerializerRegistry registry = SerializerRegistry.INSTANCE;
     if (!registry.hasSerializer(Date.class)) {
       registry.registerSerializer(Date.class, new DateResolver());
@@ -103,38 +80,25 @@ public final class TomlConfig {
           (data, field) -> LocalTime.parse(data.getAsString()),
           (value, field) -> new DataObject(value.toString()));
     }
-  }
-
-  /**
-   * Loads the config object from the file. If the file does not exist, it creates one.
-   *
-   * @param annotatedConfig annotated config
-   * @param file file
-   * @deprecated see {@link #load(Object, File, TomlMapper)}
-   */
-  @Deprecated
-  public static void load(Object annotatedConfig, File file) {
-    load(annotatedConfig, file, DEFAULT_TOML_MAPPER);
-  }
-
-  /**
-   * Loads the config object from the file. If the file does not exist, it creates one.
-   *
-   * @param annotatedConfig annotated config
-   * @param file file
-   * @param tomlMapper toml mapper
-   * @deprecated use {@link #getConfigResolver()}
-   */
-  @Deprecated
-  public static void load(Object annotatedConfig, File file, TomlMapper tomlMapper) {
-    ConfigResolver resolver = getConfigResolver();
-    if (!resolver.options().has(MAPPER_KEY)) {
-      resolver.options().put(MAPPER_KEY, Option.of(tomlMapper).markReplaceable());
-    } else {
-      if (resolver.options().isReplaceable(MAPPER_KEY).orElse(false)) {
-        resolver.options().put(MAPPER_KEY, Option.of(tomlMapper).markReplaceable());
-      }
-    }
-    resolver.loadOrDump(annotatedConfig, file);
+    configResolver =
+        ConfigResolver.newBuilder()
+            .withOption(MAPPER_KEY, Option.of(DEFAULT_TOML_MAPPER).markReplaceable())
+            .withLoadSetting(LoadSetting.GENERATE_NEW_OPTIONS, false)
+            .withValueWriter(TOML_VALUE_WRITER)
+            .withCommentPrefix("# ")
+            .shouldReverseFields(true)
+            .withValueReader(
+                new ValueReader() {
+                  @Override
+                  public Map<String, Object> read(Reader reader, CustomOptions options)
+                      throws IOException {
+                    return (Map<String, Object>)
+                        options
+                            .getAsOr(MAPPER_KEY, TomlMapper.class, DEFAULT_TOML_MAPPER)
+                            .reader()
+                            .readValue(reader, LinkedHashMap.class);
+                  }
+                })
+            .build();
   }
 }
