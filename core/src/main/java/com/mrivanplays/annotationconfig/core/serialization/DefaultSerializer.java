@@ -1,7 +1,6 @@
 package com.mrivanplays.annotationconfig.core.serialization;
 
-import com.mrivanplays.annotationconfig.core.annotations.Ignore;
-import com.mrivanplays.annotationconfig.core.annotations.Key;
+import com.mrivanplays.annotationconfig.core.utils.AnnotationUtils;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
@@ -229,13 +228,10 @@ class DefaultSerializer implements FieldTypeSerializer<Object> {
     DataObject object = new DataObject();
     for (Field desField : value.getClass().getDeclaredFields()) {
       desField.setAccessible(true);
-      if (desField.getDeclaredAnnotation(Ignore.class) != null) {
+      if (AnnotationUtils.isIgnored(desField)) {
         continue;
       }
-      String key = desField.getName();
-      if (desField.getDeclaredAnnotation(Key.class) != null) {
-        key = desField.getDeclaredAnnotation(Key.class).value();
-      }
+      String key = AnnotationUtils.getKey(desField);
       try {
         Object def = desField.get(value);
         if (def == null) {
