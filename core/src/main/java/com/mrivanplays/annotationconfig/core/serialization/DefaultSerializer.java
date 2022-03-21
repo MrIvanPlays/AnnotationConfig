@@ -4,6 +4,8 @@ import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.lang.reflect.ParameterizedType;
+import java.math.BigDecimal;
+import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -272,7 +274,9 @@ class DefaultSerializer implements FieldTypeSerializer<Object> {
         || valClass.isAssignableFrom(Float.class)
         || valClass.isAssignableFrom(Integer.class)
         || valClass.isAssignableFrom(Short.class)
-        || valClass.isAssignableFrom(Long.class);
+        || valClass.isAssignableFrom(Long.class)
+        || valClass.isAssignableFrom(BigDecimal.class)
+        || valClass.isAssignableFrom(BigInteger.class);
   }
 
   private boolean isPrimitive(Object value, boolean checkMap) {
@@ -321,6 +325,12 @@ class DefaultSerializer implements FieldTypeSerializer<Object> {
       Function<Object, Boolean> boolSerializer = (o) -> Boolean.parseBoolean(String.valueOf(o));
       registerSerializer(boolean.class, boolSerializer);
       registerSerializer(Boolean.class, boolSerializer);
+
+      Function<Object, BigDecimal> bigDecimalSerializer = (o) -> BigDecimal.valueOf(Double.parseDouble(String.valueOf(o)));
+      registerSerializer(BigDecimal.class, bigDecimalSerializer);
+
+      Function<Object, BigInteger> bigIntegerSerializer = (o) -> BigInteger.valueOf(Long.parseLong(String.valueOf(o)));
+      registerSerializer(BigInteger.class, bigIntegerSerializer);
 
       registered = true;
     }

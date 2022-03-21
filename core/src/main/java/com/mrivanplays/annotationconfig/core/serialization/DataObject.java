@@ -1,5 +1,7 @@
 package com.mrivanplays.annotationconfig.core.serialization;
 
+import java.math.BigDecimal;
+import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.LinkedHashMap;
@@ -251,7 +253,7 @@ public final class DataObject {
       String key = entry.getKey();
       DataObject value = entry.getValue();
       if (value.isSingleValue()) {
-        ret.put(key, value.getAsObject());
+        ret.put(key, value.getAsObject(true));
       } else {
         ret.put(key, value.getAsMap());
       }
@@ -266,6 +268,27 @@ public final class DataObject {
    */
   public Object getAsObject() {
     return data;
+  }
+
+  /**
+   * Returns the held value by this data objects. If it holds a map, the returned value is null.
+   *
+   * @param serializeBigIntegerAndBigDecimal whether to serialize the value to a primitive if it is
+   *     a {@link BigInteger} or {@link BigDecimal}
+   * @return held object
+   */
+  public Object getAsObject(boolean serializeBigIntegerAndBigDecimal) {
+    if (serializeBigIntegerAndBigDecimal) {
+      if (data instanceof BigInteger) {
+        return ((BigInteger) data).intValueExact();
+      } else if (data instanceof BigDecimal) {
+        return ((BigDecimal) data).doubleValue();
+      } else {
+        return data;
+      }
+    } else {
+      return data;
+    }
   }
 
   /**
@@ -377,6 +400,26 @@ public final class DataObject {
    */
   public short getAsShort() {
     return Short.parseShort(getAsString());
+  }
+
+  /**
+   * Returns the held value by this data object as a {@link BigDecimal}
+   *
+   * @return held big decimal
+   * @see #getAsObject()
+   */
+  public BigDecimal getAsBigDecimal() {
+    return BigDecimal.valueOf(getAsDouble());
+  }
+
+  /**
+   * Returns the held value by this data object as a {@link BigInteger}
+   *
+   * @return held big integer
+   * @see #getAsObject()
+   */
+  public BigInteger getAsBigInteger() {
+    return BigInteger.valueOf(getAsLong());
   }
 
   /**
