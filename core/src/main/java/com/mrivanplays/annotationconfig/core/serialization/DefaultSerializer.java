@@ -122,7 +122,10 @@ class DefaultSerializer implements FieldTypeSerializer<Object> {
       SerializerRegistry serializerRegistry = SerializerRegistry.INSTANCE;
       for (Field desField : fieldTypeInstance.getClass().getDeclaredFields()) {
         desField.setAccessible(true);
-        Object val = dataMap.get(desField.getName());
+        if (AnnotationUtils.isIgnored(desField)) {
+          continue;
+        }
+        Object val = dataMap.get(AnnotationUtils.getKey(desField));
         if (val == null) {
           continue;
         }

@@ -2,6 +2,26 @@
 
 This file summarises changes between major versions.
 
+## Version 3.0.0
+This version is all focused on serialization.
+
+### FieldTypeSerializer now is not exactly "Field"
+Instead of passing a Field, AnnotationConfig now passes a "SerializationContext", because
+AnnotationConfig can not always get a Field instance. We don't want to lie with another Field, 
+instead, we are now focused on accurate data - what is it exactly (de)serializing.
+
+### Beefed up default serializer
+- The default serializer now recognizes BigInteger and BigDecimal as "primitives" and (de)serializes
+them. 
+- Fixed a few type mistakes on list (de)serialization, which caused everything to go to the 
+default serializer rather than a proper serializer, if such is registered.
+- The default serializer now recognizes `@Key` and `@Ignore` annotations whenever (de)serializing
+an object.
+
+### Misc changes
+- Removed deprecated methods
+- Fixed DataObjectBuilder#with(String, DataObject)
+
 ## Version 2.1.0
 
 ### Comments inside sections
