@@ -35,6 +35,5 @@ public class TestBigIntegerBigDecimal {
 
     Assertions.assertEquals(3.3333333332222223E9, config.decimal.doubleValue());
     Assertions.assertEquals(3333333333L, config.integer.longValueExact());
-    System.out.println(config.integer.longValueExact());
   }
 }
