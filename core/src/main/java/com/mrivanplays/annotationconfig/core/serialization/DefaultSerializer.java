@@ -1,5 +1,7 @@
 package com.mrivanplays.annotationconfig.core.serialization;
 
+import com.mrivanplays.annotationconfig.core.annotations.Ignore;
+import com.mrivanplays.annotationconfig.core.annotations.Key;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
@@ -227,6 +229,13 @@ class DefaultSerializer implements FieldTypeSerializer<Object> {
     DataObject object = new DataObject();
     for (Field desField : value.getClass().getDeclaredFields()) {
       desField.setAccessible(true);
+      if (desField.getDeclaredAnnotation(Ignore.class) != null) {
+        continue;
+      }
+      String key = desField.getName();
+      if (desField.getDeclaredAnnotation(Key.class) != null) {
+        key = desField.getDeclaredAnnotation(Key.class).value();
+      }
       try {
         Object def = desField.get(value);
         if (def == null) {
@@ -237,11 +246,9 @@ class DefaultSerializer implements FieldTypeSerializer<Object> {
         if (serializerOpt.isPresent()) {
           FieldTypeSerializer serializer = serializerOpt.get();
           object.putAll(
-              desField.getName(),
-              serializer.serialize(def, SerializationContext.fromField(desField, value)));
+              key, serializer.serialize(def, SerializationContext.fromField(desField, value)));
         } else {
-          object.putAll(
-              desField.getName(), serialize(def, SerializationContext.fromField(desField, value)));
+          object.putAll(key, serialize(def, SerializationContext.fromField(desField, value)));
         }
       } catch (IllegalAccessException e) {
         throw new IllegalArgumentException("Field became inaccessible.");
@@ -335,10 +342,12 @@ class DefaultSerializer implements FieldTypeSerializer<Object> {
       registerSerializer(boolean.class, boolSerializer);
       registerSerializer(Boolean.class, boolSerializer);
 
-      Function<Object, BigDecimal> bigDecimalSerializer = (o) -> BigDecimal.valueOf(Double.parseDouble(String.valueOf(o)));
+      Function<Object, BigDecimal> bigDecimalSerializer =
+          (o) -> BigDecimal.valueOf(Double.parseDouble(String.valueOf(o)));
       registerSerializer(BigDecimal.class, bigDecimalSerializer);
 
-      Function<Object, BigInteger> bigIntegerSerializer = (o) -> BigInteger.valueOf(Long.parseLong(String.valueOf(o)));
+      Function<Object, BigInteger> bigIntegerSerializer =
+          (o) -> BigInteger.valueOf(Long.parseLong(String.valueOf(o)));
       registerSerializer(BigInteger.class, bigIntegerSerializer);
 
       registered = true;
