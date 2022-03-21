@@ -182,7 +182,13 @@ class DefaultSerializer implements FieldTypeSerializer<Object> {
         List<Object> toSerialize = new ArrayList<>();
         for (Object val : values) {
           if (isPrimitive(val)) {
-            toSerialize.add(val);
+            if (val instanceof BigDecimal) {
+              toSerialize.add(((BigDecimal) val).doubleValue());
+            } else if (val instanceof BigInteger) {
+              toSerialize.add(((BigInteger) val).intValueExact());
+            } else {
+              toSerialize.add(val);
+            }
           } else {
             Optional<FieldTypeSerializer<?>> serializerOpt =
                 serializerRegistry.getSerializer(val.getClass());
