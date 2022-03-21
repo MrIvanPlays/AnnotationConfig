@@ -2,7 +2,7 @@ package com.mrivanplays.annotationconfig.toml;
 
 import com.mrivanplays.annotationconfig.core.serialization.DataObject;
 import com.mrivanplays.annotationconfig.core.serialization.FieldTypeSerializer;
-import java.lang.reflect.Field;
+import com.mrivanplays.annotationconfig.core.serialization.SerializationContext;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.Date;
@@ -22,7 +22,7 @@ public class DateResolver implements FieldTypeSerializer<Date> {
 
   /** {@inheritDoc} */
   @Override
-  public Date deserialize(DataObject data, Field field) {
+  public Date deserialize(DataObject data, SerializationContext<Date> context) {
     printWarning();
     String input = data.getAsString();
     if (input.indexOf('T') != -1) {
@@ -72,7 +72,7 @@ public class DateResolver implements FieldTypeSerializer<Date> {
 
   /** {@inheritDoc} */
   @Override
-  public DataObject serialize(Date value, Field field) {
+  public DataObject serialize(Date value, SerializationContext<Date> context) {
     printWarning();
     return new DataObject(formatter.format(value));
   }

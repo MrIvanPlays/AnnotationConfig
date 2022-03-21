@@ -2,8 +2,8 @@ package com.mrivanplays.annotationconfig.yaml;
 
 import com.mrivanplays.annotationconfig.core.serialization.DataObject;
 import com.mrivanplays.annotationconfig.core.serialization.FieldTypeSerializer;
+import com.mrivanplays.annotationconfig.core.serialization.SerializationContext;
 import com.mrivanplays.annotationconfig.core.serialization.SerializerRegistry;
-import java.lang.reflect.Field;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -20,39 +20,42 @@ public final class SectionObjectListSerializer<T>
 
   /** {@inheritDoc} */
   @Override
-  public SectionObjectList<T> deserialize(DataObject data, Field field, Object annotatedConfig) {
-    try {
-      SectionObjectList<T> def = (SectionObjectList<T>) field.get(annotatedConfig);
-      Map<String, Object> map = data.getAsMap();
-      Map<String, T> deserialized = new HashMap<>();
-      for (Map.Entry<String, Object> entry : map.entrySet()) {
-        if (!(entry.getValue() instanceof Map)) {
-          throw new IllegalArgumentException("Illegal SectionObjectList inputted: " + data);
-        }
-        FieldTypeSerializer serializer =
-            SerializerRegistry.INSTANCE.getSerializer(def.getObjectsType()).orElse(null);
-        deserialized.put(
-            entry.getKey(),
-            serializer != null
-                ? (T)
-                    serializer.deserialize(new DataObject(entry.getValue()), field, annotatedConfig)
-                : (T)
-                    SerializerRegistry.INSTANCE.tryDeserialize(
-                        new DataObject(entry.getValue()),
-                        field,
-                        annotatedConfig,
-                        def.getObjectsType(),
-                        def.getObjectsType()));
-      }
-      return new SectionObjectList<>(def.getObjectsType(), deserialized);
-    } catch (IllegalAccessException e) {
-      throw new RuntimeException(e);
+  public SectionObjectList<T> deserialize(
+      DataObject data, SerializationContext<SectionObjectList<T>> context) {
+    SectionObjectList<T> def = context.getDefaultValue().orElse(null);
+    if (def == null) {
+      throw new IllegalArgumentException(
+          "Illegal field to deserialize: null default SectionObjectList");
     }
+    Map<String, Object> map = data.getAsMap();
+    Map<String, T> deserialized = new HashMap<>();
+    for (Map.Entry<String, Object> entry : map.entrySet()) {
+      if (!(entry.getValue() instanceof Map)) {
+        throw new IllegalArgumentException("Illegal SectionObjectList inputted: " + data);
+      }
+      FieldTypeSerializer serializer =
+          SerializerRegistry.INSTANCE
+              .getSerializer(def.getObjectsType())
+              .orElse(SerializerRegistry.INSTANCE.getDefaultSerializer());
+      deserialized.put(
+          entry.getKey(),
+          (T)
+              serializer.deserialize(
+                  new DataObject(entry.getValue()),
+                  SerializationContext.of(
+                      null,
+                      null,
+                      def.getObjectsType(),
+                      def.getObjectsType(),
+                      context.getAnnotatedConfig())));
+    }
+    return new SectionObjectList<>(def.getObjectsType(), deserialized);
   }
 
   /** {@inheritDoc} */
   @Override
-  public DataObject serialize(SectionObjectList<T> value, Field field) {
+  public DataObject serialize(
+      SectionObjectList<T> value, SerializationContext<SectionObjectList<T>> context) {
     DataObject ret = new DataObject();
     value
         .getAsMap()
@@ -62,7 +65,16 @@ public final class SectionObjectListSerializer<T>
                   SerializerRegistry.INSTANCE
                       .getSerializer(value.getObjectsType())
                       .orElse(SerializerRegistry.INSTANCE.getDefaultSerializer());
-              ret.putAll(k, serializer.serialize(value.getObjectsType().cast(v), field));
+              ret.putAll(
+                  k,
+                  serializer.serialize(
+                      value.getObjectsType().cast(v),
+                      SerializationContext.of(
+                          null,
+                          value.getObjectsType().cast(v),
+                          value.getObjectsType(),
+                          value.getObjectsType(),
+                          context.getAnnotatedConfig())));
             });
     return ret;
   }

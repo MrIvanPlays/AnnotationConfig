@@ -15,6 +15,10 @@ public abstract class TypeToken<T> {
 
   private final Type type;
 
+  public TypeToken(Type type) {
+    this.type = type;
+  }
+
   public TypeToken() {
     Type superclass = getClass().getGenericSuperclass();
     this.type = ((ParameterizedType) superclass).getActualTypeArguments()[0];

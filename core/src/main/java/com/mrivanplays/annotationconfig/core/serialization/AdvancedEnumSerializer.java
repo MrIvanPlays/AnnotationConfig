@@ -107,7 +107,7 @@ public final class AdvancedEnumSerializer<E extends Enum<E>> implements FieldTyp
 
   /** {@inheritDoc} */
   @Override
-  public E deserialize(DataObject data, Field field) {
+  public E deserialize(DataObject data, SerializationContext<E> context) {
     String input = data.getAsString();
     if (input == null) {
       return null;
@@ -256,7 +256,7 @@ public final class AdvancedEnumSerializer<E extends Enum<E>> implements FieldTyp
 
   /** {@inheritDoc} */
   @Override
-  public DataObject serialize(E value, Field field) {
+  public DataObject serialize(E value, SerializationContext<E> context) {
     return new DataObject(value.name().toLowerCase(Locale.ROOT).replace("_", " "));
   }
 }

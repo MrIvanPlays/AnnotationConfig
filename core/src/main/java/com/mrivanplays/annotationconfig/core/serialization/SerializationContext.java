@@ -28,7 +28,7 @@ public final class SerializationContext<T> {
       throws IllegalAccessException {
     return new SerializationContext<>(
         Optional.of(field.getName()),
-        (T) field.get(annotatedConfig),
+        Optional.ofNullable((T) field.get(annotatedConfig)),
         field.getType(),
         field.getGenericType(),
         annotatedConfig);
@@ -38,7 +38,7 @@ public final class SerializationContext<T> {
    * Creates a new {@link SerializationContext}
    *
    * @param name name of field. can be null
-   * @param def default value
+   * @param def default value. can be null
    * @param classType class type
    * @param genericType generic class type
    * @param annotatedConfig annotatedConfig
@@ -48,17 +48,21 @@ public final class SerializationContext<T> {
   public static <T> SerializationContext<T> of(
       String name, T def, Class<?> classType, Type genericType, Object annotatedConfig) {
     return new SerializationContext<>(
-        Optional.ofNullable(name), def, classType, genericType, annotatedConfig);
+        Optional.ofNullable(name), Optional.ofNullable(def), classType, genericType, annotatedConfig);
   }
 
   private final Optional<String> name;
-  private final T def;
+  private final Optional<T> def;
   private final Class<?> classType;
   private final Type genericType;
   private final Object annotatedConfig;
 
   private SerializationContext(
-      Optional<String> name, T def, Class<?> classType, Type genericType, Object annotatedConfig) {
+      Optional<String> name,
+      Optional<T> def,
+      Class<?> classType,
+      Type genericType,
+      Object annotatedConfig) {
     this.name = name;
     this.def = def;
     this.classType = classType;
@@ -77,11 +81,12 @@ public final class SerializationContext<T> {
   }
 
   /**
-   * Returns the default value for the (de)serialized object.
+   * Returns an {@link Optional} which may or may not be fulfilled with a default value. In most of
+   * the cases, this is fulfilled.
    *
-   * @return default value
+   * @return default value or empty optional
    */
-  public T getDefaultValue() {
+  public Optional<T> getDefaultValue() {
     return def;
   }
 

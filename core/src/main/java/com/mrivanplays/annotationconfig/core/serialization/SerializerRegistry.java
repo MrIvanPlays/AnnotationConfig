@@ -66,19 +66,19 @@ public enum SerializerRegistry {
    */
   public <T> void registerSerializer(
       Class<T> serializedType,
-      BiFunction<DataObject, Field, T> deSerialize,
-      BiFunction<T, Field, DataObject> serialize) {
+      BiFunction<DataObject, SerializationContext<T>, T> deSerialize,
+      BiFunction<T, SerializationContext<T>, DataObject> serialize) {
     this.registerSerializer(
         serializedType,
         new FieldTypeSerializer<T>() {
           @Override
-          public T deserialize(DataObject data, Field field) {
-            return deSerialize.apply(data, field);
+          public T deserialize(DataObject data, SerializationContext<T> context) {
+            return deSerialize.apply(data, context);
           }
 
           @Override
-          public DataObject serialize(T value, Field field) {
-            return serialize.apply(value, field);
+          public DataObject serialize(T value, SerializationContext<T> context) {
+            return serialize.apply(value, context);
           }
         });
   }
@@ -165,18 +165,5 @@ public enum SerializerRegistry {
    */
   public FieldTypeSerializer<Object> getDefaultSerializer() {
     return DEFAULT;
-  }
-
-  /**
-   * @deprecated internal use only
-   */
-  @Deprecated
-  public Object tryDeserialize(
-      DataObject data,
-      Field field,
-      Object annotatedConfig,
-      Type neededTypeGeneric,
-      Class<?> neededType) {
-    return DEFAULT.deserialize(data, field, annotatedConfig, neededTypeGeneric, neededType);
   }
 }

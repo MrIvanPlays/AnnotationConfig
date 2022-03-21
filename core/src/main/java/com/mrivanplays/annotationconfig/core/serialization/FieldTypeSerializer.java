@@ -1,7 +1,5 @@
 package com.mrivanplays.annotationconfig.core.serialization;
 
-import java.lang.reflect.Field;
-
 /**
  * Interface representing a custom serializer and deserializer of a field type. You should write a
  * custom one if you are not happy with how AnnotationConfig serializes and deserializes by default.
@@ -19,33 +17,20 @@ public interface FieldTypeSerializer<T> {
    * field of the specified type.
    *
    * @param data the data we received from the config
-   * @param field the field we will attach this information to later on
+   * @param context serialization context
    * @return the generic value, the implementation of this interface has specified
+   * @see SerializationContext
    */
-  default T deserialize(DataObject data, Field field) {
-    throw new IllegalArgumentException("FieldTypeSerializer#deserialize not implemented");
-  }
-
-  /**
-   * AnnotationConfig invokes this call-back method during deserialization when it encounters a
-   * field of the specified type.
-   *
-   * @param data the data we received from the config
-   * @param field the field we will attach this information to later on
-   * @param annotatedConfig the annotated config this field was retrieved from
-   * @return the generic value, the implementation of this interface has specified
-   */
-  default T deserialize(DataObject data, Field field, Object annotatedConfig) {
-    return deserialize(data, field);
-  }
+  T deserialize(DataObject data, SerializationContext<T> context);
 
   /**
    * AnnotationConfig invokes this call-back method during serialization when it encounters a field
    * of the specified type.
    *
    * @param value the data we need serialized
-   * @param field the field we got the value from
+   * @param context serialization context
    * @return a serialized object which is useful for dumping into a configuration file
+   * @see SerializationContext
    */
-  DataObject serialize(T value, Field field);
+  DataObject serialize(T value, SerializationContext<T> context);
 }
