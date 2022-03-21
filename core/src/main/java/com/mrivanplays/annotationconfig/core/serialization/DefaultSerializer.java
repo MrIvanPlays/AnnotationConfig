@@ -190,15 +190,18 @@ class DefaultSerializer implements FieldTypeSerializer<Object> {
               toSerialize.add(val);
             }
           } else {
+            Class<?> neededType =
+                (Class<?>)
+                    ((ParameterizedType) context.getGenericType()).getActualTypeArguments()[0];
             Optional<FieldTypeSerializer<?>> serializerOpt =
-                serializerRegistry.getSerializer(val.getClass());
+                serializerRegistry.getSerializer(neededType);
             if (serializerOpt.isPresent()) {
               FieldTypeSerializer serializer = serializerOpt.get();
               DataObject serialized =
                   serializer.serialize(
                       val,
                       SerializationContext.of(
-                          null, val, val.getClass(), val.getClass(), context.getAnnotatedConfig()));
+                          null, val, neededType, neededType, context.getAnnotatedConfig()));
               if (serialized.isSingleValue()) {
                 toSerialize.add(serialized.getAsObject());
               } else {
@@ -209,7 +212,7 @@ class DefaultSerializer implements FieldTypeSerializer<Object> {
                   serialize(
                       val,
                       SerializationContext.of(
-                          null, val, val.getClass(), val.getClass(), context.getAnnotatedConfig()));
+                          null, val, neededType, neededType, context.getAnnotatedConfig()));
               if (serialized.isSingleValue()) {
                 toSerialize.add(serialized.getAsObject());
               } else {
