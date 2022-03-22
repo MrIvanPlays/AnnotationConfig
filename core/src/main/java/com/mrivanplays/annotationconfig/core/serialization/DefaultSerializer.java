@@ -19,7 +19,8 @@ import java.util.function.Function;
 class DefaultSerializer implements FieldTypeSerializer<Object> {
 
   @Override
-  public Object deserialize(DataObject data, SerializationContext<Object> context) {
+  public Object deserialize(
+      DataObject data, SerializationContext<Object> context, AnnotationAccessor annotations) {
     PrimitiveSerializers.registerSerializers();
     Class<?> fieldType = context.getClassType();
     Object dataRaw = data.getAsObject();
@@ -62,13 +63,15 @@ class DefaultSerializer implements FieldTypeSerializer<Object> {
                   serializer.deserialize(
                       new DataObject(o),
                       SerializationContext.of(
-                          null, null, neededType, neededType, context.getAnnotatedConfig())));
+                          null, null, neededType, neededType, context.getAnnotatedConfig()),
+                      AnnotationAccessor.EMPTY));
             } else {
               ret.add(
                   deserialize(
                       new DataObject(o),
                       SerializationContext.of(
-                          null, null, neededType, neededType, context.getAnnotatedConfig())));
+                          null, null, neededType, neededType, context.getAnnotatedConfig()),
+                      AnnotationAccessor.EMPTY));
             }
           }
         }
@@ -138,7 +141,8 @@ class DefaultSerializer implements FieldTypeSerializer<Object> {
                 fieldTypeInstance,
                 serializer.deserialize(
                     new DataObject(val, true),
-                    SerializationContext.fromField(desField, fieldTypeInstance)));
+                    SerializationContext.fromField(desField, fieldTypeInstance),
+                    AnnotationAccessor.createFromField(desField)));
           } catch (IllegalAccessException e) {
             throw new IllegalArgumentException("A field became inaccessible");
           }
@@ -148,7 +152,8 @@ class DefaultSerializer implements FieldTypeSerializer<Object> {
                 fieldTypeInstance,
                 deserialize(
                     new DataObject(val, true),
-                    SerializationContext.fromField(desField, fieldTypeInstance)));
+                    SerializationContext.fromField(desField, fieldTypeInstance),
+                    AnnotationAccessor.createFromField(desField)));
           } catch (IllegalAccessException e) {
             throw new IllegalArgumentException("A field became inaccessible");
           }
@@ -160,7 +165,8 @@ class DefaultSerializer implements FieldTypeSerializer<Object> {
   }
 
   @Override
-  public DataObject serialize(Object value, SerializationContext<Object> context) {
+  public DataObject serialize(
+      Object value, SerializationContext<Object> context, AnnotationAccessor annotations) {
     if (isPrimitive(value)) {
       return new DataObject(value);
     }
@@ -205,7 +211,8 @@ class DefaultSerializer implements FieldTypeSerializer<Object> {
                   serializer.serialize(
                       val,
                       SerializationContext.of(
-                          null, val, neededType, neededType, context.getAnnotatedConfig()));
+                          null, val, neededType, neededType, context.getAnnotatedConfig()),
+                      AnnotationAccessor.EMPTY);
               if (serialized.isSingleValue()) {
                 toSerialize.add(serialized.getAsObject());
               } else {
@@ -216,7 +223,8 @@ class DefaultSerializer implements FieldTypeSerializer<Object> {
                   serialize(
                       val,
                       SerializationContext.of(
-                          null, val, neededType, neededType, context.getAnnotatedConfig()));
+                          null, val, neededType, neededType, context.getAnnotatedConfig()),
+                      AnnotationAccessor.EMPTY);
               if (serialized.isSingleValue()) {
                 toSerialize.add(serialized.getAsObject());
               } else {
@@ -245,9 +253,18 @@ class DefaultSerializer implements FieldTypeSerializer<Object> {
         if (serializerOpt.isPresent()) {
           FieldTypeSerializer serializer = serializerOpt.get();
           object.putAll(
-              key, serializer.serialize(def, SerializationContext.fromField(desField, value)));
+              key,
+              serializer.serialize(
+                  def,
+                  SerializationContext.fromField(desField, value),
+                  AnnotationAccessor.createFromField(desField)));
         } else {
-          object.putAll(key, serialize(def, SerializationContext.fromField(desField, value)));
+          object.putAll(
+              key,
+              serialize(
+                  def,
+                  SerializationContext.fromField(desField, value),
+                  AnnotationAccessor.createFromField(desField)));
         }
       } catch (IllegalAccessException e) {
         throw new IllegalArgumentException("Field became inaccessible.");

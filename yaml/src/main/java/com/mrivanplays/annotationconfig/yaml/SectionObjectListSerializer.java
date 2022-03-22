@@ -1,5 +1,6 @@
 package com.mrivanplays.annotationconfig.yaml;
 
+import com.mrivanplays.annotationconfig.core.serialization.AnnotationAccessor;
 import com.mrivanplays.annotationconfig.core.serialization.DataObject;
 import com.mrivanplays.annotationconfig.core.serialization.FieldTypeSerializer;
 import com.mrivanplays.annotationconfig.core.serialization.SerializationContext;
@@ -21,7 +22,9 @@ public final class SectionObjectListSerializer<T>
   /** {@inheritDoc} */
   @Override
   public SectionObjectList<T> deserialize(
-      DataObject data, SerializationContext<SectionObjectList<T>> context) {
+      DataObject data,
+      SerializationContext<SectionObjectList<T>> context,
+      AnnotationAccessor annotations) {
     SectionObjectList<T> def = context.getDefaultValue().orElse(null);
     if (def == null) {
       throw new IllegalArgumentException(
@@ -47,7 +50,8 @@ public final class SectionObjectListSerializer<T>
                       null,
                       def.getObjectsType(),
                       def.getObjectsType(),
-                      context.getAnnotatedConfig())));
+                      context.getAnnotatedConfig()),
+                  AnnotationAccessor.EMPTY));
     }
     return new SectionObjectList<>(def.getObjectsType(), deserialized);
   }
@@ -55,7 +59,9 @@ public final class SectionObjectListSerializer<T>
   /** {@inheritDoc} */
   @Override
   public DataObject serialize(
-      SectionObjectList<T> value, SerializationContext<SectionObjectList<T>> context) {
+      SectionObjectList<T> value,
+      SerializationContext<SectionObjectList<T>> context,
+      AnnotationAccessor annotations) {
     DataObject ret = new DataObject();
     value
         .getAsMap()
@@ -74,7 +80,8 @@ public final class SectionObjectListSerializer<T>
                           value.getObjectsType().cast(v),
                           value.getObjectsType(),
                           value.getObjectsType(),
-                          context.getAnnotatedConfig())));
+                          context.getAnnotatedConfig()),
+                      AnnotationAccessor.EMPTY));
             });
     return ret;
   }

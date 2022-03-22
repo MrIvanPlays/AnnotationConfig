@@ -1,5 +1,6 @@
 package com.mrivanplays.annotationconfig.toml;
 
+import com.mrivanplays.annotationconfig.core.serialization.AnnotationAccessor;
 import com.mrivanplays.annotationconfig.core.serialization.DataObject;
 import com.mrivanplays.annotationconfig.core.serialization.FieldTypeSerializer;
 import com.mrivanplays.annotationconfig.core.serialization.SerializationContext;
@@ -22,7 +23,8 @@ public class DateResolver implements FieldTypeSerializer<Date> {
 
   /** {@inheritDoc} */
   @Override
-  public Date deserialize(DataObject data, SerializationContext<Date> context) {
+  public Date deserialize(
+      DataObject data, SerializationContext<Date> context, AnnotationAccessor annotations) {
     printWarning();
     String input = data.getAsString();
     if (input.indexOf('T') != -1) {
@@ -72,7 +74,8 @@ public class DateResolver implements FieldTypeSerializer<Date> {
 
   /** {@inheritDoc} */
   @Override
-  public DataObject serialize(Date value, SerializationContext<Date> context) {
+  public DataObject serialize(
+      Date value, SerializationContext<Date> context, AnnotationAccessor annotations) {
     printWarning();
     return new DataObject(formatter.format(value));
   }

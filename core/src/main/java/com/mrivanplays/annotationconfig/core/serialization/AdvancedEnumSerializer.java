@@ -1,6 +1,5 @@
 package com.mrivanplays.annotationconfig.core.serialization;
 
-import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -107,7 +106,8 @@ public final class AdvancedEnumSerializer<E extends Enum<E>> implements FieldTyp
 
   /** {@inheritDoc} */
   @Override
-  public E deserialize(DataObject data, SerializationContext<E> context) {
+  public E deserialize(
+      DataObject data, SerializationContext<E> context, AnnotationAccessor annotations) {
     String input = data.getAsString();
     if (input == null) {
       return null;
@@ -256,7 +256,8 @@ public final class AdvancedEnumSerializer<E extends Enum<E>> implements FieldTyp
 
   /** {@inheritDoc} */
   @Override
-  public DataObject serialize(E value, SerializationContext<E> context) {
+  public DataObject serialize(
+      E value, SerializationContext<E> context, AnnotationAccessor annotations) {
     return new DataObject(value.name().toLowerCase(Locale.ROOT).replace("_", " "));
   }
 }

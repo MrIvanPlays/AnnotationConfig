@@ -18,10 +18,12 @@ public interface FieldTypeSerializer<T> {
    *
    * @param data the data we received from the config
    * @param context serialization context
+   * @param annotations a way to access annotations of the object bound to the deserialized data
    * @return the generic value, the implementation of this interface has specified
    * @see SerializationContext
+   * @see AnnotationAccessor
    */
-  T deserialize(DataObject data, SerializationContext<T> context);
+  T deserialize(DataObject data, SerializationContext<T> context, AnnotationAccessor annotations);
 
   /**
    * AnnotationConfig invokes this call-back method during serialization when it encounters a field
@@ -29,8 +31,10 @@ public interface FieldTypeSerializer<T> {
    *
    * @param value the data we need serialized
    * @param context serialization context
+   * @param annotations a way to access annotations of the object bound to the serialized data
    * @return a serialized object which is useful for dumping into a configuration file
    * @see SerializationContext
+   * @see AnnotationAccessor
    */
-  DataObject serialize(T value, SerializationContext<T> context);
+  DataObject serialize(T value, SerializationContext<T> context, AnnotationAccessor annotations);
 }

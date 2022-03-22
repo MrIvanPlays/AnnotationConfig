@@ -9,6 +9,8 @@ This version is all focused on serialization.
 Instead of passing a Field, AnnotationConfig now passes a "SerializationContext", because
 AnnotationConfig can not always get a Field instance. We don't want to lie with another Field, 
 instead, we are now focused on accurate data - what is it exactly (de)serializing.
+The other thing new we have is the "AnnotationAccessor" - this is a way of accessing a (perhaps)
+field's annotations in a more controllable manner.
 
 ### Beefed up default serializer
 - The default serializer now recognizes BigInteger and BigDecimal as "primitives" and (de)serializes

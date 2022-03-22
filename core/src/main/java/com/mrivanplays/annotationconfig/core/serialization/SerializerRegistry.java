@@ -57,33 +57,6 @@ public enum SerializerRegistry {
   }
 
   /**
-   * Registers a new serializer.
-   *
-   * @param serializedType the field type that should be serialized
-   * @param deSerialize the deserialize method
-   * @param serialize the serialize method
-   * @param <T> generic
-   */
-  public <T> void registerSerializer(
-      Class<T> serializedType,
-      BiFunction<DataObject, SerializationContext<T>, T> deSerialize,
-      BiFunction<T, SerializationContext<T>, DataObject> serialize) {
-    this.registerSerializer(
-        serializedType,
-        new FieldTypeSerializer<T>() {
-          @Override
-          public T deserialize(DataObject data, SerializationContext<T> context) {
-            return deSerialize.apply(data, context);
-          }
-
-          @Override
-          public DataObject serialize(T value, SerializationContext<T> context) {
-            return serialize.apply(value, context);
-          }
-        });
-  }
-
-  /**
    * Unregisters the serializer of the specified serialized type
    *
    * @param serializedType the serialized type you want the serializer of unregistered

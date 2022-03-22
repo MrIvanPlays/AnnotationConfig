@@ -17,6 +17,7 @@ import com.mrivanplays.annotationconfig.core.resolver.ValueWriter;
 import com.mrivanplays.annotationconfig.core.resolver.key.KeyResolver;
 import com.mrivanplays.annotationconfig.core.resolver.options.CustomOptions;
 import com.mrivanplays.annotationconfig.core.resolver.settings.NullReadHandleOption;
+import com.mrivanplays.annotationconfig.core.serialization.AnnotationAccessor;
 import com.mrivanplays.annotationconfig.core.serialization.DataObject;
 import com.mrivanplays.annotationconfig.core.serialization.FieldTypeSerializer;
 import com.mrivanplays.annotationconfig.core.serialization.SerializationContext;
@@ -294,7 +295,9 @@ public final class AnnotatedConfigResolver {
     }
     DataObject serialized =
         serializer.serialize(
-            defaultsToValueObject, SerializationContext.fromField(field, annotatedConfig));
+            defaultsToValueObject,
+            SerializationContext.fromField(field, annotatedConfig),
+            AnnotationAccessor.createFromField(field));
     if (serialized == null) {
       throw new NullPointerException(
           "Expected DataObject, got null ; Field: "
@@ -344,7 +347,9 @@ public final class AnnotatedConfigResolver {
             }
             DataObject newSerialized =
                 newSerializer.serialize(
-                    val, SerializationContext.fromField(field, annotatedConfig));
+                    val,
+                    SerializationContext.fromField(field, annotatedConfig),
+                    AnnotationAccessor.createFromField(field));
             if (newSerialized == null) {
               throw new NullPointerException(
                   "Expected DataObject, but got null ; Field: "
@@ -515,7 +520,8 @@ public final class AnnotatedConfigResolver {
         Object deserialized =
             serializer.deserialize(
                 new DataObject(value, true),
-                SerializationContext.fromField(field, annotatedConfig));
+                SerializationContext.fromField(field, annotatedConfig),
+                AnnotationAccessor.createFromField(field));
         if (deserialized == null && !thisMissingOption) {
           if (nullReadHandler == NullReadHandleOption.USE_DEFAULT_VALUE) {
             continue;
