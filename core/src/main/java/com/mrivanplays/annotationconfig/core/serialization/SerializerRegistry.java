@@ -1,11 +1,10 @@
 package com.mrivanplays.annotationconfig.core.serialization;
 
-import java.lang.reflect.Field;
 import java.lang.reflect.Type;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.function.BiFunction;
+import java.util.function.Function;
 
 /**
  * Represents a registry of all the serializers.
@@ -54,6 +53,41 @@ public enum SerializerRegistry {
           "Serializer for " + serializedType.getTypeName() + " already registered");
     }
     this.serializers.put(serializedType, typeSerializer);
+  }
+
+  /**
+   * Register a new {@link FieldTypeSerializer} which can resolve data without a {@link
+   * SerializationContext} and a {@link AnnotationAccessor}
+   *
+   * @param serializedType the field type that should be serialized
+   * @param deserialize deserialization method of the serializedType
+   * @param serialize serialization method of the serializedType
+   * @param <T> generic
+   */
+  public <T> void registerSimpleSerializer(
+      Class<T> serializedType,
+      Function<DataObject, T> deserialize,
+      Function<T, DataObject> serialize) {
+    if (this.serializers.containsKey(serializedType)) {
+      throw new IllegalArgumentException(
+          "Serializer for " + serializedType.getName() + " already registered");
+    }
+    this.serializers.put(
+        serializedType,
+        new FieldTypeSerializer<T>() {
+
+          @Override
+          public T deserialize(
+              DataObject data, SerializationContext<T> context, AnnotationAccessor annotations) {
+            return deserialize.apply(data);
+          }
+
+          @Override
+          public DataObject serialize(
+              T value, SerializationContext<T> context, AnnotationAccessor annotations) {
+            return serialize.apply(value);
+          }
+        });
   }
 
   /**

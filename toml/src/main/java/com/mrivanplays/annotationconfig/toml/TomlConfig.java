@@ -10,7 +10,6 @@ import com.mrivanplays.annotationconfig.core.resolver.options.Option;
 import com.mrivanplays.annotationconfig.core.resolver.settings.LoadSetting;
 import com.mrivanplays.annotationconfig.core.serialization.DataObject;
 import com.mrivanplays.annotationconfig.core.serialization.SerializerRegistry;
-import java.io.File;
 import java.io.IOException;
 import java.io.Reader;
 import java.time.LocalDate;
@@ -57,28 +56,28 @@ public final class TomlConfig {
       registry.registerSerializer(Date.class, new DateResolver());
     }
     if (!registry.hasSerializer(OffsetDateTime.class)) {
-      registry.registerSerializer(
+      registry.registerSimpleSerializer(
           OffsetDateTime.class,
-          (data, field) -> OffsetDateTime.parse(data.getAsString()),
-          (value, field) -> new DataObject(value.toString()));
+          data -> OffsetDateTime.parse(data.getAsString()),
+          value -> new DataObject(value.toString()));
     }
     if (!registry.hasSerializer(LocalDateTime.class)) {
-      registry.registerSerializer(
+      registry.registerSimpleSerializer(
           LocalDateTime.class,
-          (data, field) -> LocalDateTime.parse(data.getAsString()),
-          (value, field) -> new DataObject(value.toString()));
+          data -> LocalDateTime.parse(data.getAsString()),
+          value -> new DataObject(value.toString()));
     }
     if (!registry.hasSerializer(LocalDate.class)) {
-      registry.registerSerializer(
+      registry.registerSimpleSerializer(
           LocalDate.class,
-          (data, field) -> LocalDate.parse(data.getAsString()),
-          (value, field) -> new DataObject(value.toString()));
+          data -> LocalDate.parse(data.getAsString()),
+          value -> new DataObject(value.toString()));
     }
     if (!registry.hasSerializer(LocalTime.class)) {
-      registry.registerSerializer(
+      registry.registerSimpleSerializer(
           LocalTime.class,
-          (data, field) -> LocalTime.parse(data.getAsString()),
-          (value, field) -> new DataObject(value.toString()));
+          data -> LocalTime.parse(data.getAsString()),
+          value -> new DataObject(value.toString()));
     }
     configResolver =
         ConfigResolver.newBuilder()

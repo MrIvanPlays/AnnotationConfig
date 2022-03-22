@@ -22,7 +22,9 @@ an object.
 
 ### Misc changes
 - Removed deprecated methods
-- Fixed DataObjectBuilder#with(String, DataObject)
+- Fixed `DataObjectBuilder#with(String, DataObject)`
+- Removed `SerializerRegistry#registerSerializer(Class, BiFunction, BiFunction)`. Replaced by 
+`SerializerRegistry#registerSimpleSerializer(Class, Function, Function)`
 
 ## Version 2.1.0
 
