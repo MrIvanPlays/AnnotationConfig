@@ -409,6 +409,9 @@ public final class DataObject {
    * @see #getAsObject()
    */
   public BigDecimal getAsBigDecimal() {
+    if (getAsObject() instanceof BigDecimal) {
+      return (BigDecimal) getAsObject();
+    }
     return BigDecimal.valueOf(getAsDouble());
   }
 
@@ -419,6 +422,9 @@ public final class DataObject {
    * @see #getAsObject()
    */
   public BigInteger getAsBigInteger() {
+    if (getAsObject() instanceof BigInteger) {
+      return (BigInteger) getAsObject();
+    }
     return BigInteger.valueOf(getAsLong());
   }
 
