@@ -25,11 +25,13 @@ public final class SectionObjectListSerializer<T>
       DataObject data,
       SerializationContext<SectionObjectList<T>> context,
       AnnotationAccessor annotations) {
-    SectionObjectList<T> def = context.getDefaultValue().orElse(null);
-    if (def == null) {
-      throw new IllegalArgumentException(
-          "Illegal field to deserialize: null default SectionObjectList");
-    }
+    SectionObjectList<T> def =
+        context
+            .getDefaultValue()
+            .orElseThrow(
+                () ->
+                    new IllegalArgumentException(
+                        "Illegal field to deserialize: null default SectionObjectList"));
     Map<String, Object> map = data.getAsMap();
     Map<String, T> deserialized = new HashMap<>();
     for (Map.Entry<String, Object> entry : map.entrySet()) {

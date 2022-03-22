@@ -5,6 +5,10 @@ This file summarises changes between major versions.
 ## Version 3.0.0
 This version is all focused on serialization.
 
+### Introducing "SimpleValueSerializer"
+This is a utility class to help you with serializing objects you do not need a custom serializer for
+in your own custom serializer of some kind. See the docs for more.
+
 ### FieldTypeSerializer now is not exactly "Field"
 Instead of passing a Field, AnnotationConfig now passes a "SerializationContext", because
 AnnotationConfig can not always get a Field instance. We don't want to lie with another Field, 

@@ -15,8 +15,6 @@ import java.util.function.Function;
 public enum SerializerRegistry {
   INSTANCE;
 
-  private static final DefaultSerializer DEFAULT = new DefaultSerializer();
-
   private Map<Type, FieldTypeSerializer<?>> serializers;
 
   SerializerRegistry() {
@@ -171,6 +169,6 @@ public enum SerializerRegistry {
    * @return default serializer
    */
   public FieldTypeSerializer<Object> getDefaultSerializer() {
-    return DEFAULT;
+    return DefaultSerializer.INSTANCE;
   }
 }

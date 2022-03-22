@@ -18,6 +18,10 @@ import java.util.function.Function;
 
 class DefaultSerializer implements FieldTypeSerializer<Object> {
 
+  static final DefaultSerializer INSTANCE = new DefaultSerializer();
+
+  private DefaultSerializer() {}
+
   @Override
   public Object deserialize(
       DataObject data, SerializationContext<Object> context, AnnotationAccessor annotations) {
