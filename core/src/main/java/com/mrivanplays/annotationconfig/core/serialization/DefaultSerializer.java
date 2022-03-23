@@ -1,6 +1,8 @@
 package com.mrivanplays.annotationconfig.core.serialization;
 
 import com.mrivanplays.annotationconfig.core.utils.AnnotationUtils;
+import com.mrivanplays.annotationconfig.core.utils.ReflectionUtils;
+import java.lang.reflect.Array;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
@@ -13,7 +15,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
-import java.util.Optional;
 import java.util.function.Function;
 
 class DefaultSerializer implements FieldTypeSerializer<Object> {
@@ -45,38 +46,76 @@ class DefaultSerializer implements FieldTypeSerializer<Object> {
     if (fieldType.isAssignableFrom(DataObject.class)) {
       return data;
     }
+    SerializerRegistry serializerRegistry = SerializerRegistry.INSTANCE;
+    if (data.isSingleValue() && fieldType.isArray()) {
+      String typeName = fieldType.getTypeName();
+      typeName = typeName.substring(0, typeName.length() - 2);
+      if (dataRaw instanceof List) {
+        List<Object> read = (List<Object>) dataRaw;
+        if (read.isEmpty()) {
+          return Array.newInstance(fieldType, 0);
+        }
+        try {
+          Class<?> type = Class.forName(typeName);
+          Object arr = Array.newInstance(type, read.size());
+          FieldTypeSerializer serializer = serializerRegistry.getSerializer(type).orElse(this);
+          for (int i = 0; i < read.size(); i++) {
+            Object o = read.get(i);
+            Object deserialized =
+                serializer.deserialize(
+                    new DataObject(o, true),
+                    SerializationContext.of(null, o, type, type, context.getAnnotatedConfig()),
+                    AnnotationAccessor.EMPTY);
+            Array.set(arr, i, deserialized);
+          }
+          return arr;
+        } catch (ClassNotFoundException e) {
+          throw new RuntimeException("Couldn't get class of non primitive array", e);
+        }
+      } else {
+        if (ReflectionUtils.isPrimitive(typeName)) {
+          return dataRaw;
+        }
+        // this is (technically) not possible to be reached by the default serializer, but it's
+        // better to have the belt than not to.
+        try {
+          Class<?> type = Class.forName(typeName);
+          List<Object> list = new ArrayList<>();
+          FieldTypeSerializer serializer = serializerRegistry.getSerializer(type).orElse(this);
+          for (Object o : (Object[]) dataRaw) {
+            Object deserialized =
+                serializer.deserialize(
+                    new DataObject(o, true),
+                    SerializationContext.of(null, o, type, type, context.getAnnotatedConfig()),
+                    AnnotationAccessor.EMPTY);
+            list.add(deserialized);
+          }
+          return list.toArray();
+        } catch (ClassNotFoundException e) {
+          throw new RuntimeException("Couldn't get class of non primitive array", e);
+        }
+      }
+    }
     if (data.isSingleValue() && dataRaw instanceof List) {
       List<Object> read = (List<Object>) dataRaw;
       if (read.isEmpty()) {
         return new ArrayList<>();
       } else {
         List<Object> ret = new ArrayList<>();
-        SerializerRegistry serializerRegistry = SerializerRegistry.INSTANCE;
+        Class<?> neededType =
+            (Class<?>) ((ParameterizedType) context.getGenericType()).getActualTypeArguments()[0];
         for (Object o : read) {
           if (isPrimitive(o, false)) {
             ret.add(o);
           } else {
-            Class<?> neededType =
-                (Class<?>)
-                    ((ParameterizedType) context.getGenericType()).getActualTypeArguments()[0];
-            Optional<FieldTypeSerializer<?>> serializerOpt =
-                serializerRegistry.getSerializer(neededType);
-            if (serializerOpt.isPresent()) {
-              FieldTypeSerializer serializer = serializerOpt.get();
-              ret.add(
-                  serializer.deserialize(
-                      new DataObject(o),
-                      SerializationContext.of(
-                          null, null, neededType, neededType, context.getAnnotatedConfig()),
-                      AnnotationAccessor.EMPTY));
-            } else {
-              ret.add(
-                  deserialize(
-                      new DataObject(o),
-                      SerializationContext.of(
-                          null, null, neededType, neededType, context.getAnnotatedConfig()),
-                      AnnotationAccessor.EMPTY));
-            }
+            FieldTypeSerializer serializer =
+                serializerRegistry.getSerializer(neededType).orElse(this);
+            ret.add(
+                serializer.deserialize(
+                    new DataObject(o, true),
+                    SerializationContext.of(
+                        null, null, neededType, neededType, context.getAnnotatedConfig()),
+                    AnnotationAccessor.EMPTY));
           }
         }
         return ret;
@@ -126,7 +165,6 @@ class DefaultSerializer implements FieldTypeSerializer<Object> {
       } catch (InstantiationException e) {
         throw new RuntimeException("Cannot instantiate " + fieldType.getName() + " ; ", e);
       }
-      SerializerRegistry serializerRegistry = SerializerRegistry.INSTANCE;
       for (Field desField : fieldTypeInstance.getClass().getDeclaredFields()) {
         desField.setAccessible(true);
         if (AnnotationUtils.isIgnored(desField)) {
@@ -136,31 +174,17 @@ class DefaultSerializer implements FieldTypeSerializer<Object> {
         if (val == null) {
           continue;
         }
-        Optional<FieldTypeSerializer<?>> serializerOpt =
-            serializerRegistry.getSerializer(desField.getGenericType());
-        if (serializerOpt.isPresent()) {
-          FieldTypeSerializer serializer = serializerOpt.get();
-          try {
-            desField.set(
-                fieldTypeInstance,
-                serializer.deserialize(
-                    new DataObject(val, true),
-                    SerializationContext.fromField(desField, fieldTypeInstance),
-                    AnnotationAccessor.createFromField(desField)));
-          } catch (IllegalAccessException e) {
-            throw new IllegalArgumentException("A field became inaccessible");
-          }
-        } else {
-          try {
-            desField.set(
-                fieldTypeInstance,
-                deserialize(
-                    new DataObject(val, true),
-                    SerializationContext.fromField(desField, fieldTypeInstance),
-                    AnnotationAccessor.createFromField(desField)));
-          } catch (IllegalAccessException e) {
-            throw new IllegalArgumentException("A field became inaccessible");
-          }
+        FieldTypeSerializer serializer =
+            serializerRegistry.getSerializer(desField.getGenericType()).orElse(this);
+        try {
+          desField.set(
+              fieldTypeInstance,
+              serializer.deserialize(
+                  new DataObject(val, true),
+                  SerializationContext.fromField(desField, fieldTypeInstance),
+                  AnnotationAccessor.createFromField(desField)));
+        } catch (IllegalAccessException e) {
+          throw new IllegalArgumentException("A field became inaccessible");
         }
       }
 
@@ -194,6 +218,9 @@ class DefaultSerializer implements FieldTypeSerializer<Object> {
         return new DataObject(values);
       } else {
         List<Object> toSerialize = new ArrayList<>();
+        Class<?> neededType =
+            (Class<?>) ((ParameterizedType) context.getGenericType()).getActualTypeArguments()[0];
+        FieldTypeSerializer serializer = serializerRegistry.getSerializer(neededType).orElse(this);
         for (Object val : values) {
           if (isPrimitive(val)) {
             if (val instanceof BigDecimal) {
@@ -204,40 +231,66 @@ class DefaultSerializer implements FieldTypeSerializer<Object> {
               toSerialize.add(val);
             }
           } else {
-            Class<?> neededType =
-                (Class<?>)
-                    ((ParameterizedType) context.getGenericType()).getActualTypeArguments()[0];
-            Optional<FieldTypeSerializer<?>> serializerOpt =
-                serializerRegistry.getSerializer(neededType);
-            if (serializerOpt.isPresent()) {
-              FieldTypeSerializer serializer = serializerOpt.get();
-              DataObject serialized =
-                  serializer.serialize(
-                      val,
-                      SerializationContext.of(
-                          null, val, neededType, neededType, context.getAnnotatedConfig()),
-                      AnnotationAccessor.EMPTY);
-              if (serialized.isSingleValue()) {
-                toSerialize.add(serialized.getAsObject());
-              } else {
-                toSerialize.add(serialized.getAsMap());
-              }
+            DataObject serialized =
+                serializer.serialize(
+                    val,
+                    SerializationContext.of(
+                        null, val, neededType, neededType, context.getAnnotatedConfig()),
+                    AnnotationAccessor.EMPTY);
+            if (serialized == null) {
+              throw new NullPointerException(
+                  "Expected DataObject, but got null ; Serialized type: " + neededType.getName());
+            }
+            if (serialized.isEmpty()) {
+              continue;
+            }
+            if (serialized.isSingleValue()) {
+              toSerialize.add(serialized.getAsObject(true));
             } else {
-              DataObject serialized =
-                  serialize(
-                      val,
-                      SerializationContext.of(
-                          null, val, neededType, neededType, context.getAnnotatedConfig()),
-                      AnnotationAccessor.EMPTY);
-              if (serialized.isSingleValue()) {
-                toSerialize.add(serialized.getAsObject());
-              } else {
-                toSerialize.add(serialized.getAsMap());
-              }
+              toSerialize.add(serialized.getAsMap());
             }
           }
         }
         return new DataObject(toSerialize);
+      }
+    }
+    if (fieldType.isArray()) {
+      String typeName = fieldType.getTypeName();
+      typeName = typeName.substring(0, typeName.length() - 2);
+      if (ReflectionUtils.isPrimitive(typeName)) {
+        return new DataObject(value);
+      } else {
+        try {
+          Class<?> type = Class.forName(typeName);
+          FieldTypeSerializer serializer = serializerRegistry.getSerializer(type).orElse(this);
+          List<Object> list = new ArrayList<>();
+          for (Object toSerialize : (Object[]) value) {
+            if (toSerialize == null) {
+              continue;
+            }
+            DataObject serialized =
+                serializer.serialize(
+                    toSerialize,
+                    SerializationContext.of(
+                        null, toSerialize, type, type, context.getAnnotatedConfig()),
+                    AnnotationAccessor.EMPTY);
+            if (serialized == null) {
+              throw new NullPointerException(
+                  "Expected DataObject, but got null ; Serialized type: " + type.getName());
+            }
+            if (serialized.isEmpty()) {
+              continue;
+            }
+            if (serialized.isSingleValue()) {
+              list.add(serialized.getAsObject(true));
+            } else {
+              list.add(serialized.getAsMap());
+            }
+          }
+          return new DataObject(list);
+        } catch (ClassNotFoundException e) {
+          throw new RuntimeException("Couldn't get class of non primitive array", e);
+        }
       }
     }
     DataObject object = new DataObject();
@@ -252,24 +305,24 @@ class DefaultSerializer implements FieldTypeSerializer<Object> {
         if (def == null) {
           continue;
         }
-        Optional<FieldTypeSerializer<?>> serializerOpt =
-            serializerRegistry.getSerializer(desField.getGenericType());
-        if (serializerOpt.isPresent()) {
-          FieldTypeSerializer serializer = serializerOpt.get();
-          object.putAll(
-              key,
-              serializer.serialize(
-                  def,
-                  SerializationContext.fromField(desField, value),
-                  AnnotationAccessor.createFromField(desField)));
-        } else {
-          object.putAll(
-              key,
-              serialize(
-                  def,
-                  SerializationContext.fromField(desField, value),
-                  AnnotationAccessor.createFromField(desField)));
+        FieldTypeSerializer serializer =
+            serializerRegistry.getSerializer(desField.getGenericType()).orElse(this);
+        DataObject serialized =
+            serializer.serialize(
+                def,
+                SerializationContext.fromField(desField, value),
+                AnnotationAccessor.createFromField(desField));
+        if (serialized == null) {
+          throw new NullPointerException(
+              "Expected DataObject, but got null ; Field: "
+                  + desField.getName()
+                  + " ; Field type: "
+                  + desField.getClass().getName());
         }
+        if (serialized.isEmpty()) {
+          continue;
+        }
+        object.putAll(key, serialized);
       } catch (IllegalAccessException e) {
         throw new IllegalArgumentException("Field became inaccessible.");
       }

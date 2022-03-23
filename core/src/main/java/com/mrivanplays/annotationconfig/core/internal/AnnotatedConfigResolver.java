@@ -305,6 +305,9 @@ public final class AnnotatedConfigResolver {
               + " ; Field type: "
               + field.getType().getName());
     }
+    if (serialized.isEmpty()) {
+      return ret;
+    }
     if (serialized.isSingleValue()) { // single value includes list
       defaultsToValueObject = serialized.getAsObject();
     } else {
@@ -336,7 +339,6 @@ public final class AnnotatedConfigResolver {
             continue;
           }
           if (foundWriteAnnotation == null) {
-            foundWriteAnnotation = type;
             Optional<FieldTypeSerializer<?>> newSerializerOpt =
                 SerializerRegistry.INSTANCE.getSerializer(val.getClass());
             FieldTypeSerializer newSerializer;
@@ -357,11 +359,15 @@ public final class AnnotatedConfigResolver {
                       + " ; Field type: "
                       + val.getClass().getName());
             }
+            if (newSerialized.isEmpty()) {
+              continue;
+            }
             if (newSerialized.isSingleValue()) {
               defaultsToValueObject = newSerialized.getAsObject();
             } else {
               defaultsToValueObject = newSerialized.getAsMap();
             }
+            foundWriteAnnotation = type;
           } else {
             throw new IllegalArgumentException(
                 "Found 2 custom annotations on field '"

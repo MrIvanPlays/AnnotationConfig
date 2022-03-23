@@ -3,8 +3,10 @@ package com.mrivanplays.annotationconfig.yaml;
 import com.mrivanplays.annotationconfig.core.resolver.MultilineString;
 import com.mrivanplays.annotationconfig.core.resolver.ValueWriter;
 import com.mrivanplays.annotationconfig.core.resolver.options.CustomOptions;
+import com.mrivanplays.annotationconfig.core.utils.ReflectionUtils;
 import java.io.PrintWriter;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -170,7 +172,16 @@ public final class YamlValueWriter implements ValueWriter {
                         + "\"");
               }
             } else {
-              writer.println(intentPrefix + (additional2Spaces ? "  " : "") + mapKey + ": " + v);
+              if (v.getClass().isArray()) {
+                writer.println(
+                    intentPrefix
+                        + (additional2Spaces ? " " : "")
+                        + mapKey
+                        + ": "
+                        + Arrays.toString(ReflectionUtils.castToArray(v)));
+              } else {
+                writer.println(intentPrefix + (additional2Spaces ? "  " : "") + mapKey + ": " + v);
+              }
             }
           } else {
             writer.println(
@@ -272,7 +283,15 @@ public final class YamlValueWriter implements ValueWriter {
             writer.println((child ? intentPrefix : "") + key + ": \"" + toWrite + "\"");
           }
         } else {
-          writer.println((child ? intentPrefix : "") + key + ": " + value);
+          if (value.getClass().isArray()) {
+            writer.println(
+                (child ? intentPrefix : "")
+                    + key
+                    + ": "
+                    + Arrays.toString(ReflectionUtils.castToArray(value)));
+          } else {
+            writer.println((child ? intentPrefix : "") + key + ": " + value);
+          }
         }
       } else {
         writer.println((child ? intentPrefix : "") + key + ": \"" + value + "\"");
