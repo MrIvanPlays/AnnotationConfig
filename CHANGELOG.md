@@ -23,12 +23,15 @@ them.
 default serializer rather than a proper serializer, if such is registered.
 - The default serializer now recognizes `@Key` and `@Ignore` annotations whenever (de)serializing
 an object.
+- The default serializer now properly serializes arrays.
 
 ### Misc changes
 - Removed deprecated methods
 - Fixed `DataObjectBuilder#with(String, DataObject)`
 - Removed `SerializerRegistry#registerSerializer(Class, BiFunction, BiFunction)`. Replaced by 
 `SerializerRegistry#registerSimpleSerializer(Class, Function, Function)`
+- Quality-of-life code changes
+- Added a class called ReflectionUtils
 
 ## Version 2.1.0
 
