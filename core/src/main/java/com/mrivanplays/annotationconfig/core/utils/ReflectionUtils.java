@@ -14,7 +14,15 @@ public final class ReflectionUtils {
   private ReflectionUtils() {}
 
   public static boolean isPrimitive(String typeName) {
-    return PrimitiveNameTypes.isPrimitive(typeName);
+    return PrimitiveNameTypes.getNameType(typeName) != null;
+  }
+
+  public static Class<?> getPrimitiveClass(String typeName) {
+    PrimitiveNameTypes nameType = PrimitiveNameTypes.getNameType(typeName);
+    if (nameType == null) {
+      throw new IllegalArgumentException("Not primitive");
+    }
+    return nameType.primitiveType;
   }
 
   public static Object[] castToArray(Object obj) {
@@ -24,10 +32,10 @@ public final class ReflectionUtils {
     Class<?> clazz = obj.getClass();
     String typeName = clazz.getTypeName();
     typeName = typeName.substring(0, typeName.length() - 2);
-    if (!isPrimitive(typeName)) {
+    PrimitiveNameTypes nameType = PrimitiveNameTypes.getNameType(typeName);
+    if (nameType == null) {
       throw new IllegalArgumentException("Not primitive");
     }
-    PrimitiveNameTypes nameType = PrimitiveNameTypes.getNameType(typeName);
     switch (nameType) {
       case BYTE:
         byte[] b = (byte[]) obj;
@@ -88,37 +96,38 @@ public final class ReflectionUtils {
       case STRING:
         return (String[]) obj;
       case BIG_INTEGER:
-        return (BigInteger[]) obj;
+        // transform BigIntegers to long arrays
+        BigInteger[] bigIntegerArray = (BigInteger[]) obj;
+        Long[] bigIntRet = new Long[bigIntegerArray.length];
+        for (int i = 0; i < bigIntegerArray.length; i++) {
+          bigIntRet[i] = bigIntegerArray[i].longValueExact();
+        }
+        return bigIntRet;
       case BIG_DECIMAL:
-        return (BigDecimal[]) obj;
+        // transform BigDecimals to double arrays
+        BigDecimal[] bigDecimalArray = (BigDecimal[]) obj;
+        Double[] bigDecRet = new Double[bigDecimalArray.length];
+        for (int i = 0; i < bigDecimalArray.length; i++) {
+          bigDecRet[i] = bigDecimalArray[i].doubleValue();
+        }
+        return bigDecRet;
       default:
-        throw new IllegalArgumentException("Something went wrong");
+        throw new IllegalArgumentException("Something went wrong with casting Object to an array");
     }
   }
 
   private enum PrimitiveNameTypes {
-    BYTE(byte[].class, "byte", "java.lang.Byte"),
-    DOUBLE(double[].class, "double", "java.lang.Double"),
-    FLOAT(float[].class, "float", "java.lang.Float"),
-    INTEGER(int[].class,"int", "java.lang.Integer"),
-    SHORT(short[].class,"short", "java.lang.Short"),
-    LONG(long[].class,"long", "java.lang.Long"),
-    CHAR(char[].class,"char", "java.lang.Character"),
-    BOOLEAN(boolean[].class,"boolean", "java.lang.Boolean"),
-    STRING(String[].class,"String", "java.lang.String"),
-    BIG_INTEGER(BigInteger[].class,"BigInteger", "java.math.BigInteger"),
-    BIG_DECIMAL(BigDecimal[].class,"BigDecimal", "java.math.BigDecimal");
-
-    public static boolean isPrimitive(String typeName) {
-      for (PrimitiveNameTypes val : PrimitiveNameTypes.values()) {
-        for (String name : val.names) {
-          if (name.equalsIgnoreCase(typeName)) {
-            return true;
-          }
-        }
-      }
-      return false;
-    }
+    BYTE(byte.class, "byte", "java.lang.Byte"),
+    DOUBLE(double.class, "double", "java.lang.Double"),
+    FLOAT(float.class, "float", "java.lang.Float"),
+    INTEGER(int.class, "int", "java.lang.Integer"),
+    SHORT(short.class, "short", "java.lang.Short"),
+    LONG(long.class, "long", "java.lang.Long"),
+    CHAR(char.class, "char", "java.lang.Character"),
+    BOOLEAN(boolean.class, "boolean", "java.lang.Boolean"),
+    STRING(String.class, "String", "java.lang.String"),
+    BIG_INTEGER(BigInteger.class, "BigInteger", "java.math.BigInteger"),
+    BIG_DECIMAL(BigDecimal.class, "BigDecimal", "java.math.BigDecimal");
 
     public static PrimitiveNameTypes getNameType(String typeName) {
       for (PrimitiveNameTypes val : PrimitiveNameTypes.values()) {
@@ -132,12 +141,11 @@ public final class ReflectionUtils {
     }
 
     private final String[] names;
-    public final Class<?> arrayClass;
+    public final Class<?> primitiveType;
 
-    PrimitiveNameTypes(Class<?> arrayClass, String... names) {
-      this.arrayClass = arrayClass;
+    PrimitiveNameTypes(Class<?> primitiveType, String... names) {
+      this.primitiveType = primitiveType;
       this.names = names;
     }
   }
-
 }

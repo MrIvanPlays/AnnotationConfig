@@ -70,6 +70,9 @@ public final class PropertyConfig {
         CustomOptions options) {
       int index = 0;
       for (Map.Entry<String, Object> entry : values.entrySet()) {
+        if (entry.getValue().getClass().isArray()) {
+          throw new IllegalArgumentException(".properties does not support arrays");
+        }
         if (entry.getValue() instanceof Map<?, ?>) {
           throw new IllegalArgumentException(".properties does not support maps");
         }

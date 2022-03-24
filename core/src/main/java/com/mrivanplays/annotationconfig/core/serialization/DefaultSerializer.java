@@ -9,9 +9,9 @@ import java.lang.reflect.Method;
 import java.lang.reflect.ParameterizedType;
 import java.math.BigDecimal;
 import java.math.BigInteger;
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -55,12 +55,24 @@ class DefaultSerializer implements FieldTypeSerializer<Object> {
         if (read.isEmpty()) {
           return Array.newInstance(fieldType, 0);
         }
-        try {
-          Class<?> type = Class.forName(typeName);
-          Object arr = Array.newInstance(type, read.size());
-          FieldTypeSerializer serializer = serializerRegistry.getSerializer(type).orElse(this);
-          for (int i = 0; i < read.size(); i++) {
-            Object o = read.get(i);
+        // snakeyaml returns a list instead of an array for all types
+        Class<?> type;
+        if (ReflectionUtils.isPrimitive(typeName)) {
+          type = ReflectionUtils.getPrimitiveClass(typeName);
+        } else {
+          try {
+            type = Class.forName(typeName);
+          } catch (ClassNotFoundException e) {
+            throw new RuntimeException("Couldn't get class of non primitive array", e);
+          }
+        }
+        Object arr = Array.newInstance(type, read.size());
+        FieldTypeSerializer serializer = serializerRegistry.getSerializer(type).orElse(this);
+        for (int i = 0; i < read.size(); i++) {
+          Object o = read.get(i);
+          if (isPrimitive(o, false)) {
+            Array.set(arr, i, forcePrimitive(o, type));
+          } else {
             Object deserialized =
                 serializer.deserialize(
                     new DataObject(o, true),
@@ -68,10 +80,8 @@ class DefaultSerializer implements FieldTypeSerializer<Object> {
                     AnnotationAccessor.EMPTY);
             Array.set(arr, i, deserialized);
           }
-          return arr;
-        } catch (ClassNotFoundException e) {
-          throw new RuntimeException("Couldn't get class of non primitive array", e);
         }
+        return arr;
       } else {
         if (ReflectionUtils.isPrimitive(typeName)) {
           return dataRaw;
@@ -80,7 +90,7 @@ class DefaultSerializer implements FieldTypeSerializer<Object> {
         // better to have the belt than not to.
         try {
           Class<?> type = Class.forName(typeName);
-          List<Object> list = new ArrayList<>();
+          List<Object> list = new LinkedList<>();
           FieldTypeSerializer serializer = serializerRegistry.getSerializer(type).orElse(this);
           for (Object o : (Object[]) dataRaw) {
             Object deserialized =
@@ -99,17 +109,16 @@ class DefaultSerializer implements FieldTypeSerializer<Object> {
     if (data.isSingleValue() && dataRaw instanceof List) {
       List<Object> read = (List<Object>) dataRaw;
       if (read.isEmpty()) {
-        return new ArrayList<>();
+        return new LinkedList<>();
       } else {
-        List<Object> ret = new ArrayList<>();
+        List<Object> ret = new LinkedList<>();
         Class<?> neededType =
             (Class<?>) ((ParameterizedType) context.getGenericType()).getActualTypeArguments()[0];
+        FieldTypeSerializer serializer = serializerRegistry.getSerializer(neededType).orElse(this);
         for (Object o : read) {
           if (isPrimitive(o, false)) {
             ret.add(o);
           } else {
-            FieldTypeSerializer serializer =
-                serializerRegistry.getSerializer(neededType).orElse(this);
             ret.add(
                 serializer.deserialize(
                     new DataObject(o, true),
@@ -217,7 +226,7 @@ class DefaultSerializer implements FieldTypeSerializer<Object> {
       if (values.isEmpty()) {
         return new DataObject(values);
       } else {
-        List<Object> toSerialize = new ArrayList<>();
+        List<Object> toSerialize = new LinkedList<>();
         Class<?> neededType =
             (Class<?>) ((ParameterizedType) context.getGenericType()).getActualTypeArguments()[0];
         FieldTypeSerializer serializer = serializerRegistry.getSerializer(neededType).orElse(this);
@@ -263,7 +272,7 @@ class DefaultSerializer implements FieldTypeSerializer<Object> {
         try {
           Class<?> type = Class.forName(typeName);
           FieldTypeSerializer serializer = serializerRegistry.getSerializer(type).orElse(this);
-          List<Object> list = new ArrayList<>();
+          List<Object> list = new LinkedList<>();
           for (Object toSerialize : (Object[]) value) {
             if (toSerialize == null) {
               continue;

@@ -33,7 +33,6 @@ public final class TomlValueWriter implements ValueWriter {
       PrintWriter writer,
       CustomOptions options)
       throws IOException {
-    // todo: test if special array write is needed
     TomlMapper tomlMapper = options.getAsOr(TomlConfig.MAPPER_KEY, TomlMapper.class, defaultMapper);
     for (Map.Entry<String, Object> entry : values.entrySet()) {
       List<String> comments = getComments(entry.getKey(), fieldComments);
