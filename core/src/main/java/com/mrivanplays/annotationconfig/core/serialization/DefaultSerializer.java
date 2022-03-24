@@ -17,6 +17,7 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.function.Function;
 
+@SuppressWarnings({"unchecked", "rawtypes", "FieldMayBeFinal"})
 class DefaultSerializer implements FieldTypeSerializer<Object> {
 
   static final DefaultSerializer INSTANCE = new DefaultSerializer();
