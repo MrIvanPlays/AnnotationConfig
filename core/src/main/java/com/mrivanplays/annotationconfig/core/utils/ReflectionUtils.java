@@ -11,8 +11,6 @@ import java.math.BigInteger;
  */
 public final class ReflectionUtils {
 
-  private ReflectionUtils() {}
-
   public static boolean isPrimitive(String typeName) {
     return PrimitiveNameTypes.getNameType(typeName) != null;
   }
@@ -114,6 +112,10 @@ public final class ReflectionUtils {
       default:
         throw new IllegalArgumentException("Something went wrong with casting Object to an array");
     }
+  }
+
+  private ReflectionUtils() {
+    throw new IllegalArgumentException("Instantiation of utility-type class.");
   }
 
   private enum PrimitiveNameTypes {
