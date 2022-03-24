@@ -16,6 +16,7 @@ import java.util.Map;
  * @since v2.1.1
  * @see SectionObjectList
  */
+@SuppressWarnings({"unchecked", "rawtypes"})
 public final class SectionObjectListSerializer<T>
     implements FieldTypeSerializer<SectionObjectList<T>> {
 
@@ -34,25 +35,24 @@ public final class SectionObjectListSerializer<T>
                         "Illegal field to deserialize: null default SectionObjectList"));
     Map<String, Object> map = data.getAsMap();
     Map<String, T> deserialized = new HashMap<>();
+    SerializerRegistry serializerRegistry = SerializerRegistry.INSTANCE;
+    FieldTypeSerializer serializer =
+        serializerRegistry
+            .getSerializer(def.getObjectsType())
+            .orElse(serializerRegistry.getDefaultSerializer());
+    SerializationContext serializationContext =
+        SerializationContext.of(
+            def.getObjectsType(), def.getObjectsType(), context.getAnnotatedConfig());
     for (Map.Entry<String, Object> entry : map.entrySet()) {
       if (!(entry.getValue() instanceof Map)) {
         throw new IllegalArgumentException("Illegal SectionObjectList inputted: " + data);
       }
-      FieldTypeSerializer serializer =
-          SerializerRegistry.INSTANCE
-              .getSerializer(def.getObjectsType())
-              .orElse(SerializerRegistry.INSTANCE.getDefaultSerializer());
       deserialized.put(
           entry.getKey(),
           (T)
               serializer.deserialize(
                   new DataObject(entry.getValue()),
-                  SerializationContext.of(
-                      null,
-                      null,
-                      def.getObjectsType(),
-                      def.getObjectsType(),
-                      context.getAnnotatedConfig()),
+                  serializationContext,
                   AnnotationAccessor.EMPTY));
     }
     return new SectionObjectList<>(def.getObjectsType(), deserialized);
@@ -65,26 +65,25 @@ public final class SectionObjectListSerializer<T>
       SerializationContext<SectionObjectList<T>> context,
       AnnotationAccessor annotations) {
     DataObject ret = new DataObject();
+    SerializerRegistry serializerRegistry = SerializerRegistry.INSTANCE;
+    FieldTypeSerializer serializer =
+        serializerRegistry
+            .getSerializer(value.getObjectsType())
+            .orElse(serializerRegistry.getDefaultSerializer());
     value
         .getAsMap()
         .forEach(
-            (k, v) -> {
-              FieldTypeSerializer serializer =
-                  SerializerRegistry.INSTANCE
-                      .getSerializer(value.getObjectsType())
-                      .orElse(SerializerRegistry.INSTANCE.getDefaultSerializer());
-              ret.putAll(
-                  k,
-                  serializer.serialize(
-                      value.getObjectsType().cast(v),
-                      SerializationContext.of(
-                          null,
-                          value.getObjectsType().cast(v),
-                          value.getObjectsType(),
-                          value.getObjectsType(),
-                          context.getAnnotatedConfig()),
-                      AnnotationAccessor.EMPTY));
-            });
+            (k, v) ->
+                ret.putAll(
+                    k,
+                    serializer.serialize(
+                        value.getObjectsType().cast(v),
+                        SerializationContext.of(
+                            value.getObjectsType().cast(v),
+                            value.getObjectsType(),
+                            value.getObjectsType(),
+                            context.getAnnotatedConfig()),
+                        AnnotationAccessor.EMPTY)));
     return ret;
   }
 }

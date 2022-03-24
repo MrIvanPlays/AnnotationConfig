@@ -37,6 +37,35 @@ public final class SerializationContext<T> {
   /**
    * Creates a new {@link SerializationContext}
    *
+   * @param classType class type
+   * @param genericType generic class type
+   * @param annotatedConfig annotatedConfig
+   * @param <T> type
+   * @return new serialization context
+   */
+  public static <T> SerializationContext<T> of(
+      Class<?> classType, Type genericType, Object annotatedConfig) {
+    return of(null, classType, genericType, annotatedConfig);
+  }
+
+  /**
+   * Creates a new {@link SerializationContext}
+   *
+   * @param def default value. can be null
+   * @param classType class type
+   * @param genericType generic class type
+   * @param annotatedConfig annotatedConfig
+   * @param <T> type
+   * @return new serialization context
+   */
+  public static <T> SerializationContext<T> of(
+      T def, Class<?> classType, Type genericType, Object annotatedConfig) {
+    return of(null, def, classType, genericType, annotatedConfig);
+  }
+
+  /**
+   * Creates a new {@link SerializationContext}
+   *
    * @param name name of field. can be null
    * @param def default value. can be null
    * @param classType class type
@@ -48,7 +77,11 @@ public final class SerializationContext<T> {
   public static <T> SerializationContext<T> of(
       String name, T def, Class<?> classType, Type genericType, Object annotatedConfig) {
     return new SerializationContext<>(
-        Optional.ofNullable(name), Optional.ofNullable(def), classType, genericType, annotatedConfig);
+        Optional.ofNullable(name),
+        Optional.ofNullable(def),
+        classType,
+        genericType,
+        annotatedConfig);
   }
 
   private final Optional<String> name;

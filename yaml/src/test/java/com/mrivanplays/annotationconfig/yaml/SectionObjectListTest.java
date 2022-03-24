@@ -41,13 +41,14 @@ class SectionObjectListTest {
   }
 
   private static final ConfigResolver resolver = YamlConfig.getConfigResolver();
+  private static final SerializerRegistry serializerRegistry = SerializerRegistry.INSTANCE;
 
   @Test
   void testDump() {
     Subject subject = new Subject();
     Type sectionObjectListType = new TypeToken<SectionObjectList<SerializedObject>>() {}.getType();
-    if (!SerializerRegistry.INSTANCE.hasSerializer(sectionObjectListType)) {
-      SerializerRegistry.INSTANCE.registerSerializer(
+    if (!serializerRegistry.hasSerializer(sectionObjectListType)) {
+      serializerRegistry.registerSerializer(
           sectionObjectListType, new SectionObjectListSerializer<SerializedObject>());
     }
     StringWriter writer = new StringWriter();
@@ -71,8 +72,8 @@ class SectionObjectListTest {
   void testLoad() {
     Subject subject = new Subject();
     Type sectionObjectListType = new TypeToken<SectionObjectList<SerializedObject>>() {}.getType();
-    if (!SerializerRegistry.INSTANCE.hasSerializer(sectionObjectListType)) {
-      SerializerRegistry.INSTANCE.registerSerializer(
+    if (!serializerRegistry.hasSerializer(sectionObjectListType)) {
+      serializerRegistry.registerSerializer(
           sectionObjectListType, new SectionObjectListSerializer<SerializedObject>());
     }
     String input =

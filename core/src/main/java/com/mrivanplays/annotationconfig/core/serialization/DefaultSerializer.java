@@ -69,6 +69,8 @@ class DefaultSerializer implements FieldTypeSerializer<Object> {
         }
         Object arr = Array.newInstance(type, read.size());
         FieldTypeSerializer serializer = serializerRegistry.getSerializer(type).orElse(this);
+        SerializationContext serializationContext =
+            SerializationContext.of(type, type, context.getAnnotatedConfig());
         for (int i = 0; i < read.size(); i++) {
           Object o = read.get(i);
           if (isPrimitive(o, false)) {
@@ -76,9 +78,7 @@ class DefaultSerializer implements FieldTypeSerializer<Object> {
           } else {
             Object deserialized =
                 serializer.deserialize(
-                    new DataObject(o, true),
-                    SerializationContext.of(null, o, type, type, context.getAnnotatedConfig()),
-                    AnnotationAccessor.EMPTY);
+                    new DataObject(o, true), serializationContext, AnnotationAccessor.EMPTY);
             Array.set(arr, i, deserialized);
           }
         }
@@ -93,12 +93,12 @@ class DefaultSerializer implements FieldTypeSerializer<Object> {
           Class<?> type = Class.forName(typeName);
           List<Object> list = new LinkedList<>();
           FieldTypeSerializer serializer = serializerRegistry.getSerializer(type).orElse(this);
+          SerializationContext serializationContext =
+              SerializationContext.of(type, type, context.getAnnotatedConfig());
           for (Object o : (Object[]) dataRaw) {
             Object deserialized =
                 serializer.deserialize(
-                    new DataObject(o, true),
-                    SerializationContext.of(null, o, type, type, context.getAnnotatedConfig()),
-                    AnnotationAccessor.EMPTY);
+                    new DataObject(o, true), serializationContext, AnnotationAccessor.EMPTY);
             list.add(deserialized);
           }
           return list.toArray();
@@ -116,16 +116,15 @@ class DefaultSerializer implements FieldTypeSerializer<Object> {
         Class<?> neededType =
             (Class<?>) ((ParameterizedType) context.getGenericType()).getActualTypeArguments()[0];
         FieldTypeSerializer serializer = serializerRegistry.getSerializer(neededType).orElse(this);
+        SerializationContext serializationContext =
+            SerializationContext.of(neededType, neededType, context.getAnnotatedConfig());
         for (Object o : read) {
           if (isPrimitive(o, false)) {
             ret.add(o);
           } else {
             ret.add(
                 serializer.deserialize(
-                    new DataObject(o, true),
-                    SerializationContext.of(
-                        null, null, neededType, neededType, context.getAnnotatedConfig()),
-                    AnnotationAccessor.EMPTY));
+                    new DataObject(o, true), serializationContext, AnnotationAccessor.EMPTY));
           }
         }
         return ret;
@@ -231,6 +230,8 @@ class DefaultSerializer implements FieldTypeSerializer<Object> {
         Class<?> neededType =
             (Class<?>) ((ParameterizedType) context.getGenericType()).getActualTypeArguments()[0];
         FieldTypeSerializer serializer = serializerRegistry.getSerializer(neededType).orElse(this);
+        SerializationContext serializationContext =
+            SerializationContext.of(neededType, neededType, context.getAnnotatedConfig());
         for (Object val : values) {
           if (isPrimitive(val)) {
             if (val instanceof BigDecimal) {
@@ -242,11 +243,7 @@ class DefaultSerializer implements FieldTypeSerializer<Object> {
             }
           } else {
             DataObject serialized =
-                serializer.serialize(
-                    val,
-                    SerializationContext.of(
-                        null, val, neededType, neededType, context.getAnnotatedConfig()),
-                    AnnotationAccessor.EMPTY);
+                serializer.serialize(val, serializationContext, AnnotationAccessor.EMPTY);
             if (serialized == null) {
               throw new NullPointerException(
                   "Expected DataObject, but got null ; Serialized type: " + neededType.getName());
@@ -273,17 +270,15 @@ class DefaultSerializer implements FieldTypeSerializer<Object> {
         try {
           Class<?> type = Class.forName(typeName);
           FieldTypeSerializer serializer = serializerRegistry.getSerializer(type).orElse(this);
+          SerializationContext serializationContext =
+              SerializationContext.of(type, type, context.getAnnotatedConfig());
           List<Object> list = new LinkedList<>();
           for (Object toSerialize : (Object[]) value) {
             if (toSerialize == null) {
               continue;
             }
             DataObject serialized =
-                serializer.serialize(
-                    toSerialize,
-                    SerializationContext.of(
-                        null, toSerialize, type, type, context.getAnnotatedConfig()),
-                    AnnotationAccessor.EMPTY);
+                serializer.serialize(toSerialize, serializationContext, AnnotationAccessor.EMPTY);
             if (serialized == null) {
               throw new NullPointerException(
                   "Expected DataObject, but got null ; Serialized type: " + type.getName());
@@ -320,7 +315,12 @@ class DefaultSerializer implements FieldTypeSerializer<Object> {
         DataObject serialized =
             serializer.serialize(
                 def,
-                SerializationContext.fromField(desField, value),
+                SerializationContext.of(
+                    desField.getName(),
+                    def,
+                    desField.getType(),
+                    desField.getGenericType(),
+                    context.getAnnotatedConfig()),
                 AnnotationAccessor.createFromField(desField));
         if (serialized == null) {
           throw new NullPointerException(

@@ -218,6 +218,7 @@ public final class AnnotatedConfigResolver {
       KeyResolver keyResolver,
       boolean reverseFields)
       throws IllegalAccessException {
+    SerializerRegistry serializerRegistry = SerializerRegistry.INSTANCE;
     AnnotationHolder holder = entry.getKey();
     WriteData ret = new WriteData();
     if (holder.isClass()) {
@@ -285,18 +286,19 @@ public final class AnnotatedConfigResolver {
     if (defaultsToValueObject == null) {
       throw new IllegalArgumentException("No default value for field '" + field.getName() + "'");
     }
-    Optional<FieldTypeSerializer<?>> serializerOpt =
-        SerializerRegistry.INSTANCE.getSerializer(field.getGenericType());
-    FieldTypeSerializer serializer;
-    if (serializerOpt.isPresent()) {
-      serializer = serializerOpt.get();
-    } else {
-      serializer = SerializerRegistry.INSTANCE.getDefaultSerializer();
-    }
+    FieldTypeSerializer serializer =
+        serializerRegistry
+            .getSerializer(field.getGenericType())
+            .orElse(serializerRegistry.getDefaultSerializer());
     DataObject serialized =
         serializer.serialize(
             defaultsToValueObject,
-            SerializationContext.fromField(field, annotatedConfig),
+            SerializationContext.of(
+                field.getName(),
+                defaultsToValueObject,
+                field.getType(),
+                field.getGenericType(),
+                annotatedConfig),
             AnnotationAccessor.createFromField(field));
     if (serialized == null) {
       throw new NullPointerException(
@@ -339,18 +341,19 @@ public final class AnnotatedConfigResolver {
             continue;
           }
           if (foundWriteAnnotation == null) {
-            Optional<FieldTypeSerializer<?>> newSerializerOpt =
-                SerializerRegistry.INSTANCE.getSerializer(val.getClass());
-            FieldTypeSerializer newSerializer;
-            if (newSerializerOpt.isPresent()) {
-              newSerializer = newSerializerOpt.get();
-            } else {
-              newSerializer = SerializerRegistry.INSTANCE.getDefaultSerializer();
-            }
+            FieldTypeSerializer newSerializer =
+                serializerRegistry
+                    .getSerializer(val.getClass())
+                    .orElse(serializerRegistry.getDefaultSerializer());
             DataObject newSerialized =
                 newSerializer.serialize(
                     val,
-                    SerializationContext.fromField(field, annotatedConfig),
+                    SerializationContext.of(
+                        field.getName(),
+                        defaultsToValueObject,
+                        field.getType(),
+                        field.getGenericType(),
+                        annotatedConfig),
                     AnnotationAccessor.createFromField(field));
             if (newSerialized == null) {
               throw new NullPointerException(
@@ -513,15 +516,12 @@ public final class AnnotatedConfigResolver {
         }
         continue;
       }
+      SerializerRegistry serializerRegistry = SerializerRegistry.INSTANCE;
       Type fieldType = field.getGenericType();
-      Optional<FieldTypeSerializer<?>> serializerOpt =
-          SerializerRegistry.INSTANCE.getSerializer(fieldType);
-      FieldTypeSerializer<?> serializer;
-      if (!serializerOpt.isPresent()) {
-        serializer = SerializerRegistry.INSTANCE.getDefaultSerializer();
-      } else {
-        serializer = serializerOpt.get();
-      }
+      FieldTypeSerializer<?> serializer =
+          serializerRegistry
+              .getSerializer(fieldType)
+              .orElse(serializerRegistry.getDefaultSerializer());
       try {
         Object deserialized =
             serializer.deserialize(

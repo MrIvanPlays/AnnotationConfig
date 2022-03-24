@@ -19,7 +19,7 @@ public final class SimpleValueSerializer {
     return (T)
         DefaultSerializer.INSTANCE.deserialize(
             value,
-            SerializationContext.of(null, null, neededValueType, neededValueType, annotatedConfig),
+            SerializationContext.of(neededValueType, neededValueType, annotatedConfig),
             AnnotationAccessor.EMPTY);
   }
 
@@ -30,7 +30,7 @@ public final class SimpleValueSerializer {
     Objects.requireNonNull(annotatedConfig, "annotatedConfig");
     return DefaultSerializer.INSTANCE.serialize(
         value,
-        SerializationContext.of(null, null, valueType, valueType, annotatedConfig),
+        SerializationContext.of(valueType, valueType, annotatedConfig),
         AnnotationAccessor.EMPTY);
   }
 
