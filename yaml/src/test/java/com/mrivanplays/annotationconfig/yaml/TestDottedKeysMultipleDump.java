@@ -56,15 +56,15 @@ public class TestDottedKeysMultipleDump {
             + "    # Bar comment\n"
             + "    bar: \"foo\"\n"
             + "\n"
-            + "# This is a control field\n"
-            + "control-field: -1\n"
-            + "\n"
             + "kappa:\n"
             + "  baz:\n"
             + "    # Foo comment\n"
             + "    foo: \"bar\"\n"
             + "    # Bar comment\n"
             + "    bar: \"foo\"\n"
+            + "\n"
+            + "# This is a control field\n"
+            + "control-field: -1\n"
             + "\n";
 
     Assertions.assertEquals(expected, dumpTo.toString());

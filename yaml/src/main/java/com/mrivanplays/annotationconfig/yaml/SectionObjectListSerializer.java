@@ -5,7 +5,7 @@ import com.mrivanplays.annotationconfig.core.serialization.DataObject;
 import com.mrivanplays.annotationconfig.core.serialization.FieldTypeSerializer;
 import com.mrivanplays.annotationconfig.core.serialization.SerializationContext;
 import com.mrivanplays.annotationconfig.core.serialization.SerializerRegistry;
-import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.Map;
 
 /**
@@ -34,7 +34,7 @@ public final class SectionObjectListSerializer<T>
                     new IllegalArgumentException(
                         "Illegal field to deserialize: null default SectionObjectList"));
     Map<String, Object> map = data.getAsMap();
-    Map<String, T> deserialized = new HashMap<>();
+    Map<String, T> deserialized = new LinkedHashMap<>();
     SerializerRegistry serializerRegistry = SerializerRegistry.INSTANCE;
     FieldTypeSerializer serializer =
         serializerRegistry

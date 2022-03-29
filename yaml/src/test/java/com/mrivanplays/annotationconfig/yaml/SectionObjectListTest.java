@@ -55,12 +55,12 @@ class SectionObjectListTest {
 
     String expected =
         "list:\n"
-            + "  bar:\n"
-            + "    foo: 2\n"
-            + "    baz: \"ipsum\"\n"
             + "  foo:\n"
             + "    foo: 1\n"
             + "    baz: \"lorem\"\n"
+            + "  bar:\n"
+            + "    foo: 2\n"
+            + "    baz: \"ipsum\"\n"
             + "\n";
 
     resolver.dump(subject, writer);

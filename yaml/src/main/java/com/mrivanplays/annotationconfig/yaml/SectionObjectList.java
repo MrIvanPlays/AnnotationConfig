@@ -1,7 +1,7 @@
 package com.mrivanplays.annotationconfig.yaml;
 
 import java.util.Collections;
-import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Objects;
 
@@ -77,7 +77,7 @@ public final class SectionObjectList<T> {
    */
   public static final class SectionObjectListBuilder<T> {
 
-    private final Map<String, T> values = new HashMap<>();
+    private final Map<String, T> values = new LinkedHashMap<>();
     private final Class<? extends T> type;
 
     private SectionObjectListBuilder(Class<? extends T> type) {

@@ -2,9 +2,9 @@ package com.mrivanplays.annotationconfig.core.serialization;
 
 import java.math.BigDecimal;
 import java.math.BigInteger;
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.LinkedHashMap;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -455,7 +455,7 @@ public final class DataObject {
     if (base == null) {
       return null;
     }
-    List<T> ret = new ArrayList<>();
+    List<T> ret = new LinkedList<>();
     for (Object val : base) {
       if (val.getClass().isAssignableFrom(valueClass)) {
         ret.add(valueClass.cast(val));

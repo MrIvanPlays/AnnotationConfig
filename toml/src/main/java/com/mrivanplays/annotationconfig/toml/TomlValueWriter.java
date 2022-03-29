@@ -6,8 +6,8 @@ import com.mrivanplays.annotationconfig.core.resolver.ValueWriter;
 import com.mrivanplays.annotationconfig.core.resolver.options.CustomOptions;
 import java.io.IOException;
 import java.io.PrintWriter;
-import java.util.ArrayList;
 import java.util.Collections;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 
@@ -53,7 +53,7 @@ public final class TomlValueWriter implements ValueWriter {
   }
 
   private List<String> getComments(String key, Map<String, List<String>> toWriteComments) {
-    List<String> ret = new ArrayList<>();
+    List<String> ret = new LinkedList<>();
     if (toWriteComments.containsKey(key)) {
       ret.addAll(toWriteComments.get(key));
     } else {

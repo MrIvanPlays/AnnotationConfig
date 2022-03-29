@@ -40,15 +40,17 @@ public class ArrayWriteTest {
     StringWriter writer = new StringWriter();
     YamlConfig.getConfigResolver().dump(config, writer);
 
-    String expected = "bigDec: [1111.2222, 3333.4444]\n"
-        + "\n"
-        + "foo: [1, 2]\n"
-        + "\n"
-        + "myObjectArr:\n"
-        + "  - foo: 1\n"
-        + "    baz: true\n"
-        + "  - foo: 2\n"
-        + "    baz: false\n\n";
+    String expected =
+        "foo: [1, 2]\n"
+            + "\n"
+            + "bigDec: [1111.2222, 3333.4444]\n"
+            + "\n"
+            + "myObjectArr:\n"
+            + "  - foo: 1\n"
+            + "    baz: true\n"
+            + "  - foo: 2\n"
+            + "    baz: false\n"
+            + "\n";
 
     Assertions.assertEquals(expected, writer.toString());
   }
@@ -56,7 +58,8 @@ public class ArrayWriteTest {
   @Test
   public void testReadArray() {
     Subject config = new Subject();
-    YamlConfig.getConfigResolver().load(config,  getClass().getClassLoader().getResourceAsStream("array-write.yml"));
+    YamlConfig.getConfigResolver()
+        .load(config, getClass().getClassLoader().getResourceAsStream("array-write.yml"));
 
     Assertions.assertEquals(3, config.foo.length);
     Assertions.assertEquals(5, config.foo[2]);

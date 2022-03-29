@@ -42,12 +42,12 @@ public class TestSectionChildSections {
             + "\n"
             + "# This is top section comment\n"
             + "foo:\n"
+            + "  # Control field comment\n"
+            + "  control: \"asd\"\n"
             + "  # Child section comment\n"
             + "  barSect:\n"
             + "    # Bar comment\n"
             + "    bar: \"aabb\"\n"
-            + "  # Control field comment\n"
-            + "  control: \"asd\"\n"
             + "\n";
 
     Assertions.assertEquals(expected, writer.toString());

@@ -31,10 +31,10 @@ import java.io.Writer;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Field;
 import java.lang.reflect.Type;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
-import java.util.HashMap;
+import java.util.LinkedHashMap;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -195,9 +195,9 @@ public final class AnnotatedConfigResolver {
 
   private static class WriteData {
 
-    private List<String> classComments = new ArrayList<>();
-    private Map<String, Object> toWrite = new HashMap<>();
-    private Map<String, List<String>> fieldComments = new HashMap<>();
+    private List<String> classComments = new LinkedList<>();
+    private Map<String, Object> toWrite = new LinkedHashMap<>();
+    private Map<String, List<String>> fieldComments = new LinkedHashMap<>();
 
     public List<String> getClassComments() {
       return classComments;
@@ -384,7 +384,7 @@ public final class AnnotatedConfigResolver {
       }
     }
     // manipulate the defaultsToValueObject once again before sending it to the writer
-    Map<String, Object> dummyValues = new HashMap<>();
+    Map<String, Object> dummyValues = new LinkedHashMap<>();
     keyResolver.boxTo(keyName, defaultsToValueObject, dummyValues);
     if (dummyValues.size() != 1) {
       throw new IllegalArgumentException("Invalid key resolver.");
@@ -684,7 +684,7 @@ public final class AnnotatedConfigResolver {
     if (!type.is(AnnotationType.COMMENT) && !type.is(AnnotationType.COMMENTS)) {
       return Collections.emptyList();
     }
-    List<String> ret = new ArrayList<>();
+    List<String> ret = new LinkedList<>();
     if (type.is(AnnotationType.COMMENT)) {
       ret.add(getAnnotation(field, aClass, Comment.class).value());
     }
