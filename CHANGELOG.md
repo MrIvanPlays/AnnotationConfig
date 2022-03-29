@@ -32,6 +32,8 @@ an object.
 `SerializerRegistry#registerSimpleSerializer(Class, Function, Function)`
 - Quality-of-life code changes
 - Added a class called ReflectionUtils
+- Optimisations to MapUtils
+- Better preserve dump order
 
 ## Version 2.1.0
 
