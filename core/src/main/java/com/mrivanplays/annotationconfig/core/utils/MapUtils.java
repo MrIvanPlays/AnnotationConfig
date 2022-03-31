@@ -44,7 +44,8 @@ public final class MapUtils {
     if (lastCommonMap2.containsKey(lastKeyMap1)) {
       Object contained = lastCommonMap2.get(lastKeyMap1);
       if (!(contained instanceof Map)) {
-        throw new IllegalArgumentException("Something's wrong here. Check your annotated config.");
+        lastCommonMap2.put(lastKeyMap1, contained);
+        return;
       }
       Map<String, Object> mContained = (Map<String, Object>) contained;
       Map<String, Object> m1 = (Map<String, Object>) lastCommonMap1.get(lastKeyMap1);
