@@ -154,6 +154,7 @@ public final class AnnotatedConfigResolver {
       boolean reverseFields)
       throws IOException {
     WriteData parentData = new WriteData();
+    Field rawConfigField = null;
     for (Map.Entry<AnnotationHolder, Set<AnnotationType>> entry : map.entrySet()) {
       AnnotationHolder holder = entry.getKey();
       if (holder.isClass()) {
@@ -176,6 +177,7 @@ public final class AnnotatedConfigResolver {
         }
       } else if (entry.getValue().size() == 1
           && entry.getValue().contains(AnnotationType.RAW_CONFIG)) {
+        rawConfigField = holder.getField();
         continue;
       }
       try {
@@ -188,6 +190,18 @@ public final class AnnotatedConfigResolver {
         parentData.getFieldComments().putAll(current.getFieldComments());
       } catch (IllegalAccessException e) {
         throw new IllegalArgumentException("A field became inaccessible");
+      }
+    }
+    if (rawConfigField != null) {
+      rawConfigField.setAccessible(true);
+      if (!rawConfigField.getType().isAssignableFrom(DataObject.class)) {
+        throw new IllegalArgumentException("@RawConfig on a field which is not DataObject");
+      }
+      try {
+        rawConfigField.set(annotatedConfig, new DataObject(parentData.getToWrite(), true));
+      } catch (IllegalAccessException e) {
+        throw new IllegalArgumentException(
+            "Could not set a field's value ; field not accessible anymore");
       }
     }
     valueWriter.write(parentData.getToWrite(), parentData.getFieldComments(), writer, options);
