@@ -29,6 +29,8 @@ import java.io.Writer;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Field;
 import java.lang.reflect.Type;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -102,6 +104,34 @@ public final class AnnotatedConfigResolver {
     try {
       file.createNewFile();
       try (PrintWriter writer = new PrintWriter(new FileWriter(file))) {
+        toWriter(
+            annotatedConfig,
+            writer,
+            map,
+            commentChar,
+            valueWriter,
+            options,
+            keyResolver,
+            reverseFields);
+      }
+    } catch (IOException e) {
+      throw new RuntimeException(e);
+    }
+  }
+
+  public static void dump(
+      Object annotatedConfig,
+      Map<AnnotationHolder, Set<AnnotationType>> map,
+      Path path,
+      CustomOptions options,
+      String commentChar,
+      ValueWriter valueWriter,
+      KeyResolver keyResolver,
+      boolean reverseFields) {
+    try {
+      Files.deleteIfExists(path);
+      Files.createFile(path);
+      try (PrintWriter writer = new PrintWriter(Files.newBufferedWriter(path))) {
         toWriter(
             annotatedConfig,
             writer,
