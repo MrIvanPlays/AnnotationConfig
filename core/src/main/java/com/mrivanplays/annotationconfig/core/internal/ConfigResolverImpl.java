@@ -86,7 +86,7 @@ public final class ConfigResolverImpl implements ConfigResolver {
 
   @Override
   public void dump(Object annotatedConfig, Path path) {
-    if (!Files.isDirectory(path)) {
+    if (Files.isDirectory(path)) {
       throw new IllegalArgumentException("Cannot dump a config FILE to a DIRECTORY: " + path);
     }
     AnnotatedConfigResolver.dump(
