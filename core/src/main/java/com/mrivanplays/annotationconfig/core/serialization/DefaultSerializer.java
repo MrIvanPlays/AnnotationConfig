@@ -46,11 +46,11 @@ class DefaultSerializer implements FieldTypeSerializer<Object> {
         List<Object> ret = new ArrayList<>();
         SerializerRegistry serializerRegistry = SerializerRegistry.INSTANCE;
         for (Object o : read) {
-          if (isPrimitive(o, false) && isPrimitiveClass(field.getType())) {
+          if (isPrimitive(o, false)) {
             ret.add(o);
           } else {
             Optional<FieldTypeSerializer<?>> serializerOpt =
-                serializerRegistry.getSerializer(field.getType());
+                serializerRegistry.getSerializer(o.getClass());
             if (serializerOpt.isPresent()) {
               FieldTypeSerializer serializer = serializerOpt.get();
               // if a field is really needed, would need to register a serializer specifically for
