@@ -23,7 +23,72 @@ them.
 default serializer rather than a proper serializer, if such is registered.
 - The default serializer now recognizes `@Key` and `@Ignore` annotations whenever (de)serializing
 an object.
-- The default serializer now properly serializes arrays.
+
+#### Going smarter
+##### Arrays
+The default serializer now properly (de)serializes array types. 
+Examples:
+```java
+class MyConfig {
+  
+  private MyObj[] myObjArr = new MyObj[] { new MyObj("foo"), new MyObj("bar") };
+  
+  static class MyObj {
+    
+    String foo;
+    
+    MyObj(String foo) {
+      this.foo = foo;
+    }
+    
+    // serializer is not necessary
+    static class Serializer implements FieldTypeSerializer<MyObj> {
+      
+      @Override
+      public MyObj deserialize(DataObject data, SerializationContext<MyObj> context, AnnotationAccessor annotations) {
+        return new MyObj(data.getAsString());
+      }
+      
+      @Override
+      public DataObject serialize(MyObj value, SerializationContext<MyObj> context, AnnotationAccessor annotations) {
+        return new DataObject(value.foo);
+      }
+      
+    }
+    
+  }
+  
+}
+
+class Main {
+  
+  public static void main(String[] args) {
+    MyConfig myConfig = new MyConfig();
+    SerializerRegistry serializers = SerializerRegistry.INSTANCE;
+    serializers.registerSerializer(MyConfig.MyObj.class, new MyConfig.MyObj.Serializer());
+    YamlConfig.getConfigResolver().dump(myConfig, new File("config.yml"));
+  }
+  
+}
+```
+The code above will output the following:
+```yaml
+myObjArr: ["foo", "bar"]
+```
+
+##### Single field class logic
+The default serializer now (de)serializes classes with only 1 field better. An example of usage for
+such class is a list where you may want some more redundancy.<br>
+Examples (YAML):
+```yaml
+# Version 2.1.x:
+foo:
+  - bar: "zzz"
+
+# Version 3.0.0:
+foo:
+  - "zzz"
+```
 
 ### Misc changes
 - Removed deprecated methods
