@@ -73,7 +73,7 @@ class DefaultSerializer implements FieldTypeSerializer<Object> {
             SerializationContext.of(type, type, context.getAnnotatedConfig());
         for (int i = 0; i < read.size(); i++) {
           Object o = read.get(i);
-          if (isPrimitive(o, false)) {
+          if (isPrimitive(o, false) && isPrimitiveClass(type)) {
             Array.set(arr, i, forcePrimitive(o, type));
           } else {
             Object deserialized =
