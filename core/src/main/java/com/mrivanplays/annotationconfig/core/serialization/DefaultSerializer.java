@@ -119,7 +119,7 @@ class DefaultSerializer implements FieldTypeSerializer<Object> {
         SerializationContext serializationContext =
             SerializationContext.of(neededType, neededType, context.getAnnotatedConfig());
         for (Object o : read) {
-          if (isPrimitive(o, false)) {
+          if (isPrimitive(o, false) && isPrimitiveClass(neededType)) {
             ret.add(o);
           } else {
             ret.add(
@@ -158,7 +158,41 @@ class DefaultSerializer implements FieldTypeSerializer<Object> {
       if (data.getAsObject() == null) {
         return null;
       }
-      return forcePrimitive(data.getAsObject(), fieldType);
+      Object fieldTypeInstance;
+      try {
+        fieldTypeInstance = getUnsafeInstance().allocateInstance(fieldType);
+      } catch (InstantiationException e) {
+        throw new RuntimeException("Cannot instantiate " + fieldType.getName() + " ; ", e);
+      }
+      Field[] fields = fieldTypeInstance.getClass().getDeclaredFields();
+      if (fields.length != 1) {
+        throw new IllegalArgumentException(
+            "Can't deserialize a "
+                + data
+                + " to a "
+                + fieldType.getName()
+                + " because "
+                + fieldType.getName()
+                + " does not have exactly 1 field");
+      }
+      Field desField = fields[0];
+      desField.setAccessible(true);
+      if (AnnotationUtils.isIgnored(desField)) {
+        throw new IllegalArgumentException("Can't deserialize a " + data + " to empty class!");
+      }
+      FieldTypeSerializer serializer =
+          serializerRegistry.getSerializer(desField.getGenericType()).orElse(this);
+      try {
+        desField.set(
+            fieldTypeInstance,
+            serializer.deserialize(
+                data,
+                SerializationContext.fromField(desField, fieldTypeInstance),
+                AnnotationAccessor.createFromField(desField)));
+      } catch (IllegalAccessException e) {
+        throw new IllegalArgumentException("A field became inaccessible");
+      }
+      return fieldTypeInstance;
     } else {
       if (fieldType.isAssignableFrom(Map.class)) {
         return dataMap;
@@ -298,8 +332,38 @@ class DefaultSerializer implements FieldTypeSerializer<Object> {
         }
       }
     }
+    Field[] fields = value.getClass().getDeclaredFields();
+    if (fields.length == 0) {
+      throw new IllegalArgumentException("Can't serialize object with no fields.");
+    }
+    if (fields.length == 1) {
+      Field desField = fields[0];
+      desField.setAccessible(true);
+      if (AnnotationUtils.isIgnored(desField)) {
+        throw new IllegalArgumentException("Can't serialize object with no fields.");
+      }
+      try {
+        Object def = desField.get(value);
+        if (def == null) {
+          throw new IllegalArgumentException("Can't serialize object with no fields.");
+        }
+        FieldTypeSerializer serializer =
+            serializerRegistry.getSerializer(desField.getGenericType()).orElse(this);
+        return serializer.serialize(
+            def,
+            SerializationContext.of(
+                desField.getName(),
+                def,
+                desField.getType(),
+                desField.getGenericType(),
+                context.getAnnotatedConfig()),
+            AnnotationAccessor.createFromField(desField));
+      } catch (IllegalAccessException e) {
+        throw new IllegalArgumentException("Field became inaccessible.", e);
+      }
+    }
     DataObject object = new DataObject();
-    for (Field desField : value.getClass().getDeclaredFields()) {
+    for (Field desField : fields) {
       desField.setAccessible(true);
       if (AnnotationUtils.isIgnored(desField)) {
         continue;
