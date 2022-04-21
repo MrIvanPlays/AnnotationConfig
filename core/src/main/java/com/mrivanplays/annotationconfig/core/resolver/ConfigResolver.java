@@ -13,6 +13,7 @@ import java.io.OutputStream;
 import java.io.OutputStreamWriter;
 import java.io.Reader;
 import java.io.Writer;
+import java.nio.file.Path;
 import java.util.Map;
 
 /**
@@ -58,6 +59,21 @@ public interface ConfigResolver {
   void dump(Object annotatedConfig, File file);
 
   /**
+   * Dumps the specified {@code annotatedConfig} to the specified {@link Path} {@code path}. If, at
+   * the time of calling this method, the file exists, it will get deleted ( default implementation
+   * ).
+   *
+   * <p>If you are going to call {@link #load(Object, Path, LoadSettings)} after calling this
+   * method, consider using {@link #loadOrDump(Object, Path, LoadSettings)} rather than calling dump
+   * and load one after each other. This way you save CPU time by not making the library find
+   * annotations twice.
+   *
+   * @param annotatedConfig the annotated config you want to dump
+   * @param path the file path you want to dump the annotation config to
+   */
+  void dump(Object annotatedConfig, Path path);
+
+  /**
    * Dumps the specified {@code annotatedConfig} to the specified {@link OutputStream} {@code os}.
    *
    * @param annotatedConfig the annotated config you want to dump
@@ -90,6 +106,20 @@ public interface ConfigResolver {
   void load(Object annotatedConfig, File file);
 
   /**
+   * Loads the specified {@code annotatedConfig} from the specified {@link Path} {@code path} using
+   * the default {@link LoadSettings} from the builder of this config resolver, or {@link
+   * LoadSettings#getDefault()}.
+   *
+   * <p>If you have called {@link #dump(Object, Path)} before calling this method, consider using
+   * {@link #loadOrDump(Object, Path)} rather than calling dump and load one after each other. This
+   * way you save CPU time by not making the library find annotations twice.
+   *
+   * @param annotatedConfig the annotated config you want to load to
+   * @param path the file path you want to load
+   */
+  void load(Object annotatedConfig, Path path);
+
+  /**
    * Loads the specified {@code annotatedConfig} from the specified {@link File} {@code file} using
    * the {@link LoadSettings} {@code loadSettings} specified.
    *
@@ -102,6 +132,20 @@ public interface ConfigResolver {
    * @param loadSettings the load settings
    */
   void load(Object annotatedConfig, File file, LoadSettings loadSettings);
+
+  /**
+   * Loads the specified {@code annotatedConfig} from the specified {@link Path} {@code path} using
+   * the {@link LoadSettings} {@code loadSettings} specified.
+   *
+   * <p>If you have called {@link #dump(Object, Path)} before calling this method, consider using
+   * {@link #loadOrDump(Object, Path, LoadSettings)} rather than calling dump and load one after
+   * each other. This way you save CPU time by not making the library find annotations twice.
+   *
+   * @param annotatedConfig the annotated config you want to load to
+   * @param path the file path you want to load
+   * @param loadSettings the load settings
+   */
+  void load(Object annotatedConfig, Path path, LoadSettings loadSettings);
 
   /**
    * Loads the specified {@code annotatedConfig} from the specified {@link Map} {@code values} using
@@ -195,6 +239,17 @@ public interface ConfigResolver {
   void loadOrDump(Object annotatedConfig, File file);
 
   /**
+   * Loads the specified {@code annotatedConfig} from the specified {@link Path} {@code path}, if it
+   * exists, if not, dumps the specified {@code annotatedConfig} to the specified file, using the
+   * default {@link LoadSettings} from the builder of this config resolver, or {@link
+   * LoadSettings#getDefault()}.
+   *
+   * @param annotatedConfig the annotated config you want to load/dump
+   * @param path the file path you want to load/dump to
+   */
+  void loadOrDump(Object annotatedConfig, Path path);
+
+  /**
    * Loads the specified {@code annotatedConfig} from the specified {@link File} {@code file}, if it
    * exists, if not, dumps the specified {@code annotatedConfig} to the specified file, using the
    * {@link LoadSettings} {@code loadSettings} specified.
@@ -204,6 +259,17 @@ public interface ConfigResolver {
    * @param loadSettings the load settings
    */
   void loadOrDump(Object annotatedConfig, File file, LoadSettings loadSettings);
+
+  /**
+   * Loads the specified {@code annotatedConfig} from the specified {@link Path} {@code path}, if it
+   * exists, if not, dumps the specified {@code annotatedConfig} to the specified file, using the
+   * {@link LoadSettings} {@code loadSettings} specified.
+   *
+   * @param annotatedConfig the annotated config you want to load/dump
+   * @param path the file path you want to load/dump to
+   * @param loadSettings the load settings
+   */
+  void loadOrDump(Object annotatedConfig, Path path, LoadSettings loadSettings);
 
   /**
    * Represents a builder of a {@link ConfigResolver}

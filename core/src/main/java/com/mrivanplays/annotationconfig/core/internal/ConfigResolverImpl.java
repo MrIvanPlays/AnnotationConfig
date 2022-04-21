@@ -16,6 +16,8 @@ import java.io.InputStreamReader;
 import java.io.Reader;
 import java.io.Writer;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
@@ -83,6 +85,22 @@ public final class ConfigResolverImpl implements ConfigResolver {
   }
 
   @Override
+  public void dump(Object annotatedConfig, Path path) {
+    if (Files.isDirectory(path)) {
+      throw new IllegalArgumentException("Cannot dump a config FILE to a DIRECTORY: " + path);
+    }
+    AnnotatedConfigResolver.dump(
+        annotatedConfig,
+        AnnotatedConfigResolver.resolveAnnotations(annotatedConfig, reverseFields),
+        path,
+        options,
+        commentPrefix,
+        valueWriter,
+        keyResolver,
+        reverseFields);
+  }
+
+  @Override
   public void dump(Object annotatedConfig, Writer writer) {
     Map<AnnotationHolder, Set<AnnotationType>> resolvedAnnotations =
         AnnotatedConfigResolver.resolveAnnotations(annotatedConfig, reverseFields);
@@ -103,6 +121,11 @@ public final class ConfigResolverImpl implements ConfigResolver {
   }
 
   @Override
+  public void load(Object annotatedConfig, Path path) {
+    load(annotatedConfig, path, this.defaultLoadSettings);
+  }
+
+  @Override
   public void load(Object annotatedConfig, File file, LoadSettings loadSettings) {
     if (!file.exists()) {
       return;
@@ -110,6 +133,16 @@ public final class ConfigResolverImpl implements ConfigResolver {
     Map<AnnotationHolder, Set<AnnotationType>> resolvedAnnotations =
         AnnotatedConfigResolver.resolveAnnotations(annotatedConfig, reverseFields);
     handleFileLoad(annotatedConfig, resolvedAnnotations, file, loadSettings);
+  }
+
+  @Override
+  public void load(Object annotatedConfig, Path path, LoadSettings loadSettings) {
+    if (!Files.exists(path) || Files.isDirectory(path)) {
+      return;
+    }
+    Map<AnnotationHolder, Set<AnnotationType>> resolvedAnnotations =
+        AnnotatedConfigResolver.resolveAnnotations(annotatedConfig, reverseFields);
+    handlePathLoad(annotatedConfig, resolvedAnnotations, path, loadSettings);
   }
 
   @Override
@@ -183,6 +216,11 @@ public final class ConfigResolverImpl implements ConfigResolver {
   }
 
   @Override
+  public void loadOrDump(Object annotatedConfig, Path path) {
+    loadOrDump(annotatedConfig, path, this.defaultLoadSettings);
+  }
+
+  @Override
   public void loadOrDump(Object annotatedConfig, File file, LoadSettings loadSettings) {
     Map<AnnotationHolder, Set<AnnotationType>> resolvedAnnotations =
         AnnotatedConfigResolver.resolveAnnotations(annotatedConfig, reverseFields);
@@ -199,6 +237,28 @@ public final class ConfigResolverImpl implements ConfigResolver {
       return;
     }
     handleFileLoad(annotatedConfig, resolvedAnnotations, file, loadSettings);
+  }
+
+  @Override
+  public void loadOrDump(Object annotatedConfig, Path path, LoadSettings loadSettings) {
+    if (Files.isDirectory(path)) {
+      throw new IllegalArgumentException("Cannot write a config FILE to a DIRECTORY " + path);
+    }
+    Map<AnnotationHolder, Set<AnnotationType>> resolvedAnnotations =
+        AnnotatedConfigResolver.resolveAnnotations(annotatedConfig, reverseFields);
+    if (!Files.exists(path)) {
+      AnnotatedConfigResolver.dump(
+          annotatedConfig,
+          resolvedAnnotations,
+          path,
+          options,
+          commentPrefix,
+          valueWriter,
+          keyResolver,
+          reverseFields);
+      return;
+    }
+    handlePathLoad(annotatedConfig, resolvedAnnotations, path, loadSettings);
   }
 
   private void handleFileLoad(
@@ -244,6 +304,62 @@ public final class ConfigResolverImpl implements ConfigResolver {
           annotatedConfig,
           resolvedAnnotations,
           file,
+          options,
+          commentPrefix,
+          valueWriter,
+          keyResolver,
+          reverseFields);
+    }
+  }
+
+  public void handlePathLoad(
+      Object annotatedConfig,
+      Map<AnnotationHolder, Set<AnnotationType>> resolvedAnnotations,
+      Path path,
+      LoadSettings loadSettings) {
+    Map<String, Object> values;
+    try (Reader reader =
+        new InputStreamReader(Files.newInputStream(path), StandardCharsets.UTF_8)) {
+      values = valueReader.read(reader, options, loadSettings);
+    } catch (IOException e) {
+      throw new RuntimeException(e);
+    }
+    if (values.isEmpty()) {
+      return;
+    }
+    NullReadHandleOption nullReadHandler =
+        loadSettings
+            .get(LoadSetting.NULL_READ_HANDLER)
+            .orElse(
+                defaultLoadSettings
+                    .get(LoadSetting.NULL_READ_HANDLER)
+                    .orElse(LoadSettings.getDefault().get(LoadSetting.NULL_READ_HANDLER).get()));
+    boolean generateNewOptions =
+        loadSettings
+            .get(LoadSetting.GENERATE_NEW_OPTIONS)
+            .orElse(
+                defaultLoadSettings
+                    .get(LoadSetting.GENERATE_NEW_OPTIONS)
+                    .orElse(LoadSettings.getDefault().get(LoadSetting.GENERATE_NEW_OPTIONS).get()));
+    boolean missingOptions =
+        AnnotatedConfigResolver.setFields(
+            annotatedConfig,
+            values,
+            resolvedAnnotations,
+            nullReadHandler,
+            options,
+            keyResolver,
+            reverseFields);
+    if (missingOptions && generateNewOptions) {
+      try {
+        Files.deleteIfExists(path);
+      } catch (IOException e) {
+        throw new RuntimeException(e);
+      }
+      AnnotatedConfigResolver.dump(
+          annotatedConfig,
+          resolvedAnnotations,
+          path,
           options,
           commentPrefix,
           valueWriter,
