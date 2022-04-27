@@ -100,7 +100,7 @@ public final class DataObjectBuilder {
    * @return this instance for chaining
    */
   public DataObjectBuilder with(String key, DataObject object) {
-    object.putAll(key, object);
+    this.object.putAll(key, object);
     return this;
   }
 
