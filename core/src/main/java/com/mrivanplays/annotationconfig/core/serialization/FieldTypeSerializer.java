@@ -1,5 +1,7 @@
 package com.mrivanplays.annotationconfig.core.serialization;
 
+import com.mrivanplays.annotationconfig.core.utils.TriFunction;
+
 /**
  * Interface representing a custom serializer and deserializer of a field type. You should write a
  * custom one if you are not happy with how AnnotationConfig serializes and deserializes by default.
@@ -11,6 +13,46 @@ package com.mrivanplays.annotationconfig.core.serialization;
  * @author MrIvanPlays
  */
 public interface FieldTypeSerializer<T> {
+
+  /**
+   * Creates a new {@link FieldTypeSerializer} from 2 {@link TriFunction TriFunctions}
+   *
+   * @param deserialize deserialize method (see {@link FieldTypeSerializer#deserialize(DataObject,
+   *     SerializationContext, AnnotationAccessor)})
+   * @param serialize serialize method (see {@link FieldTypeSerializer#serialize(Object,
+   *     SerializationContext, AnnotationAccessor)})
+   * @return new field type serializer
+   * @param <T> type for which this serializer is being registered.
+   */
+  static <T> FieldTypeSerializer<T> functional(
+      TriFunction<DataObject, SerializationContext<T>, AnnotationAccessor, T> deserialize,
+      TriFunction<T, SerializationContext<T>, AnnotationAccessor, DataObject> serialize) {
+    return new FieldTypeSerializer<T>() {
+      @Override
+      public T deserialize(
+          DataObject data, SerializationContext<T> context, AnnotationAccessor annotations) {
+        return deserialize.apply(data, context, annotations);
+      }
+
+      @Override
+      public TriFunction<DataObject, SerializationContext<T>, AnnotationAccessor, T>
+          deserializeAsFunction() {
+        return deserialize;
+      }
+
+      @Override
+      public DataObject serialize(
+          T value, SerializationContext<T> context, AnnotationAccessor annotations) {
+        return serialize.apply(value, context, annotations);
+      }
+
+      @Override
+      public TriFunction<T, SerializationContext<T>, AnnotationAccessor, DataObject>
+          serializeAsFunction() {
+        return serialize;
+      }
+    };
+  }
 
   /**
    * AnnotationConfig invokes this call-back method during deserialization when it encounters a
@@ -26,6 +68,17 @@ public interface FieldTypeSerializer<T> {
   T deserialize(DataObject data, SerializationContext<T> context, AnnotationAccessor annotations);
 
   /**
+   * Returns {@link #deserialize(DataObject, SerializationContext, AnnotationAccessor)} as a {@link
+   * TriFunction}
+   *
+   * @return tri function of the deserialize method
+   */
+  default TriFunction<DataObject, SerializationContext<T>, AnnotationAccessor, T>
+      deserializeAsFunction() {
+    return this::deserialize;
+  }
+
+  /**
    * AnnotationConfig invokes this call-back method during serialization when it encounters a field
    * of the specified type.
    *
@@ -37,4 +90,15 @@ public interface FieldTypeSerializer<T> {
    * @see AnnotationAccessor
    */
   DataObject serialize(T value, SerializationContext<T> context, AnnotationAccessor annotations);
+
+  /**
+   * Returns {@link #serialize(Object, SerializationContext, AnnotationAccessor)} as a {@link
+   * TriFunction}
+   *
+   * @return tri function of the serialize method
+   */
+  default TriFunction<T, SerializationContext<T>, AnnotationAccessor, DataObject>
+      serializeAsFunction() {
+    return this::serialize;
+  }
 }

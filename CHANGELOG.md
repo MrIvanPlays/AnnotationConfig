@@ -5,19 +5,46 @@ This file summarises changes between major versions.
 ## Version 3.0.0
 This version is all focused on serialization.
 
-### Introducing "SimpleValueSerializer"
+### Introducing `SimpleValueSerializer`
 This is a utility class to help you with serializing objects you do not need a custom serializer for
 in your own custom serializer of some kind. See the docs for more.
 
-### FieldTypeSerializer now is not exactly "Field"
-Instead of passing a Field, AnnotationConfig now passes a "SerializationContext", because
-AnnotationConfig can not always get a Field instance. We don't want to lie with another Field, 
+### FieldTypeSerializer now is not exactly `Field`
+Instead of passing a `Field`, AnnotationConfig now passes a `SerializationContext`, because
+AnnotationConfig can not always get a `Field` instance. We don't want to lie with another `Field`, 
 instead, we are now focused on accurate data - what is it exactly (de)serializing.
-The other thing new we have is the "AnnotationAccessor" - this is a way of accessing a (perhaps)
-field's annotations in a more controllable manner.
+The other thing new we have - the `AnnotationAccessor` - this is a way of accessing a (perhaps)
+`Field`'s annotations in a more controllable manner.
+
+#### Better experience with FieldTypeSerializer?
+Introducing the `FieldTypeSerializer#functional(TriFunction, TriFunction)` with which it shall be
+easier to create `FieldTypeSerializer`s. Quick example:
+
+```java
+// Before
+SerializerRegistry.registerSerializer(Foo.class, new FieldTypeSerializer<Foo>() {
+  
+  @Override
+  public Foo deserialize(DataObject data, SerializationContext<Foo> context, AnnotationAccessor annotations) {
+    // deserialization logic
+  }
+  
+  @Override
+  public DataObject serialize(Foo value, SerializationContext<Foo> context, AnnotationAccessor annotations) {
+    // serialization logic
+  }
+});
+
+// After
+SerializationRegistry.registerSerializer(
+    Foo.class, 
+        FieldTypeSerializer.<Foo>functional(
+            (data, context, annotations) -> { // deserialization logic },
+            (value, context, annotations) -> { // serialization logic }));
+```
 
 ### Beefed up default serializer
-- The default serializer now recognizes BigInteger and BigDecimal as "primitives" and (de)serializes
+- The default serializer now recognizes `BigInteger` and `BigDecimal` as "primitives" and (de)serializes
 them. 
 - Fixed a few type mistakes on list (de)serialization, which caused everything to go to the 
 default serializer rather than a proper serializer, if such is registered.
@@ -99,6 +126,7 @@ foo:
 - Added a class called ReflectionUtils
 - Optimisations to MapUtils
 - Better preserve dump order
+- Added `SerializerRegistry#registerSimpleValueSerializer(Class, Function)` and `SerializerRegistry#registerSimpleValueDeserializer(Class, Function)`
 
 ## Version 2.1.0
 

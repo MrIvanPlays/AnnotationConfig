@@ -72,20 +72,73 @@ public enum SerializerRegistry {
     }
     this.serializers.put(
         serializedType,
-        new FieldTypeSerializer<T>() {
+        FieldTypeSerializer.<T>functional(
+            (data, context, annotations) -> deserialize.apply(data),
+            (value, context, annotations) -> serialize.apply(value)));
+  }
 
-          @Override
-          public T deserialize(
-              DataObject data, SerializationContext<T> context, AnnotationAccessor annotations) {
-            return deserialize.apply(data);
-          }
+  /**
+   * Registers a new {@link FieldTypeSerializer} with only a serialize method which can resolve
+   * without a {@link SerializationContext} and a {@link AnnotationAccessor} .<br>
+   * How is the deserialize method handled? If there is a registered serializer for ths {@code
+   * serializedType}, then the method will forward deserialize calls to it, otherwise deserialize
+   * calls are forwarded to the default serializer.
+   *
+   * @param serializedType the field type that should be serialized
+   * @param serialize serialization method of the serializedType
+   * @param <T> generic
+   */
+  public <T> void registerSimpleValueSerializer(
+      Class<T> serializedType, Function<T, DataObject> serialize) {
+    if (this.serializers.containsKey(serializedType)) {
+      FieldTypeSerializer<T> serializer =
+          (FieldTypeSerializer<T>) this.serializers.remove(serializedType);
+      this.serializers.put(
+          serializedType,
+          FieldTypeSerializer.functional(
+              serializer.deserializeAsFunction(),
+              (value, context, annotations) -> serialize.apply(value)));
+      return;
+    }
+    this.serializers.put(
+        serializedType,
+        FieldTypeSerializer.<T>functional(
+            (data, context, annotations) ->
+                SimpleValueSerializer.deserialize(
+                    data, serializedType, context.getAnnotatedConfig()),
+            (value, context, annotations) -> serialize.apply(value)));
+  }
 
-          @Override
-          public DataObject serialize(
-              T value, SerializationContext<T> context, AnnotationAccessor annotations) {
-            return serialize.apply(value);
-          }
-        });
+  /**
+   * Registers a new {@link FieldTypeSerializer} with only a deserialize method which can resolve
+   * without a {@link SerializationContext} and a {@link AnnotationAccessor}.<br>
+   * How is the serialize method handled? If there is a registered serializer for this {@code
+   * serializedType}, then the method will forward serialize calls to it, otherwise serialize calls
+   * are forwarded to the default serializer.
+   *
+   * @param serializedType the field type that should be deserialized
+   * @param deserialize deserialization method of the serialized type
+   * @param <T> generic
+   */
+  public <T> void registerSimpleValueDeserializer(
+      Class<T> serializedType, Function<DataObject, T> deserialize) {
+    if (this.serializers.containsKey(serializedType)) {
+      FieldTypeSerializer<T> serializer =
+          (FieldTypeSerializer<T>) this.serializers.remove(serializedType);
+      this.serializers.put(
+          serializedType,
+          FieldTypeSerializer.functional(
+              (data, context, annotations) -> deserialize.apply(data),
+              serializer.serializeAsFunction()));
+      return;
+    }
+    this.serializers.put(
+        serializedType,
+        FieldTypeSerializer.<T>functional(
+            (data, context, annotations) -> deserialize.apply(data),
+            (value, context, annotations) ->
+                SimpleValueSerializer.serialize(
+                    value, serializedType, context.getAnnotatedConfig())));
   }
 
   /**
