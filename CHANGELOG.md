@@ -119,7 +119,6 @@ foo:
 
 ### Misc changes
 - Removed deprecated methods
-- Fixed `DataObjectBuilder#with(String, DataObject)`
 - Removed `SerializerRegistry#registerSerializer(Class, BiFunction, BiFunction)`. Replaced by 
 `SerializerRegistry#registerSimpleSerializer(Class, Function, Function)`
 - Quality-of-life code changes
