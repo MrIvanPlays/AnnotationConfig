@@ -53,6 +53,7 @@ class ResolveMultipleTest {
 
     int firstFoo =
         loadedConfigs.entrySet().stream()
+            .filter(entry -> entry.getKey().startsWith("test0"))
             .findFirst()
             .orElse(new AbstractMap.SimpleEntry<>("foo", new Subject(69420)))
             .getValue()
