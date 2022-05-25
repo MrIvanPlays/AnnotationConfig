@@ -6,7 +6,9 @@ import java.io.PrintWriter;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.AbstractMap;
+import java.util.Iterator;
 import java.util.Map;
+import java.util.stream.Stream;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeAll;
@@ -63,7 +65,11 @@ class ResolveMultipleTest {
 
   @AfterAll
   static void terminate() {
-    try {
+    try (Stream<Path> stream = Files.list(dir)) {
+      Iterator<Path> iterator = stream.iterator();
+      while (iterator.hasNext()) {
+        Files.delete(iterator.next());
+      }
       Files.delete(dir);
     } catch (IOException e) {
       throw new RuntimeException(e);
