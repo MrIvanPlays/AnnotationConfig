@@ -14,7 +14,6 @@ import java.io.OutputStreamWriter;
 import java.io.Reader;
 import java.io.Writer;
 import java.nio.file.Path;
-import java.util.List;
 import java.util.Map;
 import java.util.function.Supplier;
 
@@ -282,11 +281,14 @@ public interface ConfigResolver {
    * @param dir the directory to load configurations from
    * @param configToResolveTo a {@link Supplier} of the needed configuration objects
    * @param dumpFile the default dump file
-   * @return a list of the loaded configurations
+   * @return a map of the loaded configurations, key being the file name. If the map is empty then
+   *     AnnotationConfig couldn't find any configurations in the folder, and you should fall back
+   *     to the defaults.
    * @throws IllegalArgumentException if the specified {@code dir} is not a directory!
    * @param <T> configuration type needed
    */
-  <T> List<T> resolveMultiple(File dir, Supplier<T> configToResolveTo, WritableObject dumpFile);
+  <T> Map<String, T> resolveMultiple(
+      File dir, Supplier<T> configToResolveTo, WritableObject dumpFile);
 
   /**
    * Loads the configurations in the {@link File} {@code dir} specified, and if any do not exist,
@@ -298,11 +300,13 @@ public interface ConfigResolver {
    * @param configToResolveTo a {@link Supplier} of the needed configuration objects
    * @param dumpFile the default dump file
    * @param loadSettings the load settings to use when loading the configurations
-   * @return a list of the loaded configurations
+   * @return a map of the loaded configurations, key being the file name. If the map is empty then
+   *     AnnotationConfig couldn't find any configurations in the folder, and you should fall back
+   *     to the defaults.
    * @throws IllegalArgumentException if the specified {@code dir} is not a directory!
    * @param <T> configuration type needed
    */
-  <T> List<T> resolveMultiple(
+  <T> Map<String, T> resolveMultiple(
       File dir, Supplier<T> configToResolveTo, WritableObject dumpFile, LoadSettings loadSettings);
 
   /**
@@ -314,11 +318,14 @@ public interface ConfigResolver {
    * @param dir the directory to load configurations from
    * @param configToResolveTo a {@link Supplier} of the needed configuration objects
    * @param dumpFile the default dump file
-   * @return a list of the loaded configurations
+   * @return a map of the loaded configurations, key being the file name. If the map is empty then
+   *     AnnotationConfig couldn't find any configurations in the folder, and you should fall back
+   *     to the defaults.
    * @throws IllegalArgumentException if the specified {@code dir} is not a directory!
    * @param <T> configuration type needed
    */
-  <T> List<T> resolveMultiple(Path dir, Supplier<T> configToResolveTo, WritableObject dumpFile);
+  <T> Map<String, T> resolveMultiple(
+      Path dir, Supplier<T> configToResolveTo, WritableObject dumpFile);
   /**
    * Loads the configurations in the {@link Path} {@code dir} specified, and if any do not exist,
    * the defaults (if specified) are dumped to the specified {@link WritableObject} {@code
@@ -329,11 +336,13 @@ public interface ConfigResolver {
    * @param configToResolveTo a {@link Supplier} of the needed configuration objects
    * @param dumpFile the default dump file
    * @param loadSettings the load settings to use when loading the configurations
-   * @return a list of the loaded configurations
+   * @return a map of the loaded configurations, key being the file name. If the map is empty then
+   *     AnnotationConfig couldn't find any configurations in the folder, and you should fall back
+   *     to the defaults.
    * @throws IllegalArgumentException if the specified {@code dir} is not a directory!
    * @param <T> configuration type needed
    */
-  <T> List<T> resolveMultiple(
+  <T> Map<String, T> resolveMultiple(
       Path dir, Supplier<T> configToResolveTo, WritableObject dumpFile, LoadSettings loadSettings);
 
   /**

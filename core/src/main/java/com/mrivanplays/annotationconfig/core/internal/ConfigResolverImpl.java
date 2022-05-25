@@ -21,8 +21,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Collections;
 import java.util.Iterator;
-import java.util.LinkedList;
-import java.util.List;
+import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
@@ -269,13 +268,13 @@ public final class ConfigResolverImpl implements ConfigResolver {
   }
 
   @Override
-  public <T> List<T> resolveMultiple(
+  public <T> Map<String, T> resolveMultiple(
       File dir, Supplier<T> configToResolveTo, WritableObject dumpFile) {
     return resolveMultiple(dir, configToResolveTo, dumpFile, defaultLoadSettings);
   }
 
   @Override
-  public <T> List<T> resolveMultiple(
+  public <T> Map<String, T> resolveMultiple(
       File dir, Supplier<T> configToResolveTo, WritableObject dumpFile, LoadSettings loadSettings) {
     if (!dir.isDirectory()) {
       throw new IllegalArgumentException(dir + " is not a directory!");
@@ -284,13 +283,15 @@ public final class ConfigResolverImpl implements ConfigResolver {
       dir.mkdirs();
       T config = configToResolveTo.get();
       dump(config, dumpFile.writer());
-      return Collections.singletonList(config);
+      return Collections.emptyMap();
     } else {
       File[] files = dir.listFiles();
       if (files == null || files.length == 0) {
-        return Collections.emptyList();
+        T config = configToResolveTo.get();
+        dump(config, dumpFile.writer());
+        return Collections.emptyMap();
       }
-      List<T> ret = new LinkedList<>();
+      Map<String, T> ret = new LinkedHashMap<>();
       Map<AnnotationHolder, Set<AnnotationType>> resolvedAnnotations = null;
       for (File file : files) {
         if (file.isDirectory()) {
@@ -301,20 +302,20 @@ public final class ConfigResolverImpl implements ConfigResolver {
           resolvedAnnotations = AnnotatedConfigResolver.resolveAnnotations(config, reverseFields);
         }
         handleFileLoad(config, resolvedAnnotations, file, loadSettings);
-        ret.add(config);
+        ret.put(file.getName(), config);
       }
       return ret;
     }
   }
 
   @Override
-  public <T> List<T> resolveMultiple(
+  public <T> Map<String, T> resolveMultiple(
       Path dir, Supplier<T> configToResolveTo, WritableObject dumpFile) {
     return resolveMultiple(dir, configToResolveTo, dumpFile, defaultLoadSettings);
   }
 
   @Override
-  public <T> List<T> resolveMultiple(
+  public <T> Map<String, T> resolveMultiple(
       Path dir, Supplier<T> configToResolveTo, WritableObject dumpFile, LoadSettings loadSettings) {
     if (!Files.isDirectory(dir)) {
       throw new IllegalArgumentException(dir + " is not a directory!");
@@ -324,18 +325,20 @@ public final class ConfigResolverImpl implements ConfigResolver {
         Files.createDirectories(dir);
         T config = configToResolveTo.get();
         dump(config, dumpFile.writer());
-        return Collections.singletonList(config);
+        return Collections.emptyMap();
       } catch (IOException e) {
         throw new RuntimeException(e);
       }
     } else {
       try (Stream<Path> paths = Files.list(dir)) {
         if (!paths.findAny().isPresent()) {
-          return Collections.emptyList();
+          T config = configToResolveTo.get();
+          dump(config, dumpFile.writer());
+          return Collections.emptyMap();
         }
         Iterator<Path> iterator = paths.iterator();
         Map<AnnotationHolder, Set<AnnotationType>> resolvedAnnotations = null;
-        List<T> ret = new LinkedList<>();
+        Map<String, T> ret = new LinkedHashMap<>();
         while (iterator.hasNext()) {
           Path path = iterator.next();
           if (Files.isDirectory(path)) {
@@ -346,7 +349,7 @@ public final class ConfigResolverImpl implements ConfigResolver {
             resolvedAnnotations = AnnotatedConfigResolver.resolveAnnotations(config, reverseFields);
           }
           load(config, path);
-          ret.add(config);
+          ret.put(path.toFile().getName(), config);
         }
         return ret;
       } catch (IOException e) {
