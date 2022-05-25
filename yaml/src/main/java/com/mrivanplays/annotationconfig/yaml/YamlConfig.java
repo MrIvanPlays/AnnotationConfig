@@ -46,6 +46,7 @@ public final class YamlConfig {
             .shouldReverseFields(true)
             .withCommentPrefix("# ")
             .withFileExtension(".yml")
+            .withFileExtension(".yaml")
             .withValueReader(
                 new ValueReader() {
                   @Override
