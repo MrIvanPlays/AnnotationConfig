@@ -43,6 +43,7 @@ public final class PropertyConfig {
     configResolver =
         ConfigResolver.newBuilder()
             .withCommentPrefix("# ")
+            .withFileExtension(".properties")
             .withValueWriter(PROPERTIES_VALUE_WRITER)
             .withValueReader(
                 new ValueReader() {

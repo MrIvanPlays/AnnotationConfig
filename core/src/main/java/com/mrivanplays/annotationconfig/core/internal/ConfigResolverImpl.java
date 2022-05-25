@@ -36,6 +36,7 @@ public final class ConfigResolverImpl implements ConfigResolver {
   private final CustomOptions options;
   private final LoadSettings defaultLoadSettings;
   private final KeyResolver keyResolver;
+  private final String[] fileExtensions;
   private final boolean reverseFields;
 
   public ConfigResolverImpl(
@@ -45,10 +46,15 @@ public final class ConfigResolverImpl implements ConfigResolver {
       CustomOptions options,
       LoadSettings loadSettings,
       KeyResolver keyResolver,
+      String[] fileExtensions,
       boolean reverseFields) {
     this.commentPrefix = Objects.requireNonNull(commentPrefix, "commentPrefix");
     this.valueWriter = Objects.requireNonNull(valueWriter, "valueWriter");
     this.valueReader = Objects.requireNonNull(valueReader, "valueReader");
+    this.fileExtensions = Objects.requireNonNull(fileExtensions, "fileExtensions");
+    if (fileExtensions.length == 0) {
+      throw new IllegalArgumentException("File extensions cannot be empty");
+    }
     if (options == null) {
       this.options = CustomOptions.empty();
     } else {
@@ -285,7 +291,14 @@ public final class ConfigResolverImpl implements ConfigResolver {
       dump(config, dumpFile.writer());
       return Collections.emptyMap();
     } else {
-      File[] files = dir.listFiles();
+      File[] files = dir.listFiles(($, name) -> {
+        for (String extension : fileExtensions) {
+          if (name.endsWith(extension)) {
+            return true;
+          }
+        }
+        return false;
+      });
       if (files == null || files.length == 0) {
         T config = configToResolveTo.get();
         dump(config, dumpFile.writer());
@@ -331,12 +344,12 @@ public final class ConfigResolverImpl implements ConfigResolver {
       }
     } else {
       try (Stream<Path> paths = Files.list(dir)) {
-        if (!paths.findAny().isPresent()) {
+        Iterator<Path> iterator = paths.iterator();
+        if (!iterator.hasNext()) {
           T config = configToResolveTo.get();
           dump(config, dumpFile.writer());
           return Collections.emptyMap();
         }
-        Iterator<Path> iterator = paths.iterator();
         Map<AnnotationHolder, Set<AnnotationType>> resolvedAnnotations = null;
         Map<String, T> ret = new LinkedHashMap<>();
         while (iterator.hasNext()) {
@@ -344,12 +357,23 @@ public final class ConfigResolverImpl implements ConfigResolver {
           if (Files.isDirectory(path)) {
             continue;
           }
+          String fileName = path.toFile().getName();
+          boolean matches = false;
+          for (String extension : fileExtensions) {
+            if (fileName.endsWith(extension)) {
+              matches = true;
+              break;
+            }
+          }
+          if (!matches) {
+            continue;
+          }
           T config = configToResolveTo.get();
           if (resolvedAnnotations == null) {
             resolvedAnnotations = AnnotatedConfigResolver.resolveAnnotations(config, reverseFields);
           }
           handlePathLoad(config, resolvedAnnotations, path, loadSettings);
-          ret.put(path.toFile().getName(), config);
+          ret.put(fileName, config);
         }
         return ret;
       } catch (IOException e) {

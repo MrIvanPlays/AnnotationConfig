@@ -14,6 +14,8 @@ import java.io.OutputStreamWriter;
 import java.io.Reader;
 import java.io.Writer;
 import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 import java.util.function.Supplier;
 
@@ -359,6 +361,7 @@ public interface ConfigResolver {
     private CustomOptions options;
     private LoadSettings defaultLoadSettings;
     private KeyResolver keyResolver;
+    private List<String> fileExtensions;
     private boolean reverseFields = false;
 
     public Builder() {}
@@ -375,6 +378,7 @@ public interface ConfigResolver {
       this.options = copy.options;
       this.defaultLoadSettings = copy.defaultLoadSettings;
       this.keyResolver = copy.keyResolver;
+      this.fileExtensions = copy.fileExtensions;
       this.reverseFields = copy.reverseFields;
     }
 
@@ -468,6 +472,27 @@ public interface ConfigResolver {
     }
 
     /**
+     * Sets a file extension for the config type you want to generate configs for.
+     *
+     * <p>A config file can have multiple extensions, so calling this method multiple times with
+     * different values is allowed.
+     *
+     * <p>As an example, the file extension for YAML is ".yml".
+     *
+     * @param fileExtension file extension
+     * @return this instance for chaining
+     */
+    public Builder withFileExtension(String fileExtension) {
+      if (this.fileExtensions == null) {
+        this.fileExtensions = new ArrayList<>();
+      }
+      if (!this.fileExtensions.contains(fileExtension)) {
+        this.fileExtensions.add(fileExtension);
+      }
+      return this;
+    }
+
+    /**
      * Sets whether to reverse fields when generating options. This is needed for some config types
      * so the generated options are chronological with the annotated config's fields. The default
      * value here is {@code false}.
@@ -493,6 +518,7 @@ public interface ConfigResolver {
           options,
           defaultLoadSettings,
           keyResolver,
+          fileExtensions.toArray(new String[0]),
           reverseFields);
     }
   }

@@ -85,6 +85,7 @@ public final class TomlConfig {
             .withLoadSetting(LoadSetting.GENERATE_NEW_OPTIONS, false)
             .withValueWriter(TOML_VALUE_WRITER)
             .withCommentPrefix("# ")
+            .withFileExtension(".toml")
             .shouldReverseFields(true)
             .withValueReader(
                 new ValueReader() {

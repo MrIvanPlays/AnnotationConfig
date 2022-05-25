@@ -45,6 +45,7 @@ public final class YamlConfig {
             .withValueWriter(YAML_VALUE_WRITER)
             .shouldReverseFields(true)
             .withCommentPrefix("# ")
+            .withFileExtension(".yml")
             .withValueReader(
                 new ValueReader() {
                   @Override
