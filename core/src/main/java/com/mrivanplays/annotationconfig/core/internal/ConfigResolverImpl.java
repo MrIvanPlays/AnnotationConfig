@@ -348,7 +348,7 @@ public final class ConfigResolverImpl implements ConfigResolver {
           if (resolvedAnnotations == null) {
             resolvedAnnotations = AnnotatedConfigResolver.resolveAnnotations(config, reverseFields);
           }
-          load(config, path);
+          handlePathLoad(config, resolvedAnnotations, path, loadSettings);
           ret.put(path.toFile().getName(), config);
         }
         return ret;
