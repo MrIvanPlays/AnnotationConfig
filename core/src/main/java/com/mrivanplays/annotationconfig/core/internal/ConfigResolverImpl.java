@@ -4,6 +4,7 @@ import com.mrivanplays.annotationconfig.core.annotations.type.AnnotationType;
 import com.mrivanplays.annotationconfig.core.resolver.ConfigResolver;
 import com.mrivanplays.annotationconfig.core.resolver.ValueReader;
 import com.mrivanplays.annotationconfig.core.resolver.ValueWriter;
+import com.mrivanplays.annotationconfig.core.resolver.WritableObject;
 import com.mrivanplays.annotationconfig.core.resolver.key.KeyResolver;
 import com.mrivanplays.annotationconfig.core.resolver.options.CustomOptions;
 import com.mrivanplays.annotationconfig.core.resolver.settings.LoadSetting;
@@ -18,9 +19,15 @@ import java.io.Writer;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Collections;
+import java.util.Iterator;
+import java.util.LinkedList;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.function.Supplier;
+import java.util.stream.Stream;
 
 public final class ConfigResolverImpl implements ConfigResolver {
 
@@ -259,6 +266,93 @@ public final class ConfigResolverImpl implements ConfigResolver {
       return;
     }
     handlePathLoad(annotatedConfig, resolvedAnnotations, path, loadSettings);
+  }
+
+  @Override
+  public <T> List<T> resolveMultiple(
+      File dir, Supplier<T> configToResolveTo, WritableObject dumpFile) {
+    return resolveMultiple(dir, configToResolveTo, dumpFile, defaultLoadSettings);
+  }
+
+  @Override
+  public <T> List<T> resolveMultiple(
+      File dir, Supplier<T> configToResolveTo, WritableObject dumpFile, LoadSettings loadSettings) {
+    if (!dir.isDirectory()) {
+      throw new IllegalArgumentException(dir + " is not a directory!");
+    }
+    if (!dir.exists()) {
+      dir.mkdirs();
+      T config = configToResolveTo.get();
+      dump(config, dumpFile.writer());
+      return Collections.singletonList(config);
+    } else {
+      File[] files = dir.listFiles();
+      if (files == null || files.length == 0) {
+        return Collections.emptyList();
+      }
+      List<T> ret = new LinkedList<>();
+      Map<AnnotationHolder, Set<AnnotationType>> resolvedAnnotations = null;
+      for (File file : files) {
+        if (file.isDirectory()) {
+          continue;
+        }
+        T config = configToResolveTo.get();
+        if (resolvedAnnotations == null) {
+          resolvedAnnotations = AnnotatedConfigResolver.resolveAnnotations(config, reverseFields);
+        }
+        handleFileLoad(config, resolvedAnnotations, file, loadSettings);
+        ret.add(config);
+      }
+      return ret;
+    }
+  }
+
+  @Override
+  public <T> List<T> resolveMultiple(
+      Path dir, Supplier<T> configToResolveTo, WritableObject dumpFile) {
+    return resolveMultiple(dir, configToResolveTo, dumpFile, defaultLoadSettings);
+  }
+
+  @Override
+  public <T> List<T> resolveMultiple(
+      Path dir, Supplier<T> configToResolveTo, WritableObject dumpFile, LoadSettings loadSettings) {
+    if (!Files.isDirectory(dir)) {
+      throw new IllegalArgumentException(dir + " is not a directory!");
+    }
+    if (!Files.exists(dir)) {
+      try {
+        Files.createDirectories(dir);
+        T config = configToResolveTo.get();
+        dump(config, dumpFile.writer());
+        return Collections.singletonList(config);
+      } catch (IOException e) {
+        throw new RuntimeException(e);
+      }
+    } else {
+      try (Stream<Path> paths = Files.list(dir)) {
+        if (!paths.findAny().isPresent()) {
+          return Collections.emptyList();
+        }
+        Iterator<Path> iterator = paths.iterator();
+        Map<AnnotationHolder, Set<AnnotationType>> resolvedAnnotations = null;
+        List<T> ret = new LinkedList<>();
+        while (iterator.hasNext()) {
+          Path path = iterator.next();
+          if (Files.isDirectory(path)) {
+            continue;
+          }
+          T config = configToResolveTo.get();
+          if (resolvedAnnotations == null) {
+            resolvedAnnotations = AnnotatedConfigResolver.resolveAnnotations(config, reverseFields);
+          }
+          load(config, path);
+          ret.add(config);
+        }
+        return ret;
+      } catch (IOException e) {
+        throw new RuntimeException(e);
+      }
+    }
   }
 
   private void handleFileLoad(

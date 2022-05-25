@@ -14,7 +14,9 @@ import java.io.OutputStreamWriter;
 import java.io.Reader;
 import java.io.Writer;
 import java.nio.file.Path;
+import java.util.List;
 import java.util.Map;
+import java.util.function.Supplier;
 
 /**
  * Represents a resolver of configurations.
@@ -270,6 +272,69 @@ public interface ConfigResolver {
    * @param loadSettings the load settings
    */
   void loadOrDump(Object annotatedConfig, Path path, LoadSettings loadSettings);
+
+  /**
+   * Loads the configurations in the {@link File} {@code dir} specified, and if any do not exist,
+   * the defaults (if specified) are dumped to the specified {@link WritableObject} {@code
+   * dumpFile}. <br>
+   * <b>WARNING: The specified {@link File} {@code dir} has to be a directory!!!!!</b>
+   *
+   * @param dir the directory to load configurations from
+   * @param configToResolveTo a {@link Supplier} of the needed configuration objects
+   * @param dumpFile the default dump file
+   * @return a list of the loaded configurations
+   * @throws IllegalArgumentException if the specified {@code dir} is not a directory!
+   * @param <T> configuration type needed
+   */
+  <T> List<T> resolveMultiple(File dir, Supplier<T> configToResolveTo, WritableObject dumpFile);
+
+  /**
+   * Loads the configurations in the {@link File} {@code dir} specified, and if any do not exist,
+   * the defaults (if specified) are dumped to the specified {@link WritableObject} {@code
+   * dumpFile}. <br>
+   * <b>WARNING: The specified {@link File} {@code dir} has to be a directory!!!!!</b>
+   *
+   * @param dir the directory to load configurations from
+   * @param configToResolveTo a {@link Supplier} of the needed configuration objects
+   * @param dumpFile the default dump file
+   * @param loadSettings the load settings to use when loading the configurations
+   * @return a list of the loaded configurations
+   * @throws IllegalArgumentException if the specified {@code dir} is not a directory!
+   * @param <T> configuration type needed
+   */
+  <T> List<T> resolveMultiple(
+      File dir, Supplier<T> configToResolveTo, WritableObject dumpFile, LoadSettings loadSettings);
+
+  /**
+   * Loads the configurations in the {@link Path} {@code dir} specified, and if any do not exist,
+   * the defaults (if specified) are dumped to the specified {@link WritableObject} {@code
+   * dumpFile}. <br>
+   * <b>WARNING: The specified {@link Path} {@code dir} has to be a directory!!!!!</b>
+   *
+   * @param dir the directory to load configurations from
+   * @param configToResolveTo a {@link Supplier} of the needed configuration objects
+   * @param dumpFile the default dump file
+   * @return a list of the loaded configurations
+   * @throws IllegalArgumentException if the specified {@code dir} is not a directory!
+   * @param <T> configuration type needed
+   */
+  <T> List<T> resolveMultiple(Path dir, Supplier<T> configToResolveTo, WritableObject dumpFile);
+  /**
+   * Loads the configurations in the {@link Path} {@code dir} specified, and if any do not exist,
+   * the defaults (if specified) are dumped to the specified {@link WritableObject} {@code
+   * dumpFile}. <br>
+   * <b>WARNING: The specified {@link Path} {@code dir} has to be a directory!!!!!</b>
+   *
+   * @param dir the directory to load configurations from
+   * @param configToResolveTo a {@link Supplier} of the needed configuration objects
+   * @param dumpFile the default dump file
+   * @param loadSettings the load settings to use when loading the configurations
+   * @return a list of the loaded configurations
+   * @throws IllegalArgumentException if the specified {@code dir} is not a directory!
+   * @param <T> configuration type needed
+   */
+  <T> List<T> resolveMultiple(
+      Path dir, Supplier<T> configToResolveTo, WritableObject dumpFile, LoadSettings loadSettings);
 
   /**
    * Represents a builder of a {@link ConfigResolver}
