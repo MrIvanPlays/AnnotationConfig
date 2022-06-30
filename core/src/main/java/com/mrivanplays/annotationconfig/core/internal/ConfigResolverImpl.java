@@ -149,7 +149,7 @@ public final class ConfigResolverImpl implements ConfigResolver {
 
   @Override
   public void load(Object annotatedConfig, Path path, LoadSettings loadSettings) {
-    if (!Files.exists(path) || Files.isDirectory(path)) {
+    if (Files.notExists(path) || Files.isDirectory(path)) {
       return;
     }
     Map<AnnotationHolder, Set<AnnotationType>> resolvedAnnotations =
@@ -258,7 +258,7 @@ public final class ConfigResolverImpl implements ConfigResolver {
     }
     Map<AnnotationHolder, Set<AnnotationType>> resolvedAnnotations =
         AnnotatedConfigResolver.resolveAnnotations(annotatedConfig, reverseFields);
-    if (!Files.exists(path)) {
+    if (Files.notExists(path)) {
       AnnotatedConfigResolver.dump(
           annotatedConfig,
           resolvedAnnotations,
@@ -333,7 +333,7 @@ public final class ConfigResolverImpl implements ConfigResolver {
     if (!Files.isDirectory(dir)) {
       throw new IllegalArgumentException(dir + " is not a directory!");
     }
-    if (!Files.exists(dir)) {
+    if (Files.notExists(dir)) {
       try {
         Files.createDirectories(dir);
         T config = configToResolveTo.get();

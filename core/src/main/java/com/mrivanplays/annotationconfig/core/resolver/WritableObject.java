@@ -49,7 +49,7 @@ public interface WritableObject {
   static WritableObject createFromPath(Path path) {
     return () -> {
       try {
-        if (!Files.exists(path)) {
+        if (Files.notExists(path)) {
           Files.createFile(path);
         }
         return new PrintWriter(Files.newBufferedWriter(path));
