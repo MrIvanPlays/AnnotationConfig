@@ -511,6 +511,9 @@ public interface ConfigResolver {
      * @return new config resolver instance
      */
     public ConfigResolver build() {
+      if (fileExtensions == null || fileExtensions.isEmpty()) {
+        throw new IllegalArgumentException("No file extensions specified");
+      }
       return new ConfigResolverImpl(
           commentPrefix,
           valueWriter,

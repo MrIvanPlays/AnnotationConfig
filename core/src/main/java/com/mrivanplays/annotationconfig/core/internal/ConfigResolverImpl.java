@@ -52,9 +52,6 @@ public final class ConfigResolverImpl implements ConfigResolver {
     this.valueWriter = Objects.requireNonNull(valueWriter, "valueWriter");
     this.valueReader = Objects.requireNonNull(valueReader, "valueReader");
     this.fileExtensions = Objects.requireNonNull(fileExtensions, "fileExtensions");
-    if (fileExtensions.length == 0) {
-      throw new IllegalArgumentException("File extensions cannot be empty");
-    }
     if (options == null) {
       this.options = CustomOptions.empty();
     } else {
