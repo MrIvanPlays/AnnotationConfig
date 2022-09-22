@@ -126,6 +126,7 @@ foo:
 - Optimisations to MapUtils
 - Better preserve dump order
 - Added `SerializerRegistry#registerSimpleValueSerializer(Class, Function)` and `SerializerRegistry#registerSimpleValueDeserializer(Class, Function)`
+- Deprecation of DateSerializer in toml module.
 
 ## Version 2.1.0
 
