@@ -15,8 +15,10 @@ import java.util.TimeZone;
  * This is kept and maintained for backwards compatibility, everyone is encouraged to migrate to the
  * new java time api.
  *
+ * @deprecated this will be removed in a later minor 3.0.0 version. Migrate to the proper {@link java.time} API.
  * @since 1.0
  */
+@Deprecated
 public class DateResolver implements FieldTypeSerializer<Date> {
 
   private static final DateFormat formatter = getFormatter();
@@ -85,6 +87,8 @@ public class DateResolver implements FieldTypeSerializer<Date> {
         "[AnnotationConfig] WARNING: Stop using Date for dates. Heck, its 2022, we have java 17, and java 8 in 2014 implemented a new time api. USE THAT");
     System.err.println(
         "[AnnotationConfig] WARNING: Date serializer is kept and maintained for backwards compatibility, migrate to the new java time API.");
+    System.err.println("[AnnotationConfig] WARNING: As of September 2022, the DateResolver has been deprecated and will be removed in a future 3.0.0 minor update.");
+    System.err.println("[AnnotationConfig] WARNING: Everyone is encouraged to migrate to the \"new\" java.time api.");
   }
 
   private static DateFormat getFormatter() {
