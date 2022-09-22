@@ -85,7 +85,7 @@ class DefaultSerializer implements FieldTypeSerializer<Object> {
         return arr;
       } else {
         if (ReflectionUtils.isPrimitive(typeName)) {
-          return dataRaw;
+          return ReflectionUtils.castArrayToType(fieldType, dataRaw);
         }
         // this is (technically) not possible to be reached by the default serializer, but it's
         // better to have the belt than not to.

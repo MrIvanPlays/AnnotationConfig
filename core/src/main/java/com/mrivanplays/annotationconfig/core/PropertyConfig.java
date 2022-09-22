@@ -6,10 +6,12 @@ import com.mrivanplays.annotationconfig.core.resolver.ValueReader;
 import com.mrivanplays.annotationconfig.core.resolver.ValueWriter;
 import com.mrivanplays.annotationconfig.core.resolver.options.CustomOptions;
 import com.mrivanplays.annotationconfig.core.resolver.settings.LoadSettings;
+import com.mrivanplays.annotationconfig.core.utils.ReflectionUtils;
 import java.io.File;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.io.Reader;
+import java.util.Arrays;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -53,7 +55,19 @@ public final class PropertyConfig {
                     properties.load(reader);
                     Map<String, Object> ret = new LinkedHashMap<>();
                     for (Object key : properties.keySet()) {
-                      ret.put(String.valueOf(key), properties.get(key));
+                      Object value = properties.get(key);
+                      if (value instanceof String) {
+                        String valueString = String.valueOf(value);
+                        if (valueString.contains(",")) {
+                          String[] stringArray = valueString.split(",");
+                          Object[] newArray = new Object[stringArray.length];
+                          for (int i = 0; i < stringArray.length; i++) {
+                            newArray[i] = stringArray[i].trim();
+                          }
+                          value = newArray;
+                        }
+                      }
+                      ret.put(String.valueOf(key), value);
                     }
                     return ret;
                   }
@@ -71,9 +85,6 @@ public final class PropertyConfig {
         CustomOptions options) {
       int index = 0;
       for (Map.Entry<String, Object> entry : values.entrySet()) {
-        if (entry.getValue().getClass().isArray()) {
-          throw new IllegalArgumentException(".properties does not support arrays");
-        }
         if (entry.getValue() instanceof Map<?, ?>) {
           throw new IllegalArgumentException(".properties does not support maps");
         }
@@ -88,8 +99,13 @@ public final class PropertyConfig {
         String toWrite;
         if (entry.getValue() instanceof MultilineString) {
           toWrite = ((MultilineString) entry.getValue()).getString();
-        } else {
+        } else if (!entry.getValue().getClass().isArray()) {
           toWrite = String.valueOf(entry.getValue());
+        } else {
+          toWrite =
+              Arrays.deepToString(ReflectionUtils.castToArray(entry.getValue()))
+                  .replace("[", "")
+                  .replace("]", "");
         }
         writer.println(entry.getKey() + "=" + toWrite);
         if ((index + 1) != values.size()) {
