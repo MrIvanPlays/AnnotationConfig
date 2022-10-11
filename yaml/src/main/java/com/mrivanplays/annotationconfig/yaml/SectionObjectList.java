@@ -1,8 +1,10 @@
 package com.mrivanplays.annotationconfig.yaml;
 
 import java.util.Collections;
+import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Objects;
 
 /**
@@ -29,7 +31,7 @@ import java.util.Objects;
  * @author MrIvanPlays
  * @since v2.1.1
  */
-public final class SectionObjectList<T> {
+public final class SectionObjectList<T> implements Iterable<Entry<String, T>> {
 
   /**
    * Creates a new {@link SectionObjectListBuilder} with pre-defined {@link Class} type.
@@ -66,6 +68,12 @@ public final class SectionObjectList<T> {
    */
   public Map<String, T> getAsMap() {
     return Collections.unmodifiableMap(values);
+  }
+
+  /** {@inheritDoc} */
+  @Override
+  public Iterator<Entry<String, T>> iterator() {
+    return this.values.entrySet().iterator();
   }
 
   /**

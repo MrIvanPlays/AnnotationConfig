@@ -70,20 +70,18 @@ public final class SectionObjectListSerializer<T>
         serializerRegistry
             .getSerializer(value.getObjectsType())
             .orElse(serializerRegistry.getDefaultSerializer());
-    value
-        .getAsMap()
-        .forEach(
-            (k, v) ->
-                ret.putAll(
-                    k,
-                    serializer.serialize(
-                        value.getObjectsType().cast(v),
-                        SerializationContext.of(
-                            value.getObjectsType().cast(v),
-                            value.getObjectsType(),
-                            value.getObjectsType(),
-                            context.getAnnotatedConfig()),
-                        AnnotationAccessor.EMPTY)));
+    for (Map.Entry<String, T> entry : value) {
+      ret.putAll(
+          entry.getKey(),
+          serializer.serialize(
+              value.getObjectsType().cast(entry.getValue()),
+              SerializationContext.of(
+                  value.getObjectsType().cast(entry.getValue()),
+                  value.getObjectsType(),
+                  value.getObjectsType(),
+                  context.getAnnotatedConfig()),
+              AnnotationAccessor.EMPTY));
+    }
     return ret;
   }
 }
