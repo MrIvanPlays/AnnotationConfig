@@ -51,6 +51,11 @@ default serializer rather than a proper serializer, if such is registered.
 - The default serializer now recognizes `@Key` and `@Ignore` annotations whenever (de)serializing
 an object.
 
+### `CustomOptions` and `LoadSettings` replaced
+These two were confusing, so now they have been replaced with a unified `Settings` object which
+works together with the `Setting` interface. They can be used just as the objects they replaced, but
+with much better design.
+
 #### Going smarter
 ##### Arrays
 The default serializer now properly (de)serializes array types. 
@@ -116,6 +121,8 @@ foo:
 foo:
   - "zzz"
 ```
+
+
 
 ### Misc changes
 - Removed deprecated methods
