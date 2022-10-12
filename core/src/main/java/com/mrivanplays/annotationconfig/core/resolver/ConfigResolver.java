@@ -174,9 +174,9 @@ public interface ConfigResolver {
    * the default {@link Settings} from the builder of this config resolver, or {@link
    * ACDefaultSettings#getDefault()}.
    *
-   * <p>If you have a {@link File} instance before calling that, consider using {@link #load(Object,
-   * File)}. This way you allow AnnotatedConfig to generate missing options if the load settings
-   * allow it.
+   * <p>If you have a {@link File} or {@link Path} instance before calling that, consider using
+   * {@link #load(Object, File)}. This way you allow AnnotatedConfig to generate missing options if
+   * the load settings allow it.
    *
    * @param annotatedConfig the annotated config you want to load to
    * @param in the input stream you want to load
@@ -189,9 +189,9 @@ public interface ConfigResolver {
    * Loads the specified {@code annotatedConfig} from the specified {@link InputStream} {@code in}
    * using the {@link Settings} {@code settings} specified.
    *
-   * <p>If you have a {@link File} instance before calling that, consider using {@link #load(Object,
-   * File, Settings)}. This way you allow AnnotatedConfig to generate missing options if the load
-   * settings allow it.
+   * <p>If you have a {@link File} or {@link Path} instance before calling that, consider using
+   * {@link #load(Object, File, Settings)}. This way you allow AnnotatedConfig to generate missing
+   * options if the load settings allow it.
    *
    * @param annotatedConfig the annotated config you want to load to
    * @param in the input stream you want to load
@@ -206,9 +206,9 @@ public interface ConfigResolver {
    * the default {@link Settings} from the builder of this config resolver, or {@link
    * ACDefaultSettings#getDefault()}.
    *
-   * <p>If you have a {@link File} instance before calling that, consider using {@link #load(Object,
-   * File)}. This way you allow AnnotatedConfig to generate missing options if the load settings
-   * allow it.
+   * <p>If you have a {@link File} or {@link Path} instance before calling that, consider using
+   * {@link #load(Object, File)}. This way you allow AnnotatedConfig to generate missing options if
+   * the load settings allow it.
    *
    * @param annotatedConfig the annotated config you want to load to
    * @param reader the reader you want to load
@@ -219,9 +219,9 @@ public interface ConfigResolver {
    * Loads the specified {@code annotatedConfig} from the specified {@link Reader} {@code reader}
    * using the {@link Settings} {@code settings} specified.
    *
-   * <p>If you have a {@link File} instance before calling that, consider using {@link #load(Object,
-   * File, Settings)}. This way you allow AnnotatedConfig to generate missing options if the load
-   * settings allow it.
+   * <p>If you have a {@link File} or {@link Path} instance before calling that, consider using
+   * {@link #load(Object, File, Settings)}. This way you allow AnnotatedConfig to generate missing
+   * options if the load settings allow it.
    *
    * @param annotatedConfig the annotated config you want to load to
    * @param reader the reader you want to load
