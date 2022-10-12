@@ -22,5 +22,4 @@ public interface TriFunction<A, B, C, R> {
    * @return function result
    */
   R apply(A a, B b, C c);
-
 }

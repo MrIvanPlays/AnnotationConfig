@@ -20,7 +20,8 @@ public interface ValueWriter {
   /**
    * AnnotationConfig calls this method in order to write the specified {@code values} with the
    * specified {@code fieldComments} to the specified {@link PrintWriter} {@code writer}. The
-   * written values or the method of writing could be altered via the provided {@link Settings} {@code settings}
+   * written values or the method of writing could be altered via the provided {@link Settings}
+   * {@code settings}
    *
    * @param values the values needed to be written
    * @param fieldComments the comments of the fields

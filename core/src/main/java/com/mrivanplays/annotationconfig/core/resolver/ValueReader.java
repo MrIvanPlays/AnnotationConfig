@@ -17,8 +17,8 @@ import java.util.Map;
 public interface ValueReader {
 
   /**
-   * Should read the specified reader to a Map. Can use the specified {@link Settings} to
-   * manipulate the output of this method, or the ways the reader is parsed to the needed output.
+   * Should read the specified reader to a Map. Can use the specified {@link Settings} to manipulate
+   * the output of this method, or the ways the reader is parsed to the needed output.
    *
    * @param reader the reader we need read
    * @param settings the settings

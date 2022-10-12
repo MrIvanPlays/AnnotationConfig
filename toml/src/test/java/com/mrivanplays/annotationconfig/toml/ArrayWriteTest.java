@@ -9,7 +9,6 @@ public class ArrayWriteTest {
   static class Subject {
 
     private double[] arr = new double[] {1.1, 2.2};
-
   }
 
   @Test
@@ -22,5 +21,4 @@ public class ArrayWriteTest {
 
     Assertions.assertEquals(expected, writer.toString());
   }
-
 }

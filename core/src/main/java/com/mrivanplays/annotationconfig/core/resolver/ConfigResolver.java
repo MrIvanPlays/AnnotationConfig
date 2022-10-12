@@ -2,9 +2,9 @@ package com.mrivanplays.annotationconfig.core.resolver;
 
 import com.mrivanplays.annotationconfig.core.internal.ConfigResolverImpl;
 import com.mrivanplays.annotationconfig.core.resolver.key.KeyResolver;
-import com.mrivanplays.annotationconfig.core.resolver.settings.Settings;
 import com.mrivanplays.annotationconfig.core.resolver.settings.ACDefaultSettings;
 import com.mrivanplays.annotationconfig.core.resolver.settings.Setting;
+import com.mrivanplays.annotationconfig.core.resolver.settings.Settings;
 import java.io.File;
 import java.io.InputStream;
 import java.io.InputStreamReader;
