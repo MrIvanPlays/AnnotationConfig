@@ -13,9 +13,7 @@ public class TestRawConfigDump {
     private String foo = "aabb";
     private int bar = 1;
 
-    @RawConfig
-    public DataObject raw;
-
+    @RawConfig public DataObject raw;
   }
 
   @Test
@@ -27,5 +25,4 @@ public class TestRawConfigDump {
     Assertions.assertEquals("aabb", config.raw.get("foo").getAsString());
     Assertions.assertEquals(1, config.raw.get("bar").getAsInt());
   }
-
 }

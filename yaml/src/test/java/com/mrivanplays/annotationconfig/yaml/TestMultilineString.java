@@ -38,11 +38,11 @@ public class TestMultilineString {
     YamlConfig.getConfigResolver().dump(config, writer);
 
     String expected =
-        "multiline: \"\n"
+        "control-field: -1\n"
+            + "\n"
+            + "multiline: \"\n"
             + " Look at ma! \\n\n"
             + " I am a multiline string!\"\n"
-            + "\n"
-            + "control-field: -1\n"
             + "\n";
 
     Assertions.assertEquals(expected, writer.toString());

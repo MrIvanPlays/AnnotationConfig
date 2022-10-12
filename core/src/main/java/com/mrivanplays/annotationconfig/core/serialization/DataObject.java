@@ -1,8 +1,10 @@
 package com.mrivanplays.annotationconfig.core.serialization;
 
-import java.util.ArrayList;
+import java.math.BigDecimal;
+import java.math.BigInteger;
 import java.util.Collections;
 import java.util.LinkedHashMap;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -251,7 +253,7 @@ public final class DataObject {
       String key = entry.getKey();
       DataObject value = entry.getValue();
       if (value.isSingleValue()) {
-        ret.put(key, value.getAsObject());
+        ret.put(key, value.getAsObject(true));
       } else {
         ret.put(key, value.getAsMap());
       }
@@ -266,6 +268,27 @@ public final class DataObject {
    */
   public Object getAsObject() {
     return data;
+  }
+
+  /**
+   * Returns the held value by this data objects. If it holds a map, the returned value is null.
+   *
+   * @param serializeBigIntegerAndBigDecimal whether to serialize the value to a primitive if it is
+   *     a {@link BigInteger} or {@link BigDecimal}
+   * @return held object
+   */
+  public Object getAsObject(boolean serializeBigIntegerAndBigDecimal) {
+    if (serializeBigIntegerAndBigDecimal) {
+      if (data instanceof BigInteger) {
+        return ((BigInteger) data).intValueExact();
+      } else if (data instanceof BigDecimal) {
+        return ((BigDecimal) data).doubleValue();
+      } else {
+        return data;
+      }
+    } else {
+      return data;
+    }
   }
 
   /**
@@ -380,6 +403,32 @@ public final class DataObject {
   }
 
   /**
+   * Returns the held value by this data object as a {@link BigDecimal}
+   *
+   * @return held big decimal
+   * @see #getAsObject()
+   */
+  public BigDecimal getAsBigDecimal() {
+    if (getAsObject() instanceof BigDecimal) {
+      return (BigDecimal) getAsObject();
+    }
+    return BigDecimal.valueOf(getAsDouble());
+  }
+
+  /**
+   * Returns the held value by this data object as a {@link BigInteger}
+   *
+   * @return held big integer
+   * @see #getAsObject()
+   */
+  public BigInteger getAsBigInteger() {
+    if (getAsObject() instanceof BigInteger) {
+      return (BigInteger) getAsObject();
+    }
+    return BigInteger.valueOf(getAsLong());
+  }
+
+  /**
    * Returns the held value by this data object as a {@link List} of {@link Object} . If the held
    * value isn't a list, this method will return null.
    *
@@ -406,7 +455,7 @@ public final class DataObject {
     if (base == null) {
       return null;
     }
-    List<T> ret = new ArrayList<>();
+    List<T> ret = new LinkedList<>();
     for (Object val : base) {
       if (val.getClass().isAssignableFrom(valueClass)) {
         ret.add(valueClass.cast(val));

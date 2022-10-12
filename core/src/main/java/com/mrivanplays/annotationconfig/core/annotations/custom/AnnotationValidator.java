@@ -1,6 +1,6 @@
 package com.mrivanplays.annotationconfig.core.annotations.custom;
 
-import com.mrivanplays.annotationconfig.core.resolver.options.CustomOptions;
+import com.mrivanplays.annotationconfig.core.resolver.settings.Settings;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Field;
 
@@ -20,12 +20,12 @@ public interface AnnotationValidator<T extends Annotation> {
    *
    * @param annotation the annotation this validator validates
    * @param value the value AnnotationConfig received
-   * @param options the custom options for the config resolver
+   * @param settings the settings for the config resolver
    * @param field the annotated field
    * @return validation response
    * @see ValidationResponse
    */
-  ValidationResponse validate(T annotation, Object value, CustomOptions options, Field field);
+  ValidationResponse validate(T annotation, Object value, Settings settings, Field field);
 
   /**
    * AnnotationConfig calls this method whenever it finds the custom annotation this validator is

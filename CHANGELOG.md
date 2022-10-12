@@ -2,6 +2,141 @@
 
 This file summarises changes between major versions.
 
+## Version 3.0.0
+This version is all focused on serialization.
+
+### Introducing `SimpleValueSerializer`
+This is a utility class to help you with serializing objects you do not need a custom serializer for
+in your own custom serializer of some kind. See the docs for more.
+
+### FieldTypeSerializer now is not exactly `Field`
+Instead of passing a `Field`, AnnotationConfig now passes a `SerializationContext`, because
+AnnotationConfig can not always get a `Field` instance. We don't want to lie with another `Field`, 
+instead, we are now focused on accurate data - what is it exactly (de)serializing.
+The other thing new we have - the `AnnotationAccessor` - this is a way of accessing a (perhaps)
+`Field`'s annotations in a more controllable manner.
+
+#### Better experience with FieldTypeSerializer?
+Introducing the `FieldTypeSerializer#functional(TriFunction, TriFunction)` with which it shall be
+easier to create `FieldTypeSerializer`s. Quick example:
+
+```java
+// Before
+SerializerRegistry.registerSerializer(Foo.class, new FieldTypeSerializer<Foo>() {
+  
+  @Override
+  public Foo deserialize(DataObject data, SerializationContext<Foo> context, AnnotationAccessor annotations) {
+    // deserialization logic
+  }
+  
+  @Override
+  public DataObject serialize(Foo value, SerializationContext<Foo> context, AnnotationAccessor annotations) {
+    // serialization logic
+  }
+});
+
+// After
+SerializationRegistry.registerSerializer(
+    Foo.class, 
+        FieldTypeSerializer.<Foo>functional(
+            (data, context, annotations) -> { // deserialization logic },
+            (value, context, annotations) -> { // serialization logic }));
+```
+
+### Beefed up default serializer
+- The default serializer now recognizes `BigInteger` and `BigDecimal` as "primitives" and (de)serializes
+them. 
+- Fixed a few type mistakes on list (de)serialization, which caused everything to go to the 
+default serializer rather than a proper serializer, if such is registered.
+- The default serializer now recognizes `@Key` and `@Ignore` annotations whenever (de)serializing
+an object.
+
+### `CustomOptions` and `LoadSettings` replaced
+These two were confusing, so now they have been replaced with a unified `Settings` object which
+works together with the `Setting` interface. They can be used just as the objects they replaced, but
+with much better design.
+
+#### Going smarter
+##### Arrays
+The default serializer now properly (de)serializes array types. 
+Examples:
+```java
+class MyConfig {
+  
+  private MyObj[] myObjArr = new MyObj[] { new MyObj("foo"), new MyObj("bar") };
+  
+  static class MyObj {
+    
+    String foo;
+    
+    MyObj(String foo) {
+      this.foo = foo;
+    }
+    
+    // serializer is not necessary
+    static class Serializer implements FieldTypeSerializer<MyObj> {
+      
+      @Override
+      public MyObj deserialize(DataObject data, SerializationContext<MyObj> context, AnnotationAccessor annotations) {
+        return new MyObj(data.getAsString());
+      }
+      
+      @Override
+      public DataObject serialize(MyObj value, SerializationContext<MyObj> context, AnnotationAccessor annotations) {
+        return new DataObject(value.foo);
+      }
+      
+    }
+    
+  }
+  
+}
+
+class Main {
+  
+  public static void main(String[] args) {
+    MyConfig myConfig = new MyConfig();
+    SerializerRegistry serializers = SerializerRegistry.INSTANCE;
+    serializers.registerSerializer(MyConfig.MyObj.class, new MyConfig.MyObj.Serializer());
+    YamlConfig.getConfigResolver().dump(myConfig, new File("config.yml"));
+  }
+  
+}
+```
+The code above will output the following:
+```yaml
+myObjArr: ["foo", "bar"]
+```
+
+##### Single field class logic
+The default serializer now (de)serializes classes with only 1 field better. An example of usage for
+such class is a list where you may want some more redundancy.<br>
+Examples (YAML):
+```yaml
+# Version 2.1.x:
+foo:
+  - bar: "zzz"
+
+# Version 3.0.0:
+foo:
+  - "zzz"
+```
+
+
+
+### Misc changes
+- Removed deprecated methods
+- Removed `SerializerRegistry#registerSerializer(Class, BiFunction, BiFunction)`. Replaced by 
+`SerializerRegistry#registerSimpleSerializer(Class, Function, Function)`
+- Quality-of-life code changes
+- Added a class called ReflectionUtils
+- Optimisations to MapUtils
+- Better preserve dump order
+- Added `SerializerRegistry#registerSimpleValueSerializer(Class, Function)` and `SerializerRegistry#registerSimpleValueDeserializer(Class, Function)`
+- Deprecation of DateSerializer in toml module.
+- Since not everything can be listed in the changelog, there have been many miscellaneous changes improving
+  performance and API design. The full changes can be seen in the release commit(s).
+
 ## Version 2.1.0
 
 ### Comments inside sections

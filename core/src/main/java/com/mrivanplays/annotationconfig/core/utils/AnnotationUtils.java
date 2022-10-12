@@ -9,8 +9,8 @@ import com.mrivanplays.annotationconfig.core.annotations.comment.Comments;
 import com.mrivanplays.annotationconfig.core.annotations.type.AnnotationType;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Field;
-import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -80,7 +80,7 @@ public final class AnnotationUtils {
    * @return comments, either an empty list or a list with comments
    */
   public static List<String> getComments(Field field) {
-    List<String> ret = new ArrayList<>();
+    List<String> ret = new LinkedList<>();
     if (field.getDeclaredAnnotations().length > 0) {
       for (Annotation annotation : field.getDeclaredAnnotations()) {
         Optional<AnnotationType> typeOpt = AnnotationType.match(annotation.annotationType());

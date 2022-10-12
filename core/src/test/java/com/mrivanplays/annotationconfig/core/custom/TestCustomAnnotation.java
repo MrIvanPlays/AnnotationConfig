@@ -3,6 +3,8 @@ package com.mrivanplays.annotationconfig.core.custom;
 import com.mrivanplays.annotationconfig.core.PropertyConfig;
 import com.mrivanplays.annotationconfig.core.annotations.custom.CustomAnnotationRegistry;
 import com.mrivanplays.annotationconfig.core.resolver.ConfigResolver;
+import com.mrivanplays.annotationconfig.core.resolver.settings.ACDefaultSettings;
+import com.mrivanplays.annotationconfig.core.resolver.settings.Settings;
 import java.io.StringReader;
 import java.io.StringWriter;
 import org.junit.jupiter.api.Assertions;
@@ -43,13 +45,14 @@ public class TestCustomAnnotation {
 
   @Test
   public void testAlterOption() {
-    resolver.options().put(OptsConstant.DUMMY_OPTION, OptsConstant.DUMMY_DEFAULT);
+    Settings settings = ACDefaultSettings.getDefault().copy();
+    settings.put(OptsConstant.DUMMY_DEFAULT, false);
     DummyConfig config = new DummyConfig();
     resolver.load(
         config,
-        getClass().getClassLoader().getResourceAsStream("custom/custom-anno-def.properties"));
-    Assertions.assertTrue(
-        resolver.options().getAsOr(OptsConstant.DUMMY_OPTION, Boolean.class, false));
+        getClass().getClassLoader().getResourceAsStream("custom/custom-anno-def.properties"),
+        settings);
+    Assertions.assertTrue(settings.get(OptsConstant.DUMMY_DEFAULT).get());
   }
 
   @Test

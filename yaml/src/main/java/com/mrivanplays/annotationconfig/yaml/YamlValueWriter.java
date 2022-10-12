@@ -2,10 +2,12 @@ package com.mrivanplays.annotationconfig.yaml;
 
 import com.mrivanplays.annotationconfig.core.resolver.MultilineString;
 import com.mrivanplays.annotationconfig.core.resolver.ValueWriter;
-import com.mrivanplays.annotationconfig.core.resolver.options.CustomOptions;
+import com.mrivanplays.annotationconfig.core.resolver.settings.Settings;
+import com.mrivanplays.annotationconfig.core.utils.ReflectionUtils;
 import java.io.PrintWriter;
-import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 
@@ -23,7 +25,7 @@ public final class YamlValueWriter implements ValueWriter {
       Map<String, Object> values,
       Map<String, List<String>> fieldComments,
       PrintWriter writer,
-      CustomOptions options) {
+      Settings settings) {
     for (Map.Entry<String, Object> entry : values.entrySet()) {
       write(null, entry.getKey(), entry.getValue(), writer, fieldComments, 2, false, false);
     }
@@ -87,7 +89,7 @@ public final class YamlValueWriter implements ValueWriter {
                 if (b instanceof Map) {
                   Map<String, Object> map = (Map<String, Object>) b;
                   boolean firstValue = true;
-                  List<Map.Entry<String, Object>> reservedObjectsForLater = new ArrayList<>();
+                  List<Map.Entry<String, Object>> reservedObjectsForLater = new LinkedList<>();
                   for (Map.Entry<String, Object> e : map.entrySet()) {
                     if (e.getValue() instanceof Map || e.getValue() instanceof List) {
                       reservedObjectsForLater.add(e);
@@ -170,7 +172,16 @@ public final class YamlValueWriter implements ValueWriter {
                         + "\"");
               }
             } else {
-              writer.println(intentPrefix + (additional2Spaces ? "  " : "") + mapKey + ": " + v);
+              if (v.getClass().isArray()) {
+                writer.println(
+                    intentPrefix
+                        + (additional2Spaces ? " " : "")
+                        + mapKey
+                        + ": "
+                        + Arrays.toString(ReflectionUtils.castToArray(v)));
+              } else {
+                writer.println(intentPrefix + (additional2Spaces ? "  " : "") + mapKey + ": " + v);
+              }
             }
           } else {
             writer.println(
@@ -205,7 +216,7 @@ public final class YamlValueWriter implements ValueWriter {
             if (b instanceof Map) {
               Map<String, Object> map = (Map<String, Object>) b;
               boolean firstValue = true;
-              List<Map.Entry<String, Object>> reservedObjectsForLater = new ArrayList<>();
+              List<Map.Entry<String, Object>> reservedObjectsForLater = new LinkedList<>();
               for (Map.Entry<String, Object> e : map.entrySet()) {
                 if (e.getValue() instanceof Map || e.getValue() instanceof List) {
                   reservedObjectsForLater.add(e);
@@ -272,7 +283,15 @@ public final class YamlValueWriter implements ValueWriter {
             writer.println((child ? intentPrefix : "") + key + ": \"" + toWrite + "\"");
           }
         } else {
-          writer.println((child ? intentPrefix : "") + key + ": " + value);
+          if (value.getClass().isArray()) {
+            writer.println(
+                (child ? intentPrefix : "")
+                    + key
+                    + ": "
+                    + Arrays.toString(ReflectionUtils.castToArray(value)));
+          } else {
+            writer.println((child ? intentPrefix : "") + key + ": " + value);
+          }
         }
       } else {
         writer.println((child ? intentPrefix : "") + key + ": \"" + value + "\"");

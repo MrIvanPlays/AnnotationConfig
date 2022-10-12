@@ -1,6 +1,6 @@
 package com.mrivanplays.annotationconfig.core.serialization;
 
-import java.lang.reflect.Field;
+import com.mrivanplays.annotationconfig.core.utils.TriFunction;
 
 /**
  * Interface representing a custom serializer and deserializer of a field type. You should write a
@@ -15,15 +15,43 @@ import java.lang.reflect.Field;
 public interface FieldTypeSerializer<T> {
 
   /**
-   * AnnotationConfig invokes this call-back method during deserialization when it encounters a
-   * field of the specified type.
+   * Creates a new {@link FieldTypeSerializer} from 2 {@link TriFunction TriFunctions}
    *
-   * @param data the data we received from the config
-   * @param field the field we will attach this information to later on
-   * @return the generic value, the implementation of this interface has specified
+   * @param deserialize deserialize method (see {@link FieldTypeSerializer#deserialize(DataObject,
+   *     SerializationContext, AnnotationAccessor)})
+   * @param serialize serialize method (see {@link FieldTypeSerializer#serialize(Object,
+   *     SerializationContext, AnnotationAccessor)})
+   * @return new field type serializer
+   * @param <T> type for which this serializer is being registered.
    */
-  default T deserialize(DataObject data, Field field) {
-    throw new IllegalArgumentException("FieldTypeSerializer#deserialize not implemented");
+  static <T> FieldTypeSerializer<T> functional(
+      TriFunction<DataObject, SerializationContext<T>, AnnotationAccessor, T> deserialize,
+      TriFunction<T, SerializationContext<T>, AnnotationAccessor, DataObject> serialize) {
+    return new FieldTypeSerializer<T>() {
+      @Override
+      public T deserialize(
+          DataObject data, SerializationContext<T> context, AnnotationAccessor annotations) {
+        return deserialize.apply(data, context, annotations);
+      }
+
+      @Override
+      public TriFunction<DataObject, SerializationContext<T>, AnnotationAccessor, T>
+          deserializeAsFunction() {
+        return deserialize;
+      }
+
+      @Override
+      public DataObject serialize(
+          T value, SerializationContext<T> context, AnnotationAccessor annotations) {
+        return serialize.apply(value, context, annotations);
+      }
+
+      @Override
+      public TriFunction<T, SerializationContext<T>, AnnotationAccessor, DataObject>
+          serializeAsFunction() {
+        return serialize;
+      }
+    };
   }
 
   /**
@@ -31,12 +59,23 @@ public interface FieldTypeSerializer<T> {
    * field of the specified type.
    *
    * @param data the data we received from the config
-   * @param field the field we will attach this information to later on
-   * @param annotatedConfig the annotated config this field was retrieved from
+   * @param context serialization context
+   * @param annotations a way to access annotations of the object bound to the deserialized data
    * @return the generic value, the implementation of this interface has specified
+   * @see SerializationContext
+   * @see AnnotationAccessor
    */
-  default T deserialize(DataObject data, Field field, Object annotatedConfig) {
-    return deserialize(data, field);
+  T deserialize(DataObject data, SerializationContext<T> context, AnnotationAccessor annotations);
+
+  /**
+   * Returns {@link #deserialize(DataObject, SerializationContext, AnnotationAccessor)} as a {@link
+   * TriFunction}
+   *
+   * @return tri function of the deserialize method
+   */
+  default TriFunction<DataObject, SerializationContext<T>, AnnotationAccessor, T>
+      deserializeAsFunction() {
+    return this::deserialize;
   }
 
   /**
@@ -44,8 +83,22 @@ public interface FieldTypeSerializer<T> {
    * of the specified type.
    *
    * @param value the data we need serialized
-   * @param field the field we got the value from
+   * @param context serialization context
+   * @param annotations a way to access annotations of the object bound to the serialized data
    * @return a serialized object which is useful for dumping into a configuration file
+   * @see SerializationContext
+   * @see AnnotationAccessor
    */
-  DataObject serialize(T value, Field field);
+  DataObject serialize(T value, SerializationContext<T> context, AnnotationAccessor annotations);
+
+  /**
+   * Returns {@link #serialize(Object, SerializationContext, AnnotationAccessor)} as a {@link
+   * TriFunction}
+   *
+   * @return tri function of the serialize method
+   */
+  default TriFunction<T, SerializationContext<T>, AnnotationAccessor, DataObject>
+      serializeAsFunction() {
+    return this::serialize;
+  }
 }

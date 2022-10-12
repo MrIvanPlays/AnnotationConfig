@@ -1,7 +1,6 @@
 package com.mrivanplays.annotationconfig.core.utils;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.util.Iterator;
 import java.util.Map;
 
 /**
@@ -13,24 +12,6 @@ import java.util.Map;
  * @since 2.1.0
  */
 public final class MapUtils {
-
-  public static String getLastKey(Map<String, Object> map) {
-    List<String> keys = new ArrayList<>(map.keySet());
-    return keys.get(keys.size() - 1);
-  }
-
-  @Deprecated
-  public static Map<String, Object> getLastMap(Map<String, Object> map) {
-    Map<String, Object> ret = map;
-    for (Map.Entry<String, Object> entry : map.entrySet()) {
-      Object val = entry.getValue();
-      if (!(val instanceof Map)) {
-        break;
-      }
-      ret = getLastMap((Map<String, Object>) val);
-    }
-    return ret;
-  }
 
   public static Map<String, Object> getLastCommonMap(
       Map<String, Object> map1, Map<String, Object> map2) {
@@ -49,11 +30,16 @@ public final class MapUtils {
   public static void populateFirst(Map<String, Object> map1, Map<String, Object> map2) {
     Map<String, Object> lastCommonMap1 = getLastCommonMap(map1, map2);
     Map<String, Object> lastCommonMap2 = getLastCommonMap(map2, map1);
-    String lastKeyMap1;
-    if (lastCommonMap1.size() == 1) {
-      lastKeyMap1 = lastCommonMap1.keySet().stream().findFirst().get();
-    } else {
-      lastKeyMap1 = getLastKey(lastCommonMap1);
+    String lastKeyMap1 = null;
+    Iterator<String> iterator = lastCommonMap1.keySet().iterator();
+    int i = 0;
+    while (iterator.hasNext()) {
+      if (lastCommonMap1.size() == 1 || (i + 1) == lastCommonMap1.size()) {
+        lastKeyMap1 = iterator.next();
+        break;
+      }
+      iterator.next();
+      i++;
     }
     if (lastCommonMap2.containsKey(lastKeyMap1)) {
       Object contained = lastCommonMap2.get(lastKeyMap1);
