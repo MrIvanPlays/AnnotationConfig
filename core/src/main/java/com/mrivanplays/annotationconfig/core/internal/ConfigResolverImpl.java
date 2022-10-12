@@ -6,10 +6,9 @@ import com.mrivanplays.annotationconfig.core.resolver.ValueReader;
 import com.mrivanplays.annotationconfig.core.resolver.ValueWriter;
 import com.mrivanplays.annotationconfig.core.resolver.WritableObject;
 import com.mrivanplays.annotationconfig.core.resolver.key.KeyResolver;
-import com.mrivanplays.annotationconfig.core.resolver.options.CustomOptions;
-import com.mrivanplays.annotationconfig.core.resolver.settings.LoadSetting;
-import com.mrivanplays.annotationconfig.core.resolver.settings.LoadSettings;
-import com.mrivanplays.annotationconfig.core.resolver.settings.NullReadHandleOption;
+import com.mrivanplays.annotationconfig.core.resolver.settings.ACDefaultSettings;
+import com.mrivanplays.annotationconfig.core.resolver.NullReadHandleOption;
+import com.mrivanplays.annotationconfig.core.resolver.settings.Settings;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
@@ -33,8 +32,7 @@ public final class ConfigResolverImpl implements ConfigResolver {
   private final String commentPrefix;
   private final ValueWriter valueWriter;
   private final ValueReader valueReader;
-  private final CustomOptions options;
-  private final LoadSettings defaultLoadSettings;
+  private final Settings settings;
   private final KeyResolver keyResolver;
   private final String[] fileExtensions;
   private final boolean reverseFields;
@@ -43,8 +41,7 @@ public final class ConfigResolverImpl implements ConfigResolver {
       String commentPrefix,
       ValueWriter valueWriter,
       ValueReader valueReader,
-      CustomOptions options,
-      LoadSettings loadSettings,
+      Settings settings,
       KeyResolver keyResolver,
       String[] fileExtensions,
       boolean reverseFields) {
@@ -52,15 +49,10 @@ public final class ConfigResolverImpl implements ConfigResolver {
     this.valueWriter = Objects.requireNonNull(valueWriter, "valueWriter");
     this.valueReader = Objects.requireNonNull(valueReader, "valueReader");
     this.fileExtensions = Objects.requireNonNull(fileExtensions, "fileExtensions");
-    if (options == null) {
-      this.options = CustomOptions.empty();
+    if (settings == null) {
+      this.settings = ACDefaultSettings.getDefault().copy();
     } else {
-      this.options = options;
-    }
-    if (loadSettings == null) {
-      this.defaultLoadSettings = LoadSettings.getDefault();
-    } else {
-      this.defaultLoadSettings = loadSettings;
+      this.settings = settings;
     }
     if (keyResolver == null) {
       this.keyResolver = KeyResolver.DEFAULT;
@@ -71,8 +63,8 @@ public final class ConfigResolverImpl implements ConfigResolver {
   }
 
   @Override
-  public CustomOptions options() {
-    return options;
+  public Settings settings() {
+    return this.settings;
   }
 
   @Override
@@ -86,7 +78,7 @@ public final class ConfigResolverImpl implements ConfigResolver {
         annotatedConfig,
         resolvedAnnotations,
         file,
-        options,
+        settings,
         commentPrefix,
         valueWriter,
         keyResolver,
@@ -102,7 +94,7 @@ public final class ConfigResolverImpl implements ConfigResolver {
         annotatedConfig,
         AnnotatedConfigResolver.resolveAnnotations(annotatedConfig, reverseFields),
         path,
-        options,
+        settings,
         commentPrefix,
         valueWriter,
         keyResolver,
@@ -117,7 +109,7 @@ public final class ConfigResolverImpl implements ConfigResolver {
         annotatedConfig,
         resolvedAnnotations,
         writer,
-        options,
+        settings,
         commentPrefix,
         valueWriter,
         keyResolver,
@@ -126,76 +118,79 @@ public final class ConfigResolverImpl implements ConfigResolver {
 
   @Override
   public void load(Object annotatedConfig, File file) {
-    load(annotatedConfig, file, this.defaultLoadSettings);
+    load(annotatedConfig, file, this.settings);
   }
 
   @Override
   public void load(Object annotatedConfig, Path path) {
-    load(annotatedConfig, path, this.defaultLoadSettings);
+    load(annotatedConfig, path, this.settings);
   }
 
   @Override
-  public void load(Object annotatedConfig, File file, LoadSettings loadSettings) {
+  public void load(Object annotatedConfig, File file, Settings settings) {
     if (!file.exists()) {
       return;
     }
     Map<AnnotationHolder, Set<AnnotationType>> resolvedAnnotations =
         AnnotatedConfigResolver.resolveAnnotations(annotatedConfig, reverseFields);
-    handleFileLoad(annotatedConfig, resolvedAnnotations, file, loadSettings);
+    handleFileLoad(annotatedConfig, resolvedAnnotations, file, settings);
   }
 
   @Override
-  public void load(Object annotatedConfig, Path path, LoadSettings loadSettings) {
+  public void load(Object annotatedConfig, Path path, Settings settings) {
     if (Files.notExists(path) || Files.isDirectory(path)) {
       return;
     }
     Map<AnnotationHolder, Set<AnnotationType>> resolvedAnnotations =
         AnnotatedConfigResolver.resolveAnnotations(annotatedConfig, reverseFields);
-    handlePathLoad(annotatedConfig, resolvedAnnotations, path, loadSettings);
+    handlePathLoad(annotatedConfig, resolvedAnnotations, path, settings);
   }
 
   @Override
   public void load(Object annotatedConfig, Map<String, Object> values) {
-    load(annotatedConfig, values, this.defaultLoadSettings);
+    load(annotatedConfig, values, this.settings);
   }
 
   @Override
-  public void load(Object annotatedConfig, Map<String, Object> values, LoadSettings loadSettings) {
+  public void load(Object annotatedConfig, Map<String, Object> values, Settings settings) {
     if (values.isEmpty()) {
       return;
     }
     Map<AnnotationHolder, Set<AnnotationType>> resolvedAnnotations =
         AnnotatedConfigResolver.resolveAnnotations(annotatedConfig, reverseFields);
     NullReadHandleOption nullReadHandler =
-        loadSettings
-            .get(LoadSetting.NULL_READ_HANDLER)
+        settings
+            .get(ACDefaultSettings.NULL_READ_HANDLER)
             .orElse(
-                defaultLoadSettings
-                    .get(LoadSetting.NULL_READ_HANDLER)
-                    .orElse(LoadSettings.getDefault().get(LoadSetting.NULL_READ_HANDLER).get()));
+                this.settings
+                    .get(ACDefaultSettings.NULL_READ_HANDLER)
+                    .orElse(
+                        ACDefaultSettings.getDefault()
+                            .get(ACDefaultSettings.NULL_READ_HANDLER)
+                            .get()));
     AnnotatedConfigResolver.setFields(
         annotatedConfig,
         values,
         resolvedAnnotations,
         nullReadHandler,
-        options,
+        settings,
         keyResolver,
         reverseFields);
   }
 
   @Override
   public void load(Object annotatedConfig, Reader reader) {
-    load(annotatedConfig, reader, this.defaultLoadSettings);
+    load(annotatedConfig, reader, this.settings);
   }
 
   @Override
-  public void load(Object annotatedConfig, Reader reader, LoadSettings loadSettings) {
+  public void load(Object annotatedConfig, Reader reader, Settings settings) {
     Map<AnnotationHolder, Set<AnnotationType>> resolvedAnnotations =
         AnnotatedConfigResolver.resolveAnnotations(annotatedConfig, reverseFields);
     Map<String, Object> values;
     try {
       try {
-        values = valueReader.read(reader, options, loadSettings);
+        values = valueReader.read(reader, settings);
       } finally {
         reader.close();
       }
@@ -203,34 +198,37 @@ public final class ConfigResolverImpl implements ConfigResolver {
       throw new RuntimeException(e);
     }
     NullReadHandleOption nullReadHandler =
-        loadSettings
-            .get(LoadSetting.NULL_READ_HANDLER)
+        settings
+            .get(ACDefaultSettings.NULL_READ_HANDLER)
             .orElse(
-                defaultLoadSettings
-                    .get(LoadSetting.NULL_READ_HANDLER)
-                    .orElse(LoadSettings.getDefault().get(LoadSetting.NULL_READ_HANDLER).get()));
+                this.settings
+                    .get(ACDefaultSettings.NULL_READ_HANDLER)
+                    .orElse(
+                        ACDefaultSettings.getDefault()
+                            .get(ACDefaultSettings.NULL_READ_HANDLER)
+                            .get()));
     AnnotatedConfigResolver.setFields(
         annotatedConfig,
         values,
         resolvedAnnotations,
         nullReadHandler,
-        options,
+        settings,
         keyResolver,
         reverseFields);
   }
 
   @Override
   public void loadOrDump(Object annotatedConfig, File file) {
-    loadOrDump(annotatedConfig, file, this.defaultLoadSettings);
+    loadOrDump(annotatedConfig, file, this.settings);
   }
 
   @Override
   public void loadOrDump(Object annotatedConfig, Path path) {
-    loadOrDump(annotatedConfig, path, this.defaultLoadSettings);
+    loadOrDump(annotatedConfig, path, this.settings);
   }
 
   @Override
-  public void loadOrDump(Object annotatedConfig, File file, LoadSettings loadSettings) {
+  public void loadOrDump(Object annotatedConfig, File file, Settings settings) {
     Map<AnnotationHolder, Set<AnnotationType>> resolvedAnnotations =
         AnnotatedConfigResolver.resolveAnnotations(annotatedConfig, reverseFields);
     if (!file.exists()) {
@@ -238,18 +236,18 @@ public final class ConfigResolverImpl implements ConfigResolver {
           annotatedConfig,
           resolvedAnnotations,
           file,
-          options,
+          settings,
           commentPrefix,
           valueWriter,
           keyResolver,
           reverseFields);
       return;
     }
-    handleFileLoad(annotatedConfig, resolvedAnnotations, file, loadSettings);
+    handleFileLoad(annotatedConfig, resolvedAnnotations, file, settings);
   }
 
   @Override
-  public void loadOrDump(Object annotatedConfig, Path path, LoadSettings loadSettings) {
+  public void loadOrDump(Object annotatedConfig, Path path, Settings settings) {
     if (Files.isDirectory(path)) {
       throw new IllegalArgumentException("Cannot write a config FILE to a DIRECTORY " + path);
     }
@@ -260,25 +258,25 @@ public final class ConfigResolverImpl implements ConfigResolver {
           annotatedConfig,
           resolvedAnnotations,
           path,
-          options,
+          settings,
           commentPrefix,
           valueWriter,
           keyResolver,
           reverseFields);
       return;
     }
-    handlePathLoad(annotatedConfig, resolvedAnnotations, path, loadSettings);
+    handlePathLoad(annotatedConfig, resolvedAnnotations, path, settings);
   }
 
   @Override
   public <T> Map<String, T> resolveMultiple(
       File dir, Supplier<T> configToResolveTo, WritableObject dumpFile) {
-    return resolveMultiple(dir, configToResolveTo, dumpFile, defaultLoadSettings);
+    return resolveMultiple(dir, configToResolveTo, dumpFile, settings);
   }
 
   @Override
   public <T> Map<String, T> resolveMultiple(
-      File dir, Supplier<T> configToResolveTo, WritableObject dumpFile, LoadSettings loadSettings) {
+      File dir, Supplier<T> configToResolveTo, WritableObject dumpFile, Settings settings) {
     if (!dir.isDirectory()) {
       throw new IllegalArgumentException(dir + " is not a directory!");
     }
@@ -288,14 +286,16 @@ public final class ConfigResolverImpl implements ConfigResolver {
       dump(config, dumpFile.writer());
       return Collections.emptyMap();
     } else {
-      File[] files = dir.listFiles(($, name) -> {
-        for (String extension : fileExtensions) {
-          if (name.endsWith(extension)) {
-            return true;
-          }
-        }
-        return false;
-      });
+      File[] files =
+          dir.listFiles(
+              ($, name) -> {
+                for (String extension : fileExtensions) {
+                  if (name.endsWith(extension)) {
+                    return true;
+                  }
+                }
+                return false;
+              });
       if (files == null || files.length == 0) {
         T config = configToResolveTo.get();
         dump(config, dumpFile.writer());
@@ -311,7 +311,7 @@ public final class ConfigResolverImpl implements ConfigResolver {
         if (resolvedAnnotations == null) {
           resolvedAnnotations = AnnotatedConfigResolver.resolveAnnotations(config, reverseFields);
         }
-        handleFileLoad(config, resolvedAnnotations, file, loadSettings);
+        handleFileLoad(config, resolvedAnnotations, file, settings);
         ret.put(file.getName(), config);
       }
       return ret;
@@ -321,12 +321,12 @@ public final class ConfigResolverImpl implements ConfigResolver {
   @Override
   public <T> Map<String, T> resolveMultiple(
       Path dir, Supplier<T> configToResolveTo, WritableObject dumpFile) {
-    return resolveMultiple(dir, configToResolveTo, dumpFile, defaultLoadSettings);
+    return resolveMultiple(dir, configToResolveTo, dumpFile, settings);
   }
 
   @Override
   public <T> Map<String, T> resolveMultiple(
-      Path dir, Supplier<T> configToResolveTo, WritableObject dumpFile, LoadSettings loadSettings) {
+      Path dir, Supplier<T> configToResolveTo, WritableObject dumpFile, Settings settings) {
     if (!Files.isDirectory(dir)) {
       throw new IllegalArgumentException(dir + " is not a directory!");
     }
@@ -369,7 +369,7 @@ public final class ConfigResolverImpl implements ConfigResolver {
           if (resolvedAnnotations == null) {
             resolvedAnnotations = AnnotatedConfigResolver.resolveAnnotations(config, reverseFields);
           }
-          handlePathLoad(config, resolvedAnnotations, path, loadSettings);
+          handlePathLoad(config, resolvedAnnotations, path, settings);
           ret.put(fileName, config);
         }
         return ret;
@@ -383,106 +383,107 @@ public final class ConfigResolverImpl implements ConfigResolver {
       Object annotatedConfig,
       Map<AnnotationHolder, Set<AnnotationType>> resolvedAnnotations,
       File file,
-      LoadSettings loadSettings) {
+      Settings settings) {
     Map<String, Object> values;
     try (Reader reader = new InputStreamReader(new FileInputStream(file), StandardCharsets.UTF_8)) {
-      values = valueReader.read(reader, options, loadSettings);
+      values = valueReader.read(reader, settings);
     } catch (IOException e) {
       throw new RuntimeException(e);
     }
-    if (values.isEmpty()) {
-      return;
-    }
-    NullReadHandleOption nullReadHandler =
-        loadSettings
-            .get(LoadSetting.NULL_READ_HANDLER)
-            .orElse(
-                defaultLoadSettings
-                    .get(LoadSetting.NULL_READ_HANDLER)
-                    .orElse(LoadSettings.getDefault().get(LoadSetting.NULL_READ_HANDLER).get()));
-    boolean generateNewOptions =
-        loadSettings
-            .get(LoadSetting.GENERATE_NEW_OPTIONS)
-            .orElse(
-                defaultLoadSettings
-                    .get(LoadSetting.GENERATE_NEW_OPTIONS)
-                    .orElse(LoadSettings.getDefault().get(LoadSetting.GENERATE_NEW_OPTIONS).get()));
-    boolean missingOptions =
-        AnnotatedConfigResolver.setFields(
-            annotatedConfig,
-            values,
-            resolvedAnnotations,
-            nullReadHandler,
-            options,
-            keyResolver,
-            reverseFields);
-    if (missingOptions && generateNewOptions) {
-      file.delete();
-      AnnotatedConfigResolver.dump(
-          annotatedConfig,
-          resolvedAnnotations,
-          file,
-          options,
-          commentPrefix,
-          valueWriter,
-          keyResolver,
-          reverseFields);
-    }
+    finishLoad(
+        annotatedConfig,
+        resolvedAnnotations,
+        values,
+        settings,
+        () -> {
+          file.delete();
+          AnnotatedConfigResolver.dump(
+              annotatedConfig,
+              resolvedAnnotations,
+              file,
+              settings,
+              commentPrefix,
+              valueWriter,
+              keyResolver,
+              reverseFields);
+        });
   }
 
-  public void handlePathLoad(
+  private void handlePathLoad(
       Object annotatedConfig,
       Map<AnnotationHolder, Set<AnnotationType>> resolvedAnnotations,
       Path path,
-      LoadSettings loadSettings) {
+      Settings settings) {
     Map<String, Object> values;
     try (Reader reader =
         new InputStreamReader(Files.newInputStream(path), StandardCharsets.UTF_8)) {
-      values = valueReader.read(reader, options, loadSettings);
+      values = valueReader.read(reader, settings);
     } catch (IOException e) {
       throw new RuntimeException(e);
     }
+    this.finishLoad(
+        annotatedConfig,
+        resolvedAnnotations,
+        values,
+        settings,
+        () -> {
+          try {
+            Files.deleteIfExists(path);
+          } catch (IOException e) {
+            throw new RuntimeException(e);
+          }
+          AnnotatedConfigResolver.dump(
+              annotatedConfig,
+              resolvedAnnotations,
+              path,
+              settings,
+              commentPrefix,
+              valueWriter,
+              keyResolver,
+              reverseFields);
+        });
+  }
+
+  private void finishLoad(
+      Object annotatedConfig,
+      Map<AnnotationHolder, Set<AnnotationType>> resolvedAnnotations,
+      Map<String, Object> values,
+      Settings settings,
+      Runnable missingOptionsAction) {
     if (values.isEmpty()) {
       return;
     }
     NullReadHandleOption nullReadHandler =
-        loadSettings
-            .get(LoadSetting.NULL_READ_HANDLER)
+        settings
+            .get(ACDefaultSettings.NULL_READ_HANDLER)
             .orElse(
-                defaultLoadSettings
-                    .get(LoadSetting.NULL_READ_HANDLER)
-                    .orElse(LoadSettings.getDefault().get(LoadSetting.NULL_READ_HANDLER).get()));
+                this.settings
+                    .get(ACDefaultSettings.NULL_READ_HANDLER)
+                    .orElse(
+                        ACDefaultSettings.getDefault()
+                            .get(ACDefaultSettings.NULL_READ_HANDLER)
+                            .get()));
     boolean generateNewOptions =
-        loadSettings
-            .get(LoadSetting.GENERATE_NEW_OPTIONS)
+        settings
+            .get(ACDefaultSettings.GENERATE_NEW_OPTIONS)
             .orElse(
-                defaultLoadSettings
-                    .get(LoadSetting.GENERATE_NEW_OPTIONS)
-                    .orElse(LoadSettings.getDefault().get(LoadSetting.GENERATE_NEW_OPTIONS).get()));
+                this.settings
+                    .get(ACDefaultSettings.GENERATE_NEW_OPTIONS)
+                    .orElse(
+                        ACDefaultSettings.getDefault()
+                            .get(ACDefaultSettings.GENERATE_NEW_OPTIONS)
+                            .get()));
     boolean missingOptions =
         AnnotatedConfigResolver.setFields(
             annotatedConfig,
             values,
             resolvedAnnotations,
             nullReadHandler,
-            options,
+            settings,
             keyResolver,
             reverseFields);
     if (missingOptions && generateNewOptions) {
-      try {
-        Files.deleteIfExists(path);
-      } catch (IOException e) {
-        throw new RuntimeException(e);
-      }
-      AnnotatedConfigResolver.dump(
-          annotatedConfig,
-          resolvedAnnotations,
-          path,
-          options,
-          commentPrefix,
-          valueWriter,
-          keyResolver,
-          reverseFields);
+      missingOptionsAction.run();
     }
   }
 }

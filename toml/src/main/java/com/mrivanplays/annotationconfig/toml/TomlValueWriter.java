@@ -3,7 +3,7 @@ package com.mrivanplays.annotationconfig.toml;
 import com.fasterxml.jackson.dataformat.toml.TomlMapper;
 import com.mrivanplays.annotationconfig.core.resolver.MultilineString;
 import com.mrivanplays.annotationconfig.core.resolver.ValueWriter;
-import com.mrivanplays.annotationconfig.core.resolver.options.CustomOptions;
+import com.mrivanplays.annotationconfig.core.resolver.settings.Settings;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.util.Collections;
@@ -31,9 +31,9 @@ public final class TomlValueWriter implements ValueWriter {
       Map<String, Object> values,
       Map<String, List<String>> fieldComments,
       PrintWriter writer,
-      CustomOptions options)
+      Settings settings)
       throws IOException {
-    TomlMapper tomlMapper = options.getAsOr(TomlConfig.MAPPER_KEY, TomlMapper.class, defaultMapper);
+    TomlMapper tomlMapper = settings.get(TomlConfig.MAPPER_KEY).orElse(defaultMapper);
     for (Map.Entry<String, Object> entry : values.entrySet()) {
       List<String> comments = getComments(entry.getKey(), fieldComments);
       if (!comments.isEmpty()) {

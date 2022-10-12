@@ -15,8 +15,9 @@ import com.mrivanplays.annotationconfig.core.internal.MinMaxHandler.State;
 import com.mrivanplays.annotationconfig.core.resolver.MultilineString;
 import com.mrivanplays.annotationconfig.core.resolver.ValueWriter;
 import com.mrivanplays.annotationconfig.core.resolver.key.KeyResolver;
-import com.mrivanplays.annotationconfig.core.resolver.options.CustomOptions;
-import com.mrivanplays.annotationconfig.core.resolver.settings.NullReadHandleOption;
+import com.mrivanplays.annotationconfig.core.resolver.NullReadHandleOption;
+import com.mrivanplays.annotationconfig.core.resolver.settings.ACDefaultSettings;
+import com.mrivanplays.annotationconfig.core.resolver.settings.Settings;
 import com.mrivanplays.annotationconfig.core.serialization.AnnotationAccessor;
 import com.mrivanplays.annotationconfig.core.serialization.DataObject;
 import com.mrivanplays.annotationconfig.core.serialization.FieldTypeSerializer;
@@ -98,7 +99,7 @@ public final class AnnotatedConfigResolver {
       Object annotatedConfig,
       Map<AnnotationHolder, Set<AnnotationType>> map,
       File file,
-      CustomOptions options,
+      Settings settings,
       String commentChar,
       ValueWriter valueWriter,
       KeyResolver keyResolver,
@@ -112,7 +113,7 @@ public final class AnnotatedConfigResolver {
             map,
             commentChar,
             valueWriter,
-            options,
+            settings,
             keyResolver,
             reverseFields);
       }
@@ -125,7 +126,7 @@ public final class AnnotatedConfigResolver {
       Object annotatedConfig,
       Map<AnnotationHolder, Set<AnnotationType>> map,
       Path path,
-      CustomOptions options,
+      Settings settings,
       String commentChar,
       ValueWriter valueWriter,
       KeyResolver keyResolver,
@@ -140,7 +141,7 @@ public final class AnnotatedConfigResolver {
             map,
             commentChar,
             valueWriter,
-            options,
+            settings,
             keyResolver,
             reverseFields);
       }
@@ -153,7 +154,7 @@ public final class AnnotatedConfigResolver {
       Object annotatedConfig,
       Map<AnnotationHolder, Set<AnnotationType>> map,
       Writer writerFeed,
-      CustomOptions options,
+      Settings settings,
       String commentChar,
       ValueWriter valueWriter,
       KeyResolver keyResolver,
@@ -165,7 +166,7 @@ public final class AnnotatedConfigResolver {
           map,
           commentChar,
           valueWriter,
-          options,
+          settings,
           keyResolver,
           reverseFields);
     } catch (IOException e) {
@@ -179,7 +180,7 @@ public final class AnnotatedConfigResolver {
       Map<AnnotationHolder, Set<AnnotationType>> map,
       String commentChar,
       ValueWriter valueWriter,
-      CustomOptions options,
+      Settings settings,
       KeyResolver keyResolver,
       boolean reverseFields)
       throws IOException {
@@ -234,7 +235,7 @@ public final class AnnotatedConfigResolver {
             "Could not set a field's value ; field not accessible anymore");
       }
     }
-    valueWriter.write(parentData.getToWrite(), parentData.getFieldComments(), writer, options);
+    valueWriter.write(parentData.getToWrite(), parentData.getFieldComments(), writer, settings);
   }
 
   private static class WriteData {
@@ -472,7 +473,7 @@ public final class AnnotatedConfigResolver {
       Map<String, Object> values,
       Map<AnnotationHolder, Set<AnnotationType>> map,
       NullReadHandleOption nullReadHandler,
-      CustomOptions options,
+      Settings settings,
       KeyResolver keyResolver,
       boolean reverseFields) {
     boolean missingOptions = false;
@@ -552,7 +553,7 @@ public final class AnnotatedConfigResolver {
                 (Map<String, Object>) value,
                 resolveAnnotations(section, reverseFields),
                 nullReadHandler,
-                options,
+                settings,
                 keyResolver,
                 reverseFields);
         if (thMissing && !missingOptions) {
@@ -613,7 +614,7 @@ public final class AnnotatedConfigResolver {
             if (validatorOpt.isPresent()) {
               AnnotationValidator validator = validatorOpt.get();
               ValidationResponse validatorResponse =
-                  validator.validate(field.getAnnotation(type), deserialized, options, field);
+                  validator.validate(field.getAnnotation(type), deserialized, settings, field);
               if (validatorResponse.throwError() != null) {
                 error = validatorResponse.throwError();
                 break;

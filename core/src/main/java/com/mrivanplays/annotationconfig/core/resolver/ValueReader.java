@@ -1,7 +1,6 @@
 package com.mrivanplays.annotationconfig.core.resolver;
 
-import com.mrivanplays.annotationconfig.core.resolver.options.CustomOptions;
-import com.mrivanplays.annotationconfig.core.resolver.settings.LoadSettings;
+import com.mrivanplays.annotationconfig.core.resolver.settings.Settings;
 import java.io.IOException;
 import java.io.Reader;
 import java.util.Map;
@@ -14,45 +13,17 @@ import java.util.Map;
  * @author MrIvanPlays
  * @since 2.0.0
  */
+@FunctionalInterface
 public interface ValueReader {
 
   /**
-   * Should read the specified reader to a Map.
-   *
-   * @param reader the reader we need read
-   * @return the values read, represented as a map, or empty map if no values have been read
-   * @throws IOException if an io occurs
-   */
-  default Map<String, Object> read(Reader reader) throws IOException {
-    throw new IllegalArgumentException("ValueReader not implemented");
-  }
-
-  /**
-   * Should read the specified reader to a Map. Can use the specified {@link CustomOptions} to
+   * Should read the specified reader to a Map. Can use the specified {@link Settings} to
    * manipulate the output of this method, or the ways the reader is parsed to the needed output.
    *
    * @param reader the reader we need read
-   * @param customOptions the read options
+   * @param settings the settings
    * @return the values read, represented as a map, or empty map if no values have been read
    * @throws IOException if an io occurs
    */
-  default Map<String, Object> read(Reader reader, CustomOptions customOptions) throws IOException {
-    return read(reader);
-  }
-
-  /**
-   * Should read the specified reader to a Map. Can use the specified {@link CustomOptions} and
-   * {@link LoadSettings} to manipulate the output of this method, or the ways the reader is parsed
-   * to the needed output.
-   *
-   * @param reader the reader we need read
-   * @param customOptions the read options
-   * @param loadSettings the load settings
-   * @return the values read, represented as a map, or empty map if no values have been read
-   * @throws IOException if an io occurs
-   */
-  default Map<String, Object> read(
-      Reader reader, CustomOptions customOptions, LoadSettings loadSettings) throws IOException {
-    return read(reader, customOptions);
-  }
+  Map<String, Object> read(Reader reader, Settings settings) throws IOException;
 }

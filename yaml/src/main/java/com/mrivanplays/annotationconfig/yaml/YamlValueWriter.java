@@ -2,7 +2,7 @@ package com.mrivanplays.annotationconfig.yaml;
 
 import com.mrivanplays.annotationconfig.core.resolver.MultilineString;
 import com.mrivanplays.annotationconfig.core.resolver.ValueWriter;
-import com.mrivanplays.annotationconfig.core.resolver.options.CustomOptions;
+import com.mrivanplays.annotationconfig.core.resolver.settings.Settings;
 import com.mrivanplays.annotationconfig.core.utils.ReflectionUtils;
 import java.io.PrintWriter;
 import java.util.Arrays;
@@ -25,7 +25,7 @@ public final class YamlValueWriter implements ValueWriter {
       Map<String, Object> values,
       Map<String, List<String>> fieldComments,
       PrintWriter writer,
-      CustomOptions options) {
+      Settings settings) {
     for (Map.Entry<String, Object> entry : values.entrySet()) {
       write(null, entry.getKey(), entry.getValue(), writer, fieldComments, 2, false, false);
     }
