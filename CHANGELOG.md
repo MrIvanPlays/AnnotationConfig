@@ -134,6 +134,8 @@ foo:
 - Better preserve dump order
 - Added `SerializerRegistry#registerSimpleValueSerializer(Class, Function)` and `SerializerRegistry#registerSimpleValueDeserializer(Class, Function)`
 - Deprecation of DateSerializer in toml module.
+- Since not everything can be listed in the changelog, there have been many miscellaneous changes improving
+  performance and API design. The full changes can be seen in the release commit(s).
 
 ## Version 2.1.0
 
