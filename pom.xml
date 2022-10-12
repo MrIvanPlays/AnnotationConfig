@@ -6,7 +6,7 @@
 
   <groupId>com.mrivanplays</groupId>
   <artifactId>annotationconfig-parent</artifactId>
-  <version>3.0.0-SNAPSHOT</version>
+  <version>3.0.0</version>
   <modules>
     <module>core</module>
     <module>toml</module>
