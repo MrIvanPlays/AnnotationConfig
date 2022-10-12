@@ -1,7 +1,5 @@
 package com.mrivanplays.annotationconfig.core.resolver.settings;
 
-import com.mrivanplays.annotationconfig.core.resolver.NullReadHandleOption;
-
 /**
  * Represents a holder of the default {@link Settings} for AnnotationConfig.
  *
