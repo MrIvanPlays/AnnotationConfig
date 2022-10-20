@@ -12,6 +12,7 @@ import com.mrivanplays.annotationconfig.core.annotations.custom.ValidationRespon
 import com.mrivanplays.annotationconfig.core.annotations.type.AnnotationType;
 import com.mrivanplays.annotationconfig.core.internal.MinMaxHandler.NumberResult;
 import com.mrivanplays.annotationconfig.core.internal.MinMaxHandler.State;
+import com.mrivanplays.annotationconfig.core.resolver.CommentPlaceholderRegistry;
 import com.mrivanplays.annotationconfig.core.resolver.MultilineString;
 import com.mrivanplays.annotationconfig.core.resolver.ValueWriter;
 import com.mrivanplays.annotationconfig.core.resolver.key.KeyResolver;
@@ -737,7 +738,7 @@ public final class AnnotatedConfigResolver {
         ret.add(comment.value());
       }
     }
-    return ret;
+    return CommentPlaceholderRegistry.INSTANCE.applyPlaceholders(ret);
   }
 
   private static <T extends Annotation> T getAnnotation(
