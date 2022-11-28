@@ -2,6 +2,20 @@
 
 This file summarises changes between major versions.
 
+## Version 3.0.1
+This version features:
+  - Updated dependencies
+  - Added CommentPlaceholderRegistry
+
+### `CommentPlaceholderRegistry`
+With this, you can register placeholders to be replaced in comments by AnnotationConfig whenever it 
+creates a new config file.
+
+Usage:
+```java
+CommentPlaceholderRegistry.INSTANCE.registerPlaceholder("%foo%", "epic replacement");
+```
+
 ## Version 3.0.0
 This version is all focused on serialization.
 
