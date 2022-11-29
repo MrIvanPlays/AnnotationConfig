@@ -15,12 +15,12 @@ import org.junit.jupiter.api.Test;
 
 class TestListObjectOnlyObjectSerializer {
 
-  static class Subject {
+  public static class Subject {
 
     List<TestObject> objects = Arrays.asList(new TestObject("foo"), new TestObject("bar"));
   }
 
-  static class TestObject {
+  public static class TestObject {
 
     static class Serializer implements FieldTypeSerializer<TestObject> {
 

@@ -30,6 +30,11 @@ import java.io.IOException;
 import java.io.PrintWriter;
 import java.io.Writer;
 import java.lang.annotation.Annotation;
+import java.lang.invoke.CallSite;
+import java.lang.invoke.LambdaMetafactory;
+import java.lang.invoke.MethodHandle;
+import java.lang.invoke.MethodHandles;
+import java.lang.invoke.MethodType;
 import java.lang.reflect.Field;
 import java.lang.reflect.Type;
 import java.nio.file.Files;
@@ -45,6 +50,7 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.TreeMap;
 import java.util.TreeSet;
+import java.util.function.BiConsumer;
 
 @SuppressWarnings({"unchecked", "rawtypes", "FieldMayBeFinal"})
 public final class AnnotatedConfigResolver {
@@ -96,6 +102,7 @@ public final class AnnotatedConfigResolver {
   }
 
   public static void dump(
+      MethodHandles.Lookup lookup,
       Object annotatedConfig,
       Map<AnnotationHolder, Set<AnnotationType>> map,
       File file,
@@ -108,6 +115,7 @@ public final class AnnotatedConfigResolver {
       file.createNewFile();
       try (PrintWriter writer = new PrintWriter(new FileWriter(file))) {
         toWriter(
+            lookup,
             annotatedConfig,
             writer,
             map,
@@ -123,6 +131,7 @@ public final class AnnotatedConfigResolver {
   }
 
   public static void dump(
+      MethodHandles.Lookup lookup,
       Object annotatedConfig,
       Map<AnnotationHolder, Set<AnnotationType>> map,
       Path path,
@@ -136,6 +145,7 @@ public final class AnnotatedConfigResolver {
       Files.createFile(path);
       try (PrintWriter writer = new PrintWriter(Files.newBufferedWriter(path))) {
         toWriter(
+            lookup,
             annotatedConfig,
             writer,
             map,
@@ -151,6 +161,7 @@ public final class AnnotatedConfigResolver {
   }
 
   public static void dump(
+      MethodHandles.Lookup lookup,
       Object annotatedConfig,
       Map<AnnotationHolder, Set<AnnotationType>> map,
       Writer writerFeed,
@@ -161,6 +172,7 @@ public final class AnnotatedConfigResolver {
       boolean reverseFields) {
     try (PrintWriter writer = new PrintWriter(writerFeed)) {
       toWriter(
+          lookup,
           annotatedConfig,
           writer,
           map,
@@ -175,6 +187,7 @@ public final class AnnotatedConfigResolver {
   }
 
   private static void toWriter(
+      MethodHandles.Lookup lookup,
       Object annotatedConfig,
       PrintWriter writer,
       Map<AnnotationHolder, Set<AnnotationType>> map,
@@ -229,10 +242,13 @@ public final class AnnotatedConfigResolver {
         throw new IllegalArgumentException("@RawConfig on a field which is not DataObject");
       }
       try {
-        rawConfigField.set(annotatedConfig, new DataObject(parentData.getToWrite(), true));
+        getSetter(lookup, rawConfigField)
+            .accept(annotatedConfig, new DataObject(parentData.getToWrite(), true));
       } catch (IllegalAccessException e) {
         throw new IllegalArgumentException(
             "Could not set a field's value ; field not accessible anymore");
+      } catch (Throwable e) {
+        throw new RuntimeException("Error setting field's value", e);
       }
     }
     valueWriter.write(parentData.getToWrite(), parentData.getFieldComments(), writer, settings);
@@ -469,6 +485,7 @@ public final class AnnotatedConfigResolver {
 
   // returns whether it's missing options
   public static boolean setFields(
+      MethodHandles.Lookup lookup,
       Object annotatedConfig,
       Map<String, Object> values,
       Map<AnnotationHolder, Set<AnnotationType>> map,
@@ -494,10 +511,12 @@ public final class AnnotatedConfigResolver {
           throw new IllegalArgumentException("@RawConfig on a field which is not DataObject");
         }
         try {
-          field.set(annotatedConfig, new DataObject(values, true));
+          getSetter(lookup, field).accept(annotatedConfig, new DataObject(values, true));
         } catch (IllegalAccessException e) {
           throw new IllegalArgumentException(
               "Could not set a field's value ; field not accessible anymore");
+        } catch (Throwable e) {
+          throw new RuntimeException("Error setting field value", e);
         }
         continue;
       }
@@ -549,6 +568,7 @@ public final class AnnotatedConfigResolver {
         }
         boolean thMissing =
             setFields(
+                lookup,
                 section,
                 (Map<String, Object>) value,
                 resolveAnnotations(section, reverseFields),
@@ -567,79 +587,85 @@ public final class AnnotatedConfigResolver {
           serializerRegistry
               .getSerializer(fieldType)
               .orElse(serializerRegistry.getDefaultSerializer());
+      Object deserialized;
       try {
-        Object deserialized =
-            serializer.deserialize(
-                new DataObject(value, true),
-                SerializationContext.fromField(field, annotatedConfig),
-                AnnotationAccessor.createFromField(field));
-        if (deserialized == null && !thisMissingOption) {
-          if (nullReadHandler == NullReadHandleOption.USE_DEFAULT_VALUE) {
-            continue;
-          }
-        } else if (deserialized == null) {
+        deserialized = serializer.deserialize(
+            new DataObject(value, true),
+            SerializationContext.fromField(field, annotatedConfig),
+            AnnotationAccessor.createFromField(field));
+      } catch (IllegalAccessException e) {
+        throw new IllegalArgumentException("Field became inaccessible");
+      }
+      if (deserialized == null && !thisMissingOption) {
+        if (nullReadHandler == NullReadHandleOption.USE_DEFAULT_VALUE) {
           continue;
         }
-        if (deserialized instanceof Number) {
-          Number comparable = (Number) deserialized;
-          State comparison = MinMaxHandler.compare(min, max, comparable);
-          handleComparison(comparison, keyName, comparable, fieldType, min, max, Number.class);
-        } else if (deserialized instanceof String) {
-          String comparable = (String) deserialized;
-          State comparison = MinMaxHandler.compare(min, max, comparable);
-          handleComparison(
-              comparison, keyName, comparable.length(), fieldType, min, max, String.class);
-        } else {
-          if (min.getState() != State.START) {
-            throw new IllegalArgumentException("@Min annotation placed on invalid field type");
-          }
-          if (max.getState() != State.START) {
-            throw new IllegalArgumentException("@Max annotation placed on invalid field type");
-          }
+      } else if (deserialized == null) {
+        continue;
+      }
+      if (deserialized instanceof Number) {
+        Number comparable = (Number) deserialized;
+        State comparison = MinMaxHandler.compare(min, max, comparable);
+        handleComparison(comparison, keyName, comparable, fieldType, min, max, Number.class);
+      } else if (deserialized instanceof String) {
+        String comparable = (String) deserialized;
+        State comparison = MinMaxHandler.compare(min, max, comparable);
+        handleComparison(
+            comparison, keyName, comparable.length(), fieldType, min, max, String.class);
+      } else {
+        if (min.getState() != State.START) {
+          throw new IllegalArgumentException("@Min annotation placed on invalid field type");
         }
-        // check for custom annotations
-        CustomAnnotationRegistry cARegistry = CustomAnnotationRegistry.INSTANCE;
-        if (!cARegistry.isEmpty()) {
-          Throwable error = null;
-          boolean failed = false;
-          for (Annotation annotation : field.getAnnotations()) {
-            Class<? extends Annotation> type = annotation.annotationType();
-            if (AnnotationType.match(type).isPresent()) {
-              // do not handle any validation of our own annotations even if someone registered a
-              // validator for them.
-              continue;
-            }
-            Optional<AnnotationValidator<? extends Annotation>> validatorOpt =
-                cARegistry.getValidator(type);
-            if (validatorOpt.isPresent()) {
-              AnnotationValidator validator = validatorOpt.get();
-              ValidationResponse validatorResponse =
-                  validator.validate(field.getAnnotation(type), deserialized, settings, field);
-              if (validatorResponse.throwError() != null) {
-                error = validatorResponse.throwError();
-                break;
-              }
-              if (validatorResponse.shouldFailSilently()) {
-                failed = validatorResponse.shouldFailSilently();
-                break;
-              }
-              if (validatorResponse.onSuccess() != null) {
-                validatorResponse.onSuccess().run();
-              }
-            }
-          }
-          if (error != null) {
-            throw new RuntimeException(error);
-          }
-          // error wasn't thrown, so just silently skip if the checks failed
-          if (failed) {
+        if (max.getState() != State.START) {
+          throw new IllegalArgumentException("@Max annotation placed on invalid field type");
+        }
+      }
+      // check for custom annotations
+      CustomAnnotationRegistry cARegistry = CustomAnnotationRegistry.INSTANCE;
+      if (!cARegistry.isEmpty()) {
+        Throwable error = null;
+        boolean failed = false;
+        for (Annotation annotation : field.getAnnotations()) {
+          Class<? extends Annotation> type = annotation.annotationType();
+          if (AnnotationType.match(type).isPresent()) {
+            // do not handle any validation of our own annotations even if someone registered a
+            // validator for them.
             continue;
           }
+          Optional<AnnotationValidator<? extends Annotation>> validatorOpt =
+              cARegistry.getValidator(type);
+          if (validatorOpt.isPresent()) {
+            AnnotationValidator validator = validatorOpt.get();
+            ValidationResponse validatorResponse =
+                validator.validate(field.getAnnotation(type), deserialized, settings, field);
+            if (validatorResponse.throwError() != null) {
+              error = validatorResponse.throwError();
+              break;
+            }
+            if (validatorResponse.shouldFailSilently()) {
+              failed = validatorResponse.shouldFailSilently();
+              break;
+            }
+            if (validatorResponse.onSuccess() != null) {
+              validatorResponse.onSuccess().run();
+            }
+          }
         }
-        field.set(annotatedConfig, deserialized);
+        if (error != null) {
+          throw new RuntimeException(error);
+        }
+        // error wasn't thrown, so just silently skip if the checks failed
+        if (failed) {
+          continue;
+        }
+      }
+      try {
+        getSetter(lookup, field).accept(annotatedConfig, deserialized);
       } catch (IllegalAccessException e) {
         throw new IllegalArgumentException(
             "Could not set a field's value ; field not accessible anymore");
+      } catch (Throwable e) {
+        throw new RuntimeException("Error setting field value", e);
       }
     }
     return missingOptions;
@@ -723,6 +749,23 @@ public final class AnnotatedConfigResolver {
         throw new IllegalArgumentException(message);
       }
     }
+  }
+
+  public static BiConsumer getSetter(MethodHandles.Lookup lookup, Field field) throws Throwable {
+    MethodHandle setter = lookup.unreflectSetter(field);
+    MethodType type = setter.type();
+    if (field.getType().isPrimitive()) {
+      type = type.wrap().changeReturnType(void.class);
+    }
+    CallSite callsite =
+        LambdaMetafactory.metafactory(
+            lookup,
+            "accept",
+            MethodType.methodType(BiConsumer.class, MethodHandle.class),
+            type.erase(),
+            MethodHandles.exactInvoker(setter.type()),
+            type);
+    return (BiConsumer) callsite.getTarget().invokeExact(setter);
   }
 
   private static List<String> getComments(AnnotationType type, Field field, Class<?> aClass) {

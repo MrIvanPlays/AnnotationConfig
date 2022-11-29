@@ -10,12 +10,12 @@ import org.junit.jupiter.api.Test;
 public class TestSectionChildSections {
 
   @Comment("Subject comment")
-  static class Subject {
+  public static class Subject {
 
     @ConfigObject private Section foo = new Section();
 
     @Comment("This is top section comment")
-    static class Section {
+    public static class Section {
 
       @Comment("Control field comment")
       private String control = "asd";
@@ -23,7 +23,7 @@ public class TestSectionChildSections {
       @ConfigObject private ChildSection barSect = new ChildSection();
 
       @Comment("Child section comment")
-      static class ChildSection {
+      public static class ChildSection {
 
         @Comment("Bar comment")
         private String bar = "aabb";

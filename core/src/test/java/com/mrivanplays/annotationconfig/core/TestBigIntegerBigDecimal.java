@@ -8,7 +8,7 @@ import org.junit.jupiter.api.Test;
 
 public class TestBigIntegerBigDecimal {
 
-  static class Subject {
+  public static class Subject {
 
     private BigDecimal decimal = new BigDecimal("1111111111.22222222");
     private BigInteger integer = new BigInteger("1111111111");

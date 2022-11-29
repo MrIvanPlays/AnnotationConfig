@@ -8,7 +8,7 @@ import org.junit.jupiter.api.Test;
 
 public class TestSectionWithKeyResolver {
 
-  static class Subject {
+  public static class Subject {
 
     @Comment("Foo comment")
     @Key("commands.subcommands.help.foo")

@@ -1,7 +1,9 @@
 package com.mrivanplays.annotationconfig.core.serialization;
 
+import com.mrivanplays.annotationconfig.core.internal.AnnotatedConfigResolver;
 import com.mrivanplays.annotationconfig.core.utils.AnnotationUtils;
 import com.mrivanplays.annotationconfig.core.utils.ReflectionUtils;
+import java.lang.invoke.MethodHandles;
 import java.lang.reflect.Array;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
@@ -27,6 +29,7 @@ class DefaultSerializer implements FieldTypeSerializer<Object> {
   @Override
   public Object deserialize(
       DataObject data, SerializationContext<Object> context, AnnotationAccessor annotations) {
+    MethodHandles.Lookup lookup = MethodHandles.lookup();
     PrimitiveSerializers.registerSerializers();
     Class<?> fieldType = context.getClassType();
     Object dataRaw = data.getAsObject();
@@ -183,14 +186,17 @@ class DefaultSerializer implements FieldTypeSerializer<Object> {
       FieldTypeSerializer serializer =
           serializerRegistry.getSerializer(desField.getGenericType()).orElse(this);
       try {
-        desField.set(
-            fieldTypeInstance,
-            serializer.deserialize(
-                data,
-                SerializationContext.fromField(desField, fieldTypeInstance),
-                AnnotationAccessor.createFromField(desField)));
+        AnnotatedConfigResolver.getSetter(lookup, desField)
+            .accept(
+                fieldTypeInstance,
+                serializer.deserialize(
+                    data,
+                    SerializationContext.fromField(desField, fieldTypeInstance),
+                    AnnotationAccessor.createFromField(desField)));
       } catch (IllegalAccessException e) {
         throw new IllegalArgumentException("A field became inaccessible");
+      } catch (Throwable e) {
+        throw new RuntimeException("Error setting field value", e);
       }
       return fieldTypeInstance;
     } else {
@@ -220,14 +226,17 @@ class DefaultSerializer implements FieldTypeSerializer<Object> {
         FieldTypeSerializer serializer =
             serializerRegistry.getSerializer(desField.getGenericType()).orElse(this);
         try {
-          desField.set(
-              fieldTypeInstance,
-              serializer.deserialize(
-                  new DataObject(val, true),
-                  SerializationContext.fromField(desField, fieldTypeInstance),
-                  AnnotationAccessor.createFromField(desField)));
+          AnnotatedConfigResolver.getSetter(lookup, desField)
+              .accept(
+                  fieldTypeInstance,
+                  serializer.deserialize(
+                      new DataObject(val, true),
+                      SerializationContext.fromField(desField, fieldTypeInstance),
+                      AnnotationAccessor.createFromField(desField)));
         } catch (IllegalAccessException e) {
           throw new IllegalArgumentException("A field became inaccessible");
+        } catch (Throwable e) {
+          throw new RuntimeException("Error setting field value", e);
         }
       }
 

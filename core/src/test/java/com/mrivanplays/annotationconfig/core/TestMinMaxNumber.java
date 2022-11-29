@@ -10,7 +10,7 @@ import org.junit.jupiter.api.Test;
 
 public class TestMinMaxNumber {
 
-  private static final class MinMaxTest {
+  public static final class MinMaxTest {
 
     @Min(minDouble = -33.9)
     @Max(maxDouble = 44.4)

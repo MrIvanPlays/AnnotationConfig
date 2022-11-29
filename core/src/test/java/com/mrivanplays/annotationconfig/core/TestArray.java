@@ -8,7 +8,7 @@ import org.junit.jupiter.api.Test;
 
 class TestArray {
 
-  static class Subject {
+  public static class Subject {
 
     char[] charArray = new char[] {'a', 'b', 'c'};
     boolean[] boolArray = new boolean[] {true, false, true};

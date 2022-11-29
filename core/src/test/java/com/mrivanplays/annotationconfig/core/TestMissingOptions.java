@@ -14,14 +14,14 @@ import org.junit.jupiter.api.Test;
 public class TestMissingOptions {
 
   @Comment("Comments should be kept even after regeneration!")
-  private static final class Subject1 {
+  public static final class Subject1 {
 
     @Comment("Foo comment kept")
     private String foo = "foo";
   }
 
   @Comment("Comments should be kept even after regeneration!")
-  private static final class Subject2 {
+  public static final class Subject2 {
 
     // emulate default value has changed from "foo" to "baz" and check if it will set the
     // field to the value in the config, which is "foo" at the time of loading this class

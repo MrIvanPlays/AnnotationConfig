@@ -12,7 +12,7 @@ import org.junit.jupiter.api.Test;
 
 class SectionObjectListTest {
 
-  static class SerializedObject {
+  public static class SerializedObject {
 
     private int foo;
     private String baz;
@@ -31,7 +31,7 @@ class SectionObjectListTest {
     }
   }
 
-  static class Subject {
+  public static class Subject {
 
     public SectionObjectList<SerializedObject> list =
         SectionObjectList.newBuilderForType(SerializedObject.class)

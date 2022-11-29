@@ -8,13 +8,13 @@ import org.junit.jupiter.api.Test;
 
 public class TestListObjects {
 
-  static class Subject {
+  public static class Subject {
 
     private List<Serialized> objects =
         Arrays.asList(new Serialized("foo", true), new Serialized("bar", "baz"));
   }
 
-  static class Serialized {
+  public static class Serialized {
 
     public String name;
     public Object value;
