@@ -48,10 +48,6 @@ public final class TomlConfig {
 
   private static void generateConfigResolver() {
     SerializerRegistry registry = SerializerRegistry.INSTANCE;
-    // TODO: Remove when DateResolver gets removed
-    if (!registry.hasSerializer(Date.class)) {
-      registry.registerSerializer(Date.class, new DateResolver());
-    }
     if (!registry.hasSerializer(OffsetDateTime.class)) {
       registry.registerSimpleSerializer(
           OffsetDateTime.class,
