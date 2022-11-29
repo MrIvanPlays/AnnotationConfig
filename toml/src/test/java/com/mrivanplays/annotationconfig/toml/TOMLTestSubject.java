@@ -37,9 +37,6 @@ public class TOMLTestSubject {
     }
   }
 
-  @Comment("java.util.Date")
-  private Date date = new Date();
-
   @Comment("OffsetDateTime")
   private OffsetDateTime dateTime = OffsetDateTime.now();
 
@@ -83,10 +80,6 @@ public class TOMLTestSubject {
 
   public MySection getServer() {
     return server;
-  }
-
-  public Date getDate() {
-    return date;
   }
 
   public OffsetDateTime getDateTime() {

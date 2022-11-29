@@ -37,8 +37,6 @@ public class TestTOML {
             + "server.ip = 'localhost'\n"
             + "server.theport = 25565\n"
             + "\n"
-            + "# java.util.Date\n"
-            + "\n"
             + "# OffsetDateTime\n"
             + "\n"
             + "# This has been dumped with the default serializer\n"
