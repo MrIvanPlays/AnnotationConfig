@@ -34,6 +34,7 @@ import java.lang.reflect.Field;
 import java.lang.reflect.Type;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.LinkedHashMap;
@@ -50,7 +51,7 @@ import java.util.TreeSet;
 public final class AnnotatedConfigResolver {
 
   public static Map<AnnotationHolder, Set<AnnotationType>> resolveAnnotations(
-      Object annotatedClass, boolean reverseFields) {
+      Object annotatedClass, boolean reverseFields, boolean findParentFields) {
     Map<AnnotationHolder, Set<AnnotationType>> annotationData = new TreeMap<>();
     AnnotationHolder CLASS_ANNOTATION_HOLDER = new AnnotationHolder();
     Class<?> theClass = annotatedClass.getClass();
@@ -62,7 +63,10 @@ public final class AnnotatedConfigResolver {
       populate(CLASS_ANNOTATION_HOLDER, typeOpt.get(), annotationData);
     }
 
-    List<Field> fields = Arrays.asList(theClass.getDeclaredFields());
+    List<Field> fields = new ArrayList<>(Arrays.asList(theClass.getDeclaredFields()));
+    if (findParentFields) {
+      fields.addAll(getParentFields(theClass));
+    }
     if (reverseFields) {
       Collections.reverse(fields);
     }
@@ -95,6 +99,25 @@ public final class AnnotatedConfigResolver {
     return annotationData;
   }
 
+  private static List<Field> getParentFields(Class<?> theClass) {
+    List<Field> ret = new ArrayList<>();
+    Class<?> superClass = null;
+    while (true) {
+      if (superClass == null) {
+        superClass = theClass.getSuperclass();
+      } else {
+        superClass = superClass.getSuperclass();
+      }
+      if (superClass == null || superClass.getCanonicalName().equalsIgnoreCase("java.lang.Object")) {
+        break;
+      }
+      if (superClass.getDeclaredFields().length > 0) {
+        ret.addAll(Arrays.asList(superClass.getDeclaredFields()));
+      }
+    }
+    return ret;
+  }
+
   public static void dump(
       Object annotatedConfig,
       Map<AnnotationHolder, Set<AnnotationType>> map,
@@ -103,7 +126,8 @@ public final class AnnotatedConfigResolver {
       String commentChar,
       ValueWriter valueWriter,
       KeyResolver keyResolver,
-      boolean reverseFields) {
+      boolean reverseFields,
+      boolean findParentFields) {
     try {
       file.createNewFile();
       try (PrintWriter writer = new PrintWriter(new FileWriter(file))) {
@@ -115,7 +139,8 @@ public final class AnnotatedConfigResolver {
             valueWriter,
             settings,
             keyResolver,
-            reverseFields);
+            reverseFields,
+            findParentFields);
       }
     } catch (IOException e) {
       throw new RuntimeException(e);
@@ -130,7 +155,8 @@ public final class AnnotatedConfigResolver {
       String commentChar,
       ValueWriter valueWriter,
       KeyResolver keyResolver,
-      boolean reverseFields) {
+      boolean reverseFields,
+      boolean findParentFields) {
     try {
       Files.deleteIfExists(path);
       Files.createFile(path);
@@ -143,7 +169,8 @@ public final class AnnotatedConfigResolver {
             valueWriter,
             settings,
             keyResolver,
-            reverseFields);
+            reverseFields,
+            findParentFields);
       }
     } catch (IOException e) {
       throw new RuntimeException(e);
@@ -158,7 +185,8 @@ public final class AnnotatedConfigResolver {
       String commentChar,
       ValueWriter valueWriter,
       KeyResolver keyResolver,
-      boolean reverseFields) {
+      boolean reverseFields,
+      boolean findParentFields) {
     try (PrintWriter writer = new PrintWriter(writerFeed)) {
       toWriter(
           annotatedConfig,
@@ -168,7 +196,8 @@ public final class AnnotatedConfigResolver {
           valueWriter,
           settings,
           keyResolver,
-          reverseFields);
+          reverseFields,
+          findParentFields);
     } catch (IOException e) {
       throw new RuntimeException(e);
     }
@@ -182,7 +211,8 @@ public final class AnnotatedConfigResolver {
       ValueWriter valueWriter,
       Settings settings,
       KeyResolver keyResolver,
-      boolean reverseFields)
+      boolean reverseFields,
+      boolean findParentFields)
       throws IOException {
     WriteData parentData = new WriteData();
     Field rawConfigField = null;
@@ -212,7 +242,7 @@ public final class AnnotatedConfigResolver {
         continue;
       }
       try {
-        WriteData current = getWriteData(annotatedConfig, entry, keyResolver, reverseFields);
+        WriteData current = getWriteData(annotatedConfig, entry, keyResolver, reverseFields, findParentFields);
         for (Map.Entry<String, Object> childDataWrite : current.getToWrite().entrySet()) {
           String childDataKey = childDataWrite.getKey();
           Object childDataValue = childDataWrite.getValue();
@@ -261,7 +291,8 @@ public final class AnnotatedConfigResolver {
       Object annotatedConfig,
       Map.Entry<AnnotationHolder, Set<AnnotationType>> entry,
       KeyResolver keyResolver,
-      boolean reverseFields)
+      boolean reverseFields,
+      boolean findParentFields)
       throws IllegalAccessException {
     SerializerRegistry serializerRegistry = SerializerRegistry.INSTANCE;
     AnnotationHolder holder = entry.getKey();
@@ -299,11 +330,11 @@ public final class AnnotatedConfigResolver {
     if (configObject) {
       Object cfgObject = field.get(annotatedConfig);
       Map<AnnotationHolder, Set<AnnotationType>> annotations =
-          resolveAnnotations(cfgObject, reverseFields);
+          resolveAnnotations(cfgObject, reverseFields, findParentFields);
 
       WriteData combinedData = new WriteData();
       for (Map.Entry<AnnotationHolder, Set<AnnotationType>> e1 : annotations.entrySet()) {
-        WriteData childData = getWriteData(cfgObject, e1, keyResolver, reverseFields);
+        WriteData childData = getWriteData(cfgObject, e1, keyResolver, reverseFields, findParentFields);
         combinedData.getClassComments().addAll(childData.getClassComments());
         for (Map.Entry<String, Object> childDataWrite : childData.getToWrite().entrySet()) {
           String childDataKey = childDataWrite.getKey();
@@ -475,7 +506,8 @@ public final class AnnotatedConfigResolver {
       NullReadHandleOption nullReadHandler,
       Settings settings,
       KeyResolver keyResolver,
-      boolean reverseFields) {
+      boolean reverseFields,
+      boolean findParentFields) {
     boolean missingOptions = false;
     for (Map.Entry<AnnotationHolder, Set<AnnotationType>> entry : map.entrySet()) {
       AnnotationHolder holder = entry.getKey();
@@ -551,11 +583,12 @@ public final class AnnotatedConfigResolver {
             setFields(
                 section,
                 (Map<String, Object>) value,
-                resolveAnnotations(section, reverseFields),
+                resolveAnnotations(section, reverseFields, findParentFields),
                 nullReadHandler,
                 settings,
                 keyResolver,
-                reverseFields);
+                reverseFields,
+                findParentFields);
         if (thMissing && !missingOptions) {
           missingOptions = true;
         }

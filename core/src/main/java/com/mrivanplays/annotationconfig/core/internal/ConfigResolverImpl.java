@@ -72,8 +72,13 @@ public final class ConfigResolverImpl implements ConfigResolver {
     if (file.exists()) {
       file.delete();
     }
+    boolean findParentFields =
+        settings
+            .get(ACDefaultSettings.FIND_PARENT_FIELDS)
+            .orElse(ACDefaultSettings.getDefault().get(ACDefaultSettings.FIND_PARENT_FIELDS).get());
     Map<AnnotationHolder, Set<AnnotationType>> resolvedAnnotations =
-        AnnotatedConfigResolver.resolveAnnotations(annotatedConfig, reverseFields);
+        AnnotatedConfigResolver.resolveAnnotations(
+            annotatedConfig, reverseFields, findParentFields);
     AnnotatedConfigResolver.dump(
         annotatedConfig,
         resolvedAnnotations,
@@ -82,7 +87,8 @@ public final class ConfigResolverImpl implements ConfigResolver {
         commentPrefix,
         valueWriter,
         keyResolver,
-        reverseFields);
+        reverseFields,
+        findParentFields);
   }
 
   @Override
@@ -90,21 +96,32 @@ public final class ConfigResolverImpl implements ConfigResolver {
     if (Files.isDirectory(path)) {
       throw new IllegalArgumentException("Cannot dump a config FILE to a DIRECTORY: " + path);
     }
+    boolean findParentFields =
+        settings
+            .get(ACDefaultSettings.FIND_PARENT_FIELDS)
+            .orElse(ACDefaultSettings.getDefault().get(ACDefaultSettings.FIND_PARENT_FIELDS).get());
     AnnotatedConfigResolver.dump(
         annotatedConfig,
-        AnnotatedConfigResolver.resolveAnnotations(annotatedConfig, reverseFields),
+        AnnotatedConfigResolver.resolveAnnotations(
+            annotatedConfig, reverseFields, findParentFields),
         path,
         settings,
         commentPrefix,
         valueWriter,
         keyResolver,
-        reverseFields);
+        reverseFields,
+        findParentFields);
   }
 
   @Override
   public void dump(Object annotatedConfig, Writer writer) {
+    boolean findParentFields =
+        settings
+            .get(ACDefaultSettings.FIND_PARENT_FIELDS)
+            .orElse(ACDefaultSettings.getDefault().get(ACDefaultSettings.FIND_PARENT_FIELDS).get());
     Map<AnnotationHolder, Set<AnnotationType>> resolvedAnnotations =
-        AnnotatedConfigResolver.resolveAnnotations(annotatedConfig, reverseFields);
+        AnnotatedConfigResolver.resolveAnnotations(
+            annotatedConfig, reverseFields, findParentFields);
     AnnotatedConfigResolver.dump(
         annotatedConfig,
         resolvedAnnotations,
@@ -113,7 +130,8 @@ public final class ConfigResolverImpl implements ConfigResolver {
         commentPrefix,
         valueWriter,
         keyResolver,
-        reverseFields);
+        reverseFields,
+        findParentFields);
   }
 
   @Override
@@ -131,9 +149,20 @@ public final class ConfigResolverImpl implements ConfigResolver {
     if (!file.exists()) {
       return;
     }
+    boolean findParentFields =
+        settings
+            .get(ACDefaultSettings.FIND_PARENT_FIELDS)
+            .orElse(
+                this.settings
+                    .get(ACDefaultSettings.FIND_PARENT_FIELDS)
+                    .orElse(
+                        ACDefaultSettings.getDefault()
+                            .get(ACDefaultSettings.FIND_PARENT_FIELDS)
+                            .get()));
     Map<AnnotationHolder, Set<AnnotationType>> resolvedAnnotations =
-        AnnotatedConfigResolver.resolveAnnotations(annotatedConfig, reverseFields);
-    handleFileLoad(annotatedConfig, resolvedAnnotations, file, settings);
+        AnnotatedConfigResolver.resolveAnnotations(
+            annotatedConfig, reverseFields, findParentFields);
+    handleFileLoad(annotatedConfig, resolvedAnnotations, file, settings, findParentFields);
   }
 
   @Override
@@ -141,9 +170,20 @@ public final class ConfigResolverImpl implements ConfigResolver {
     if (Files.notExists(path) || Files.isDirectory(path)) {
       return;
     }
+    boolean findParentFields =
+        settings
+            .get(ACDefaultSettings.FIND_PARENT_FIELDS)
+            .orElse(
+                this.settings
+                    .get(ACDefaultSettings.FIND_PARENT_FIELDS)
+                    .orElse(
+                        ACDefaultSettings.getDefault()
+                            .get(ACDefaultSettings.FIND_PARENT_FIELDS)
+                            .get()));
     Map<AnnotationHolder, Set<AnnotationType>> resolvedAnnotations =
-        AnnotatedConfigResolver.resolveAnnotations(annotatedConfig, reverseFields);
-    handlePathLoad(annotatedConfig, resolvedAnnotations, path, settings);
+        AnnotatedConfigResolver.resolveAnnotations(
+            annotatedConfig, reverseFields, findParentFields);
+    handlePathLoad(annotatedConfig, resolvedAnnotations, path, settings, findParentFields);
   }
 
   @Override
@@ -156,8 +196,19 @@ public final class ConfigResolverImpl implements ConfigResolver {
     if (values.isEmpty()) {
       return;
     }
+    boolean findParentFields =
+        settings
+            .get(ACDefaultSettings.FIND_PARENT_FIELDS)
+            .orElse(
+                this.settings
+                    .get(ACDefaultSettings.FIND_PARENT_FIELDS)
+                    .orElse(
+                        ACDefaultSettings.getDefault()
+                            .get(ACDefaultSettings.FIND_PARENT_FIELDS)
+                            .get()));
     Map<AnnotationHolder, Set<AnnotationType>> resolvedAnnotations =
-        AnnotatedConfigResolver.resolveAnnotations(annotatedConfig, reverseFields);
+        AnnotatedConfigResolver.resolveAnnotations(
+            annotatedConfig, reverseFields, findParentFields);
     NullReadHandleOption nullReadHandler =
         settings
             .get(ACDefaultSettings.NULL_READ_HANDLER)
@@ -175,7 +226,8 @@ public final class ConfigResolverImpl implements ConfigResolver {
         nullReadHandler,
         settings,
         keyResolver,
-        reverseFields);
+        reverseFields,
+        findParentFields);
   }
 
   @Override
@@ -185,8 +237,19 @@ public final class ConfigResolverImpl implements ConfigResolver {
 
   @Override
   public void load(Object annotatedConfig, Reader reader, Settings settings) {
+    boolean findParentFields =
+        settings
+            .get(ACDefaultSettings.FIND_PARENT_FIELDS)
+            .orElse(
+                this.settings
+                    .get(ACDefaultSettings.FIND_PARENT_FIELDS)
+                    .orElse(
+                        ACDefaultSettings.getDefault()
+                            .get(ACDefaultSettings.FIND_PARENT_FIELDS)
+                            .get()));
     Map<AnnotationHolder, Set<AnnotationType>> resolvedAnnotations =
-        AnnotatedConfigResolver.resolveAnnotations(annotatedConfig, reverseFields);
+        AnnotatedConfigResolver.resolveAnnotations(
+            annotatedConfig, reverseFields, findParentFields);
     Map<String, Object> values;
     try {
       try {
@@ -214,7 +277,8 @@ public final class ConfigResolverImpl implements ConfigResolver {
         nullReadHandler,
         settings,
         keyResolver,
-        reverseFields);
+        reverseFields,
+        findParentFields);
   }
 
   @Override
@@ -229,8 +293,19 @@ public final class ConfigResolverImpl implements ConfigResolver {
 
   @Override
   public void loadOrDump(Object annotatedConfig, File file, Settings settings) {
+    boolean findParentFields =
+        settings
+            .get(ACDefaultSettings.FIND_PARENT_FIELDS)
+            .orElse(
+                this.settings
+                    .get(ACDefaultSettings.FIND_PARENT_FIELDS)
+                    .orElse(
+                        ACDefaultSettings.getDefault()
+                            .get(ACDefaultSettings.FIND_PARENT_FIELDS)
+                            .get()));
     Map<AnnotationHolder, Set<AnnotationType>> resolvedAnnotations =
-        AnnotatedConfigResolver.resolveAnnotations(annotatedConfig, reverseFields);
+        AnnotatedConfigResolver.resolveAnnotations(
+            annotatedConfig, reverseFields, findParentFields);
     if (!file.exists()) {
       AnnotatedConfigResolver.dump(
           annotatedConfig,
@@ -240,10 +315,11 @@ public final class ConfigResolverImpl implements ConfigResolver {
           commentPrefix,
           valueWriter,
           keyResolver,
-          reverseFields);
+          reverseFields,
+          findParentFields);
       return;
     }
-    handleFileLoad(annotatedConfig, resolvedAnnotations, file, settings);
+    handleFileLoad(annotatedConfig, resolvedAnnotations, file, settings, findParentFields);
   }
 
   @Override
@@ -251,8 +327,19 @@ public final class ConfigResolverImpl implements ConfigResolver {
     if (Files.isDirectory(path)) {
       throw new IllegalArgumentException("Cannot write a config FILE to a DIRECTORY " + path);
     }
+    boolean findParentFields =
+        settings
+            .get(ACDefaultSettings.FIND_PARENT_FIELDS)
+            .orElse(
+                this.settings
+                    .get(ACDefaultSettings.FIND_PARENT_FIELDS)
+                    .orElse(
+                        ACDefaultSettings.getDefault()
+                            .get(ACDefaultSettings.FIND_PARENT_FIELDS)
+                            .get()));
     Map<AnnotationHolder, Set<AnnotationType>> resolvedAnnotations =
-        AnnotatedConfigResolver.resolveAnnotations(annotatedConfig, reverseFields);
+        AnnotatedConfigResolver.resolveAnnotations(
+            annotatedConfig, reverseFields, findParentFields);
     if (Files.notExists(path)) {
       AnnotatedConfigResolver.dump(
           annotatedConfig,
@@ -262,10 +349,11 @@ public final class ConfigResolverImpl implements ConfigResolver {
           commentPrefix,
           valueWriter,
           keyResolver,
-          reverseFields);
+          reverseFields,
+          findParentFields);
       return;
     }
-    handlePathLoad(annotatedConfig, resolvedAnnotations, path, settings);
+    handlePathLoad(annotatedConfig, resolvedAnnotations, path, settings, findParentFields);
   }
 
   @Override
@@ -280,6 +368,16 @@ public final class ConfigResolverImpl implements ConfigResolver {
     if (!dir.isDirectory()) {
       throw new IllegalArgumentException(dir + " is not a directory!");
     }
+    boolean findParentFields =
+        settings
+            .get(ACDefaultSettings.FIND_PARENT_FIELDS)
+            .orElse(
+                this.settings
+                    .get(ACDefaultSettings.FIND_PARENT_FIELDS)
+                    .orElse(
+                        ACDefaultSettings.getDefault()
+                            .get(ACDefaultSettings.FIND_PARENT_FIELDS)
+                            .get()));
     if (!dir.exists()) {
       dir.mkdirs();
       T config = configToResolveTo.get();
@@ -309,9 +407,10 @@ public final class ConfigResolverImpl implements ConfigResolver {
         }
         T config = configToResolveTo.get();
         if (resolvedAnnotations == null) {
-          resolvedAnnotations = AnnotatedConfigResolver.resolveAnnotations(config, reverseFields);
+          resolvedAnnotations =
+              AnnotatedConfigResolver.resolveAnnotations(config, reverseFields, findParentFields);
         }
-        handleFileLoad(config, resolvedAnnotations, file, settings);
+        handleFileLoad(config, resolvedAnnotations, file, settings, findParentFields);
         ret.put(file.getName(), config);
       }
       return ret;
@@ -330,6 +429,16 @@ public final class ConfigResolverImpl implements ConfigResolver {
     if (!Files.isDirectory(dir)) {
       throw new IllegalArgumentException(dir + " is not a directory!");
     }
+    boolean findParentFields =
+        settings
+            .get(ACDefaultSettings.FIND_PARENT_FIELDS)
+            .orElse(
+                this.settings
+                    .get(ACDefaultSettings.FIND_PARENT_FIELDS)
+                    .orElse(
+                        ACDefaultSettings.getDefault()
+                            .get(ACDefaultSettings.FIND_PARENT_FIELDS)
+                            .get()));
     if (Files.notExists(dir)) {
       try {
         Files.createDirectories(dir);
@@ -367,9 +476,10 @@ public final class ConfigResolverImpl implements ConfigResolver {
           }
           T config = configToResolveTo.get();
           if (resolvedAnnotations == null) {
-            resolvedAnnotations = AnnotatedConfigResolver.resolveAnnotations(config, reverseFields);
+            resolvedAnnotations =
+                AnnotatedConfigResolver.resolveAnnotations(config, reverseFields, findParentFields);
           }
-          handlePathLoad(config, resolvedAnnotations, path, settings);
+          handlePathLoad(config, resolvedAnnotations, path, settings, findParentFields);
           ret.put(fileName, config);
         }
         return ret;
@@ -383,7 +493,8 @@ public final class ConfigResolverImpl implements ConfigResolver {
       Object annotatedConfig,
       Map<AnnotationHolder, Set<AnnotationType>> resolvedAnnotations,
       File file,
-      Settings settings) {
+      Settings settings,
+      boolean findParentFields) {
     Map<String, Object> values;
     try (Reader reader = new InputStreamReader(new FileInputStream(file), StandardCharsets.UTF_8)) {
       values = valueReader.read(reader, settings);
@@ -405,15 +516,18 @@ public final class ConfigResolverImpl implements ConfigResolver {
               commentPrefix,
               valueWriter,
               keyResolver,
-              reverseFields);
-        });
+              reverseFields,
+              findParentFields);
+        },
+        findParentFields);
   }
 
   private void handlePathLoad(
       Object annotatedConfig,
       Map<AnnotationHolder, Set<AnnotationType>> resolvedAnnotations,
       Path path,
-      Settings settings) {
+      Settings settings,
+      boolean findParentFields) {
     Map<String, Object> values;
     try (Reader reader =
         new InputStreamReader(Files.newInputStream(path), StandardCharsets.UTF_8)) {
@@ -440,8 +554,10 @@ public final class ConfigResolverImpl implements ConfigResolver {
               commentPrefix,
               valueWriter,
               keyResolver,
-              reverseFields);
-        });
+              reverseFields,
+              findParentFields);
+        },
+        findParentFields);
   }
 
   private void finishLoad(
@@ -449,7 +565,8 @@ public final class ConfigResolverImpl implements ConfigResolver {
       Map<AnnotationHolder, Set<AnnotationType>> resolvedAnnotations,
       Map<String, Object> values,
       Settings settings,
-      Runnable missingOptionsAction) {
+      Runnable missingOptionsAction,
+      boolean findParentFields) {
     if (values.isEmpty()) {
       return;
     }
@@ -481,7 +598,8 @@ public final class ConfigResolverImpl implements ConfigResolver {
             nullReadHandler,
             settings,
             keyResolver,
-            reverseFields);
+            reverseFields,
+            findParentFields);
     if (missingOptions && generateNewOptions) {
       missingOptionsAction.run();
     }
