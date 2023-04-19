@@ -55,6 +55,10 @@ public final class AnnotatedConfigResolver {
     Map<AnnotationHolder, Set<AnnotationType>> annotationData = new TreeMap<>();
     AnnotationHolder CLASS_ANNOTATION_HOLDER = new AnnotationHolder();
     Class<?> theClass = annotatedClass.getClass();
+    List<ParentData> parentData = null;
+    if (findParentFields) {
+      parentData = getParentData(theClass);
+    }
     for (Annotation annotation : theClass.getAnnotations()) {
       Optional<AnnotationType> typeOpt = AnnotationType.match(annotation.annotationType());
       if (!typeOpt.isPresent()) {
@@ -62,10 +66,27 @@ public final class AnnotatedConfigResolver {
       }
       populate(CLASS_ANNOTATION_HOLDER, typeOpt.get(), annotationData);
     }
+    if (parentData != null) {
+      for (ParentData data : parentData) {
+        if (data.annotations != null) {
+          for (Annotation annotation : data.annotations) {
+            Optional<AnnotationType> typeOpt = AnnotationType.match(annotation.annotationType());
+            if (!typeOpt.isPresent()) {
+              continue;
+            }
+            populate(CLASS_ANNOTATION_HOLDER, typeOpt.get(), annotationData);
+          }
+        }
+      }
+    }
 
     List<Field> fields = new ArrayList<>(Arrays.asList(theClass.getDeclaredFields()));
-    if (findParentFields) {
-      fields.addAll(getParentFields(theClass));
+    if (parentData != null) {
+      for (ParentData data : parentData) {
+        if (data.fields != null && !data.fields.isEmpty()) {
+          fields.addAll(data.fields);
+        }
+      }
     }
     if (reverseFields) {
       Collections.reverse(fields);
@@ -99,8 +120,8 @@ public final class AnnotatedConfigResolver {
     return annotationData;
   }
 
-  private static List<Field> getParentFields(Class<?> theClass) {
-    List<Field> ret = new ArrayList<>();
+  private static List<ParentData> getParentData(Class<?> theClass) {
+    List<ParentData> ret = new ArrayList<>();
     Class<?> superClass = null;
     while (true) {
       if (superClass == null) {
@@ -111,11 +132,23 @@ public final class AnnotatedConfigResolver {
       if (superClass == null || superClass.getCanonicalName().equalsIgnoreCase("java.lang.Object")) {
         break;
       }
+      ParentData parentData = new ParentData();
+      parentData.parent = superClass;
       if (superClass.getDeclaredFields().length > 0) {
-        ret.addAll(Arrays.asList(superClass.getDeclaredFields()));
+        parentData.fields = Arrays.asList(superClass.getDeclaredFields());
       }
+      if (superClass.getAnnotations().length > 0) {
+        parentData.annotations = superClass.getAnnotations();
+      }
+      ret.add(parentData);
     }
     return ret;
+  }
+
+  private static class ParentData {
+    Class<?> parent;
+    List<Field> fields;
+    Annotation[] annotations;
   }
 
   public static void dump(

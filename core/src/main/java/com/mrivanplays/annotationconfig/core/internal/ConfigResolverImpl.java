@@ -35,7 +35,6 @@ public final class ConfigResolverImpl implements ConfigResolver {
   private final Settings settings;
   private final KeyResolver keyResolver;
   private final String[] fileExtensions;
-  private final boolean reverseFields;
 
   public ConfigResolverImpl(
       String commentPrefix,
@@ -43,8 +42,7 @@ public final class ConfigResolverImpl implements ConfigResolver {
       ValueReader valueReader,
       Settings settings,
       KeyResolver keyResolver,
-      String[] fileExtensions,
-      boolean reverseFields) {
+      String[] fileExtensions) {
     this.commentPrefix = Objects.requireNonNull(commentPrefix, "commentPrefix");
     this.valueWriter = Objects.requireNonNull(valueWriter, "valueWriter");
     this.valueReader = Objects.requireNonNull(valueReader, "valueReader");
@@ -59,7 +57,6 @@ public final class ConfigResolverImpl implements ConfigResolver {
     } else {
       this.keyResolver = keyResolver;
     }
-    this.reverseFields = reverseFields;
   }
 
   @Override
@@ -76,6 +73,11 @@ public final class ConfigResolverImpl implements ConfigResolver {
         settings
             .get(ACDefaultSettings.FIND_PARENT_FIELDS)
             .orElse(ACDefaultSettings.getDefault().get(ACDefaultSettings.FIND_PARENT_FIELDS).get());
+    boolean reverseFields =
+        settings
+            .get(ACDefaultSettings.SHOULD_REVERSE_FIELDS)
+            .orElse(
+                ACDefaultSettings.getDefault().get(ACDefaultSettings.SHOULD_REVERSE_FIELDS).get());
     Map<AnnotationHolder, Set<AnnotationType>> resolvedAnnotations =
         AnnotatedConfigResolver.resolveAnnotations(
             annotatedConfig, reverseFields, findParentFields);
@@ -100,6 +102,11 @@ public final class ConfigResolverImpl implements ConfigResolver {
         settings
             .get(ACDefaultSettings.FIND_PARENT_FIELDS)
             .orElse(ACDefaultSettings.getDefault().get(ACDefaultSettings.FIND_PARENT_FIELDS).get());
+    boolean reverseFields =
+        settings
+            .get(ACDefaultSettings.SHOULD_REVERSE_FIELDS)
+            .orElse(
+                ACDefaultSettings.getDefault().get(ACDefaultSettings.SHOULD_REVERSE_FIELDS).get());
     AnnotatedConfigResolver.dump(
         annotatedConfig,
         AnnotatedConfigResolver.resolveAnnotations(
@@ -119,6 +126,11 @@ public final class ConfigResolverImpl implements ConfigResolver {
         settings
             .get(ACDefaultSettings.FIND_PARENT_FIELDS)
             .orElse(ACDefaultSettings.getDefault().get(ACDefaultSettings.FIND_PARENT_FIELDS).get());
+    boolean reverseFields =
+        settings
+            .get(ACDefaultSettings.SHOULD_REVERSE_FIELDS)
+            .orElse(
+                ACDefaultSettings.getDefault().get(ACDefaultSettings.SHOULD_REVERSE_FIELDS).get());
     Map<AnnotationHolder, Set<AnnotationType>> resolvedAnnotations =
         AnnotatedConfigResolver.resolveAnnotations(
             annotatedConfig, reverseFields, findParentFields);
@@ -159,6 +171,16 @@ public final class ConfigResolverImpl implements ConfigResolver {
                         ACDefaultSettings.getDefault()
                             .get(ACDefaultSettings.FIND_PARENT_FIELDS)
                             .get()));
+    boolean reverseFields =
+        settings
+            .get(ACDefaultSettings.SHOULD_REVERSE_FIELDS)
+            .orElse(
+                this.settings
+                    .get(ACDefaultSettings.SHOULD_REVERSE_FIELDS)
+                    .orElse(
+                        ACDefaultSettings.getDefault()
+                            .get(ACDefaultSettings.SHOULD_REVERSE_FIELDS)
+                            .get()));
     Map<AnnotationHolder, Set<AnnotationType>> resolvedAnnotations =
         AnnotatedConfigResolver.resolveAnnotations(
             annotatedConfig, reverseFields, findParentFields);
@@ -179,6 +201,16 @@ public final class ConfigResolverImpl implements ConfigResolver {
                     .orElse(
                         ACDefaultSettings.getDefault()
                             .get(ACDefaultSettings.FIND_PARENT_FIELDS)
+                            .get()));
+    boolean reverseFields =
+        settings
+            .get(ACDefaultSettings.SHOULD_REVERSE_FIELDS)
+            .orElse(
+                this.settings
+                    .get(ACDefaultSettings.SHOULD_REVERSE_FIELDS)
+                    .orElse(
+                        ACDefaultSettings.getDefault()
+                            .get(ACDefaultSettings.SHOULD_REVERSE_FIELDS)
                             .get()));
     Map<AnnotationHolder, Set<AnnotationType>> resolvedAnnotations =
         AnnotatedConfigResolver.resolveAnnotations(
@@ -205,6 +237,16 @@ public final class ConfigResolverImpl implements ConfigResolver {
                     .orElse(
                         ACDefaultSettings.getDefault()
                             .get(ACDefaultSettings.FIND_PARENT_FIELDS)
+                            .get()));
+    boolean reverseFields =
+        settings
+            .get(ACDefaultSettings.SHOULD_REVERSE_FIELDS)
+            .orElse(
+                this.settings
+                    .get(ACDefaultSettings.SHOULD_REVERSE_FIELDS)
+                    .orElse(
+                        ACDefaultSettings.getDefault()
+                            .get(ACDefaultSettings.SHOULD_REVERSE_FIELDS)
                             .get()));
     Map<AnnotationHolder, Set<AnnotationType>> resolvedAnnotations =
         AnnotatedConfigResolver.resolveAnnotations(
@@ -246,6 +288,16 @@ public final class ConfigResolverImpl implements ConfigResolver {
                     .orElse(
                         ACDefaultSettings.getDefault()
                             .get(ACDefaultSettings.FIND_PARENT_FIELDS)
+                            .get()));
+    boolean reverseFields =
+        settings
+            .get(ACDefaultSettings.SHOULD_REVERSE_FIELDS)
+            .orElse(
+                this.settings
+                    .get(ACDefaultSettings.SHOULD_REVERSE_FIELDS)
+                    .orElse(
+                        ACDefaultSettings.getDefault()
+                            .get(ACDefaultSettings.SHOULD_REVERSE_FIELDS)
                             .get()));
     Map<AnnotationHolder, Set<AnnotationType>> resolvedAnnotations =
         AnnotatedConfigResolver.resolveAnnotations(
@@ -303,6 +355,16 @@ public final class ConfigResolverImpl implements ConfigResolver {
                         ACDefaultSettings.getDefault()
                             .get(ACDefaultSettings.FIND_PARENT_FIELDS)
                             .get()));
+    boolean reverseFields =
+        settings
+            .get(ACDefaultSettings.SHOULD_REVERSE_FIELDS)
+            .orElse(
+                this.settings
+                    .get(ACDefaultSettings.SHOULD_REVERSE_FIELDS)
+                    .orElse(
+                        ACDefaultSettings.getDefault()
+                            .get(ACDefaultSettings.SHOULD_REVERSE_FIELDS)
+                            .get()));
     Map<AnnotationHolder, Set<AnnotationType>> resolvedAnnotations =
         AnnotatedConfigResolver.resolveAnnotations(
             annotatedConfig, reverseFields, findParentFields);
@@ -336,6 +398,16 @@ public final class ConfigResolverImpl implements ConfigResolver {
                     .orElse(
                         ACDefaultSettings.getDefault()
                             .get(ACDefaultSettings.FIND_PARENT_FIELDS)
+                            .get()));
+    boolean reverseFields =
+        settings
+            .get(ACDefaultSettings.SHOULD_REVERSE_FIELDS)
+            .orElse(
+                this.settings
+                    .get(ACDefaultSettings.SHOULD_REVERSE_FIELDS)
+                    .orElse(
+                        ACDefaultSettings.getDefault()
+                            .get(ACDefaultSettings.SHOULD_REVERSE_FIELDS)
                             .get()));
     Map<AnnotationHolder, Set<AnnotationType>> resolvedAnnotations =
         AnnotatedConfigResolver.resolveAnnotations(
@@ -377,6 +449,16 @@ public final class ConfigResolverImpl implements ConfigResolver {
                     .orElse(
                         ACDefaultSettings.getDefault()
                             .get(ACDefaultSettings.FIND_PARENT_FIELDS)
+                            .get()));
+    boolean reverseFields =
+        settings
+            .get(ACDefaultSettings.SHOULD_REVERSE_FIELDS)
+            .orElse(
+                this.settings
+                    .get(ACDefaultSettings.SHOULD_REVERSE_FIELDS)
+                    .orElse(
+                        ACDefaultSettings.getDefault()
+                            .get(ACDefaultSettings.SHOULD_REVERSE_FIELDS)
                             .get()));
     if (!dir.exists()) {
       dir.mkdirs();
@@ -438,6 +520,16 @@ public final class ConfigResolverImpl implements ConfigResolver {
                     .orElse(
                         ACDefaultSettings.getDefault()
                             .get(ACDefaultSettings.FIND_PARENT_FIELDS)
+                            .get()));
+    boolean reverseFields =
+        settings
+            .get(ACDefaultSettings.SHOULD_REVERSE_FIELDS)
+            .orElse(
+                this.settings
+                    .get(ACDefaultSettings.SHOULD_REVERSE_FIELDS)
+                    .orElse(
+                        ACDefaultSettings.getDefault()
+                            .get(ACDefaultSettings.SHOULD_REVERSE_FIELDS)
                             .get()));
     if (Files.notExists(dir)) {
       try {
@@ -501,6 +593,16 @@ public final class ConfigResolverImpl implements ConfigResolver {
     } catch (IOException e) {
       throw new RuntimeException(e);
     }
+    boolean reverseFields =
+        settings
+            .get(ACDefaultSettings.SHOULD_REVERSE_FIELDS)
+            .orElse(
+                this.settings
+                    .get(ACDefaultSettings.SHOULD_REVERSE_FIELDS)
+                    .orElse(
+                        ACDefaultSettings.getDefault()
+                            .get(ACDefaultSettings.SHOULD_REVERSE_FIELDS)
+                            .get()));
     finishLoad(
         annotatedConfig,
         resolvedAnnotations,
@@ -535,6 +637,16 @@ public final class ConfigResolverImpl implements ConfigResolver {
     } catch (IOException e) {
       throw new RuntimeException(e);
     }
+    boolean reverseFields =
+        settings
+            .get(ACDefaultSettings.SHOULD_REVERSE_FIELDS)
+            .orElse(
+                this.settings
+                    .get(ACDefaultSettings.SHOULD_REVERSE_FIELDS)
+                    .orElse(
+                        ACDefaultSettings.getDefault()
+                            .get(ACDefaultSettings.SHOULD_REVERSE_FIELDS)
+                            .get()));
     this.finishLoad(
         annotatedConfig,
         resolvedAnnotations,
@@ -589,6 +701,16 @@ public final class ConfigResolverImpl implements ConfigResolver {
                     .orElse(
                         ACDefaultSettings.getDefault()
                             .get(ACDefaultSettings.GENERATE_NEW_OPTIONS)
+                            .get()));
+    boolean reverseFields =
+        settings
+            .get(ACDefaultSettings.SHOULD_REVERSE_FIELDS)
+            .orElse(
+                this.settings
+                    .get(ACDefaultSettings.SHOULD_REVERSE_FIELDS)
+                    .orElse(
+                        ACDefaultSettings.getDefault()
+                            .get(ACDefaultSettings.SHOULD_REVERSE_FIELDS)
                             .get()));
     boolean missingOptions =
         AnnotatedConfigResolver.setFields(

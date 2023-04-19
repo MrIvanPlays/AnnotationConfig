@@ -76,10 +76,10 @@ public final class TomlConfig {
         ConfigResolver.newBuilder()
             .withSetting(MAPPER_KEY, DEFAULT_TOML_MAPPER)
             .withSetting(ACDefaultSettings.GENERATE_NEW_OPTIONS, false)
+            .withSetting(ACDefaultSettings.SHOULD_REVERSE_FIELDS, true)
             .withValueWriter(TOML_VALUE_WRITER)
             .withCommentPrefix("# ")
             .withFileExtension(".toml")
-            .shouldReverseFields(true)
             .withValueReader(
                 (reader, settings) ->
                     (Map<String, Object>)

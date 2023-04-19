@@ -3,6 +3,7 @@ package com.mrivanplays.annotationconfig.yaml;
 import com.mrivanplays.annotationconfig.core.resolver.ConfigResolver;
 import com.mrivanplays.annotationconfig.core.resolver.ValueWriter;
 import com.mrivanplays.annotationconfig.core.resolver.key.DottedResolver;
+import com.mrivanplays.annotationconfig.core.resolver.settings.ACDefaultSettings;
 import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -39,7 +40,7 @@ public final class YamlConfig {
         ConfigResolver.newBuilder()
             .withKeyResolver(DottedResolver.getInstance())
             .withValueWriter(YAML_VALUE_WRITER)
-            .shouldReverseFields(true)
+            .withSetting(ACDefaultSettings.SHOULD_REVERSE_FIELDS, true)
             .withCommentPrefix("# ")
             .withFileExtension(".yml")
             .withFileExtension(".yaml")

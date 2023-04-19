@@ -360,7 +360,6 @@ public interface ConfigResolver {
     private Settings settings;
     private KeyResolver keyResolver;
     private List<String> fileExtensions;
-    private boolean reverseFields = false;
 
     public Builder() {}
 
@@ -376,7 +375,6 @@ public interface ConfigResolver {
       this.settings = copy.settings;
       this.keyResolver = copy.keyResolver;
       this.fileExtensions = copy.fileExtensions;
-      this.reverseFields = copy.reverseFields;
     }
 
     /**
@@ -480,10 +478,12 @@ public interface ConfigResolver {
      *
      * @param val whether to reverse fields
      * @return this instance for chaining
+     * @deprecated use {@link #withSetting(Setting, Object)} with the {@link
+     *     ACDefaultSettings#SHOULD_REVERSE_FIELDS} seting.
      */
+    @Deprecated
     public Builder shouldReverseFields(boolean val) {
-      reverseFields = val;
-      return this;
+      return withSetting(ACDefaultSettings.SHOULD_REVERSE_FIELDS, val);
     }
 
     /**
@@ -501,8 +501,7 @@ public interface ConfigResolver {
           valueReader,
           settings,
           keyResolver,
-          fileExtensions.toArray(new String[0]),
-          reverseFields);
+          fileExtensions.toArray(new String[0]));
     }
   }
 }

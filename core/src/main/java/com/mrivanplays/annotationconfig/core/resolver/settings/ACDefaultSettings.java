@@ -8,6 +8,9 @@ package com.mrivanplays.annotationconfig.core.resolver.settings;
  */
 public final class ACDefaultSettings {
 
+  public static final Setting<Boolean> SHOULD_REVERSE_FIELDS =
+      Setting.of("should_reverse_fields", Boolean.class);
+
   public static final Setting<NullReadHandleOption> NULL_READ_HANDLER =
       Setting.of("null_read_handler", NullReadHandleOption.class);
 
@@ -46,6 +49,7 @@ public final class ACDefaultSettings {
     }
     return defaults =
         new Settings()
+            .put(SHOULD_REVERSE_FIELDS, false)
             .put(NULL_READ_HANDLER, NullReadHandleOption.SET_NULL)
             .put(GENERATE_NEW_OPTIONS, true)
             .put(FIND_PARENT_FIELDS, false)
