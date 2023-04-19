@@ -53,8 +53,8 @@ public final class AnnotatedConfigResolver {
   public static Map<AnnotationHolder, Set<AnnotationType>> resolveAnnotations(
       Object annotatedClass, boolean reverseFields, boolean findParentFields) {
     Map<AnnotationHolder, Set<AnnotationType>> annotationData = new TreeMap<>();
-    AnnotationHolder CLASS_ANNOTATION_HOLDER = new AnnotationHolder();
     Class<?> theClass = annotatedClass.getClass();
+    AnnotationHolder CLASS_ANNOTATION_HOLDER = new AnnotationHolder(theClass);
     List<ParentData> parentData = null;
     if (findParentFields) {
       parentData = getParentData(theClass);
@@ -69,12 +69,13 @@ public final class AnnotatedConfigResolver {
     if (parentData != null) {
       for (ParentData data : parentData) {
         if (data.annotations != null) {
+          AnnotationHolder classAnnotationHolder = new AnnotationHolder(data.parent);
           for (Annotation annotation : data.annotations) {
             Optional<AnnotationType> typeOpt = AnnotationType.match(annotation.annotationType());
             if (!typeOpt.isPresent()) {
               continue;
             }
-            populate(CLASS_ANNOTATION_HOLDER, typeOpt.get(), annotationData);
+            populate(classAnnotationHolder, typeOpt.get(), annotationData);
           }
         }
       }
@@ -252,9 +253,8 @@ public final class AnnotatedConfigResolver {
     for (Map.Entry<AnnotationHolder, Set<AnnotationType>> entry : map.entrySet()) {
       AnnotationHolder holder = entry.getKey();
       if (holder.isClass()) {
-        Class<?> theClass = annotatedConfig.getClass();
         for (AnnotationType type : entry.getValue()) {
-          List<String> comments = getComments(type, null, theClass);
+          List<String> comments = getComments(type, null, holder.getClazz());
           if (!comments.isEmpty()) {
             for (String comment : comments) {
               writer.println(commentChar + comment);

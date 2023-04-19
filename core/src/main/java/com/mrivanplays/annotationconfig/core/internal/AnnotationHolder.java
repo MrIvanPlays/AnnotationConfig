@@ -6,9 +6,11 @@ public final class AnnotationHolder implements Comparable<AnnotationHolder> {
   private Field field;
   private int fieldOrder;
   private final boolean isClass;
+  private Class<?> clazz;
 
-  public AnnotationHolder() {
+  public AnnotationHolder(Class<?> clazz) {
     this.isClass = true;
+    this.clazz = clazz;
   }
 
   public AnnotationHolder(Field field, int fieldOrder) {
@@ -27,6 +29,10 @@ public final class AnnotationHolder implements Comparable<AnnotationHolder> {
 
   public Field getField() {
     return field;
+  }
+
+  public Class<?> getClazz() {
+    return clazz;
   }
 
   @Override

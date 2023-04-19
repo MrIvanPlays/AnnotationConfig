@@ -1,5 +1,6 @@
 package com.mrivanplays.annotationconfig.core;
 
+import com.mrivanplays.annotationconfig.core.annotations.comment.Comment;
 import com.mrivanplays.annotationconfig.core.resolver.settings.ACDefaultSettings;
 import java.io.StringReader;
 import java.io.StringWriter;
@@ -9,6 +10,7 @@ import org.junit.jupiter.api.Test;
 
 public class ExtendedConfigurationTest {
 
+  @Comment("Test comment foo")
   static class Subject {
 
     int foo = 1;
@@ -30,7 +32,7 @@ public class ExtendedConfigurationTest {
     StringWriter writer = new StringWriter();
     PropertyConfig.getConfigResolver().dump(subject, writer);
 
-    String expected = "foo=1\n\nbar=baz\n";
+    String expected = "# Test comment foo\n\nfoo=1\n\nbar=baz\n";
 
     Assertions.assertEquals(expected, writer.toString());
   }
