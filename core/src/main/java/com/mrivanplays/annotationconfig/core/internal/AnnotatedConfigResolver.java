@@ -567,75 +567,80 @@ public final class AnnotatedConfigResolver {
           serializerRegistry
               .getSerializer(fieldType)
               .orElse(serializerRegistry.getDefaultSerializer());
+      Object deserialized;
       try {
-        Object deserialized =
+        deserialized =
             serializer.deserialize(
                 new DataObject(value, true),
                 SerializationContext.fromField(field, annotatedConfig),
                 AnnotationAccessor.createFromField(field));
-        if (deserialized == null && !thisMissingOption) {
-          if (nullReadHandler == NullReadHandleOption.USE_DEFAULT_VALUE) {
-            continue;
-          }
-        } else if (deserialized == null) {
+      } catch (IllegalAccessException e) {
+        throw new IllegalArgumentException("Field became inaccessible");
+      }
+      if (deserialized == null && !thisMissingOption) {
+        if (nullReadHandler == NullReadHandleOption.USE_DEFAULT_VALUE) {
           continue;
         }
-        if (deserialized instanceof Number) {
-          Number comparable = (Number) deserialized;
-          State comparison = MinMaxHandler.compare(min, max, comparable);
-          handleComparison(comparison, keyName, comparable, fieldType, min, max, Number.class);
-        } else if (deserialized instanceof String) {
-          String comparable = (String) deserialized;
-          State comparison = MinMaxHandler.compare(min, max, comparable);
-          handleComparison(
-              comparison, keyName, comparable.length(), fieldType, min, max, String.class);
-        } else {
-          if (min.getState() != State.START) {
-            throw new IllegalArgumentException("@Min annotation placed on invalid field type");
-          }
-          if (max.getState() != State.START) {
-            throw new IllegalArgumentException("@Max annotation placed on invalid field type");
-          }
+      } else if (deserialized == null) {
+        continue;
+      }
+      if (deserialized instanceof Number) {
+        Number comparable = (Number) deserialized;
+        State comparison = MinMaxHandler.compare(min, max, comparable);
+        handleComparison(comparison, keyName, comparable, fieldType, min, max, Number.class);
+      } else if (deserialized instanceof String) {
+        String comparable = (String) deserialized;
+        State comparison = MinMaxHandler.compare(min, max, comparable);
+        handleComparison(
+            comparison, keyName, comparable.length(), fieldType, min, max, String.class);
+      } else {
+        if (min.getState() != State.START) {
+          throw new IllegalArgumentException("@Min annotation placed on invalid field type");
         }
-        // check for custom annotations
-        CustomAnnotationRegistry cARegistry = CustomAnnotationRegistry.INSTANCE;
-        if (!cARegistry.isEmpty()) {
-          Throwable error = null;
-          boolean failed = false;
-          for (Annotation annotation : field.getAnnotations()) {
-            Class<? extends Annotation> type = annotation.annotationType();
-            if (AnnotationType.match(type).isPresent()) {
-              // do not handle any validation of our own annotations even if someone registered a
-              // validator for them.
-              continue;
-            }
-            Optional<AnnotationValidator<? extends Annotation>> validatorOpt =
-                cARegistry.getValidator(type);
-            if (validatorOpt.isPresent()) {
-              AnnotationValidator validator = validatorOpt.get();
-              ValidationResponse validatorResponse =
-                  validator.validate(field.getAnnotation(type), deserialized, settings, field);
-              if (validatorResponse.throwError() != null) {
-                error = validatorResponse.throwError();
-                break;
-              }
-              if (validatorResponse.shouldFailSilently()) {
-                failed = validatorResponse.shouldFailSilently();
-                break;
-              }
-              if (validatorResponse.onSuccess() != null) {
-                validatorResponse.onSuccess().run();
-              }
-            }
-          }
-          if (error != null) {
-            throw new RuntimeException(error);
-          }
-          // error wasn't thrown, so just silently skip if the checks failed
-          if (failed) {
+        if (max.getState() != State.START) {
+          throw new IllegalArgumentException("@Max annotation placed on invalid field type");
+        }
+      }
+      // check for custom annotations
+      CustomAnnotationRegistry cARegistry = CustomAnnotationRegistry.INSTANCE;
+      if (!cARegistry.isEmpty()) {
+        Throwable error = null;
+        boolean failed = false;
+        for (Annotation annotation : field.getAnnotations()) {
+          Class<? extends Annotation> type = annotation.annotationType();
+          if (AnnotationType.match(type).isPresent()) {
+            // do not handle any validation of our own annotations even if someone registered a
+            // validator for them.
             continue;
           }
+          Optional<AnnotationValidator<? extends Annotation>> validatorOpt =
+              cARegistry.getValidator(type);
+          if (validatorOpt.isPresent()) {
+            AnnotationValidator validator = validatorOpt.get();
+            ValidationResponse validatorResponse =
+                validator.validate(field.getAnnotation(type), deserialized, settings, field);
+            if (validatorResponse.throwError() != null) {
+              error = validatorResponse.throwError();
+              break;
+            }
+            if (validatorResponse.shouldFailSilently()) {
+              failed = validatorResponse.shouldFailSilently();
+              break;
+            }
+            if (validatorResponse.onSuccess() != null) {
+              validatorResponse.onSuccess().run();
+            }
+          }
         }
+        if (error != null) {
+          throw new RuntimeException(error);
+        }
+        // error wasn't thrown, so just silently skip if the checks failed
+        if (failed) {
+          continue;
+        }
+      }
+      try {
         field.set(annotatedConfig, deserialized);
       } catch (IllegalAccessException e) {
         throw new IllegalArgumentException(
