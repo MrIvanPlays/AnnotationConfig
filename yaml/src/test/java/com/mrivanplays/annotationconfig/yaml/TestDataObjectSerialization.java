@@ -7,7 +7,7 @@ import org.junit.jupiter.api.Test;
 
 public class TestDataObjectSerialization {
 
-  public static class Subject {
+  static class Subject {
 
     private DataObject data = getData();
 

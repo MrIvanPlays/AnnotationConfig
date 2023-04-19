@@ -7,7 +7,7 @@ import org.junit.jupiter.api.Test;
 
 public class TestRawConfig {
 
-  public static class Subject {
+  static class Subject {
 
     private String foo = "asd";
     private double baz = 2.3;

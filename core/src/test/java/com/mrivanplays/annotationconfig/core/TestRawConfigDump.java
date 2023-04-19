@@ -8,7 +8,7 @@ import org.junit.jupiter.api.Test;
 
 public class TestRawConfigDump {
 
-  public static class Subject {
+  static class Subject {
 
     private String foo = "aabb";
     private int bar = 1;

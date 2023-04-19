@@ -7,14 +7,14 @@ import org.junit.jupiter.api.Test;
 
 public class ArrayWriteTest {
 
-  public static class Subject {
+  static class Subject {
 
     private int[] foo = new int[] {1, 2};
     private BigDecimal[] bigDec =
         new BigDecimal[] {new BigDecimal("1111.2222"), new BigDecimal("3333.4444")};
     private MyObject[] myObjectArr = new MyObject[] {new MyObject(1, true), new MyObject(2, false)};
 
-    public static class MyObject {
+    static class MyObject {
 
       private int foo;
       private boolean baz;

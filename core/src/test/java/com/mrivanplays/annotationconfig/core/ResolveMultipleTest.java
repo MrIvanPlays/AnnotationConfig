@@ -16,7 +16,7 @@ import org.junit.jupiter.api.Test;
 
 class ResolveMultipleTest {
 
-  public static class Subject {
+  static class Subject {
 
     int foo = 2000;
 

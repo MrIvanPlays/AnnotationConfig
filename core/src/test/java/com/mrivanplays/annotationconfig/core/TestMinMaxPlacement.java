@@ -9,7 +9,7 @@ import org.junit.jupiter.api.Test;
 
 public class TestMinMaxPlacement {
 
-  public static final class MinMaxTest {
+  private static final class MinMaxTest {
 
     @Min(minInt = 1)
     private boolean value = false;

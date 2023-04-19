@@ -8,7 +8,7 @@ import org.junit.jupiter.api.Test;
 
 public class TestMultilineString {
 
-  public static class Subject {
+  static class Subject {
 
     @Key("control-field")
     public int controlField = -1;

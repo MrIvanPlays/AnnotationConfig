@@ -10,7 +10,7 @@ import org.junit.jupiter.api.Test;
 
 public class TestMinMaxString {
 
-  public static final class MinMaxTest {
+  private static final class MinMaxTest {
 
     @Min(minInt = 3)
     @Max(maxInt = 7)

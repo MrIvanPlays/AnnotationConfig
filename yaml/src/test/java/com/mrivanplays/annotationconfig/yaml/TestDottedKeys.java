@@ -9,7 +9,7 @@ import org.junit.jupiter.api.Test;
 
 public class TestDottedKeys {
 
-  public static final class Subject {
+  private static final class Subject {
 
     @Comment("Mashallah")
     @Key("dotted.key.test.mashallah")

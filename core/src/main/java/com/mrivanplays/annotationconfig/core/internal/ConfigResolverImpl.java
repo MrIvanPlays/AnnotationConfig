@@ -15,7 +15,6 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.Reader;
 import java.io.Writer;
-import java.lang.invoke.MethodHandles;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -37,7 +36,6 @@ public final class ConfigResolverImpl implements ConfigResolver {
   private final KeyResolver keyResolver;
   private final String[] fileExtensions;
   private final boolean reverseFields;
-  private final MethodHandles.Lookup lookup;
 
   public ConfigResolverImpl(
       String commentPrefix,
@@ -62,7 +60,6 @@ public final class ConfigResolverImpl implements ConfigResolver {
       this.keyResolver = keyResolver;
     }
     this.reverseFields = reverseFields;
-    this.lookup = MethodHandles.lookup();
   }
 
   @Override
@@ -78,7 +75,6 @@ public final class ConfigResolverImpl implements ConfigResolver {
     Map<AnnotationHolder, Set<AnnotationType>> resolvedAnnotations =
         AnnotatedConfigResolver.resolveAnnotations(annotatedConfig, reverseFields);
     AnnotatedConfigResolver.dump(
-        lookup,
         annotatedConfig,
         resolvedAnnotations,
         file,
@@ -95,7 +91,6 @@ public final class ConfigResolverImpl implements ConfigResolver {
       throw new IllegalArgumentException("Cannot dump a config FILE to a DIRECTORY: " + path);
     }
     AnnotatedConfigResolver.dump(
-        lookup,
         annotatedConfig,
         AnnotatedConfigResolver.resolveAnnotations(annotatedConfig, reverseFields),
         path,
@@ -111,7 +106,6 @@ public final class ConfigResolverImpl implements ConfigResolver {
     Map<AnnotationHolder, Set<AnnotationType>> resolvedAnnotations =
         AnnotatedConfigResolver.resolveAnnotations(annotatedConfig, reverseFields);
     AnnotatedConfigResolver.dump(
-        lookup,
         annotatedConfig,
         resolvedAnnotations,
         writer,
@@ -175,7 +169,6 @@ public final class ConfigResolverImpl implements ConfigResolver {
                             .get(ACDefaultSettings.NULL_READ_HANDLER)
                             .get()));
     AnnotatedConfigResolver.setFields(
-        lookup,
         annotatedConfig,
         values,
         resolvedAnnotations,
@@ -215,7 +208,6 @@ public final class ConfigResolverImpl implements ConfigResolver {
                             .get(ACDefaultSettings.NULL_READ_HANDLER)
                             .get()));
     AnnotatedConfigResolver.setFields(
-        lookup,
         annotatedConfig,
         values,
         resolvedAnnotations,
@@ -241,7 +233,6 @@ public final class ConfigResolverImpl implements ConfigResolver {
         AnnotatedConfigResolver.resolveAnnotations(annotatedConfig, reverseFields);
     if (!file.exists()) {
       AnnotatedConfigResolver.dump(
-          lookup,
           annotatedConfig,
           resolvedAnnotations,
           file,
@@ -264,7 +255,6 @@ public final class ConfigResolverImpl implements ConfigResolver {
         AnnotatedConfigResolver.resolveAnnotations(annotatedConfig, reverseFields);
     if (Files.notExists(path)) {
       AnnotatedConfigResolver.dump(
-          lookup,
           annotatedConfig,
           resolvedAnnotations,
           path,
@@ -408,7 +398,6 @@ public final class ConfigResolverImpl implements ConfigResolver {
         () -> {
           file.delete();
           AnnotatedConfigResolver.dump(
-              lookup,
               annotatedConfig,
               resolvedAnnotations,
               file,
@@ -444,7 +433,6 @@ public final class ConfigResolverImpl implements ConfigResolver {
             throw new RuntimeException(e);
           }
           AnnotatedConfigResolver.dump(
-              lookup,
               annotatedConfig,
               resolvedAnnotations,
               path,
@@ -487,7 +475,6 @@ public final class ConfigResolverImpl implements ConfigResolver {
                             .get()));
     boolean missingOptions =
         AnnotatedConfigResolver.setFields(
-            lookup,
             annotatedConfig,
             values,
             resolvedAnnotations,

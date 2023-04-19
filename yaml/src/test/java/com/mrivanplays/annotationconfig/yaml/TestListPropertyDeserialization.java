@@ -8,7 +8,7 @@ import org.junit.jupiter.api.Test;
 
 public class TestListPropertyDeserialization {
 
-  public static class Subject {
+  static class Subject {
 
     public List<String> foo;
   }
