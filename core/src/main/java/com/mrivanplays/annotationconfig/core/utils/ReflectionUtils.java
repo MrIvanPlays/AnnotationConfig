@@ -69,7 +69,7 @@ public final class ReflectionUtils {
     throw new IllegalArgumentException("Instantiation of utility-type class.");
   }
 
-  private enum PrimitiveNameTypes {
+  public enum PrimitiveNameTypes {
     BYTE(byte.class, Byte.class, "[B", "byte", "java.lang.Byte") {
       @Override
       public Object[] castToArray(Object obj) {
