@@ -96,6 +96,28 @@ public final class Settings {
   }
 
   /**
+   * Combines the specified {@code Settings} with this {@code Settings} instance. If a setting, that
+   * is present in the specified settings, is also present in this settings instance, then the value
+   * of this settings instance is respected.
+   *
+   * @param settings settings to combine with
+   * @return this instance for chaining
+   */
+  public Settings combine(Settings settings) {
+    if (immutable) {
+      throw new UnsupportedOperationException("This settings instance is immutable");
+    }
+    if (!settings.values.isEmpty()) {
+      for (Map.Entry<String, Object> entry : settings.values.entrySet()) {
+        if (!this.values.containsKey(entry.getKey())) {
+          this.values.put(entry.getKey(), entry.getValue());
+        }
+      }
+    }
+    return this;
+  }
+
+  /**
    * Get the stored value in these settings of the specified {@link Setting}, if any.
    *
    * @param setting the setting needed to get
