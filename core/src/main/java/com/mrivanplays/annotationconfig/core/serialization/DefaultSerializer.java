@@ -457,47 +457,64 @@ class DefaultSerializer implements FieldTypeSerializer<Object> {
         return;
       }
 
-      Function<Object, Byte> byteSerializer = (o) -> Byte.parseByte(String.valueOf(o));
+      registerSerializer(String.class, validateO(Function.identity()));
+
+      Function<Object, Byte> byteSerializer = validateO(Byte::parseByte);
       registerSerializer(byte.class, byteSerializer);
       registerSerializer(Byte.class, byteSerializer);
 
-      Function<Object, Double> doubleSerializer = (o) -> Double.parseDouble(String.valueOf(o));
+      Function<Object, Double> doubleSerializer = validateO(Double::parseDouble);
       registerSerializer(double.class, doubleSerializer);
       registerSerializer(Double.class, doubleSerializer);
 
-      Function<Object, Float> floatSerializer = (o) -> Float.parseFloat(String.valueOf(o));
+      Function<Object, Float> floatSerializer = validateO(Float::parseFloat);
       registerSerializer(float.class, floatSerializer);
       registerSerializer(Float.class, floatSerializer);
 
-      Function<Object, Integer> intSerializer = (o) -> Integer.parseInt(String.valueOf(o));
+      Function<Object, Integer> intSerializer = validateO(Integer::parseInt);
       registerSerializer(Integer.class, intSerializer);
       registerSerializer(int.class, intSerializer);
 
-      Function<Object, Short> shortSerializer = (o) -> Short.parseShort(String.valueOf(o));
+      Function<Object, Short> shortSerializer = validateO(Short::parseShort);
       registerSerializer(Short.class, shortSerializer);
       registerSerializer(short.class, shortSerializer);
 
-      Function<Object, Long> longSerializer = (o) -> Long.parseLong(String.valueOf(o));
+      Function<Object, Long> longSerializer = validateO(Long::parseLong);
       registerSerializer(Long.class, longSerializer);
       registerSerializer(long.class, longSerializer);
 
-      Function<Object, Character> charSerializer = (o) -> (char) o;
+      Function<Object, Character> charSerializer = (o) -> {
+        if (o == null) {
+          return null;
+        }
+        return (char) o;
+      };
       registerSerializer(char.class, charSerializer);
       registerSerializer(Character.class, charSerializer);
 
-      Function<Object, Boolean> boolSerializer = (o) -> Boolean.parseBoolean(String.valueOf(o));
+      Function<Object, Boolean> boolSerializer = validateO(Boolean::parseBoolean);
       registerSerializer(boolean.class, boolSerializer);
       registerSerializer(Boolean.class, boolSerializer);
 
       Function<Object, BigDecimal> bigDecimalSerializer =
-          (o) -> BigDecimal.valueOf(Double.parseDouble(String.valueOf(o)));
+          validateO((o) ->  BigDecimal.valueOf(Double.parseDouble(o)));
       registerSerializer(BigDecimal.class, bigDecimalSerializer);
 
       Function<Object, BigInteger> bigIntegerSerializer =
-          (o) -> BigInteger.valueOf(Long.parseLong(String.valueOf(o)));
+          validateO((o) -> BigInteger.valueOf(Long.parseLong(o)));
       registerSerializer(BigInteger.class, bigIntegerSerializer);
 
       registered = true;
+    }
+
+    private static <T> Function<Object, T> validateO(Function<String, T> cont) {
+      return (o) -> {
+        String strVal = String.valueOf(o);
+        if (strVal == null || strVal.isEmpty()) {
+          return null;
+        }
+        return cont.apply(strVal);
+      };
     }
 
     public static Function<Object, ?> getMapper(Class<?> aClass) {
