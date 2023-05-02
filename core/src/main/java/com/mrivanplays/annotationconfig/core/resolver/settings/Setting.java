@@ -24,6 +24,21 @@ public interface Setting<T> {
       public Class<T> type() {
         return type;
       }
+
+      @Override
+      public boolean equals(Object o) {
+        if (this == o) {
+          return true;
+        }
+        if (o == null || getClass() != o.getClass()) {
+          return false;
+        }
+        Setting setting = (Setting) o;
+        if (!setting.key().equalsIgnoreCase(key)) {
+          return false;
+        }
+        return type.isAssignableFrom(setting.type());
+      }
     };
   }
 
@@ -40,4 +55,13 @@ public interface Setting<T> {
    * @return value type this setting holds
    */
   Class<T> type();
+
+  /**
+   * Compares 2 {@code Setting} objects to check whether they are equal.
+   *
+   * @param o setting object
+   * @return whether equals
+   */
+  @Override
+  boolean equals(Object o);
 }

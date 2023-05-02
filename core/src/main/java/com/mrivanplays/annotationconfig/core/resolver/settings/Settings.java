@@ -143,4 +143,23 @@ public final class Settings {
     }
     return Optional.of(setting.type().cast(val));
   }
+
+  @Override
+  public boolean equals(Object o) {
+    if (this == o) {
+      return true;
+    }
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+
+    Settings settings = (Settings) o;
+
+    return values.equals(settings.values);
+  }
+
+  @Override
+  public int hashCode() {
+    return values.hashCode();
+  }
 }
