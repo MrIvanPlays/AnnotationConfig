@@ -4,6 +4,8 @@ import com.mrivanplays.annotationconfig.core.resolver.ConfigResolver;
 import com.mrivanplays.annotationconfig.core.resolver.ValueWriter;
 import com.mrivanplays.annotationconfig.core.resolver.key.DottedResolver;
 import com.mrivanplays.annotationconfig.core.resolver.settings.ACDefaultSettings;
+import com.mrivanplays.annotationconfig.core.resolver.settings.Setting;
+import com.mrivanplays.annotationconfig.core.resolver.settings.Settings;
 import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -18,6 +20,11 @@ import org.yaml.snakeyaml.Yaml;
 public final class YamlConfig {
 
   private static final Yaml YAML = new Yaml();
+
+  /**
+   * Returns the {@link Setting} with which the yaml instance is referenced in the {@link Settings}
+   */
+  public static final Setting<Yaml> YAML_INSTANCE = Setting.of("yaml", Yaml.class);
 
   private static ConfigResolver configResolver;
 
@@ -46,7 +53,8 @@ public final class YamlConfig {
             .withFileExtension(".yaml")
             .withValueReader(
                 (reader, settings) -> {
-                  Map<String, Object> values = YAML.loadAs(reader, LinkedHashMap.class);
+                  Map<String, Object> values =
+                      settings.get(YAML_INSTANCE).orElse(YAML).loadAs(reader, LinkedHashMap.class);
                   if (values == null) {
                     return Collections.emptyMap();
                   }
