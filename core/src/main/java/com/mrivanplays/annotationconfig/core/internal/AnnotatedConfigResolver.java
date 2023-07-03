@@ -66,6 +66,7 @@ public final class AnnotatedConfigResolver {
       }
       populate(CLASS_ANNOTATION_HOLDER, typeOpt.get(), annotationData);
     }
+    List<Field> fields = new ArrayList<>(Arrays.asList(theClass.getDeclaredFields()));
     if (parentData != null) {
       for (ParentData data : parentData) {
         if (data.annotations != null) {
@@ -78,17 +79,12 @@ public final class AnnotatedConfigResolver {
             populate(classAnnotationHolder, typeOpt.get(), annotationData);
           }
         }
-      }
-    }
-
-    List<Field> fields = new ArrayList<>(Arrays.asList(theClass.getDeclaredFields()));
-    if (parentData != null) {
-      for (ParentData data : parentData) {
         if (data.fields != null && !data.fields.isEmpty()) {
           fields.addAll(data.fields);
         }
       }
     }
+
     if (reverseFields) {
       Collections.reverse(fields);
     }

@@ -37,11 +37,11 @@ class DefaultSerializer implements FieldTypeSerializer<Object> {
       if (data.isSingleValue()
           && isPrimitive(dataRaw)
           && dataRaw.getClass().isAssignableFrom(fieldType)) {
-        return forcePrimitive(data.getAsObject(), fieldType);
+        return forcePrimitive(dataRaw, fieldType);
       }
 
       if (data.isSingleValue() && isPrimitiveClass(fieldType)) {
-        return forcePrimitive(data.getAsObject(), fieldType);
+        return forcePrimitive(dataRaw, fieldType);
       }
     }
     if (fieldType.isAssignableFrom(DataObject.class)) {
@@ -135,7 +135,7 @@ class DefaultSerializer implements FieldTypeSerializer<Object> {
       Class<?> listValueNeeded =
           (Class<?>) ((ParameterizedType) context.getGenericType()).getActualTypeArguments()[0];
       if (isPrimitiveClass(listValueNeeded)) {
-        return Collections.singletonList(forcePrimitive(data.getAsObject(), listValueNeeded));
+        return Collections.singletonList(forcePrimitive(dataRaw, listValueNeeded));
       } else {
         throw new IllegalArgumentException(
             "Found a list value asking for a non primitive type with a received "
@@ -154,9 +154,6 @@ class DefaultSerializer implements FieldTypeSerializer<Object> {
         } catch (InvocationTargetException | NoSuchMethodException | IllegalAccessException e) {
           // ignored
         }
-      }
-      if (data.getAsObject() == null) {
-        return null;
       }
       Object fieldTypeInstance;
       try {
@@ -276,20 +273,7 @@ class DefaultSerializer implements FieldTypeSerializer<Object> {
               toSerialize.add(val);
             }
           } else {
-            DataObject serialized =
-                serializer.serialize(val, serializationContext, AnnotationAccessor.EMPTY);
-            if (serialized == null) {
-              throw new NullPointerException(
-                  "Expected DataObject, but got null ; Serialized type: " + neededType.getName());
-            }
-            if (serialized.isEmpty()) {
-              continue;
-            }
-            if (serialized.isSingleValue()) {
-              toSerialize.add(serialized.getAsObject(true));
-            } else {
-              toSerialize.add(serialized.getAsMap());
-            }
+            callParentSerializer(toSerialize, neededType, serializer, serializationContext, val);
           }
         }
         return new DataObject(toSerialize);
@@ -311,20 +295,7 @@ class DefaultSerializer implements FieldTypeSerializer<Object> {
             if (toSerialize == null) {
               continue;
             }
-            DataObject serialized =
-                serializer.serialize(toSerialize, serializationContext, AnnotationAccessor.EMPTY);
-            if (serialized == null) {
-              throw new NullPointerException(
-                  "Expected DataObject, but got null ; Serialized type: " + type.getName());
-            }
-            if (serialized.isEmpty()) {
-              continue;
-            }
-            if (serialized.isSingleValue()) {
-              list.add(serialized.getAsObject(true));
-            } else {
-              list.add(serialized.getAsMap());
-            }
+            callParentSerializer(list, type, serializer, serializationContext, toSerialize);
           }
           return new DataObject(list);
         } catch (ClassNotFoundException e) {
@@ -402,6 +373,28 @@ class DefaultSerializer implements FieldTypeSerializer<Object> {
       }
     }
     return object;
+  }
+
+  private void callParentSerializer(
+      List<Object> toSerialize,
+      Class<?> neededType,
+      FieldTypeSerializer serializer,
+      SerializationContext serializationContext,
+      Object val) {
+    DataObject serialized =
+        serializer.serialize(val, serializationContext, AnnotationAccessor.EMPTY);
+    if (serialized == null) {
+      throw new NullPointerException(
+          "Expected DataObject, but got null ; Serialized type: " + neededType.getName());
+    }
+    if (serialized.isEmpty()) {
+      return;
+    }
+    if (serialized.isSingleValue()) {
+      toSerialize.add(serialized.getAsObject(true));
+    } else {
+      toSerialize.add(serialized.getAsMap());
+    }
   }
 
   private sun.misc.Unsafe getUnsafeInstance() {
@@ -483,12 +476,13 @@ class DefaultSerializer implements FieldTypeSerializer<Object> {
       registerSerializer(Long.class, longSerializer);
       registerSerializer(long.class, longSerializer);
 
-      Function<Object, Character> charSerializer = (o) -> {
-        if (o == null) {
-          return null;
-        }
-        return (char) o;
-      };
+      Function<Object, Character> charSerializer =
+          (o) -> {
+            if (o == null) {
+              return null;
+            }
+            return (char) o;
+          };
       registerSerializer(char.class, charSerializer);
       registerSerializer(Character.class, charSerializer);
 
@@ -497,7 +491,7 @@ class DefaultSerializer implements FieldTypeSerializer<Object> {
       registerSerializer(Boolean.class, boolSerializer);
 
       Function<Object, BigDecimal> bigDecimalSerializer =
-          validateO((o) ->  BigDecimal.valueOf(Double.parseDouble(o)));
+          validateO((o) -> BigDecimal.valueOf(Double.parseDouble(o)));
       registerSerializer(BigDecimal.class, bigDecimalSerializer);
 
       Function<Object, BigInteger> bigIntegerSerializer =

@@ -114,11 +114,7 @@ public final class DataObject {
    */
   public boolean isEmpty() {
     if (!isSingleValue()) {
-      if (this.serialize != null) {
-        return this.serialize.isEmpty();
-      } else {
-        return true;
-      }
+      return this.serialize.isEmpty();
     }
     return false;
   }
@@ -129,7 +125,7 @@ public final class DataObject {
    * @return boolean value
    */
   public boolean isSingleValue() {
-    return this.serialize == null && this.data != null;
+    return this.serialize == null;
   }
 
   /**
