@@ -410,8 +410,7 @@ public interface ConfigResolver {
     }
 
     /**
-     * Sets the comment prefix for the config type you want to generate configs. This cannot be
-     * null.
+     * Sets the comment prefix for the config type you want to generate configs.
      *
      * @param val the config prefix you want to set
      * @return this instance for chaining
@@ -504,7 +503,7 @@ public interface ConfigResolver {
      * @deprecated use {@link #withSetting(Setting, Object)} with the {@link
      *     ACDefaultSettings#SHOULD_REVERSE_FIELDS} seting.
      */
-    @Deprecated
+    @Deprecated(since = "3.0.2", forRemoval = true)
     public Builder shouldReverseFields(boolean val) {
       return withSetting(ACDefaultSettings.SHOULD_REVERSE_FIELDS, val);
     }

@@ -11,6 +11,7 @@
     <module>core</module>
     <module>toml</module>
     <module>yaml</module>
+    <module>json</module>
   </modules>
   <packaging>pom</packaging>
 

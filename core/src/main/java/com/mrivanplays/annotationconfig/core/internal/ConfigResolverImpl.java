@@ -66,7 +66,7 @@ public final class ConfigResolverImpl implements ConfigResolver {
       Settings settings,
       KeyResolver keyResolver,
       String[] fileExtensions) {
-    this.commentPrefix = Objects.requireNonNull(commentPrefix, "commentPrefix");
+    this.commentPrefix = commentPrefix;
     this.valueWriter = Objects.requireNonNull(valueWriter, "valueWriter");
     this.valueReader = Objects.requireNonNull(valueReader, "valueReader");
     this.fileExtensions = Objects.requireNonNull(fileExtensions, "fileExtensions");

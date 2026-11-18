@@ -497,7 +497,17 @@ class DefaultSerializer implements FieldTypeSerializer<Object> {
       registerSerializer(float.class, floatSerializer);
       registerSerializer(Float.class, floatSerializer);
 
-      Function<Object, Integer> intSerializer = validateO(Integer::parseInt);
+      Function<Object, Integer> intSerializer =
+          validateO(str -> {
+            // GSON passes every number as <num>.0
+            // make sure that if we're dealing with integer to pass the correct value to
+            // Integer.parseInt
+            if (str.indexOf('.') == -1) {
+              return Integer.parseInt(str);
+            }
+            String[] parts = str.split("\\.");
+            return Integer.parseInt(parts[0]);
+          });
       registerSerializer(Integer.class, intSerializer);
       registerSerializer(int.class, intSerializer);
 

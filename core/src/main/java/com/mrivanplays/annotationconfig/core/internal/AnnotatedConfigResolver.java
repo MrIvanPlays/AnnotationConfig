@@ -274,7 +274,7 @@ public final class AnnotatedConfigResolver {
       if (holder.isClass()) {
         for (AnnotationType type : entry.getValue()) {
           List<String> comments = getComments(type, null, holder.getClazz());
-          if (!comments.isEmpty()) {
+          if (!comments.isEmpty() && commentChar != null) {
             for (String comment : comments) {
               writer.println(commentChar + comment);
             }
