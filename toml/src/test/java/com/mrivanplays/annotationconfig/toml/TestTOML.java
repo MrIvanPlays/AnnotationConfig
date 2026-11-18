@@ -46,7 +46,7 @@ public class TestTOML {
 
     // remove date and dateTime fields since we can't get exact expected time
     String received =
-        Arrays.stream(writer.toString().split("\n"))
+        Arrays.stream(writer.toString().replaceAll("\\R", "\n").split("\n"))
             .filter(l -> !l.startsWith("date"))
             .filter(l -> !l.startsWith("dateTime"))
             .collect(Collectors.joining("\n"));

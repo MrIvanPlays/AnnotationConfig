@@ -65,7 +65,7 @@ class SectionObjectListTest {
 
     resolver.dump(subject, writer);
 
-    Assertions.assertEquals(expected, writer.toString());
+    Assertions.assertEquals(expected, writer.toString().replaceAll("\\R", "\n"));
   }
 
   @Test

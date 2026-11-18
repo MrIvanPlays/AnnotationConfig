@@ -53,6 +53,6 @@ class TestArray {
             + "\n"
             + "charArray=a, b, c\n";
 
-    Assertions.assertEquals(expected, writer.toString());
+    Assertions.assertEquals(expected, writer.toString().replaceAll("\\R", "\n"));
   }
 }

@@ -52,7 +52,7 @@ public class ArrayWriteTest {
             + "    baz: false\n"
             + "\n";
 
-    Assertions.assertEquals(expected, writer.toString());
+    Assertions.assertEquals(expected, writer.toString().replaceAll("\\R", "\n"));
   }
 
   @Test

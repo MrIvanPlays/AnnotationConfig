@@ -58,6 +58,6 @@ public class ComplexTestComments {
             + "# foo outside config object\n"
             + "foo: \"aa\"\n\n";
 
-    Assertions.assertEquals(expected, writer.toString());
+    Assertions.assertEquals(expected, writer.toString().replaceAll("\\R", "\n"));
   }
 }

@@ -45,7 +45,7 @@ public class TestMultilineString {
             + " I am a multiline string!\"\n"
             + "\n";
 
-    Assertions.assertEquals(expected, writer.toString());
+    Assertions.assertEquals(expected, writer.toString().replaceAll("\\R", "\n"));
   }
 
   @Test

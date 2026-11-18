@@ -22,7 +22,8 @@ public class TestBigIntegerBigDecimal {
 
     String expected = "integer=1111111111\n" + "\n" + "decimal=1111111111.22222222\n";
 
-    Assertions.assertEquals(expected, writer.toString());
+    Assertions.assertEquals(
+        expected.replaceAll("\\R", "\n"), writer.toString().replaceAll("\\R", "\n"));
   }
 
   @Test

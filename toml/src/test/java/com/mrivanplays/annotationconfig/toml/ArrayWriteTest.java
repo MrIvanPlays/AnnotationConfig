@@ -19,6 +19,6 @@ public class ArrayWriteTest {
 
     String expected = "arr = [1.1, 2.2]\n\n";
 
-    Assertions.assertEquals(expected, writer.toString());
+    Assertions.assertEquals(expected, writer.toString().replaceAll("\\R", "\n"));
   }
 }

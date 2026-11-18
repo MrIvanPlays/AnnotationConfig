@@ -14,7 +14,6 @@ public class ExtendedConfigurationTest {
   static class Subject {
 
     int foo = 1;
-
   }
 
   static class ExtendedSubject extends Subject {
@@ -34,7 +33,7 @@ public class ExtendedConfigurationTest {
 
     String expected = "# Test comment foo\n\nfoo=1\n\nbar=baz\n";
 
-    Assertions.assertEquals(expected, writer.toString());
+    Assertions.assertEquals(expected, writer.toString().replaceAll("\\R", "\n"));
   }
 
   @Test

@@ -50,7 +50,7 @@ public class TestSectionChildSections {
             + "    bar: \"aabb\"\n"
             + "\n";
 
-    Assertions.assertEquals(expected, writer.toString());
+    Assertions.assertEquals(expected, writer.toString().replaceAll("\\R", "\n"));
   }
 
   @Test

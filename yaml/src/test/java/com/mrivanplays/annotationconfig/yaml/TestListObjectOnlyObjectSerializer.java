@@ -95,7 +95,7 @@ class TestListObjectOnlyObjectSerializer {
 
     String expected = "objects:\n  - \"foo\"\n  - \"bar\"\n\n";
 
-    Assertions.assertEquals(expected, writer.toString());
+    Assertions.assertEquals(expected, writer.toString().replaceAll("\\R", "\n"));
   }
 
   void testLoad() {
