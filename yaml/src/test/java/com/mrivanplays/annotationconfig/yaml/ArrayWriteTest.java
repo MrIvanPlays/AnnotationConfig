@@ -19,6 +19,8 @@ public class ArrayWriteTest {
       private int foo;
       private boolean baz;
 
+      public MyObject() {}
+
       public MyObject(int foo, boolean baz) {
         this.foo = foo;
         this.baz = baz;

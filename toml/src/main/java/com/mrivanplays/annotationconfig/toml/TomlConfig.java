@@ -12,7 +12,6 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.OffsetDateTime;
-import java.util.Date;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
@@ -22,6 +21,7 @@ import java.util.Map;
  * @since 1.0
  * @author MrIvanPlays
  */
+@SuppressWarnings("unchecked")
 public final class TomlConfig {
 
   private static final TomlMapper DEFAULT_TOML_MAPPER =
@@ -80,14 +80,13 @@ public final class TomlConfig {
             .withValueWriter(TOML_VALUE_WRITER)
             .withCommentPrefix("# ")
             .withFileExtension(".toml")
-            .withValueReader(
-                (reader, settings) ->
-                    (Map<String, Object>)
-                        settings
-                            .get(MAPPER_KEY)
-                            .orElse(DEFAULT_TOML_MAPPER)
-                            .reader()
-                            .readValue(reader, LinkedHashMap.class))
+            .withValueReader((reader, settings) ->
+                (Map<String, Object>)
+                    settings
+                        .get(MAPPER_KEY)
+                        .orElse(DEFAULT_TOML_MAPPER)
+                        .reader()
+                        .readValue(reader, LinkedHashMap.class))
             .build();
   }
 }

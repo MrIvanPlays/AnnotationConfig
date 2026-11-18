@@ -34,7 +34,8 @@
 
   <scm>
     <connection>scm:git:https://github.com/MrIvanPlays/AnnotationConfig.git</connection>
-    <developerConnection>scm:git:git@github.com:MrIvanPlays/AnnotationConfig.git</developerConnection>
+    <developerConnection>scm:git:git@github.com:MrIvanPlays/AnnotationConfig.git
+    </developerConnection>
     <url>https://github.com/MrIvanPlays/AnnotationConfig</url>
   </scm>
 

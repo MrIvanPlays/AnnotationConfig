@@ -19,6 +19,8 @@ public class TestListObjects {
     public String name;
     public Object value;
 
+    public Serialized() {}
+
     public Serialized(String name, Object value) {
       this.name = name;
       this.value = value;

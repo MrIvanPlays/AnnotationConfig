@@ -48,16 +48,8 @@ public final class ConfigResolverImpl implements ConfigResolver {
     this.valueWriter = Objects.requireNonNull(valueWriter, "valueWriter");
     this.valueReader = Objects.requireNonNull(valueReader, "valueReader");
     this.fileExtensions = Objects.requireNonNull(fileExtensions, "fileExtensions");
-    if (settings == null) {
-      this.settings = ACDefaultSettings.getDefault().copy();
-    } else {
-      this.settings = settings;
-    }
-    if (keyResolver == null) {
-      this.keyResolver = KeyResolver.DEFAULT;
-    } else {
-      this.keyResolver = keyResolver;
-    }
+    this.settings = Objects.requireNonNullElse(settings, ACDefaultSettings.getDefault().copy());
+    this.keyResolver = Objects.requireNonNullElse(keyResolver, KeyResolver.DEFAULT);
   }
 
   @Override
@@ -204,10 +196,8 @@ public final class ConfigResolverImpl implements ConfigResolver {
             annotatedConfig, reverseFields, findParentFields);
     Map<String, Object> values;
     try {
-      try {
+      try (reader) {
         values = valueReader.read(reader, settings);
-      } finally {
-        reader.close();
       }
     } catch (IOException e) {
       throw new RuntimeException(e);
@@ -305,15 +295,14 @@ public final class ConfigResolverImpl implements ConfigResolver {
       return Collections.emptyMap();
     } else {
       File[] files =
-          dir.listFiles(
-              ($, name) -> {
-                for (String extension : fileExtensions) {
-                  if (name.endsWith(extension)) {
-                    return true;
-                  }
-                }
-                return false;
-              });
+          dir.listFiles(($, name) -> {
+            for (String extension : fileExtensions) {
+              if (name.endsWith(extension)) {
+                return true;
+              }
+            }
+            return false;
+          });
       if (files == null || files.length == 0) {
         T config = configToResolveTo.get();
         dump(config, dumpFile.writer());

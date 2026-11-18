@@ -43,6 +43,8 @@ class TestListObjectOnlyObjectSerializer {
 
     String foo;
 
+    public TestObject() {}
+
     TestObject(String foo) {
       this.foo = foo;
     }

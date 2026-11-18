@@ -32,6 +32,7 @@ import java.util.Map;
  * @author MrIvanPlays
  * @since 2.0.1
  */
+@SuppressWarnings("unchecked")
 public final class DottedResolver implements KeyResolver {
 
   private static DottedResolver instance;

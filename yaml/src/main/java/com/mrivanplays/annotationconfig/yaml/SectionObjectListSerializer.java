@@ -29,10 +29,9 @@ public final class SectionObjectListSerializer<T>
     SectionObjectList<T> def =
         context
             .getDefaultValue()
-            .orElseThrow(
-                () ->
-                    new IllegalArgumentException(
-                        "Illegal field to deserialize: null default SectionObjectList"));
+            .orElseThrow(() ->
+                new IllegalArgumentException(
+                    "Illegal field to deserialize: null default SectionObjectList"));
     Map<String, Object> map = data.getAsMap();
     Map<String, T> deserialized = new LinkedHashMap<>();
     SerializerRegistry serializerRegistry = SerializerRegistry.INSTANCE;

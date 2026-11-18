@@ -40,11 +40,7 @@ public final class YamlValueWriter implements ValueWriter {
       int childIndents,
       boolean child,
       boolean additional2Spaces) {
-    StringBuilder intentPrefixBuilder = new StringBuilder();
-    for (int i = 0; i < childIndents; i++) {
-      intentPrefixBuilder.append(" ");
-    }
-    String intentPrefix = intentPrefixBuilder.toString();
+    String intentPrefix = " ".repeat(Math.max(0, childIndents));
     String parentSpec = parentKey != null ? parentKey.concat("." + key) : key;
     if (value instanceof Map<?, ?>) {
       String firstCheck = parentKey != null ? parentKey + "." + key : key;
@@ -62,9 +58,8 @@ public final class YamlValueWriter implements ValueWriter {
       for (Map.Entry<String, Object> entry : ((Map<String, Object>) value).entrySet()) {
         String mapKey = entry.getKey();
         Object v = entry.getValue();
-        if (v instanceof List<?>) {
+        if (v instanceof List<?> vList) {
           writeCommentsInsideMap(parentKey, key, writer, commentsMap, intentPrefix, mapKey);
-          List<?> vList = (List<?>) v;
           if (vList.isEmpty()) {
             writer.println(intentPrefix + mapKey + ": []");
           } else {
@@ -140,8 +135,7 @@ public final class YamlValueWriter implements ValueWriter {
         } else {
           writeCommentsInsideMap(parentKey, key, writer, commentsMap, intentPrefix, mapKey);
           if (!(v instanceof String)) {
-            if (v instanceof MultilineString) {
-              MultilineString multiline = (MultilineString) v;
+            if (v instanceof MultilineString multiline) {
               String toWrite = multiline.getString();
               char c = multiline.getMarkerChar();
               if (toWrite.indexOf('\n') != -1) {
@@ -189,9 +183,8 @@ public final class YamlValueWriter implements ValueWriter {
           }
         }
       }
-    } else if (value instanceof List<?>) {
+    } else if (value instanceof List<?> valueList) {
       writeComments(key, writer, commentsMap);
-      List<?> valueList = (List<?>) value;
       if (valueList.isEmpty()) {
         writer.println((child ? intentPrefix : "") + key + ": []");
       } else {
@@ -257,8 +250,7 @@ public final class YamlValueWriter implements ValueWriter {
     } else {
       writeComments(key, writer, commentsMap);
       if (!(value instanceof String)) {
-        if (value instanceof MultilineString) {
-          MultilineString multiline = (MultilineString) value;
+        if (value instanceof MultilineString multiline) {
           String toWrite = multiline.getString();
           char c = multiline.getMarkerChar();
           if (toWrite.indexOf('\n') != -1) {

@@ -5,6 +5,8 @@ public class LocationNoConfigObject {
   private String world;
   private int x, y, z;
 
+  public LocationNoConfigObject() {}
+
   public LocationNoConfigObject(String world, int x, int y, int z) {
     this.world = world;
     this.x = x;

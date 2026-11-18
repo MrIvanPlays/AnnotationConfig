@@ -15,7 +15,7 @@ import java.util.Map.Entry;
 public enum CommentPlaceholderRegistry {
   INSTANCE;
 
-  private PlaceholderMap placeholderMap = new PlaceholderMap();
+  private final PlaceholderMap placeholderMap = new PlaceholderMap();
 
   /**
    * Register a placeholder.

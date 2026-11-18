@@ -9,6 +9,7 @@ import java.util.Objects;
  * @author MrIvanPlays
  * @since 3.0.0
  */
+@SuppressWarnings("unchecked")
 public final class SimpleValueSerializer {
 
   public static <T> T deserialize(

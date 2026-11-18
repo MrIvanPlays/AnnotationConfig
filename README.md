@@ -43,7 +43,8 @@ public class ExampleAnnotatedConfig {
   @Max(maxInt = 20)
   private String bar = "This is some string";
 
-  @ConfigObject private MessagesSection messages = new MessagesSection();
+  @ConfigObject
+  private MessagesSection messages = new MessagesSection();
 
   @Comment("All configurable messages")
   public static final class MessagesSection {
@@ -65,7 +66,8 @@ public class ExampleAnnotatedConfig {
     }
   }
 
-  @Ignore private String importantClass = "com.mrivanplays.something.Important"; // this is ignored
+  @Ignore
+  private String importantClass = "com.mrivanplays.something.Important"; // this is ignored
 
   @Comment("This is also going to be serialized as a config object,")
   @Comment("but it is much more controllable rather than @ConfigObject")
@@ -382,12 +384,20 @@ Base code for all examples:
 import com.mrivanplays.annotationconfig.utils.TypeToken;
 
 File file = // ...
-SerializerRegistry serializerRegistry = SerializerRegistry.INSTANCE;
-serializerRegistry.registerSerializer(
-    ExampleAnnotatedConfig.SomethingToSerialize.class,
+    SerializerRegistry
+serializerRegistry =SerializerRegistry.INSTANCE;
+serializerRegistry.
+
+registerSerializer(
+    ExampleAnnotatedConfig.SomethingToSerialize .class,
     new ExampleAnnotatedConfig.SomethingToSerializeSerializer());
-serializerRegistry.registerSerializer(
-    new TypeToken<SectionObjectList<SectionObject>>() {}.getType(),
+    serializerRegistry.
+
+registerSerializer(
+    new TypeToken<SectionObjectList<SectionObject>>() {
+}.
+
+getType(),
     new SectionObjectListSerializer<SectionObject>());
 ExampleAnnotatedConfig annotatedConfig = new ExampleAnnotatedConfig();
 ```
@@ -395,19 +405,25 @@ ExampleAnnotatedConfig annotatedConfig = new ExampleAnnotatedConfig();
 YAML example:
 
 ```java
-YamlConfig.getConfigResolver().loadOrDump(anotatedConfig, file, /* loader settings */);
+YamlConfig.getConfigResolver().
+
+loadOrDump(anotatedConfig, file, /* loader settings */);
 ```
 
 .conf/.properties example:
 
 ```java
-PropertyConfig.getConfigResolver().loadOrDump(annotatedConfig, file, /* loader settings */);
+PropertyConfig.getConfigResolver().
+
+loadOrDump(annotatedConfig, file, /* loader settings */);
 ```
 
 TOML example:
 
 ```java
-TomlConfig.getConfigResolver().loadOrDump(annotatedConfig, file, /* loader settings */);
+TomlConfig.getConfigResolver().
+
+loadOrDump(annotatedConfig, file, /* loader settings */);
 ```
 
 Custom config type example:
@@ -415,14 +431,16 @@ Custom config type example:
 ```java
 // all values specified in the builder should be for the specific config type
 ConfigResolver configResolver = ConfigResolver.newBuilder()
-    /* other options inside the builder */
-    .withCommentPrefix("# ") // comment prefix for the config type
-    .withValueWriter(() -> /* insert value writer here */)
-    .withValueReader(/* insert value reader here */)
-    .shouldReverseFields(true /* should we reverse fields */)
-    .build();
+        /* other options inside the builder */
+        .withCommentPrefix("# ") // comment prefix for the config type
+        .withValueWriter(() -> /* insert value writer here */)
+        .withValueReader(/* insert value reader here */)
+        .shouldReverseFields(true /* should we reverse fields */)
+        .build();
 
-configResolver.loadOrDump(annotatedConfig, file, /* loader settings */);
+configResolver.
+
+loadOrDump(annotatedConfig, file, /* loader settings */);
 ```
 
 </p>

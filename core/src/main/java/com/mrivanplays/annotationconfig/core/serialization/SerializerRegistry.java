@@ -12,10 +12,11 @@ import java.util.function.Function;
  * @since 2.0.0
  * @author MrIvanPlays
  */
+@SuppressWarnings("unchecked")
 public enum SerializerRegistry {
   INSTANCE;
 
-  private Map<Type, FieldTypeSerializer<?>> serializers;
+  private final Map<Type, FieldTypeSerializer<?>> serializers;
 
   SerializerRegistry() {
     this.serializers = new ConcurrentHashMap<>();

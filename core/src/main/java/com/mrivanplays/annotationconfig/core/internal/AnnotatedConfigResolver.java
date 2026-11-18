@@ -61,7 +61,7 @@ public final class AnnotatedConfigResolver {
     }
     for (Annotation annotation : theClass.getAnnotations()) {
       Optional<AnnotationType> typeOpt = AnnotationType.match(annotation.annotationType());
-      if (!typeOpt.isPresent()) {
+      if (typeOpt.isEmpty()) {
         continue;
       }
       populate(CLASS_ANNOTATION_HOLDER, typeOpt.get(), annotationData);
@@ -73,7 +73,7 @@ public final class AnnotatedConfigResolver {
           AnnotationHolder classAnnotationHolder = new AnnotationHolder(data.parent);
           for (Annotation annotation : data.annotations) {
             Optional<AnnotationType> typeOpt = AnnotationType.match(annotation.annotationType());
-            if (!typeOpt.isPresent()) {
+            if (typeOpt.isEmpty()) {
               continue;
             }
             populate(classAnnotationHolder, typeOpt.get(), annotationData);
@@ -103,7 +103,7 @@ public final class AnnotatedConfigResolver {
       } else {
         for (Annotation annotation : field.getDeclaredAnnotations()) {
           Optional<AnnotationType> typeOpt = AnnotationType.match(annotation.annotationType());
-          if (!typeOpt.isPresent()) {
+          if (typeOpt.isEmpty()) {
             continue;
           }
           populate(holder, typeOpt.get(), annotationData);
@@ -126,7 +126,8 @@ public final class AnnotatedConfigResolver {
       } else {
         superClass = superClass.getSuperclass();
       }
-      if (superClass == null || superClass.getCanonicalName().equalsIgnoreCase("java.lang.Object")) {
+      if (superClass == null
+          || superClass.getCanonicalName().equalsIgnoreCase("java.lang.Object")) {
         break;
       }
       ParentData parentData = new ParentData();
@@ -271,7 +272,8 @@ public final class AnnotatedConfigResolver {
         continue;
       }
       try {
-        WriteData current = getWriteData(annotatedConfig, entry, keyResolver, reverseFields, findParentFields);
+        WriteData current =
+            getWriteData(annotatedConfig, entry, keyResolver, reverseFields, findParentFields);
         for (Map.Entry<String, Object> childDataWrite : current.getToWrite().entrySet()) {
           String childDataKey = childDataWrite.getKey();
           Object childDataValue = childDataWrite.getValue();
@@ -363,7 +365,8 @@ public final class AnnotatedConfigResolver {
 
       WriteData combinedData = new WriteData();
       for (Map.Entry<AnnotationHolder, Set<AnnotationType>> e1 : annotations.entrySet()) {
-        WriteData childData = getWriteData(cfgObject, e1, keyResolver, reverseFields, findParentFields);
+        WriteData childData =
+            getWriteData(cfgObject, e1, keyResolver, reverseFields, findParentFields);
         combinedData.getClassComments().addAll(childData.getClassComments());
         for (Map.Entry<String, Object> childDataWrite : childData.getToWrite().entrySet()) {
           String childDataKey = childDataWrite.getKey();
@@ -646,12 +649,10 @@ public final class AnnotatedConfigResolver {
       } else if (deserialized == null) {
         continue;
       }
-      if (deserialized instanceof Number) {
-        Number comparable = (Number) deserialized;
+      if (deserialized instanceof Number comparable) {
         State comparison = MinMaxHandler.compare(min, max, comparable);
         handleComparison(comparison, keyName, comparable, fieldType, min, max, Number.class);
-      } else if (deserialized instanceof String) {
-        String comparable = (String) deserialized;
+      } else if (deserialized instanceof String comparable) {
         State comparison = MinMaxHandler.compare(min, max, comparable);
         handleComparison(
             comparison, keyName, comparable.length(), fieldType, min, max, String.class);

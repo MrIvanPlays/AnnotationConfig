@@ -42,28 +42,27 @@ public final class PropertyConfig {
             .withCommentPrefix("# ")
             .withFileExtension(".properties")
             .withValueWriter(PROPERTIES_VALUE_WRITER)
-            .withValueReader(
-                (reader, settings) -> {
-                  Properties properties = new Properties();
-                  properties.load(reader);
-                  Map<String, Object> ret = new LinkedHashMap<>();
-                  for (Object key : properties.keySet()) {
-                    Object value = properties.get(key);
-                    if (value instanceof String) {
-                      String valueString = String.valueOf(value);
-                      if (valueString.contains(",")) {
-                        String[] stringArray = valueString.split(",");
-                        Object[] newArray = new Object[stringArray.length];
-                        for (int i = 0; i < stringArray.length; i++) {
-                          newArray[i] = stringArray[i].trim();
-                        }
-                        value = newArray;
-                      }
+            .withValueReader((reader, settings) -> {
+              Properties properties = new Properties();
+              properties.load(reader);
+              Map<String, Object> ret = new LinkedHashMap<>();
+              for (Object key : properties.keySet()) {
+                Object value = properties.get(key);
+                if (value instanceof String) {
+                  String valueString = String.valueOf(value);
+                  if (valueString.contains(",")) {
+                    String[] stringArray = valueString.split(",");
+                    Object[] newArray = new Object[stringArray.length];
+                    for (int i = 0; i < stringArray.length; i++) {
+                      newArray[i] = stringArray[i].trim();
                     }
-                    ret.put(String.valueOf(key), value);
+                    value = newArray;
                   }
-                  return ret;
-                })
+                }
+                ret.put(String.valueOf(key), value);
+              }
+              return ret;
+            })
             .build();
   }
 

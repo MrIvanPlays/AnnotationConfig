@@ -3,6 +3,7 @@ package com.mrivanplays.annotationconfig.core.serialization;
 import com.mrivanplays.annotationconfig.core.utils.AnnotationUtils;
 import com.mrivanplays.annotationconfig.core.utils.ReflectionUtils;
 import java.lang.reflect.Array;
+import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
@@ -155,12 +156,7 @@ class DefaultSerializer implements FieldTypeSerializer<Object> {
           // ignored
         }
       }
-      Object fieldTypeInstance;
-      try {
-        fieldTypeInstance = getUnsafeInstance().allocateInstance(fieldType);
-      } catch (InstantiationException e) {
-        throw new RuntimeException("Cannot instantiate " + fieldType.getName() + " ; ", e);
-      }
+      Object fieldTypeInstance = getFieldTypeInstance(fieldType);
       Field[] fields = fieldTypeInstance.getClass().getDeclaredFields();
       if (fields.length != 1) {
         throw new IllegalArgumentException(
@@ -199,12 +195,7 @@ class DefaultSerializer implements FieldTypeSerializer<Object> {
         neededInstanceAllocation =
             (Class<?>) ((ParameterizedType) context.getGenericType()).getActualTypeArguments()[0];
       }
-      Object fieldTypeInstance;
-      try {
-        fieldTypeInstance = getUnsafeInstance().allocateInstance(neededInstanceAllocation);
-      } catch (InstantiationException e) {
-        throw new RuntimeException("Cannot instantiate " + fieldType.getName() + " ; ", e);
-      }
+      Object fieldTypeInstance = getFieldTypeInstance(neededInstanceAllocation);
       for (Field desField : fieldTypeInstance.getClass().getDeclaredFields()) {
         desField.setAccessible(true);
         if (AnnotationUtils.isIgnored(desField)) {
@@ -230,6 +221,24 @@ class DefaultSerializer implements FieldTypeSerializer<Object> {
 
       return fieldTypeInstance;
     }
+  }
+
+  private Object getFieldTypeInstance(Class<?> fieldType) {
+    Object fieldTypeInstance;
+    try {
+      Constructor<?> constructor = fieldType.getConstructor();
+      if (!constructor.trySetAccessible()) {
+        throw new RuntimeException("Could not set constructor accessible; " + fieldType.getName());
+      }
+      fieldTypeInstance = constructor.newInstance();
+      // fieldTypeInstance = getUnsafeInstance().allocateInstance(fieldType);
+    } catch (InstantiationException
+        | InvocationTargetException
+        | IllegalAccessException
+        | NoSuchMethodException e) {
+      throw new RuntimeException("Cannot instantiate " + fieldType.getName() + " ; ", e);
+    }
+    return fieldTypeInstance;
   }
 
   @Override
@@ -397,6 +406,7 @@ class DefaultSerializer implements FieldTypeSerializer<Object> {
     }
   }
 
+  /* // todo: remove when 100% sure stuff works fine
   private sun.misc.Unsafe getUnsafeInstance() {
     try {
       Field field = sun.misc.Unsafe.class.getDeclaredField("theUnsafe");
@@ -407,6 +417,7 @@ class DefaultSerializer implements FieldTypeSerializer<Object> {
       return null;
     }
   }
+   */
 
   private Object forcePrimitive(Object val, Class<?> fieldType) {
     Function<Object, ?> mapper = PrimitiveSerializers.getMapper(fieldType);
@@ -477,7 +488,7 @@ class DefaultSerializer implements FieldTypeSerializer<Object> {
       registerSerializer(long.class, longSerializer);
 
       Function<Object, Character> charSerializer =
-          (o) -> {
+          o -> {
             if (o == null) {
               return null;
             }
@@ -491,18 +502,18 @@ class DefaultSerializer implements FieldTypeSerializer<Object> {
       registerSerializer(Boolean.class, boolSerializer);
 
       Function<Object, BigDecimal> bigDecimalSerializer =
-          validateO((o) -> BigDecimal.valueOf(Double.parseDouble(o)));
+          validateO(o -> BigDecimal.valueOf(Double.parseDouble(o)));
       registerSerializer(BigDecimal.class, bigDecimalSerializer);
 
       Function<Object, BigInteger> bigIntegerSerializer =
-          validateO((o) -> BigInteger.valueOf(Long.parseLong(o)));
+          validateO(o -> BigInteger.valueOf(Long.parseLong(o)));
       registerSerializer(BigInteger.class, bigIntegerSerializer);
 
       registered = true;
     }
 
     private static <T> Function<Object, T> validateO(Function<String, T> cont) {
-      return (o) -> {
+      return o -> {
         String strVal = String.valueOf(o);
         if (strVal == null || strVal.isEmpty()) {
           return null;

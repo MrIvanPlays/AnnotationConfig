@@ -8,7 +8,7 @@ import com.mrivanplays.annotationconfig.core.resolver.settings.Setting;
 import com.mrivanplays.annotationconfig.core.resolver.settings.Settings;
 import java.util.Collections;
 import java.util.LinkedHashMap;
-import java.util.Map;
+import java.util.Objects;
 import org.yaml.snakeyaml.Yaml;
 
 /**
@@ -17,6 +17,7 @@ import org.yaml.snakeyaml.Yaml;
  * @since 1.0
  * @author MrIvanPlays
  */
+@SuppressWarnings("unchecked")
 public final class YamlConfig {
 
   private static final Yaml YAML = new Yaml();
@@ -51,15 +52,10 @@ public final class YamlConfig {
             .withCommentPrefix("# ")
             .withFileExtension(".yml")
             .withFileExtension(".yaml")
-            .withValueReader(
-                (reader, settings) -> {
-                  Map<String, Object> values =
-                      settings.get(YAML_INSTANCE).orElse(YAML).loadAs(reader, LinkedHashMap.class);
-                  if (values == null) {
-                    return Collections.emptyMap();
-                  }
-                  return values;
-                })
+            .withValueReader((reader, settings) ->
+                Objects.requireNonNullElse(
+                    settings.get(YAML_INSTANCE).orElse(YAML).loadAs(reader, LinkedHashMap.class),
+                    Collections.emptyMap()))
             .build();
   }
 }

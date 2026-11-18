@@ -13,6 +13,7 @@ import java.util.Optional;
  * @author MrIvanPlays
  * @since 3.0.0
  */
+@SuppressWarnings("unchecked")
 public final class SerializationContext<T> {
 
   /**

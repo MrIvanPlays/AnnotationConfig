@@ -17,6 +17,8 @@ class SectionObjectListTest {
     private int foo;
     private String baz;
 
+    public SerializedObject() {}
+
     public SerializedObject(int foo, String baz) {
       this.foo = foo;
       this.baz = baz;

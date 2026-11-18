@@ -13,7 +13,6 @@ class NullReadSetNullTest {
     Integer foo = 1;
 
     String bar = "aa";
-
   }
 
   static StringReader reader;
@@ -36,5 +35,4 @@ class NullReadSetNullTest {
     Assertions.assertNull(subject.foo);
     Assertions.assertNull(subject.bar);
   }
-
 }

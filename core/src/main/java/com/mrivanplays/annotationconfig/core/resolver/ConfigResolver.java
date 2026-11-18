@@ -327,6 +327,7 @@ public interface ConfigResolver {
    */
   <T> Map<String, T> resolveMultiple(
       Path dir, Supplier<T> configToResolveTo, WritableObject dumpFile);
+
   /**
    * Loads the configurations in the {@link Path} {@code dir} specified, and if any do not exist,
    * the defaults (if specified) are dumped to the specified {@link WritableObject} {@code

@@ -11,6 +11,7 @@ import java.util.Map;
  * @author MrIvanPlays
  * @since 2.1.0
  */
+@SuppressWarnings("unchecked")
 public final class MapUtils {
 
   public static Map<String, Object> getLastCommonMap(
