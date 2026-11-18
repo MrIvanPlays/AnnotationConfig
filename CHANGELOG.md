@@ -2,6 +2,47 @@
 
 This file summarises changes between major versions.
 
+## Version 3.0.4
+This version now changes the default serializer to not
+use `sun.misc.Unsafe` in order to create `Field` instances.
+This will require custom data types to have an empty constructor.
+
+### Examples
+```java
+class SerializedObject {
+
+  private int foo;
+  private String baz;
+
+  public SerializedObject() {}
+
+  public SerializedObject(int foo, String baz) {
+    this.foo = foo;
+    this.baz = baz;
+  }
+
+  public int getFoo() {
+    return foo;
+  }
+
+  public String getBaz() {
+    return baz;
+  }
+}
+
+class Subject {
+
+  public SectionObjectList<SerializedObject> list =
+      SectionObjectList.newBuilderForType(SerializedObject.class)
+          .defaultValue("foo", new SerializedObject(1, "lorem"))
+          .defaultValue("bar", new SerializedObject(2, "ipsum"))
+          .build();
+}
+
+```
+
+`Subject` is to be our config class, `SerializedObject` is to be the the custom data type. Notice it needs a declared empty constructor in order for AnnotationConfig to work properly.
+
 ## Version 3.0.1
 
 This version features:
