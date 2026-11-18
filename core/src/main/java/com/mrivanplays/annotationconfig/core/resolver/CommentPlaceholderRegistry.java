@@ -22,9 +22,13 @@
 
 package com.mrivanplays.annotationconfig.core.resolver;
 
+import java.util.AbstractMap;
+import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map.Entry;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * Represents a registry for placeholders for {@link
@@ -37,7 +41,8 @@ import java.util.Map.Entry;
 public enum CommentPlaceholderRegistry {
   INSTANCE;
 
-  private final PlaceholderMap placeholderMap = new PlaceholderMap();
+  private final Set<Entry<String, String>> placeholderMap =
+      Collections.newSetFromMap(new ConcurrentHashMap<>());
 
   /**
    * Register a placeholder.
@@ -46,7 +51,16 @@ public enum CommentPlaceholderRegistry {
    * @param replacement replacement value
    */
   public void registerPlaceholder(String toReplace, String replacement) {
-    this.placeholderMap.put(toReplace, replacement);
+    this.placeholderMap.add(new AbstractMap.SimpleEntry<>(toReplace, replacement));
+  }
+
+  /**
+   * Unregister a placeholder
+   *
+   * @param placeholder value placeholder to replace
+   */
+  public void unregisterPlaceholder(String placeholder) {
+    this.placeholderMap.removeIf(e -> e.getKey().equals(placeholder));
   }
 
   /**
@@ -57,7 +71,7 @@ public enum CommentPlaceholderRegistry {
    * @return comments with applied placeholders
    */
   public List<String> applyPlaceholders(List<String> comments) {
-    if (this.placeholderMap.empty()) {
+    if (this.placeholderMap.isEmpty()) {
       return comments;
     }
     List<String> ret = new LinkedList<>();
