@@ -23,17 +23,18 @@
 package com.mrivanplays.annotationconfig.core.resolver;
 
 import java.util.AbstractMap;
+import java.util.Collections;
 import java.util.Iterator;
-import java.util.LinkedList;
-import java.util.List;
 import java.util.Map.Entry;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 
 class PlaceholderMap implements Iterable<Entry<String, String>> {
 
-  private List<Entry<String, String>> entries;
+  private final Set<Entry<String, String>> entries;
 
   PlaceholderMap() {
-    this.entries = new LinkedList<>();
+    this.entries = Collections.newSetFromMap(new ConcurrentHashMap<>());
   }
 
   public int size() {
@@ -46,10 +47,6 @@ class PlaceholderMap implements Iterable<Entry<String, String>> {
 
   public void put(String key, String value) {
     this.entries.add(new AbstractMap.SimpleEntry<>(key, value));
-  }
-
-  public Entry<String, String> first() {
-    return this.entries.get(0);
   }
 
   @Override

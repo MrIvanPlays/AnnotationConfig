@@ -62,14 +62,6 @@ public enum CommentPlaceholderRegistry {
     }
     List<String> ret = new LinkedList<>();
 
-    if (this.placeholderMap.size() == 1) {
-      Entry<String, String> placeholder = this.placeholderMap.first();
-      for (String comment : comments) {
-        ret.add(comment.replace(placeholder.getKey(), placeholder.getValue()));
-      }
-      return ret;
-    }
-
     if (this.placeholderMap.size() < comments.size()) {
       for (String comment : comments) {
         for (Entry<String, String> placeholder : this.placeholderMap) {
