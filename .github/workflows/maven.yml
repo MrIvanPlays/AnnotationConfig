@@ -8,7 +8,7 @@ jobs:
 
     strategy:
       matrix:
-        java: [8, 11, 17]
+        java: [25]
 
     name: Java ${{ matrix.java }}
 
@@ -17,5 +17,4 @@ jobs:
     - uses: actions/setup-java@v1
       with:
         java-version: ${{ matrix.java }}
-    - run: java -version && mvn --version
     - run: mvn package

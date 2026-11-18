@@ -16,6 +16,7 @@
 
   <name>AnnotationConfig-Parent</name>
   <description>Configuration framework using annotations. Parent POM</description>
+  <url>https://github.com/MrIvanPlays/AnnotationConfig</url>
 
   <inceptionYear>2020</inceptionYear>
 
