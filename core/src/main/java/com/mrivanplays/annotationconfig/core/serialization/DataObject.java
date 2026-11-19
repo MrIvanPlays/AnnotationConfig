@@ -37,6 +37,7 @@ import java.util.Objects;
  * @since 2.0.0
  * @author MrIvanPlays
  */
+@SuppressWarnings("unchecked")
 public final class DataObject {
 
   /**
@@ -53,7 +54,7 @@ public final class DataObject {
 
   private final boolean immutable;
 
-  /** Constructs a empty data object */
+  /** Constructs an empty data object */
   public DataObject() {
     this.serialize = null;
     this.data = null;
