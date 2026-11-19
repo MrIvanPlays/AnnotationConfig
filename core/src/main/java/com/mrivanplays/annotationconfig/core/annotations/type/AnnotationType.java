@@ -32,9 +32,9 @@ import com.mrivanplays.annotationconfig.core.annotations.RawConfig;
 import com.mrivanplays.annotationconfig.core.annotations.comment.Comment;
 import com.mrivanplays.annotationconfig.core.annotations.comment.Comments;
 import java.lang.annotation.Annotation;
-import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * Represents an annotation type, holding utility methods for the held raw annotation type.
@@ -54,8 +54,8 @@ public enum AnnotationType {
 
   private final Class<? extends Annotation> annotationType;
 
-  private static Map<Class<? extends Annotation>, AnnotationType> BY_ANNOTATION_CLASS =
-      new HashMap<>();
+  private static final Map<Class<? extends Annotation>, AnnotationType> BY_ANNOTATION_CLASS =
+      new ConcurrentHashMap<>();
 
   static {
     for (AnnotationType type : AnnotationType.values()) {

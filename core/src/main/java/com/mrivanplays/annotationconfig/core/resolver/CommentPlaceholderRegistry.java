@@ -22,7 +22,10 @@
 
 package com.mrivanplays.annotationconfig.core.resolver;
 
+import com.mrivanplays.annotationconfig.core.annotations.comment.Comment;
+import com.mrivanplays.annotationconfig.core.annotations.comment.Comments;
 import java.util.AbstractMap;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
@@ -58,6 +61,7 @@ public enum CommentPlaceholderRegistry {
    * Unregister a placeholder
    *
    * @param placeholder value placeholder to replace
+   * @since 3.0.4
    */
   public void unregisterPlaceholder(String placeholder) {
     this.placeholderMap.removeIf(e -> e.getKey().equals(placeholder));
@@ -76,6 +80,7 @@ public enum CommentPlaceholderRegistry {
     }
     List<String> ret = new LinkedList<>();
 
+    // todo: ivan in 2026 doesn't know why ivan in 2023 wrote this this way
     if (this.placeholderMap.size() < comments.size()) {
       for (String comment : comments) {
         for (Entry<String, String> placeholder : this.placeholderMap) {
@@ -88,6 +93,68 @@ public enum CommentPlaceholderRegistry {
           ret.add(comment.replace(placeholder.getKey(), placeholder.getValue()));
         }
       }
+    }
+    return ret;
+  }
+
+  /**
+   * Applies (if there are any) placeholders to the specified {@link Comments comments} and maps to
+   * a {@link List<String>} comment values.
+   *
+   * @param annotation bulk representation of the {@link Comment comment} annotation
+   * @return list of parsed comments
+   * @since 3.0.4
+   */
+  public List<String> applyPlaceholders(Comments annotation) {
+    if (this.placeholderMap.isEmpty()) {
+      return Arrays.stream(annotation.value()).map(Comment::value).toList();
+    }
+    Comment[] comments = annotation.value();
+    List<String> ret = new LinkedList<>();
+
+    // todo: ivan in 2026 doesn't know why ivan in 2023 wrote this this way
+    if (this.placeholderMap.size() < comments.length) {
+      for (Comment comment : comments) {
+        for (Entry<String, String> placeholder : this.placeholderMap) {
+          ret.add(comment.value().replace(placeholder.getKey(), placeholder.getValue()));
+        }
+      }
+    } else {
+      for (Entry<String, String> placeholder : this.placeholderMap) {
+        for (Comment comment : comments) {
+          ret.add(comment.value().replace(placeholder.getKey(), placeholder.getValue()));
+        }
+      }
+    }
+    return ret;
+  }
+
+  /**
+   * Helper method, accepting the {@link Comment comment} annotation, to parse placeholders on a
+   * single comment.
+   *
+   * @param annotation the comment annotation
+   * @return comment with parsed placeholders
+   * @since 3.0.4
+   */
+  public String applyPlaceholders(Comment annotation) {
+    return this.applyPlaceholders(annotation.value());
+  }
+
+  /**
+   * Applies (if there are any) placeholders to the specified comment.
+   *
+   * @param comment comment to apply placeholders to
+   * @return comment with parsed placeholders
+   * @since 3.0.4
+   */
+  public String applyPlaceholders(String comment) {
+    if (this.placeholderMap.isEmpty()) {
+      return comment;
+    }
+    String ret = comment;
+    for (Entry<String, String> placeholder : this.placeholderMap) {
+      ret = ret.replace(placeholder.getKey(), placeholder.getValue());
     }
     return ret;
   }

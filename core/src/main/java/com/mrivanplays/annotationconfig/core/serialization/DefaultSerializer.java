@@ -33,14 +33,14 @@ import java.lang.reflect.ParameterizedType;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Function;
 
-@SuppressWarnings({"unchecked", "rawtypes", "FieldMayBeFinal"})
+@SuppressWarnings({"unchecked", "rawtypes"})
 class DefaultSerializer implements FieldTypeSerializer<Object> {
 
   static final DefaultSerializer INSTANCE = new DefaultSerializer();
@@ -475,7 +475,7 @@ class DefaultSerializer implements FieldTypeSerializer<Object> {
 
   private static final class PrimitiveSerializers {
 
-    private static Map<Class<?>, Function<Object, ?>> serializers = new HashMap<>();
+    private static final Map<Class<?>, Function<Object, ?>> serializers = new ConcurrentHashMap<>();
     private static boolean registered = false;
 
     public static void registerSerializers() {

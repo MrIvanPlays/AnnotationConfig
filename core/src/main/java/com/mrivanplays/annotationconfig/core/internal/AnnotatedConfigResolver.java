@@ -26,15 +26,12 @@ import com.mrivanplays.annotationconfig.core.annotations.Key;
 import com.mrivanplays.annotationconfig.core.annotations.Max;
 import com.mrivanplays.annotationconfig.core.annotations.Min;
 import com.mrivanplays.annotationconfig.core.annotations.Multiline;
-import com.mrivanplays.annotationconfig.core.annotations.comment.Comment;
-import com.mrivanplays.annotationconfig.core.annotations.comment.Comments;
 import com.mrivanplays.annotationconfig.core.annotations.custom.AnnotationValidator;
 import com.mrivanplays.annotationconfig.core.annotations.custom.CustomAnnotationRegistry;
 import com.mrivanplays.annotationconfig.core.annotations.custom.ValidationResponse;
 import com.mrivanplays.annotationconfig.core.annotations.type.AnnotationType;
 import com.mrivanplays.annotationconfig.core.internal.MinMaxHandler.NumberResult;
 import com.mrivanplays.annotationconfig.core.internal.MinMaxHandler.State;
-import com.mrivanplays.annotationconfig.core.resolver.CommentPlaceholderRegistry;
 import com.mrivanplays.annotationconfig.core.resolver.MultilineString;
 import com.mrivanplays.annotationconfig.core.resolver.ValueWriter;
 import com.mrivanplays.annotationconfig.core.resolver.key.KeyResolver;
@@ -45,6 +42,7 @@ import com.mrivanplays.annotationconfig.core.serialization.DataObject;
 import com.mrivanplays.annotationconfig.core.serialization.FieldTypeSerializer;
 import com.mrivanplays.annotationconfig.core.serialization.SerializationContext;
 import com.mrivanplays.annotationconfig.core.serialization.SerializerRegistry;
+import com.mrivanplays.annotationconfig.core.utils.AnnotationUtils;
 import com.mrivanplays.annotationconfig.core.utils.MapUtils;
 import java.io.File;
 import java.io.FileWriter;
@@ -272,12 +270,12 @@ public final class AnnotatedConfigResolver {
     for (Map.Entry<AnnotationHolder, Set<AnnotationType>> entry : map.entrySet()) {
       AnnotationHolder holder = entry.getKey();
       if (holder.isClass()) {
-        for (AnnotationType type : entry.getValue()) {
-          List<String> comments = getComments(type, null, holder.getClazz());
-          if (!comments.isEmpty() && commentChar != null) {
-            for (String comment : comments) {
-              writer.println(commentChar + comment);
-            }
+        List<String> comments =
+            AnnotationUtils.getComments(
+                AnnotationAccessor.createFromClass(holder.getClazz()), true);
+        if (commentChar != null && !comments.isEmpty()) {
+          for (String comment : comments) {
+            writer.println(commentChar + comment);
           }
         }
         writer.append('\n');
@@ -351,25 +349,20 @@ public final class AnnotatedConfigResolver {
     AnnotationHolder holder = entry.getKey();
     WriteData ret = new WriteData();
     if (holder.isClass()) {
-      List<String> comments = Collections.emptyList();
-      for (AnnotationType type : entry.getValue()) {
-        if (comments.isEmpty()) {
-          comments = getComments(type, null, annotatedConfig.getClass());
-        }
-      }
-      ret.getClassComments().addAll(comments);
+      ret.getClassComments()
+          .addAll(
+              AnnotationUtils.getComments(
+                  AnnotationAccessor.createFromClass(annotatedConfig.getClass()), true));
       return ret;
     }
     Field field = entry.getKey().getField();
     field.setAccessible(true);
     String keyName = field.getName();
-    List<String> comments = Collections.emptyList();
+    List<String> comments =
+        AnnotationUtils.getComments(AnnotationAccessor.createFromField(field), true);
     boolean configObject = false;
     Character multilineCharacter = null;
     for (AnnotationType type : entry.getValue()) {
-      if (comments.isEmpty()) {
-        comments = getComments(type, field, null);
-      }
       if (type.is(AnnotationType.KEY)) {
         keyName = field.getDeclaredAnnotation(Key.class).value();
       }
@@ -812,31 +805,6 @@ public final class AnnotatedConfigResolver {
         }
         throw new IllegalArgumentException(message);
       }
-    }
-  }
-
-  private static List<String> getComments(AnnotationType type, Field field, Class<?> aClass) {
-    if (!type.is(AnnotationType.COMMENT) && !type.is(AnnotationType.COMMENTS)) {
-      return Collections.emptyList();
-    }
-    List<String> ret = new LinkedList<>();
-    if (type.is(AnnotationType.COMMENT)) {
-      ret.add(getAnnotation(field, aClass, Comment.class).value());
-    }
-    if (type.is(AnnotationType.COMMENTS)) {
-      for (Comment comment : getAnnotation(field, aClass, Comments.class).value()) {
-        ret.add(comment.value());
-      }
-    }
-    return CommentPlaceholderRegistry.INSTANCE.applyPlaceholders(ret);
-  }
-
-  private static <T extends Annotation> T getAnnotation(
-      Field field, Class<?> theClass, Class<T> annotationType) {
-    if (field != null) {
-      return field.getDeclaredAnnotation(annotationType);
-    } else {
-      return theClass.getDeclaredAnnotation(annotationType);
     }
   }
 

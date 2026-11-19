@@ -29,13 +29,12 @@ import com.mrivanplays.annotationconfig.core.annotations.RawConfig;
 import com.mrivanplays.annotationconfig.core.annotations.comment.Comment;
 import com.mrivanplays.annotationconfig.core.annotations.comment.Comments;
 import com.mrivanplays.annotationconfig.core.annotations.type.AnnotationType;
-import java.lang.annotation.Annotation;
+import com.mrivanplays.annotationconfig.core.resolver.CommentPlaceholderRegistry;
+import com.mrivanplays.annotationconfig.core.serialization.AnnotationAccessor;
 import java.lang.reflect.Field;
 import java.util.Arrays;
-import java.util.LinkedList;
+import java.util.Collections;
 import java.util.List;
-import java.util.Optional;
-import java.util.stream.Collectors;
 
 /**
  * A utility class with utilities about AnnotationConfig's default annotations.
@@ -52,14 +51,10 @@ public final class AnnotationUtils {
    * @return the key, always a non-null value
    */
   public static String getKey(Field field) {
-    String ret = field.getName();
-    if (field.getDeclaredAnnotations().length > 0) {
-      Key annotationKey = field.getDeclaredAnnotation(Key.class);
-      if (annotationKey != null) {
-        ret = annotationKey.value();
-      }
+    if (field.isAnnotationPresent(Key.class)) {
+      return field.getDeclaredAnnotation(Key.class).value();
     }
-    return ret;
+    return field.getName();
   }
 
   /**
@@ -69,7 +64,7 @@ public final class AnnotationUtils {
    * @return true or false
    */
   public static boolean isIgnored(Field field) {
-    return field.getDeclaredAnnotation(Ignore.class) != null;
+    return field.isAnnotationPresent(Ignore.class);
   }
 
   /**
@@ -79,7 +74,7 @@ public final class AnnotationUtils {
    * @return true or false
    */
   public static boolean isConfigObject(Field field) {
-    return field.getDeclaredAnnotation(ConfigObject.class) != null;
+    return field.isAnnotationPresent(ConfigObject.class);
   }
 
   /**
@@ -92,36 +87,63 @@ public final class AnnotationUtils {
    * @return true or false
    */
   public static boolean isRawConfigAccess(Field field) {
-    return field.getDeclaredAnnotation(RawConfig.class) != null;
+    return field.isAnnotationPresent(RawConfig.class);
   }
 
   /**
-   * Returns the comments of the specified {@link Field}
+   * Returns the comments of the specified {@link Field}, and does not apply placeholders.
    *
    * @param field the field you want to get the comments of
    * @return comments, either an empty list or a list with comments
+   * @deprecated use {@link #getComments(AnnotationAccessor)}
    */
+  @Deprecated(since = "3.0.4")
   public static List<String> getComments(Field field) {
-    List<String> ret = new LinkedList<>();
-    if (field.getDeclaredAnnotations().length > 0) {
-      for (Annotation annotation : field.getDeclaredAnnotations()) {
-        Optional<AnnotationType> typeOpt = AnnotationType.match(annotation.annotationType());
-        if (!typeOpt.isPresent()) {
-          continue;
-        }
-        AnnotationType type = typeOpt.get();
-        if (type.is(AnnotationType.COMMENT)) {
-          ret.add(field.getDeclaredAnnotation(Comment.class).value());
-        }
-        if (type.is(AnnotationType.COMMENTS)) {
-          ret.addAll(
-              Arrays.stream(field.getDeclaredAnnotation(Comments.class).value())
-                  .map(Comment::value)
-                  .collect(Collectors.toList()));
-        }
-      }
+    return getComments(AnnotationAccessor.createFromField(field), false);
+  }
+
+  /**
+   * Returns the comments of the specified {@link AnnotationAccessor annotation accessor}, and does
+   * not apply placeholders.
+   *
+   * @param annotationAccessor the annotation accessor for which the comments to get
+   * @return comments, either an empty list or list with comments
+   */
+  public static List<String> getComments(AnnotationAccessor annotationAccessor) {
+    return getComments(annotationAccessor, false);
+  }
+
+  /**
+   * Returns the comments of the specified {@link AnnotationAccessor annotation accessor}.
+   *
+   * @param annotationAccessor the annotation accessor for which the comments to get
+   * @param applyPlaceholders whether to apply placeholders
+   * @return comments, either an empty list or list with comments
+   */
+  public static List<String> getComments(
+      AnnotationAccessor annotationAccessor, boolean applyPlaceholders) {
+    if (!annotationAccessor.hasAnnotation(AnnotationType.COMMENT)
+        && !annotationAccessor.hasAnnotation(AnnotationType.COMMENTS)) {
+      return Collections.emptyList();
     }
-    return ret;
+    // optional abomination
+    return annotationAccessor
+        .getAnnotation(Comment.class)
+        .map(comment ->
+            List.of(
+                applyPlaceholders
+                    ? CommentPlaceholderRegistry.INSTANCE.applyPlaceholders(comment)
+                    : comment.value()))
+        .orElseGet(() ->
+            annotationAccessor
+                .getAnnotation(Comments.class)
+                .map(comments -> {
+                  if (applyPlaceholders) {
+                    return CommentPlaceholderRegistry.INSTANCE.applyPlaceholders(comments);
+                  }
+                  return Arrays.stream(comments.value()).map(Comment::value).toList();
+                })
+                .orElse(Collections.emptyList()));
   }
 
   private AnnotationUtils() {
