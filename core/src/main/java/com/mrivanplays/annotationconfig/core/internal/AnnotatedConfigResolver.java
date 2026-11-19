@@ -67,6 +67,9 @@ import java.util.Set;
 import java.util.TreeMap;
 import java.util.TreeSet;
 
+/**
+ * @hidden
+ */
 @SuppressWarnings({"unchecked", "rawtypes", "FieldMayBeFinal"})
 public final class AnnotatedConfigResolver {
 

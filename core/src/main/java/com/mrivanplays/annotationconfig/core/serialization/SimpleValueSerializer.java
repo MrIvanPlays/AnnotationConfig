@@ -34,8 +34,24 @@ import java.util.Objects;
 @SuppressWarnings("unchecked")
 public final class SimpleValueSerializer {
 
+  /**
+   * See {@link FieldTypeSerializer#deserialize(DataObject, SerializationContext,
+   * AnnotationAccessor)}
+   */
   public static <T> T deserialize(
       DataObject value, Class<? extends T> neededValueType, Object annotatedConfig) {
+    return deserialize(value, neededValueType, annotatedConfig, AnnotationAccessor.EMPTY);
+  }
+
+  /**
+   * See {@link FieldTypeSerializer#deserialize(DataObject, SerializationContext,
+   * AnnotationAccessor)}
+   */
+  public static <T> T deserialize(
+      DataObject value,
+      Class<? extends T> neededValueType,
+      Object annotatedConfig,
+      AnnotationAccessor annotationAccessor) {
     Objects.requireNonNull(value, "value");
     Objects.requireNonNull(neededValueType, "neededValueType");
     Objects.requireNonNull(annotatedConfig, "annotatedConfig");
@@ -43,18 +59,26 @@ public final class SimpleValueSerializer {
         DefaultSerializer.INSTANCE.deserialize(
             value,
             SerializationContext.of(neededValueType, neededValueType, annotatedConfig),
-            AnnotationAccessor.EMPTY);
+            annotationAccessor);
   }
 
+  /** See {@link FieldTypeSerializer#serialize(Object, SerializationContext, AnnotationAccessor)} */
   public static <T> DataObject serialize(
       T value, Class<? extends T> valueType, Object annotatedConfig) {
+    return serialize(value, valueType, annotatedConfig, AnnotationAccessor.EMPTY);
+  }
+
+  /** See {@link FieldTypeSerializer#serialize(Object, SerializationContext, AnnotationAccessor)} */
+  public static <T> DataObject serialize(
+      T value,
+      Class<? extends T> valueType,
+      Object annotatedConfig,
+      AnnotationAccessor annotationAccessor) {
     Objects.requireNonNull(value, "value");
     Objects.requireNonNull(valueType, "valueType");
     Objects.requireNonNull(annotatedConfig, "annotatedConfig");
     return DefaultSerializer.INSTANCE.serialize(
-        value,
-        SerializationContext.of(valueType, valueType, annotatedConfig),
-        AnnotationAccessor.EMPTY);
+        value, SerializationContext.of(valueType, valueType, annotatedConfig), annotationAccessor);
   }
 
   private SimpleValueSerializer() {}

@@ -50,6 +50,9 @@ import java.util.Set;
 import java.util.function.Supplier;
 import java.util.stream.Stream;
 
+/**
+ * @hidden
+ */
 public final class ConfigResolverImpl implements ConfigResolver {
 
   private final String commentPrefix;

@@ -33,13 +33,32 @@ import java.util.Objects;
  */
 public interface Setting<T> {
 
+  /**
+   * Create a new {@link Setting} instance.
+   *
+   * @param type class type representation of the setting
+   * @return new setting instance
+   * @param <T> value type held
+   * @since 3.0.4
+   */
+  static <T> Setting<T> of(Class<T> type) {
+    return of(null, type);
+  }
+
+  /**
+   * Create a new {@link Setting} instance.
+   *
+   * @param key key with which this setting is stored
+   * @param type class type representation of the setting
+   * @return new setting instance
+   * @param <T> value type held
+   */
   static <T> Setting<T> of(String key, Class<T> type) {
-    Objects.requireNonNull(key, "key");
     Objects.requireNonNull(type, "type");
-    return new Setting<T>() {
+    return new Setting<>() {
       @Override
       public String key() {
-        return key;
+        return key == null ? type.getName() : key;
       }
 
       @Override

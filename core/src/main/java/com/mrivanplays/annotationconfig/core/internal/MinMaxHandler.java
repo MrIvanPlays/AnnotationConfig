@@ -26,6 +26,9 @@ import com.mrivanplays.annotationconfig.core.annotations.Max;
 import com.mrivanplays.annotationconfig.core.annotations.Min;
 import java.util.Optional;
 
+/**
+ * @hidden
+ */
 class MinMaxHandler {
 
   enum State {

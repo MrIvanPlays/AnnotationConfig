@@ -24,6 +24,9 @@ package com.mrivanplays.annotationconfig.core.internal;
 
 import java.lang.reflect.Field;
 
+/**
+ * @hidden
+ */
 public final class AnnotationHolder implements Comparable<AnnotationHolder> {
   private Field field;
   private int fieldOrder;

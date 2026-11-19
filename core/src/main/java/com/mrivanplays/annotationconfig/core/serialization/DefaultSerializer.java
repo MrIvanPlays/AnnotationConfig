@@ -40,6 +40,9 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Function;
 
+/**
+ * @hidden
+ */
 @SuppressWarnings({"unchecked", "rawtypes"})
 final class DefaultSerializer implements FieldTypeSerializer<Object> {
 
