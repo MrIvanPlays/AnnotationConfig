@@ -24,12 +24,10 @@ package com.mrivanplays.annotationconfig.core.resolver;
 
 import com.mrivanplays.annotationconfig.core.annotations.comment.Comment;
 import com.mrivanplays.annotationconfig.core.annotations.comment.Comments;
-import java.util.AbstractMap;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.Map.Entry;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -44,27 +42,42 @@ import java.util.concurrent.ConcurrentHashMap;
 public enum CommentPlaceholderRegistry {
   INSTANCE;
 
-  private final Set<Entry<String, String>> placeholderMap =
+  private final Set<CommentPlaceholder> placeholderMap =
       Collections.newSetFromMap(new ConcurrentHashMap<>());
 
   /**
-   * Register a placeholder.
+   * Register a placeholder. <br>
+   * Since this is a very limiting API, newer AnnotationConfig versions provide a {@link
+   * CommentPlaceholder comment placeholder} object with an appropriate method {@link
+   * #registerPlaceholder(CommentPlaceholder) to register}. Migration to using that is
+   * <b>strongly</b> encouraged.
    *
    * @param toReplace value to replace
    * @param replacement replacement value
+   * @deprecated use {@link #registerPlaceholder(CommentPlaceholder)}
    */
+  @Deprecated(since = "3.0.4")
   public void registerPlaceholder(String toReplace, String replacement) {
-    this.placeholderMap.add(new AbstractMap.SimpleEntry<>(toReplace, replacement));
+    this.registerPlaceholder(CommentPlaceholder.simple(toReplace, replacement));
+  }
+
+  /**
+   * Register a new {@link CommentPlaceholder comment placeholder}.
+   *
+   * @param placeholder placeholder to register
+   */
+  public void registerPlaceholder(CommentPlaceholder placeholder) {
+    this.placeholderMap.add(placeholder);
   }
 
   /**
    * Unregister a placeholder
    *
-   * @param placeholder value placeholder to replace
+   * @param placeholder placeholder to unregister
    * @since 3.0.4
    */
-  public void unregisterPlaceholder(String placeholder) {
-    this.placeholderMap.removeIf(e -> e.getKey().equals(placeholder));
+  public void unregisterPlaceholder(CommentPlaceholder placeholder) {
+    this.placeholderMap.removeIf(p -> p.matches(placeholder));
   }
 
   /**
@@ -79,20 +92,8 @@ public enum CommentPlaceholderRegistry {
       return comments;
     }
     List<String> ret = new LinkedList<>();
-
-    // todo: ivan in 2026 doesn't know why ivan in 2023 wrote this this way
-    if (this.placeholderMap.size() < comments.size()) {
-      for (String comment : comments) {
-        for (Entry<String, String> placeholder : this.placeholderMap) {
-          ret.add(comment.replace(placeholder.getKey(), placeholder.getValue()));
-        }
-      }
-    } else {
-      for (Entry<String, String> placeholder : this.placeholderMap) {
-        for (String comment : comments) {
-          ret.add(comment.replace(placeholder.getKey(), placeholder.getValue()));
-        }
-      }
+    for (String comment : comments) {
+      ret.add(this.applyPlaceholders(comment));
     }
     return ret;
   }
@@ -109,22 +110,9 @@ public enum CommentPlaceholderRegistry {
     if (this.placeholderMap.isEmpty()) {
       return Arrays.stream(annotation.value()).map(Comment::value).toList();
     }
-    Comment[] comments = annotation.value();
     List<String> ret = new LinkedList<>();
-
-    // todo: ivan in 2026 doesn't know why ivan in 2023 wrote this this way
-    if (this.placeholderMap.size() < comments.length) {
-      for (Comment comment : comments) {
-        for (Entry<String, String> placeholder : this.placeholderMap) {
-          ret.add(comment.value().replace(placeholder.getKey(), placeholder.getValue()));
-        }
-      }
-    } else {
-      for (Entry<String, String> placeholder : this.placeholderMap) {
-        for (Comment comment : comments) {
-          ret.add(comment.value().replace(placeholder.getKey(), placeholder.getValue()));
-        }
-      }
+    for (Comment comment : annotation.value()) {
+      ret.add(this.applyPlaceholders(comment.value()));
     }
     return ret;
   }
@@ -153,8 +141,8 @@ public enum CommentPlaceholderRegistry {
       return comment;
     }
     String ret = comment;
-    for (Entry<String, String> placeholder : this.placeholderMap) {
-      ret = ret.replace(placeholder.getKey(), placeholder.getValue());
+    for (CommentPlaceholder placeholder : this.placeholderMap) {
+      ret = placeholder.apply(ret);
     }
     return ret;
   }

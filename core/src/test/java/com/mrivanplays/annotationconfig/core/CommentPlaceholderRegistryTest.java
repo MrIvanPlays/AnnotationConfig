@@ -23,6 +23,7 @@
 package com.mrivanplays.annotationconfig.core;
 
 import com.mrivanplays.annotationconfig.core.annotations.comment.Comment;
+import com.mrivanplays.annotationconfig.core.resolver.CommentPlaceholder;
 import com.mrivanplays.annotationconfig.core.resolver.CommentPlaceholderRegistry;
 import java.io.StringWriter;
 import org.junit.jupiter.api.Assertions;
@@ -38,11 +39,24 @@ public class CommentPlaceholderRegistryTest {
 
   @Test
   void testPlaceholder() {
-    CommentPlaceholderRegistry.INSTANCE.registerPlaceholder("%foo%", "bar");
+    CommentPlaceholderRegistry.INSTANCE.registerPlaceholder(
+        CommentPlaceholder.simple("%foo%", "bar"));
     Subject subject = new Subject();
     StringWriter writer = new StringWriter();
     PropertyConfig.getConfigResolver().dump(subject, writer);
     String expected = "# I get that bar\nfoo=bar\n";
+
+    Assertions.assertEquals(expected, writer.toString().replaceAll("\\R", "\n"));
+  }
+
+  @Test
+  void testUnregisterPlaceholder() {
+    CommentPlaceholderRegistry.INSTANCE.unregisterPlaceholder(
+        CommentPlaceholder.simple("%foo%", "bar"));
+    Subject subject = new Subject();
+    StringWriter writer = new StringWriter();
+    PropertyConfig.getConfigResolver().dump(subject, writer);
+    String expected = "# I get that %foo%\nfoo=bar\n";
 
     Assertions.assertEquals(expected, writer.toString().replaceAll("\\R", "\n"));
   }
