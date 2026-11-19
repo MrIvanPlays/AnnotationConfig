@@ -540,6 +540,9 @@ final class DefaultSerializer implements FieldTypeSerializer<Object> {
 
     private static <T> Function<Object, T> stripDot(Function<String, T> finish) {
       return validateO(s -> {
+        if (s == null) {
+          return null;
+        }
         // GSON passes every non-decimal number as <num>.0
         // this makes sure that the correct values are passed to the finishing methods.
         if (s.indexOf('.') == -1) {
