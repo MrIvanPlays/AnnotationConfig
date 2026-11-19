@@ -41,7 +41,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Function;
 
 @SuppressWarnings({"unchecked", "rawtypes"})
-class DefaultSerializer implements FieldTypeSerializer<Object> {
+final class DefaultSerializer implements FieldTypeSerializer<Object> {
 
   static final DefaultSerializer INSTANCE = new DefaultSerializer();
 
@@ -253,12 +253,16 @@ class DefaultSerializer implements FieldTypeSerializer<Object> {
         throw new RuntimeException("Could not set constructor accessible; " + fieldType.getName());
       }
       fieldTypeInstance = constructor.newInstance();
-      // fieldTypeInstance = getUnsafeInstance().allocateInstance(fieldType);
-    } catch (InstantiationException
-        | InvocationTargetException
-        | IllegalAccessException
-        | NoSuchMethodException e) {
+    } catch (InstantiationException e) {
       throw new RuntimeException("Cannot instantiate " + fieldType.getName() + " ; ", e);
+    } catch (InvocationTargetException e) {
+      throw new RuntimeException("Cannot invoke constructor of " + fieldType.getName() + " ; ", e);
+    } catch (IllegalAccessException e) {
+      throw new RuntimeException(
+          "Constructor of " + fieldType.getName() + " became inaccessible ; ", e);
+    } catch (NoSuchMethodException e) {
+      throw new RuntimeException(
+          "Type " + fieldType.getName() + " does not have an empty constructor ; ", e);
     }
     return fieldTypeInstance;
   }
@@ -427,19 +431,6 @@ class DefaultSerializer implements FieldTypeSerializer<Object> {
       toSerialize.add(serialized.getAsMap());
     }
   }
-
-  /* // todo: remove when 100% sure stuff works fine
-  private sun.misc.Unsafe getUnsafeInstance() {
-    try {
-      Field field = sun.misc.Unsafe.class.getDeclaredField("theUnsafe");
-      field.setAccessible(true);
-      return (sun.misc.Unsafe) field.get(null);
-    } catch (NoSuchFieldException | IllegalAccessException e) {
-      // ignored
-      return null;
-    }
-  }
-   */
 
   private Object forcePrimitive(Object val, Class<?> fieldType) {
     Function<Object, ?> mapper = PrimitiveSerializers.getMapper(fieldType);
