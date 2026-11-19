@@ -3,18 +3,21 @@
 This file summarises changes between major versions.
 
 ## Version 3.0.4
+
 This version now changes the default serializer to not
 use `sun.misc.Unsafe` in order to create `Field` instances.
 This will require custom data types to have an empty constructor.
 
 ### Examples
+
 ```java
 class SerializedObject {
 
   private int foo;
   private String baz;
 
-  public SerializedObject() {}
+  public SerializedObject() {
+  }
 
   public SerializedObject(int foo, String baz) {
     this.foo = foo;
@@ -41,7 +44,38 @@ class Subject {
 
 ```
 
-`Subject` is to be our config class, `SerializedObject` is to be the the custom data type. Notice it needs a declared empty constructor in order for AnnotationConfig to work properly.
+`Subject` is to be our config class, `SerializedObject` is to be the the custom data type. Notice it
+needs a declared empty constructor in order for AnnotationConfig to work properly.
+
+### Changes in `AnnotationAccessor`
+
+`AnnotationAccessor` is now a `sealed interface`, and supports accessing annotations from `Class<?>`
+types.
+Added `hasAnnotation(Class<? extends Annotation)` and `hasAnnotation(AnnotationType)` for checking.
+
+### Changes in `CommentPlaceholderRegistry`
+
+Placeholders shall be now registered via the new `CommentPlaceholder` interface. Also some helper
+methods have been added.
+
+### Changes in `AnnotationUtils`
+
+`AnnotationUtils` now exposes the (what was) internal way of handling comments. Deprecated
+`AnnotationUtils#getComments(Field)` since that was a limiting API, as it did not apply
+placeholders.
+
+### New `json` module
+
+The new json module adds a default `JsonConfig` implementation backed by Google's gson library. It
+does not support comments per the reason JSON does not support comments.
+
+### Misc changes
+
+There are a lot of miscellaneous and quality-of-code changes introduced.
+
+## Version 3.0.3
+
+No significant changes, apart from that the library is now released on maven central.
 
 ## Version 3.0.1
 
@@ -363,14 +397,14 @@ and writer.
 
 ```java
     ConfigResolver resolver =
-        ConfigResolver.newBuilder()
-            .withValueReader(/* value reader */)
-            .withValueWriter(/* value writer */)
-            .withCommentPrefix("# " /* the implemented config type's comment prefix */)
-            .shouldReverseFields(
-                true /* in some config types it is needed to reverse the fields so everything is in order with the config object we're reading from */)
-            .build();
-    // do stuff with the resolver instance
+    ConfigResolver.newBuilder()
+        .withValueReader(/* value reader */)
+        .withValueWriter(/* value writer */)
+        .withCommentPrefix("# " /* the implemented config type's comment prefix */)
+        .shouldReverseFields(
+            true /* in some config types it is needed to reverse the fields so everything is in order with the config object we're reading from */)
+        .build();
+// do stuff with the resolver instance
 ```
 
 ### New Annotations

@@ -1,9 +1,12 @@
 # AnnotationConfig
+
 Make configurations with ease!
 
-Released under the MIT License. Since version 3.0.3 artifacts are deployed to the Maven Central repository.
+Released under the MIT License. Since version 3.0.3 artifacts are deployed to the Maven Central
+repository.
 
 # Prerequisites
+
 Versions >=3.0.3 require use of Java 25
 
 # Examples
@@ -388,14 +391,14 @@ serializerRegistry.
 registerSerializer(
     ExampleAnnotatedConfig.SomethingToSerialize .class,
     new ExampleAnnotatedConfig.SomethingToSerializeSerializer());
+
     serializerRegistry.
 
 registerSerializer(
     new TypeToken<SectionObjectList<SectionObject>>() {
 }.
 
-getType(),
-    new SectionObjectListSerializer<SectionObject>());
+getType(), new SectionObjectListSerializer<SectionObject>());
 ExampleAnnotatedConfig annotatedConfig = new ExampleAnnotatedConfig();
 ```
 
@@ -451,7 +454,7 @@ Maven:
 <!-- Don't forget to relocate if shading in a Paper/Velocity plugin (for example) -->
 <dependency>
   <groupId>com.mrivanplays</groupId>
-  <!-- Types: toml, yaml -->
+  <!-- Types: toml, yaml, json -->
   <!-- If you want .conf/.properties, or custom implementation configuration, you can set the type to core -->
   <artifactId>annotationconfig-(type)</artifactId> <!-- Replace type -->
   <version>VERSION</version> <!-- Replace with latest version -->
