@@ -22,6 +22,7 @@
 
 package com.mrivanplays.annotationconfig.core.resolver;
 
+import java.util.Objects;
 import java.util.function.Function;
 
 /**
@@ -40,6 +41,8 @@ public interface CommentPlaceholder extends Function<String, String> {
    * @return comment placeholder instance
    */
   static CommentPlaceholder simple(String toReplace, String replacement) {
+    Objects.requireNonNull(toReplace, "toReplace");
+    Objects.requireNonNull(replacement, "replacement");
     return new CommentPlaceholder() {
       @Override
       public String replaces() {

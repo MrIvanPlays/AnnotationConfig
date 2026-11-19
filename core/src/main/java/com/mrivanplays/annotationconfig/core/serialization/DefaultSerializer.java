@@ -479,7 +479,7 @@ final class DefaultSerializer implements FieldTypeSerializer<Object> {
 
       registerSerializer(String.class, validateO(Function.identity()));
 
-      Function<Object, Byte> byteSerializer = validateO(Byte::parseByte);
+      Function<Object, Byte> byteSerializer = stripDot(Byte::parseByte);
       registerSerializer(byte.class, byteSerializer);
       registerSerializer(Byte.class, byteSerializer);
 
@@ -491,25 +491,15 @@ final class DefaultSerializer implements FieldTypeSerializer<Object> {
       registerSerializer(float.class, floatSerializer);
       registerSerializer(Float.class, floatSerializer);
 
-      Function<Object, Integer> intSerializer =
-          validateO(str -> {
-            // GSON passes every number as <num>.0
-            // make sure that if we're dealing with integer to pass the correct value to
-            // Integer.parseInt
-            if (str.indexOf('.') == -1) {
-              return Integer.parseInt(str);
-            }
-            String[] parts = str.split("\\.");
-            return Integer.parseInt(parts[0]);
-          });
+      Function<Object, Integer> intSerializer = stripDot(Integer::parseInt);
       registerSerializer(Integer.class, intSerializer);
       registerSerializer(int.class, intSerializer);
 
-      Function<Object, Short> shortSerializer = validateO(Short::parseShort);
+      Function<Object, Short> shortSerializer = stripDot(Short::parseShort);
       registerSerializer(Short.class, shortSerializer);
       registerSerializer(short.class, shortSerializer);
 
-      Function<Object, Long> longSerializer = validateO(Long::parseLong);
+      Function<Object, Long> longSerializer = stripDot(Long::parseLong);
       registerSerializer(Long.class, longSerializer);
       registerSerializer(long.class, longSerializer);
 
@@ -546,6 +536,18 @@ final class DefaultSerializer implements FieldTypeSerializer<Object> {
         }
         return cont.apply(strVal);
       };
+    }
+
+    private static <T> Function<Object, T> stripDot(Function<String, T> finish) {
+      return validateO(s -> {
+        // GSON passes every non-decimal number as <num>.0
+        // this makes sure that the correct values are passed to the finishing methods.
+        if (s.indexOf('.') == -1) {
+          return finish.apply(s);
+        }
+        String[] split = s.split("\\.");
+        return finish.apply(split[0]);
+      });
     }
 
     public static Function<Object, ?> getMapper(Class<?> aClass) {
