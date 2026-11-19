@@ -1,3 +1,25 @@
+/*
+ * Copyright (c) Ivan Pekov 2026
+ * Copyright (c) Contributors 2026
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in all
+ * copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ */
+
 package com.mrivanplays.annotationconfig.core.internal;
 
 import com.mrivanplays.annotationconfig.core.annotations.type.AnnotationType;
@@ -28,6 +50,9 @@ import java.util.Set;
 import java.util.function.Supplier;
 import java.util.stream.Stream;
 
+/**
+ * @hidden
+ */
 public final class ConfigResolverImpl implements ConfigResolver {
 
   private final String commentPrefix;
@@ -44,20 +69,12 @@ public final class ConfigResolverImpl implements ConfigResolver {
       Settings settings,
       KeyResolver keyResolver,
       String[] fileExtensions) {
-    this.commentPrefix = Objects.requireNonNull(commentPrefix, "commentPrefix");
+    this.commentPrefix = commentPrefix;
     this.valueWriter = Objects.requireNonNull(valueWriter, "valueWriter");
     this.valueReader = Objects.requireNonNull(valueReader, "valueReader");
     this.fileExtensions = Objects.requireNonNull(fileExtensions, "fileExtensions");
-    if (settings == null) {
-      this.settings = ACDefaultSettings.getDefault().copy();
-    } else {
-      this.settings = settings;
-    }
-    if (keyResolver == null) {
-      this.keyResolver = KeyResolver.DEFAULT;
-    } else {
-      this.keyResolver = keyResolver;
-    }
+    this.settings = Objects.requireNonNullElse(settings, ACDefaultSettings.getDefault().copy());
+    this.keyResolver = Objects.requireNonNullElse(keyResolver, KeyResolver.DEFAULT);
   }
 
   @Override
@@ -204,10 +221,8 @@ public final class ConfigResolverImpl implements ConfigResolver {
             annotatedConfig, reverseFields, findParentFields);
     Map<String, Object> values;
     try {
-      try {
+      try (reader) {
         values = valueReader.read(reader, settings);
-      } finally {
-        reader.close();
       }
     } catch (IOException e) {
       throw new RuntimeException(e);
@@ -305,15 +320,14 @@ public final class ConfigResolverImpl implements ConfigResolver {
       return Collections.emptyMap();
     } else {
       File[] files =
-          dir.listFiles(
-              ($, name) -> {
-                for (String extension : fileExtensions) {
-                  if (name.endsWith(extension)) {
-                    return true;
-                  }
-                }
-                return false;
-              });
+          dir.listFiles(($, name) -> {
+            for (String extension : fileExtensions) {
+              if (name.endsWith(extension)) {
+                return true;
+              }
+            }
+            return false;
+          });
       if (files == null || files.length == 0) {
         T config = configToResolveTo.get();
         dump(config, dumpFile.writer());

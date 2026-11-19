@@ -2,130 +2,195 @@
 
 This file summarises changes between major versions.
 
+## Version 3.0.4
+This version now changes the default serializer to not
+use `sun.misc.Unsafe` in order to create `Field` instances.
+This will require custom data types to have an empty constructor.
+
+### Examples
+```java
+class SerializedObject {
+
+  private int foo;
+  private String baz;
+
+  public SerializedObject() {}
+
+  public SerializedObject(int foo, String baz) {
+    this.foo = foo;
+    this.baz = baz;
+  }
+
+  public int getFoo() {
+    return foo;
+  }
+
+  public String getBaz() {
+    return baz;
+  }
+}
+
+class Subject {
+
+  public SectionObjectList<SerializedObject> list =
+      SectionObjectList.newBuilderForType(SerializedObject.class)
+          .defaultValue("foo", new SerializedObject(1, "lorem"))
+          .defaultValue("bar", new SerializedObject(2, "ipsum"))
+          .build();
+}
+
+```
+
+`Subject` is to be our config class, `SerializedObject` is to be the the custom data type. Notice it needs a declared empty constructor in order for AnnotationConfig to work properly.
+
 ## Version 3.0.1
+
 This version features:
-  - Updated dependencies
-  - Added CommentPlaceholderRegistry
+
+- Updated dependencies
+- Added CommentPlaceholderRegistry
 
 ### `CommentPlaceholderRegistry`
-With this, you can register placeholders to be replaced in comments by AnnotationConfig whenever it 
+
+With this, you can register placeholders to be replaced in comments by AnnotationConfig whenever it
 creates a new config file.
 
 Usage:
+
 ```java
-CommentPlaceholderRegistry.INSTANCE.registerPlaceholder("%foo%", "epic replacement");
+CommentPlaceholderRegistry.INSTANCE.registerPlaceholder("%foo%","epic replacement");
 ```
 
 ## Version 3.0.0
+
 This version is all focused on serialization.
 
 ### Introducing `SimpleValueSerializer`
+
 This is a utility class to help you with serializing objects you do not need a custom serializer for
 in your own custom serializer of some kind. See the docs for more.
 
 ### FieldTypeSerializer now is not exactly `Field`
+
 Instead of passing a `Field`, AnnotationConfig now passes a `SerializationContext`, because
-AnnotationConfig can not always get a `Field` instance. We don't want to lie with another `Field`, 
+AnnotationConfig can not always get a `Field` instance. We don't want to lie with another `Field`,
 instead, we are now focused on accurate data - what is it exactly (de)serializing.
 The other thing new we have - the `AnnotationAccessor` - this is a way of accessing a (perhaps)
 `Field`'s annotations in a more controllable manner.
 
 #### Better experience with FieldTypeSerializer?
+
 Introducing the `FieldTypeSerializer#functional(TriFunction, TriFunction)` with which it shall be
 easier to create `FieldTypeSerializer`s. Quick example:
 
 ```java
 // Before
-SerializerRegistry.registerSerializer(Foo.class, new FieldTypeSerializer<Foo>() {
-  
+SerializerRegistry.registerSerializer(Foo .class, new FieldTypeSerializer<Foo>() {
+
   @Override
-  public Foo deserialize(DataObject data, SerializationContext<Foo> context, AnnotationAccessor annotations) {
+  public Foo deserialize (DataObject data, SerializationContext < Foo > context, AnnotationAccessor
+  annotations){
     // deserialization logic
   }
-  
+
   @Override
-  public DataObject serialize(Foo value, SerializationContext<Foo> context, AnnotationAccessor annotations) {
+  public DataObject serialize (Foo value, SerializationContext < Foo > context, AnnotationAccessor
+  annotations){
     // serialization logic
   }
 });
 
 // After
-SerializationRegistry.registerSerializer(
-    Foo.class, 
-        FieldTypeSerializer.<Foo>functional(
-            (data, context, annotations) -> { // deserialization logic },
-            (value, context, annotations) -> { // serialization logic }));
+    SerializationRegistry.
+
+registerSerializer(
+    Foo .class,
+    FieldTypeSerializer .<Foo>functional(
+        (data, context, annotations) ->{ // deserialization logic },
+    (value,context,annotations)->{ // serialization logic }));
 ```
 
 ### Beefed up default serializer
-- The default serializer now recognizes `BigInteger` and `BigDecimal` as "primitives" and (de)serializes
-them. 
-- Fixed a few type mistakes on list (de)serialization, which caused everything to go to the 
-default serializer rather than a proper serializer, if such is registered.
+
+- The default serializer now recognizes `BigInteger` and `BigDecimal` as "primitives" and (de)
+  serializes
+  them.
+- Fixed a few type mistakes on list (de)serialization, which caused everything to go to the
+  default serializer rather than a proper serializer, if such is registered.
 - The default serializer now recognizes `@Key` and `@Ignore` annotations whenever (de)serializing
-an object.
+  an object.
 
 ### `CustomOptions` and `LoadSettings` replaced
+
 These two were confusing, so now they have been replaced with a unified `Settings` object which
 works together with the `Setting` interface. They can be used just as the objects they replaced, but
 with much better design.
 
 #### Going smarter
+
 ##### Arrays
-The default serializer now properly (de)serializes array types. 
+
+The default serializer now properly (de)serializes array types.
 Examples:
+
 ```java
 class MyConfig {
-  
-  private MyObj[] myObjArr = new MyObj[] { new MyObj("foo"), new MyObj("bar") };
-  
+
+  private MyObj[] myObjArr = new MyObj[]{new MyObj("foo"), new MyObj("bar")};
+
   static class MyObj {
-    
+
     String foo;
-    
+
     MyObj(String foo) {
       this.foo = foo;
     }
-    
+
     // serializer is not necessary
     static class Serializer implements FieldTypeSerializer<MyObj> {
-      
+
       @Override
-      public MyObj deserialize(DataObject data, SerializationContext<MyObj> context, AnnotationAccessor annotations) {
+      public MyObj deserialize(DataObject data, SerializationContext<MyObj> context,
+          AnnotationAccessor annotations) {
         return new MyObj(data.getAsString());
       }
-      
+
       @Override
-      public DataObject serialize(MyObj value, SerializationContext<MyObj> context, AnnotationAccessor annotations) {
+      public DataObject serialize(MyObj value, SerializationContext<MyObj> context,
+          AnnotationAccessor annotations) {
         return new DataObject(value.foo);
       }
-      
+
     }
-    
+
   }
-  
+
 }
 
 class Main {
-  
+
   public static void main(String[] args) {
     MyConfig myConfig = new MyConfig();
     SerializerRegistry serializers = SerializerRegistry.INSTANCE;
     serializers.registerSerializer(MyConfig.MyObj.class, new MyConfig.MyObj.Serializer());
     YamlConfig.getConfigResolver().dump(myConfig, new File("config.yml"));
   }
-  
+
 }
 ```
+
 The code above will output the following:
+
 ```yaml
-myObjArr: ["foo", "bar"]
+myObjArr: [ "foo", "bar" ]
 ```
 
 ##### Single field class logic
+
 The default serializer now (de)serializes classes with only 1 field better. An example of usage for
 such class is a list where you may want some more redundancy.<br>
 Examples (YAML):
+
 ```yaml
 # Version 2.1.x:
 foo:
@@ -136,32 +201,35 @@ foo:
   - "zzz"
 ```
 
-
-
 ### Misc changes
+
 - Removed deprecated methods
-- Removed `SerializerRegistry#registerSerializer(Class, BiFunction, BiFunction)`. Replaced by 
-`SerializerRegistry#registerSimpleSerializer(Class, Function, Function)`
+- Removed `SerializerRegistry#registerSerializer(Class, BiFunction, BiFunction)`. Replaced by
+  `SerializerRegistry#registerSimpleSerializer(Class, Function, Function)`
 - Quality-of-life code changes
 - Added a class called ReflectionUtils
 - Optimisations to MapUtils
 - Better preserve dump order
-- Added `SerializerRegistry#registerSimpleValueSerializer(Class, Function)` and `SerializerRegistry#registerSimpleValueDeserializer(Class, Function)`
+- Added `SerializerRegistry#registerSimpleValueSerializer(Class, Function)` and
+  `SerializerRegistry#registerSimpleValueDeserializer(Class, Function)`
 - Deprecation of DateSerializer in toml module.
-- Since not everything can be listed in the changelog, there have been many miscellaneous changes improving
+- Since not everything can be listed in the changelog, there have been many miscellaneous changes
+  improving
   performance and API design. The full changes can be seen in the release commit(s).
 
 ## Version 2.1.0
 
 ### Comments inside sections
+
 Now you are able to do comments inside sections. This required breaking the ValueWriter, but
-it's for good. 
+it's for good.
 
 ## Version 2.0.1
 
 ### Key resolver
+
 You are able to resolve keys. There's a default resolver and implementation for dotted keys which
-you can use. 
+you can use.
 
 ### Misc changes
 
@@ -181,7 +249,9 @@ used for validation of a given annotated field's deserialized value.
 
 ```java
 // an annotation you have
-public @interface MyAnnotation {}
+public @interface MyAnnotation {
+
+}
 
 // a class which implements AnnotationValidator
 public class MyAnnotationValidator implements AnnotationValidator<MyAnnotation> {
@@ -195,7 +265,9 @@ public class MyAnnotationValidator implements AnnotationValidator<MyAnnotation> 
 }
 
 // then register the validator in the registry
-CustomAnnotationRegistry.INSTANCE.register(MyAnnotation.class, new MyAnnotationValidator());
+CustomAnnotationRegistry.INSTANCE.
+
+register(MyAnnotation .class, new MyAnnotationValidator());
 ```
 
 ### Change FieldTypeResolver and `@TypeResolver` logic
@@ -233,11 +305,11 @@ public class Location {
   // getters
 }
 
-  // this is in your base config
-  // of course the annotations aren't mandatory
-  @Comment("Location of player")
-  @Key("player-location")
-  private Location location = new Location("world", 20, 2, 1);
+// this is in your base config
+// of course the annotations aren't mandatory
+@Comment("Location of player")
+@Key("player-location")
+private Location location = new Location("world", 20, 2, 1);
 
 // the serializer
 public class LocationSerializer implements FieldTypeSerializer<Location> {
@@ -265,7 +337,9 @@ public class LocationSerializer implements FieldTypeSerializer<Location> {
 }
 
 // this should be run before you load the config
-SerializerRegistry.INSTANCE.registerSerializer(Location.class,new LocationSerializer());
+SerializerRegistry.INSTANCE.
+
+registerSerializer(Location .class,new LocationSerializer());
 ```
 
 Or, you can let the default config serializer handle serialization and deserialization. The default

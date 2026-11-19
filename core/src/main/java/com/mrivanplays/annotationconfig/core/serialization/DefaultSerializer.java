@@ -1,8 +1,31 @@
+/*
+ * Copyright (c) Ivan Pekov 2026
+ * Copyright (c) Contributors 2026
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in all
+ * copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ */
+
 package com.mrivanplays.annotationconfig.core.serialization;
 
 import com.mrivanplays.annotationconfig.core.utils.AnnotationUtils;
 import com.mrivanplays.annotationconfig.core.utils.ReflectionUtils;
 import java.lang.reflect.Array;
+import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
@@ -10,15 +33,18 @@ import java.lang.reflect.ParameterizedType;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Function;
 
-@SuppressWarnings({"unchecked", "rawtypes", "FieldMayBeFinal"})
-class DefaultSerializer implements FieldTypeSerializer<Object> {
+/**
+ * @hidden
+ */
+@SuppressWarnings({"unchecked", "rawtypes"})
+final class DefaultSerializer implements FieldTypeSerializer<Object> {
 
   static final DefaultSerializer INSTANCE = new DefaultSerializer();
 
@@ -155,12 +181,7 @@ class DefaultSerializer implements FieldTypeSerializer<Object> {
           // ignored
         }
       }
-      Object fieldTypeInstance;
-      try {
-        fieldTypeInstance = getUnsafeInstance().allocateInstance(fieldType);
-      } catch (InstantiationException e) {
-        throw new RuntimeException("Cannot instantiate " + fieldType.getName() + " ; ", e);
-      }
+      Object fieldTypeInstance = getFieldTypeInstance(fieldType);
       Field[] fields = fieldTypeInstance.getClass().getDeclaredFields();
       if (fields.length != 1) {
         throw new IllegalArgumentException(
@@ -199,12 +220,7 @@ class DefaultSerializer implements FieldTypeSerializer<Object> {
         neededInstanceAllocation =
             (Class<?>) ((ParameterizedType) context.getGenericType()).getActualTypeArguments()[0];
       }
-      Object fieldTypeInstance;
-      try {
-        fieldTypeInstance = getUnsafeInstance().allocateInstance(neededInstanceAllocation);
-      } catch (InstantiationException e) {
-        throw new RuntimeException("Cannot instantiate " + fieldType.getName() + " ; ", e);
-      }
+      Object fieldTypeInstance = getFieldTypeInstance(neededInstanceAllocation);
       for (Field desField : fieldTypeInstance.getClass().getDeclaredFields()) {
         desField.setAccessible(true);
         if (AnnotationUtils.isIgnored(desField)) {
@@ -230,6 +246,28 @@ class DefaultSerializer implements FieldTypeSerializer<Object> {
 
       return fieldTypeInstance;
     }
+  }
+
+  private Object getFieldTypeInstance(Class<?> fieldType) {
+    Object fieldTypeInstance;
+    try {
+      Constructor<?> constructor = fieldType.getConstructor();
+      if (!constructor.trySetAccessible()) {
+        throw new RuntimeException("Could not set constructor accessible; " + fieldType.getName());
+      }
+      fieldTypeInstance = constructor.newInstance();
+    } catch (InstantiationException e) {
+      throw new RuntimeException("Cannot instantiate " + fieldType.getName() + " ; ", e);
+    } catch (InvocationTargetException e) {
+      throw new RuntimeException("Cannot invoke constructor of " + fieldType.getName() + " ; ", e);
+    } catch (IllegalAccessException e) {
+      throw new RuntimeException(
+          "Constructor of " + fieldType.getName() + " became inaccessible ; ", e);
+    } catch (NoSuchMethodException e) {
+      throw new RuntimeException(
+          "Type " + fieldType.getName() + " does not have an empty constructor ; ", e);
+    }
+    return fieldTypeInstance;
   }
 
   @Override
@@ -397,17 +435,6 @@ class DefaultSerializer implements FieldTypeSerializer<Object> {
     }
   }
 
-  private sun.misc.Unsafe getUnsafeInstance() {
-    try {
-      Field field = sun.misc.Unsafe.class.getDeclaredField("theUnsafe");
-      field.setAccessible(true);
-      return (sun.misc.Unsafe) field.get(null);
-    } catch (NoSuchFieldException | IllegalAccessException e) {
-      // ignored
-      return null;
-    }
-  }
-
   private Object forcePrimitive(Object val, Class<?> fieldType) {
     Function<Object, ?> mapper = PrimitiveSerializers.getMapper(fieldType);
     if (mapper != null) {
@@ -442,7 +469,7 @@ class DefaultSerializer implements FieldTypeSerializer<Object> {
 
   private static final class PrimitiveSerializers {
 
-    private static Map<Class<?>, Function<Object, ?>> serializers = new HashMap<>();
+    private static final Map<Class<?>, Function<Object, ?>> serializers = new ConcurrentHashMap<>();
     private static boolean registered = false;
 
     public static void registerSerializers() {
@@ -452,7 +479,7 @@ class DefaultSerializer implements FieldTypeSerializer<Object> {
 
       registerSerializer(String.class, validateO(Function.identity()));
 
-      Function<Object, Byte> byteSerializer = validateO(Byte::parseByte);
+      Function<Object, Byte> byteSerializer = stripDot(Byte::parseByte);
       registerSerializer(byte.class, byteSerializer);
       registerSerializer(Byte.class, byteSerializer);
 
@@ -464,20 +491,20 @@ class DefaultSerializer implements FieldTypeSerializer<Object> {
       registerSerializer(float.class, floatSerializer);
       registerSerializer(Float.class, floatSerializer);
 
-      Function<Object, Integer> intSerializer = validateO(Integer::parseInt);
+      Function<Object, Integer> intSerializer = stripDot(Integer::parseInt);
       registerSerializer(Integer.class, intSerializer);
       registerSerializer(int.class, intSerializer);
 
-      Function<Object, Short> shortSerializer = validateO(Short::parseShort);
+      Function<Object, Short> shortSerializer = stripDot(Short::parseShort);
       registerSerializer(Short.class, shortSerializer);
       registerSerializer(short.class, shortSerializer);
 
-      Function<Object, Long> longSerializer = validateO(Long::parseLong);
+      Function<Object, Long> longSerializer = stripDot(Long::parseLong);
       registerSerializer(Long.class, longSerializer);
       registerSerializer(long.class, longSerializer);
 
       Function<Object, Character> charSerializer =
-          (o) -> {
+          o -> {
             if (o == null) {
               return null;
             }
@@ -491,24 +518,39 @@ class DefaultSerializer implements FieldTypeSerializer<Object> {
       registerSerializer(Boolean.class, boolSerializer);
 
       Function<Object, BigDecimal> bigDecimalSerializer =
-          validateO((o) -> BigDecimal.valueOf(Double.parseDouble(o)));
+          validateO(o -> BigDecimal.valueOf(Double.parseDouble(o)));
       registerSerializer(BigDecimal.class, bigDecimalSerializer);
 
       Function<Object, BigInteger> bigIntegerSerializer =
-          validateO((o) -> BigInteger.valueOf(Long.parseLong(o)));
+          validateO(o -> BigInteger.valueOf(Long.parseLong(o)));
       registerSerializer(BigInteger.class, bigIntegerSerializer);
 
       registered = true;
     }
 
     private static <T> Function<Object, T> validateO(Function<String, T> cont) {
-      return (o) -> {
+      return o -> {
         String strVal = String.valueOf(o);
         if (strVal == null || strVal.isEmpty()) {
           return null;
         }
         return cont.apply(strVal);
       };
+    }
+
+    private static <T> Function<Object, T> stripDot(Function<String, T> finish) {
+      return validateO(s -> {
+        if (s == null) {
+          return null;
+        }
+        // GSON passes every non-decimal number as <num>.0
+        // this makes sure that the correct values are passed to the finishing methods.
+        if (s.indexOf('.') == -1) {
+          return finish.apply(s);
+        }
+        String[] split = s.split("\\.");
+        return finish.apply(split[0]);
+      });
     }
 
     public static Function<Object, ?> getMapper(Class<?> aClass) {

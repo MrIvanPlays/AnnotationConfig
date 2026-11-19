@@ -1,3 +1,25 @@
+/*
+ * Copyright (c) Ivan Pekov 2026
+ * Copyright (c) Contributors 2026
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in all
+ * copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ */
+
 package com.mrivanplays.annotationconfig.yaml;
 
 import com.mrivanplays.annotationconfig.core.resolver.MultilineString;
@@ -40,11 +62,7 @@ public final class YamlValueWriter implements ValueWriter {
       int childIndents,
       boolean child,
       boolean additional2Spaces) {
-    StringBuilder intentPrefixBuilder = new StringBuilder();
-    for (int i = 0; i < childIndents; i++) {
-      intentPrefixBuilder.append(" ");
-    }
-    String intentPrefix = intentPrefixBuilder.toString();
+    String intentPrefix = " ".repeat(Math.max(0, childIndents));
     String parentSpec = parentKey != null ? parentKey.concat("." + key) : key;
     if (value instanceof Map<?, ?>) {
       String firstCheck = parentKey != null ? parentKey + "." + key : key;
@@ -62,9 +80,8 @@ public final class YamlValueWriter implements ValueWriter {
       for (Map.Entry<String, Object> entry : ((Map<String, Object>) value).entrySet()) {
         String mapKey = entry.getKey();
         Object v = entry.getValue();
-        if (v instanceof List<?>) {
+        if (v instanceof List<?> vList) {
           writeCommentsInsideMap(parentKey, key, writer, commentsMap, intentPrefix, mapKey);
-          List<?> vList = (List<?>) v;
           if (vList.isEmpty()) {
             writer.println(intentPrefix + mapKey + ": []");
           } else {
@@ -140,8 +157,7 @@ public final class YamlValueWriter implements ValueWriter {
         } else {
           writeCommentsInsideMap(parentKey, key, writer, commentsMap, intentPrefix, mapKey);
           if (!(v instanceof String)) {
-            if (v instanceof MultilineString) {
-              MultilineString multiline = (MultilineString) v;
+            if (v instanceof MultilineString multiline) {
               String toWrite = multiline.getString();
               char c = multiline.getMarkerChar();
               if (toWrite.indexOf('\n') != -1) {
@@ -189,9 +205,8 @@ public final class YamlValueWriter implements ValueWriter {
           }
         }
       }
-    } else if (value instanceof List<?>) {
+    } else if (value instanceof List<?> valueList) {
       writeComments(key, writer, commentsMap);
-      List<?> valueList = (List<?>) value;
       if (valueList.isEmpty()) {
         writer.println((child ? intentPrefix : "") + key + ": []");
       } else {
@@ -257,8 +272,7 @@ public final class YamlValueWriter implements ValueWriter {
     } else {
       writeComments(key, writer, commentsMap);
       if (!(value instanceof String)) {
-        if (value instanceof MultilineString) {
-          MultilineString multiline = (MultilineString) value;
+        if (value instanceof MultilineString multiline) {
           String toWrite = multiline.getString();
           char c = multiline.getMarkerChar();
           if (toWrite.indexOf('\n') != -1) {

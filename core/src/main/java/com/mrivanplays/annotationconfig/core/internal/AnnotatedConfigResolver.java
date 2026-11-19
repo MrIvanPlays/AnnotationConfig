@@ -1,18 +1,37 @@
+/*
+ * Copyright (c) Ivan Pekov 2026
+ * Copyright (c) Contributors 2026
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in all
+ * copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ */
+
 package com.mrivanplays.annotationconfig.core.internal;
 
 import com.mrivanplays.annotationconfig.core.annotations.Key;
 import com.mrivanplays.annotationconfig.core.annotations.Max;
 import com.mrivanplays.annotationconfig.core.annotations.Min;
 import com.mrivanplays.annotationconfig.core.annotations.Multiline;
-import com.mrivanplays.annotationconfig.core.annotations.comment.Comment;
-import com.mrivanplays.annotationconfig.core.annotations.comment.Comments;
 import com.mrivanplays.annotationconfig.core.annotations.custom.AnnotationValidator;
 import com.mrivanplays.annotationconfig.core.annotations.custom.CustomAnnotationRegistry;
 import com.mrivanplays.annotationconfig.core.annotations.custom.ValidationResponse;
 import com.mrivanplays.annotationconfig.core.annotations.type.AnnotationType;
 import com.mrivanplays.annotationconfig.core.internal.MinMaxHandler.NumberResult;
 import com.mrivanplays.annotationconfig.core.internal.MinMaxHandler.State;
-import com.mrivanplays.annotationconfig.core.resolver.CommentPlaceholderRegistry;
 import com.mrivanplays.annotationconfig.core.resolver.MultilineString;
 import com.mrivanplays.annotationconfig.core.resolver.ValueWriter;
 import com.mrivanplays.annotationconfig.core.resolver.key.KeyResolver;
@@ -23,6 +42,7 @@ import com.mrivanplays.annotationconfig.core.serialization.DataObject;
 import com.mrivanplays.annotationconfig.core.serialization.FieldTypeSerializer;
 import com.mrivanplays.annotationconfig.core.serialization.SerializationContext;
 import com.mrivanplays.annotationconfig.core.serialization.SerializerRegistry;
+import com.mrivanplays.annotationconfig.core.utils.AnnotationUtils;
 import com.mrivanplays.annotationconfig.core.utils.MapUtils;
 import java.io.File;
 import java.io.FileWriter;
@@ -47,6 +67,9 @@ import java.util.Set;
 import java.util.TreeMap;
 import java.util.TreeSet;
 
+/**
+ * @hidden
+ */
 @SuppressWarnings({"unchecked", "rawtypes", "FieldMayBeFinal"})
 public final class AnnotatedConfigResolver {
 
@@ -61,7 +84,7 @@ public final class AnnotatedConfigResolver {
     }
     for (Annotation annotation : theClass.getAnnotations()) {
       Optional<AnnotationType> typeOpt = AnnotationType.match(annotation.annotationType());
-      if (!typeOpt.isPresent()) {
+      if (typeOpt.isEmpty()) {
         continue;
       }
       populate(CLASS_ANNOTATION_HOLDER, typeOpt.get(), annotationData);
@@ -73,7 +96,7 @@ public final class AnnotatedConfigResolver {
           AnnotationHolder classAnnotationHolder = new AnnotationHolder(data.parent);
           for (Annotation annotation : data.annotations) {
             Optional<AnnotationType> typeOpt = AnnotationType.match(annotation.annotationType());
-            if (!typeOpt.isPresent()) {
+            if (typeOpt.isEmpty()) {
               continue;
             }
             populate(classAnnotationHolder, typeOpt.get(), annotationData);
@@ -103,7 +126,7 @@ public final class AnnotatedConfigResolver {
       } else {
         for (Annotation annotation : field.getDeclaredAnnotations()) {
           Optional<AnnotationType> typeOpt = AnnotationType.match(annotation.annotationType());
-          if (!typeOpt.isPresent()) {
+          if (typeOpt.isEmpty()) {
             continue;
           }
           populate(holder, typeOpt.get(), annotationData);
@@ -126,7 +149,8 @@ public final class AnnotatedConfigResolver {
       } else {
         superClass = superClass.getSuperclass();
       }
-      if (superClass == null || superClass.getCanonicalName().equalsIgnoreCase("java.lang.Object")) {
+      if (superClass == null
+          || superClass.getCanonicalName().equalsIgnoreCase("java.lang.Object")) {
         break;
       }
       ParentData parentData = new ParentData();
@@ -249,12 +273,12 @@ public final class AnnotatedConfigResolver {
     for (Map.Entry<AnnotationHolder, Set<AnnotationType>> entry : map.entrySet()) {
       AnnotationHolder holder = entry.getKey();
       if (holder.isClass()) {
-        for (AnnotationType type : entry.getValue()) {
-          List<String> comments = getComments(type, null, holder.getClazz());
-          if (!comments.isEmpty()) {
-            for (String comment : comments) {
-              writer.println(commentChar + comment);
-            }
+        List<String> comments =
+            AnnotationUtils.getComments(
+                AnnotationAccessor.createFromClass(holder.getClazz()), true);
+        if (commentChar != null && !comments.isEmpty()) {
+          for (String comment : comments) {
+            writer.println(commentChar + comment);
           }
         }
         writer.append('\n');
@@ -271,7 +295,8 @@ public final class AnnotatedConfigResolver {
         continue;
       }
       try {
-        WriteData current = getWriteData(annotatedConfig, entry, keyResolver, reverseFields, findParentFields);
+        WriteData current =
+            getWriteData(annotatedConfig, entry, keyResolver, reverseFields, findParentFields);
         for (Map.Entry<String, Object> childDataWrite : current.getToWrite().entrySet()) {
           String childDataKey = childDataWrite.getKey();
           Object childDataValue = childDataWrite.getValue();
@@ -327,25 +352,20 @@ public final class AnnotatedConfigResolver {
     AnnotationHolder holder = entry.getKey();
     WriteData ret = new WriteData();
     if (holder.isClass()) {
-      List<String> comments = Collections.emptyList();
-      for (AnnotationType type : entry.getValue()) {
-        if (comments.isEmpty()) {
-          comments = getComments(type, null, annotatedConfig.getClass());
-        }
-      }
-      ret.getClassComments().addAll(comments);
+      ret.getClassComments()
+          .addAll(
+              AnnotationUtils.getComments(
+                  AnnotationAccessor.createFromClass(annotatedConfig.getClass()), true));
       return ret;
     }
     Field field = entry.getKey().getField();
     field.setAccessible(true);
     String keyName = field.getName();
-    List<String> comments = Collections.emptyList();
+    List<String> comments =
+        AnnotationUtils.getComments(AnnotationAccessor.createFromField(field), true);
     boolean configObject = false;
     Character multilineCharacter = null;
     for (AnnotationType type : entry.getValue()) {
-      if (comments.isEmpty()) {
-        comments = getComments(type, field, null);
-      }
       if (type.is(AnnotationType.KEY)) {
         keyName = field.getDeclaredAnnotation(Key.class).value();
       }
@@ -363,7 +383,8 @@ public final class AnnotatedConfigResolver {
 
       WriteData combinedData = new WriteData();
       for (Map.Entry<AnnotationHolder, Set<AnnotationType>> e1 : annotations.entrySet()) {
-        WriteData childData = getWriteData(cfgObject, e1, keyResolver, reverseFields, findParentFields);
+        WriteData childData =
+            getWriteData(cfgObject, e1, keyResolver, reverseFields, findParentFields);
         combinedData.getClassComments().addAll(childData.getClassComments());
         for (Map.Entry<String, Object> childDataWrite : childData.getToWrite().entrySet()) {
           String childDataKey = childDataWrite.getKey();
@@ -646,12 +667,10 @@ public final class AnnotatedConfigResolver {
       } else if (deserialized == null) {
         continue;
       }
-      if (deserialized instanceof Number) {
-        Number comparable = (Number) deserialized;
+      if (deserialized instanceof Number comparable) {
         State comparison = MinMaxHandler.compare(min, max, comparable);
         handleComparison(comparison, keyName, comparable, fieldType, min, max, Number.class);
-      } else if (deserialized instanceof String) {
-        String comparable = (String) deserialized;
+      } else if (deserialized instanceof String comparable) {
         State comparison = MinMaxHandler.compare(min, max, comparable);
         handleComparison(
             comparison, keyName, comparable.length(), fieldType, min, max, String.class);
@@ -789,31 +808,6 @@ public final class AnnotatedConfigResolver {
         }
         throw new IllegalArgumentException(message);
       }
-    }
-  }
-
-  private static List<String> getComments(AnnotationType type, Field field, Class<?> aClass) {
-    if (!type.is(AnnotationType.COMMENT) && !type.is(AnnotationType.COMMENTS)) {
-      return Collections.emptyList();
-    }
-    List<String> ret = new LinkedList<>();
-    if (type.is(AnnotationType.COMMENT)) {
-      ret.add(getAnnotation(field, aClass, Comment.class).value());
-    }
-    if (type.is(AnnotationType.COMMENTS)) {
-      for (Comment comment : getAnnotation(field, aClass, Comments.class).value()) {
-        ret.add(comment.value());
-      }
-    }
-    return CommentPlaceholderRegistry.INSTANCE.applyPlaceholders(ret);
-  }
-
-  private static <T extends Annotation> T getAnnotation(
-      Field field, Class<?> theClass, Class<T> annotationType) {
-    if (field != null) {
-      return field.getDeclaredAnnotation(annotationType);
-    } else {
-      return theClass.getDeclaredAnnotation(annotationType);
     }
   }
 

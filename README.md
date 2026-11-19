@@ -1,13 +1,10 @@
-![license](https://img.shields.io/github/license/MrIvanPlays/AnnotationConfig.svg?style=for-the-badge)
-![issues](https://img.shields.io/github/issues/MrIvanPlays/AnnotationConfig.svg?style=for-the-badge)
-![api version](https://img.shields.io/maven-metadata/v?color=%20blue&label=latest%20version&metadataUrl=https%3A%2F%2Frepo.mrivanplays.com%2Frepository%2Fivan%2Fcom%2Fmrivanplays%2Fannotationconfig-core%2Fmaven-metadata.xml&style=for-the-badge)
-[![support](https://img.shields.io/discord/493674712334073878.svg?colorB=Blue&logo=discord&label=Support&style=for-the-badge)](https://mrivanplays.com/discord)
-
 # AnnotationConfig
+Make configurations with ease!
 
-Make configurations with ease
+Released under the MIT License. Since version 3.0.3 artifacts are deployed to the Maven Central repository.
 
-JavaDocs: https://jd.mrivanplays.com/annotationconfig/
+# Prerequisites
+Versions >=3.0.3 require use of Java 25
 
 # Examples
 
@@ -43,7 +40,8 @@ public class ExampleAnnotatedConfig {
   @Max(maxInt = 20)
   private String bar = "This is some string";
 
-  @ConfigObject private MessagesSection messages = new MessagesSection();
+  @ConfigObject
+  private MessagesSection messages = new MessagesSection();
 
   @Comment("All configurable messages")
   public static final class MessagesSection {
@@ -65,7 +63,8 @@ public class ExampleAnnotatedConfig {
     }
   }
 
-  @Ignore private String importantClass = "com.mrivanplays.something.Important"; // this is ignored
+  @Ignore
+  private String importantClass = "com.mrivanplays.something.Important"; // this is ignored
 
   @Comment("This is also going to be serialized as a config object,")
   @Comment("but it is much more controllable rather than @ConfigObject")
@@ -382,12 +381,20 @@ Base code for all examples:
 import com.mrivanplays.annotationconfig.utils.TypeToken;
 
 File file = // ...
-SerializerRegistry serializerRegistry = SerializerRegistry.INSTANCE;
-serializerRegistry.registerSerializer(
-    ExampleAnnotatedConfig.SomethingToSerialize.class,
+    SerializerRegistry
+serializerRegistry =SerializerRegistry.INSTANCE;
+serializerRegistry.
+
+registerSerializer(
+    ExampleAnnotatedConfig.SomethingToSerialize .class,
     new ExampleAnnotatedConfig.SomethingToSerializeSerializer());
-serializerRegistry.registerSerializer(
-    new TypeToken<SectionObjectList<SectionObject>>() {}.getType(),
+    serializerRegistry.
+
+registerSerializer(
+    new TypeToken<SectionObjectList<SectionObject>>() {
+}.
+
+getType(),
     new SectionObjectListSerializer<SectionObject>());
 ExampleAnnotatedConfig annotatedConfig = new ExampleAnnotatedConfig();
 ```
@@ -395,19 +402,25 @@ ExampleAnnotatedConfig annotatedConfig = new ExampleAnnotatedConfig();
 YAML example:
 
 ```java
-YamlConfig.getConfigResolver().loadOrDump(anotatedConfig, file, /* loader settings */);
+YamlConfig.getConfigResolver().
+
+loadOrDump(anotatedConfig, file, /* loader settings */);
 ```
 
 .conf/.properties example:
 
 ```java
-PropertyConfig.getConfigResolver().loadOrDump(annotatedConfig, file, /* loader settings */);
+PropertyConfig.getConfigResolver().
+
+loadOrDump(annotatedConfig, file, /* loader settings */);
 ```
 
 TOML example:
 
 ```java
-TomlConfig.getConfigResolver().loadOrDump(annotatedConfig, file, /* loader settings */);
+TomlConfig.getConfigResolver().
+
+loadOrDump(annotatedConfig, file, /* loader settings */);
 ```
 
 Custom config type example:
@@ -415,14 +428,16 @@ Custom config type example:
 ```java
 // all values specified in the builder should be for the specific config type
 ConfigResolver configResolver = ConfigResolver.newBuilder()
-    /* other options inside the builder */
-    .withCommentPrefix("# ") // comment prefix for the config type
-    .withValueWriter(() -> /* insert value writer here */)
-    .withValueReader(/* insert value reader here */)
-    .shouldReverseFields(true /* should we reverse fields */)
-    .build();
+        /* other options inside the builder */
+        .withCommentPrefix("# ") // comment prefix for the config type
+        .withValueWriter(() -> /* insert value writer here */)
+        .withValueReader(/* insert value reader here */)
+        .shouldReverseFields(true /* should we reverse fields */)
+        .build();
 
-configResolver.loadOrDump(annotatedConfig, file, /* loader settings */);
+configResolver.
+
+loadOrDump(annotatedConfig, file, /* loader settings */);
 ```
 
 </p>
@@ -433,62 +448,13 @@ configResolver.loadOrDump(annotatedConfig, file, /* loader settings */);
 Maven:
 
 ```xml
-
-<build>
-  <plugins>
-    <plugin>
-      <version>3.7.0</version>
-      <groupId>org.apache.maven.plugins</groupId>
-      <artifactId>maven-compiler-plugin</artifactId>
-      <configuration>
-        <source>1.8</source>
-        <target>1.8</target>
-        <compilerArgs>
-          <arg>-parameters</arg>
-        </compilerArgs>
-      </configuration>
-    </plugin>
-    <plugin>
-      <groupId>org.apache.maven.plugins</groupId>
-      <artifactId>maven-shade-plugin</artifactId>
-      <version>3.1.1</version>
-      <configuration>
-        <relocations>
-          <!-- Relocating is only necessary if you're shading for other library addition -->
-          <relocation>
-            <pattern>com.mrivanplays.annotationconfig</pattern>
-            <shadedPattern>[YOUR PLUGIN PACKAGE].annotationconfig
-            </shadedPattern> <!-- Replace this -->
-          </relocation>
-        </relocations>
-      </configuration>
-      <executions>
-        <execution>
-          <phase>package</phase>
-          <goals>
-            <goal>shade</goal>
-          </goals>
-        </execution>
-      </executions>
-    </plugin>
-  </plugins>
-</build>
-
-<repositories>
-  <repository>
-    <id>ivan</id>
-    <url>https://repo.mrivanplays.com/repository/ivan/</url>
-  </repository>
-</repositories>
-
-<dependencies>
-  <dependency>
-    <groupId>com.mrivanplays</groupId>
-    <!-- Types: toml, yaml -->
-    <!-- If you want .conf/.properties, or custom implementation configuration, you can set the type to core -->
-    <artifactId>annotationconfig-(type)</artifactId> <!-- Replace type -->
-    <version>VERSION</version> <!-- Replace with latest version -->
-    <scope>compile</scope>
-  </dependency>
-</dependencies>
+<!-- Don't forget to relocate if shading in a Paper/Velocity plugin (for example) -->
+<dependency>
+  <groupId>com.mrivanplays</groupId>
+  <!-- Types: toml, yaml -->
+  <!-- If you want .conf/.properties, or custom implementation configuration, you can set the type to core -->
+  <artifactId>annotationconfig-(type)</artifactId> <!-- Replace type -->
+  <version>VERSION</version> <!-- Replace with latest version -->
+  <scope>compile</scope>
+</dependency>
 ```
