@@ -33,9 +33,6 @@ public class ComplexTestComments {
   @Comment("Class comment")
   static class Subject {
 
-    @Comment("foo outside config object")
-    public String foo = "aa";
-
     @Comment("sectionOne comment")
     @ConfigObject
     public Section1 sectionOne = new Section1();
@@ -55,6 +52,9 @@ public class ComplexTestComments {
       @Comment("foo inside sectionTwo")
       public String foo = "cc";
     }
+
+    @Comment("foo outside config object")
+    public String foo = "aa";
   }
 
   @Test
