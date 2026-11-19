@@ -35,7 +35,7 @@ import java.util.Objects;
  * A class, which stores read from config values or serialized values in a developer friendly way.
  *
  * @since 2.0.0
- * @author MrIvanPlays
+ * @author Ivan Pekov
  */
 @SuppressWarnings("unchecked")
 public final class DataObject {

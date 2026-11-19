@@ -30,7 +30,7 @@ package com.mrivanplays.annotationconfig.core.utils;
  * @param <C> input c
  * @param <R> return value
  * @since 3.0.0
- * @author MrIvanPlays
+ * @author Ivan Pekov
  */
 @FunctionalInterface
 public interface TriFunction<A, B, C, R> {

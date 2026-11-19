@@ -26,7 +26,7 @@ package com.mrivanplays.annotationconfig.core.resolver.settings;
  * Represents a holder of the default {@link Settings} for AnnotationConfig.
  *
  * @since 3.0.0
- * @author MrIvanPlays
+ * @author Ivan Pekov
  */
 public final class ACDefaultSettings {
 

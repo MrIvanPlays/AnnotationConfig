@@ -33,7 +33,7 @@ import java.lang.annotation.Target;
  * value.
  *
  * @since 2.0.0
- * @author MrIvanPlays
+ * @author Ivan Pekov
  */
 @Documented
 @Retention(RetentionPolicy.RUNTIME)

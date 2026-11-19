@@ -32,7 +32,7 @@ import java.util.function.Function;
  * Represents a registry of all the serializers.
  *
  * @since 2.0.0
- * @author MrIvanPlays
+ * @author Ivan Pekov
  */
 @SuppressWarnings("unchecked")
 public enum SerializerRegistry {

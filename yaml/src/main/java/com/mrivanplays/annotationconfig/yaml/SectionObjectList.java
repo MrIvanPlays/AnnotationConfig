@@ -50,7 +50,7 @@ import java.util.Objects;
  * {@link com.mrivanplays.annotationconfig.core.utils.TypeToken} in order for this list to properly
  * (de)serialize.
  *
- * @author MrIvanPlays
+ * @author Ivan Pekov
  * @since v2.1.1
  */
 public final class SectionObjectList<T> implements Iterable<Entry<String, T>> {
@@ -102,7 +102,7 @@ public final class SectionObjectList<T> implements Iterable<Entry<String, T>> {
    * Represents a builder of {@link SectionObjectList}
    *
    * @param <T> object type
-   * @author MrIvanPlays
+   * @author Ivan Pekov
    * @since v2.1.1
    */
   public static final class SectionObjectListBuilder<T> {

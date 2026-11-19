@@ -29,7 +29,7 @@ import java.math.BigInteger;
 /**
  * Utilities to help with reflection stuff
  *
- * @author MrIvanPlays
+ * @author Ivan Pekov
  * @since 3.0.0
  */
 public final class ReflectionUtils {

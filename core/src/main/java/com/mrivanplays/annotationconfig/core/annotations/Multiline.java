@@ -40,7 +40,7 @@ import java.lang.annotation.Target;
  * just as a regular {@code String}.
  *
  * @since 2.1.0
- * @author MrIvanPlays
+ * @author Ivan Pekov
  */
 @Documented
 @Retention(RetentionPolicy.RUNTIME)

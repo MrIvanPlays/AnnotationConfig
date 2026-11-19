@@ -32,7 +32,7 @@ import java.util.Optional;
  * context class will hold information.
  *
  * @param <T> generic type of information that's being (de)serialized
- * @author MrIvanPlays
+ * @author Ivan Pekov
  * @since 3.0.0
  */
 @SuppressWarnings("unchecked")

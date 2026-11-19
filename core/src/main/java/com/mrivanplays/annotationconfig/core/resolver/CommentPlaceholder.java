@@ -28,7 +28,7 @@ import java.util.function.Function;
 /**
  * Represents a placeholder for comments.
  *
- * @author MrIvanPlays
+ * @author Ivan Pekov
  * @since 3.0.4
  */
 public interface CommentPlaceholder extends Function<String, String> {

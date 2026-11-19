@@ -36,7 +36,7 @@ import java.util.Map;
 /**
  * Represents the default yaml value writer. It uses homebrew writing to support comments.
  *
- * @author MrIvanPlays
+ * @author Ivan Pekov
  * @since 2.1.0
  */
 @SuppressWarnings("unchecked")

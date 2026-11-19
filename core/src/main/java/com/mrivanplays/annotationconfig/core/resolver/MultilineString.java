@@ -47,7 +47,7 @@ import java.util.Objects;
  * }</pre>
  *
  * @since 2.1.0
- * @author MrIvanPlays
+ * @author Ivan Pekov
  * @see Multiline
  */
 public final class MultilineString {

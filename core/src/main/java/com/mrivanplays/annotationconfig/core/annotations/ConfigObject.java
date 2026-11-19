@@ -31,7 +31,10 @@ import java.lang.annotation.Target;
 /**
  * Annotation, representing that the annotated field should be treated as a config object/section.
  *
- * <p>The field annotated should initialize the holder object.
+ * <p>The field annotated should initialise the holder object.
+ *
+ * @author Ivan Pekov
+ * @since 1.0.0
  */
 @Documented
 @Retention(RetentionPolicy.RUNTIME)

@@ -815,15 +815,7 @@ public final class AnnotatedConfigResolver {
       AnnotationHolder holder,
       AnnotationType putData,
       Map<AnnotationHolder, Set<AnnotationType>> map) {
-    if (map.containsKey(holder)) {
-      Set<AnnotationType> data = map.get(holder);
-      data.add(putData);
-      map.replace(holder, data);
-    } else {
-      Set<AnnotationType> data = new TreeSet<>();
-      data.add(putData);
-      map.put(holder, data);
-    }
+    map.computeIfAbsent(holder, _ -> new TreeSet<>()).add(putData);
   }
 
   private AnnotatedConfigResolver() {

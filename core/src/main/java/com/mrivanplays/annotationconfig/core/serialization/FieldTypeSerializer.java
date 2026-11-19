@@ -32,7 +32,7 @@ import com.mrivanplays.annotationconfig.core.utils.TriFunction;
  *
  * @param <T> type for which this serializer is being registered.
  * @since 2.0.0
- * @author MrIvanPlays
+ * @author Ivan Pekov
  */
 public interface FieldTypeSerializer<T> {
 

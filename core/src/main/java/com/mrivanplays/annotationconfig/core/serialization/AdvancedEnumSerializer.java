@@ -66,7 +66,7 @@ import java.util.function.BiPredicate;
  * }</pre>
  *
  * @since 2.0.0
- * @author MrIvanPlays
+ * @author Ivan Pekov
  * @param <E> enum class
  */
 public final class AdvancedEnumSerializer<E extends Enum<E>> implements FieldTypeSerializer<E> {

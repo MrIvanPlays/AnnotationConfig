@@ -29,7 +29,7 @@ import java.util.Objects;
  * DataObject#isSingleValue()} returning {@code false}
  *
  * @since 2.1.0
- * @author MrIvanPlays
+ * @author Ivan Pekov
  */
 public final class DataObjectBuilder {
 

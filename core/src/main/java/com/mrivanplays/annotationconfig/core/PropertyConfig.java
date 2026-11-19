@@ -38,7 +38,7 @@ import java.util.Properties;
  * Represents configuration, utilising .conf/.properties configuration type.
  *
  * @since 1.0
- * @author MrIvanPlays
+ * @author Ivan Pekov
  */
 public final class PropertyConfig {
 

@@ -37,7 +37,7 @@ import java.lang.annotation.Target;
  * AnnotationConfig will throw an error.
  *
  * @since 2.1.0
- * @author MrIvanPlays
+ * @author Ivan Pekov
  */
 @Documented
 @Retention(RetentionPolicy.RUNTIME)

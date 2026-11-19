@@ -39,7 +39,7 @@ import java.util.List;
 /**
  * A utility class with utilities about AnnotationConfig's default annotations.
  *
- * @author MrIvanPlays
+ * @author Ivan Pekov
  * @since 2.1.0
  */
 public final class AnnotationUtils {
@@ -108,6 +108,7 @@ public final class AnnotationUtils {
    *
    * @param annotationAccessor the annotation accessor for which the comments to get
    * @return comments, either an empty list or list with comments
+   * @since 3.0.4
    */
   public static List<String> getComments(AnnotationAccessor annotationAccessor) {
     return getComments(annotationAccessor, false);
@@ -119,6 +120,7 @@ public final class AnnotationUtils {
    * @param annotationAccessor the annotation accessor for which the comments to get
    * @param applyPlaceholders whether to apply placeholders
    * @return comments, either an empty list or list with comments
+   * @since 3.0.4
    */
   public static List<String> getComments(
       AnnotationAccessor annotationAccessor, boolean applyPlaceholders) {

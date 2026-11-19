@@ -33,7 +33,7 @@ import java.lang.annotation.Target;
  * int/double/byte/float/short/long value.
  *
  * @since 2.0.0
- * @author MrIvanPlays
+ * @author Ivan Pekov
  */
 @Documented
 @Retention(RetentionPolicy.RUNTIME)

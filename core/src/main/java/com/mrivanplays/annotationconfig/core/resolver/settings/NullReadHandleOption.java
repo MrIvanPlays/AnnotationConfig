@@ -27,7 +27,7 @@ package com.mrivanplays.annotationconfig.core.resolver.settings;
  * have been deserialized, but the deserialized value returned null.
  *
  * @since 2.0.0
- * @author MrIvanPlays
+ * @author Ivan Pekov
  */
 public enum NullReadHandleOption {
   /**

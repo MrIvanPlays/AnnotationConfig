@@ -30,7 +30,7 @@ import java.lang.reflect.Type;
  * of registration in {@link com.mrivanplays.annotationconfig.core.serialization.SerializerRegistry}
  *
  * @param <T> type to capture
- * @author MrIvanPlays
+ * @author Ivan Pekov
  * @since v2.1.1
  */
 public abstract class TypeToken<T> {

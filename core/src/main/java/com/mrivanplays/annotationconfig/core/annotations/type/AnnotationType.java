@@ -39,7 +39,8 @@ import java.util.concurrent.ConcurrentHashMap;
 /**
  * Represents an annotation type, holding utility methods for the held raw annotation type.
  *
- * @author MrIvanPlays
+ * @author Ivan Pekov
+ * @since 2.0.0
  */
 public enum AnnotationType {
   COMMENT(Comment.class),

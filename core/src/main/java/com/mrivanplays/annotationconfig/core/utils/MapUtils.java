@@ -30,7 +30,7 @@ import java.util.Map;
  * right place. They're self-explanatory and they won't be documented. If you are going to use them,
  * do not expect support.
  *
- * @author MrIvanPlays
+ * @author Ivan Pekov
  * @since 2.1.0
  */
 @SuppressWarnings("unchecked")

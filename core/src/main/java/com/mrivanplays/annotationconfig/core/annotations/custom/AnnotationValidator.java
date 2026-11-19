@@ -30,7 +30,7 @@ import java.lang.reflect.Field;
  * Represents a validator of a custom annotation.
  *
  * @param <T> annotation type
- * @author MrIvanPlays
+ * @author Ivan Pekov
  * @since 2.0.0
  */
 public interface AnnotationValidator<T extends Annotation> {

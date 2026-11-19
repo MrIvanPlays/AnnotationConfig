@@ -30,7 +30,7 @@ import java.util.Optional;
 /**
  * Represents a registry for custom annotations.
  *
- * @author MrIvanPlays
+ * @author Ivan Pekov
  * @since 2.0.0
  */
 public enum CustomAnnotationRegistry {

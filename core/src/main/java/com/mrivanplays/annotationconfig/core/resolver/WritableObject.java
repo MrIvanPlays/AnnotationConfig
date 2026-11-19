@@ -37,7 +37,7 @@ import java.nio.file.Path;
  * Represents a writable holder. <br>
  * A writable subject can be a {@link File}, {@link Path}, {@link Writer} and {@link OutputStream}
  *
- * @author MrIvanPlays
+ * @author Ivan Pekov
  * @since 3.0.0
  */
 public interface WritableObject {

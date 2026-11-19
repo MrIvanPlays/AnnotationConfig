@@ -37,7 +37,7 @@ import org.yaml.snakeyaml.Yaml;
  * Represents configuration, utilising YAML
  *
  * @since 1.0
- * @author MrIvanPlays
+ * @author Ivan Pekov
  */
 @SuppressWarnings("unchecked")
 public final class YamlConfig {

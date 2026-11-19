@@ -37,7 +37,7 @@ import java.util.Map;
  * Represents the default toml value writer. Has a lot of stuff homebrew but the main dumping is
  * done via jackson's {@link TomlMapper}.
  *
- * @author MrIvanPlays
+ * @author Ivan Pekov
  * @since 2.1.0
  */
 public final class TomlValueWriter implements ValueWriter {

@@ -29,7 +29,12 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
-/** Annotation, telling the config writer to write a comment with the specified value. */
+/**
+ * Annotation, telling the config writer to write a comment with the specified value.
+ *
+ * @author Ivan Pekov
+ * @since 1.0.0
+ */
 @Documented
 @Repeatable(Comments.class)
 @Retention(RetentionPolicy.RUNTIME)

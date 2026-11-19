@@ -31,6 +31,9 @@ import java.lang.annotation.Target;
 /**
  * Annotation, representing the config key for the field the annotation is called on. If the
  * annotation is not present, the field name is used as a key.
+ *
+ * @author Ivan Pekov
+ * @since 1.0.0
  */
 @Documented
 @Retention(RetentionPolicy.RUNTIME)

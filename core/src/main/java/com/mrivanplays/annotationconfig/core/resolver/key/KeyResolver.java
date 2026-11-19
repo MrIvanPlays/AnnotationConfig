@@ -27,7 +27,7 @@ import java.util.Map;
 /**
  * Represents a resolver of config keys, which boxes and unboxes them.
  *
- * @author MrIvanPlays
+ * @author Ivan Pekov
  * @since 2.0.1
  */
 public interface KeyResolver {

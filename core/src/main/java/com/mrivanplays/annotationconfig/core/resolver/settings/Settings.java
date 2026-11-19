@@ -30,7 +30,7 @@ import java.util.Optional;
  * Represents a {@link Setting} holder.
  *
  * @since 3.0.0
- * @author MrIvanPlays
+ * @author Ivan Pekov
  */
 public final class Settings {
 

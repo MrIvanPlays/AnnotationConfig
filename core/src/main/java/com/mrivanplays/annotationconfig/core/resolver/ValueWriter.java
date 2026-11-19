@@ -34,7 +34,7 @@ import java.util.Map;
  * <p>A value writer is a writer of values for a specified configuration type.
  *
  * @since 2.0.0 but heavily modified in 2.1.0
- * @author MrIvanPlays
+ * @author Ivan Pekov
  */
 @FunctionalInterface
 public interface ValueWriter {

@@ -34,7 +34,7 @@ import java.util.Map;
  * Represents a section object list serializer.
  *
  * @param <T> section object list object type
- * @author MrIvanPlays
+ * @author Ivan Pekov
  * @since v2.1.1
  * @see SectionObjectList
  */

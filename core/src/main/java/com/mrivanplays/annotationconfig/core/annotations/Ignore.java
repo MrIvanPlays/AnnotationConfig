@@ -31,6 +31,9 @@ import java.lang.annotation.Target;
 /**
  * Annotation, which is marking field(s) to be excluded from dumping in the config and modifying,
  * whenever they don't have any of the other annotations.
+ *
+ * @author Ivan Pekov
+ * @since 1.0.0
  */
 @Documented
 @Target(ElementType.FIELD)

@@ -28,7 +28,12 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
-/** Annotation, representing the outcome of a repeated {@link Comment} annotation. */
+/**
+ * Annotation, representing the outcome of a repeated {@link Comment} annotation.
+ *
+ * @author Ivan Pekov
+ * @since 1.0.0
+ */
 @Documented
 @Retention(RetentionPolicy.RUNTIME)
 @Target({ElementType.TYPE, ElementType.FIELD})

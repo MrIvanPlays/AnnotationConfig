@@ -25,7 +25,7 @@ package com.mrivanplays.annotationconfig.core.annotations.custom;
 /**
  * Represents a response of a custom annotation value validation.
  *
- * @author MrIvanPlays
+ * @author Ivan Pekov
  * @since 2.0.0
  */
 public interface ValidationResponse {

@@ -51,7 +51,7 @@ import java.util.Map;
  *
  * <p>This is a singleton class ; obtain instance using {@link #getInstance()}.
  *
- * @author MrIvanPlays
+ * @author Ivan Pekov
  * @since 2.0.1
  */
 @SuppressWarnings("unchecked")

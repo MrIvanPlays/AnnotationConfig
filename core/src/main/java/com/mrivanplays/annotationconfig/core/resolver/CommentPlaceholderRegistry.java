@@ -37,7 +37,7 @@ import java.util.concurrent.ConcurrentHashMap;
  * applied before the comments are pushed to the {@link ValueWriter}.
  *
  * @since 3.0.1
- * @author MrIvanPlays
+ * @author Ivan Pekov
  */
 public enum CommentPlaceholderRegistry {
   INSTANCE;
@@ -65,6 +65,7 @@ public enum CommentPlaceholderRegistry {
    * Register a new {@link CommentPlaceholder comment placeholder}.
    *
    * @param placeholder placeholder to register
+   * @since 3.0.4
    */
   public void registerPlaceholder(CommentPlaceholder placeholder) {
     this.placeholderMap.add(placeholder);

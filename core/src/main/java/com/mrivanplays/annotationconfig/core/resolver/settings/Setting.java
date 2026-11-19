@@ -29,7 +29,7 @@ import java.util.Objects;
  *
  * @param <T> value type held
  * @since 3.0.0
- * @author MrIvanPlays
+ * @author Ivan Pekov
  */
 public interface Setting<T> {
 

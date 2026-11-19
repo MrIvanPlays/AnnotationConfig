@@ -30,7 +30,7 @@ import java.util.Optional;
 /**
  * Represents an annotation accessor, a controlled manner of accessing (field) annotations.
  *
- * @author MrIvanPlays
+ * @author Ivan Pekov
  * @since 3.0.0
  */
 public sealed interface AnnotationAccessor permits AnnotationAccessorImpl {

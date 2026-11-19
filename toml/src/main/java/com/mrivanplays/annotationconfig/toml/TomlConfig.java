@@ -41,7 +41,7 @@ import java.util.Map;
  * Represents configuration, utilising TOML.
  *
  * @since 1.0
- * @author MrIvanPlays
+ * @author Ivan Pekov
  */
 @SuppressWarnings("unchecked")
 public final class TomlConfig {

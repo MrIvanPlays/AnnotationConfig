@@ -46,7 +46,7 @@ import java.util.function.Supplier;
  * <p>Should be used for implementing new configuration types
  *
  * @since 2.0.0
- * @author MrIvanPlays
+ * @author Ivan Pekov
  */
 public interface ConfigResolver {
 
@@ -373,7 +373,7 @@ public interface ConfigResolver {
    * Represents a builder of a {@link ConfigResolver}
    *
    * @since 2.0.0
-   * @author MrIvanPlays
+   * @author Ivan Pekov
    */
   class Builder {
 

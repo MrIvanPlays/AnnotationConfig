@@ -32,7 +32,7 @@ import java.util.Map;
  * {@link String} as a key). When it is implemented, it should implement 1 of the 2 methods,
  * otherwise a {@link IllegalArgumentException} is thrown if none of the methods is implemented.
  *
- * @author MrIvanPlays
+ * @author Ivan Pekov
  * @since 2.0.0
  */
 @FunctionalInterface

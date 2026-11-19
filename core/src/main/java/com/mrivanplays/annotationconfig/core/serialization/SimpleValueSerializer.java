@@ -28,7 +28,7 @@ import java.util.Objects;
  * Represents a utility class to help you call AnnotationConfig's default serializer for stuff which
  * do not need a custom serializer in a custom serializer of some kind.
  *
- * @author MrIvanPlays
+ * @author Ivan Pekov
  * @since 3.0.0
  */
 @SuppressWarnings("unchecked")
@@ -46,6 +46,8 @@ public final class SimpleValueSerializer {
   /**
    * See {@link FieldTypeSerializer#deserialize(DataObject, SerializationContext,
    * AnnotationAccessor)}
+   *
+   * @since 3.0.4
    */
   public static <T> T deserialize(
       DataObject value,
@@ -68,7 +70,11 @@ public final class SimpleValueSerializer {
     return serialize(value, valueType, annotatedConfig, AnnotationAccessor.EMPTY);
   }
 
-  /** See {@link FieldTypeSerializer#serialize(Object, SerializationContext, AnnotationAccessor)} */
+  /**
+   * See {@link FieldTypeSerializer#serialize(Object, SerializationContext, AnnotationAccessor)}
+   *
+   * @since 3.0.4
+   */
   public static <T> DataObject serialize(
       T value,
       Class<? extends T> valueType,
