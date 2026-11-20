@@ -26,6 +26,7 @@ import com.mrivanplays.annotationconfig.core.resolver.settings.Settings;
 import java.io.IOException;
 import java.io.Reader;
 import java.util.Map;
+import org.jspecify.annotations.NullMarked;
 
 /**
  * Represents a reader of values from a {@link Reader} to a {@link Map} of primitive options (using
@@ -36,6 +37,7 @@ import java.util.Map;
  * @since 2.0.0
  */
 @FunctionalInterface
+@NullMarked
 public interface ValueReader {
 
   /**

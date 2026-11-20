@@ -29,6 +29,7 @@ import com.mrivanplays.annotationconfig.core.serialization.SerializationContext;
 import com.mrivanplays.annotationconfig.core.serialization.SerializerRegistry;
 import java.util.LinkedHashMap;
 import java.util.Map;
+import org.jspecify.annotations.NullMarked;
 
 /**
  * Represents a section object list serializer.
@@ -39,6 +40,7 @@ import java.util.Map;
  * @see SectionObjectList
  */
 @SuppressWarnings({"unchecked", "rawtypes"})
+@NullMarked
 public final class SectionObjectListSerializer<T>
     implements FieldTypeSerializer<SectionObjectList<T>> {
 
@@ -68,13 +70,12 @@ public final class SectionObjectListSerializer<T>
       if (!(entry.getValue() instanceof Map)) {
         throw new IllegalArgumentException("Illegal SectionObjectList inputted: " + data);
       }
-      deserialized.put(
-          entry.getKey(),
-          (T)
-              serializer.deserialize(
-                  new DataObject(entry.getValue()),
-                  serializationContext,
-                  AnnotationAccessor.EMPTY));
+      Object obj =
+          serializer.deserialize(
+              new DataObject(entry.getValue()), serializationContext, AnnotationAccessor.EMPTY);
+      if (obj != null) {
+        deserialized.put(entry.getKey(), (T) obj);
+      }
     }
     return new SectionObjectList<>(def.getObjectsType(), deserialized);
   }

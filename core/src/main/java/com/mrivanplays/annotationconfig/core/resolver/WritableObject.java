@@ -32,6 +32,8 @@ import java.io.Writer;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Objects;
+import org.jspecify.annotations.NullMarked;
 
 /**
  * Represents a writable holder. <br>
@@ -40,6 +42,7 @@ import java.nio.file.Path;
  * @author Ivan Pekov
  * @since 3.0.0
  */
+@NullMarked
 public interface WritableObject {
 
   /**
@@ -49,6 +52,7 @@ public interface WritableObject {
    * @return new writable object
    */
   static WritableObject createFromFile(File file) {
+    Objects.requireNonNull(file, "file");
     return () -> {
       try {
         if (!file.exists()) {
@@ -69,6 +73,7 @@ public interface WritableObject {
    * @return new writable object
    */
   static WritableObject createFromPath(Path path) {
+    Objects.requireNonNull(path, "path");
     return () -> {
       try {
         if (Files.notExists(path)) {
@@ -88,6 +93,7 @@ public interface WritableObject {
    * @return new writable object
    */
   static WritableObject createFromWriter(Writer writer) {
+    Objects.requireNonNull(writer, "writer");
     return () -> writer instanceof PrintWriter ? (PrintWriter) writer : new PrintWriter(writer);
   }
 
@@ -98,6 +104,7 @@ public interface WritableObject {
    * @return new writable object
    */
   static WritableObject createFromOutputStream(OutputStream os) {
+    Objects.requireNonNull(os, "os");
     return () -> new PrintWriter(new OutputStreamWriter(os, StandardCharsets.UTF_8));
   }
 

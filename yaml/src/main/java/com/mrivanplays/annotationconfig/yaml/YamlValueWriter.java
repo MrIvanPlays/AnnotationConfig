@@ -32,6 +32,7 @@ import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import org.jspecify.annotations.NonNull;
 
 /**
  * Represents the default yaml value writer. It uses homebrew writing to support comments.
@@ -44,10 +45,10 @@ public final class YamlValueWriter implements ValueWriter {
 
   @Override
   public void write(
-      Map<String, Object> values,
-      Map<String, List<String>> fieldComments,
-      PrintWriter writer,
-      Settings settings) {
+      @NonNull Map<String, Object> values,
+      @NonNull Map<String, List<String>> fieldComments,
+      @NonNull PrintWriter writer,
+      @NonNull Settings settings) {
     for (Map.Entry<String, Object> entry : values.entrySet()) {
       write(null, entry.getKey(), entry.getValue(), writer, fieldComments, 2, false, false);
     }

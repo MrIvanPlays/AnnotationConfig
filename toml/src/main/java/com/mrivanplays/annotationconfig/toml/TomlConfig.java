@@ -36,6 +36,8 @@ import java.time.LocalTime;
 import java.time.OffsetDateTime;
 import java.util.LinkedHashMap;
 import java.util.Map;
+import org.jspecify.annotations.NullMarked;
+import org.jspecify.annotations.Nullable;
 
 /**
  * Represents configuration, utilising TOML.
@@ -44,6 +46,7 @@ import java.util.Map;
  * @author Ivan Pekov
  */
 @SuppressWarnings("unchecked")
+@NullMarked
 public final class TomlConfig {
 
   private static final TomlMapper DEFAULT_TOML_MAPPER =
@@ -52,7 +55,7 @@ public final class TomlConfig {
   /** Returns the {@link Setting} with which the mapper is referenced. */
   public static final Setting<TomlMapper> MAPPER_KEY = Setting.of("mapper", TomlMapper.class);
 
-  private static ConfigResolver configResolver;
+  @Nullable private static ConfigResolver configResolver;
 
   /**
    * Returns the {@link ConfigResolver} instance for toml config.

@@ -39,6 +39,7 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Function;
+import org.jspecify.annotations.NonNull;
 
 /**
  * @hidden
@@ -52,7 +53,9 @@ final class DefaultSerializer implements FieldTypeSerializer<Object> {
 
   @Override
   public Object deserialize(
-      DataObject data, SerializationContext<Object> context, AnnotationAccessor annotations) {
+      @NonNull DataObject data,
+      @NonNull SerializationContext<Object> context,
+      @NonNull AnnotationAccessor annotations) {
     PrimitiveSerializers.registerSerializers();
     Class<?> fieldType = context.getClassType();
     Object dataRaw = data.getAsObject();
@@ -268,8 +271,11 @@ final class DefaultSerializer implements FieldTypeSerializer<Object> {
   }
 
   @Override
+  @NonNull
   public DataObject serialize(
-      Object value, SerializationContext<Object> context, AnnotationAccessor annotations) {
+      @NonNull Object value,
+      @NonNull SerializationContext<Object> context,
+      @NonNull AnnotationAccessor annotations) {
     if (isPrimitive(value)) {
       return new DataObject(value);
     }

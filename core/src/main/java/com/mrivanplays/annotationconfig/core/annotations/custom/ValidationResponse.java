@@ -22,12 +22,16 @@
 
 package com.mrivanplays.annotationconfig.core.annotations.custom;
 
+import org.jspecify.annotations.NullMarked;
+import org.jspecify.annotations.Nullable;
+
 /**
  * Represents a response of a custom annotation value validation.
  *
  * @author Ivan Pekov
  * @since 2.0.0
  */
+@NullMarked
 public interface ValidationResponse {
 
   /**
@@ -134,6 +138,7 @@ public interface ValidationResponse {
    *
    * @return runnable to run
    */
+  @Nullable
   default Runnable onSuccess() {
     return null;
   }
@@ -153,6 +158,7 @@ public interface ValidationResponse {
    *
    * @return throwable to throw
    */
+  @Nullable
   default Throwable throwError() {
     return null;
   }

@@ -24,8 +24,10 @@ package com.mrivanplays.annotationconfig.core.annotations.custom;
 
 import java.lang.annotation.Annotation;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
+import org.jspecify.annotations.NullMarked;
 
 /**
  * Represents a registry for custom annotations.
@@ -33,6 +35,7 @@ import java.util.concurrent.ConcurrentHashMap;
  * @author Ivan Pekov
  * @since 2.0.0
  */
+@NullMarked
 public enum CustomAnnotationRegistry {
   INSTANCE;
 
@@ -50,6 +53,8 @@ public enum CustomAnnotationRegistry {
    */
   public <T extends Annotation> void register(
       Class<T> annotation, AnnotationValidator<T> validator) {
+    Objects.requireNonNull(annotation, "annotation");
+    Objects.requireNonNull(validator, "validator");
     if (registry.containsKey(annotation)) {
       throw new IllegalArgumentException(
           "Custom annotation " + annotation.getName() + " already registered.");
@@ -65,6 +70,7 @@ public enum CustomAnnotationRegistry {
    * @throws IllegalArgumentException if no validator was present for the specified annotation
    */
   public void unregister(Class<? extends Annotation> annotation) {
+    Objects.requireNonNull(annotation, "annotation");
     if (!registry.containsKey(annotation)) {
       throw new IllegalArgumentException(
           "Custom annotation " + annotation.getName() + " already not registered.");
@@ -79,6 +85,7 @@ public enum CustomAnnotationRegistry {
    * @return true if there is a validator, false otherwise
    */
   public boolean hasValidator(Class<? extends Annotation> annotation) {
+    Objects.requireNonNull(annotation, "annotation");
     return registry.containsKey(annotation);
   }
 
@@ -99,6 +106,7 @@ public enum CustomAnnotationRegistry {
    */
   public Optional<AnnotationValidator<? extends Annotation>> getValidator(
       Class<? extends Annotation> annotationClass) {
+    Objects.requireNonNull(annotationClass, "annotationClass");
     return Optional.ofNullable(registry.get(annotationClass));
   }
 }

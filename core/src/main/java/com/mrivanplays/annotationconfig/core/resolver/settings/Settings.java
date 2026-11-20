@@ -23,8 +23,11 @@
 package com.mrivanplays.annotationconfig.core.resolver.settings;
 
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
+import org.jspecify.annotations.NullMarked;
+import org.jspecify.annotations.Nullable;
 
 /**
  * Represents a {@link Setting} holder.
@@ -32,6 +35,7 @@ import java.util.concurrent.ConcurrentHashMap;
  * @since 3.0.0
  * @author Ivan Pekov
  */
+@NullMarked
 public final class Settings {
 
   private Map<String, Object> values = new ConcurrentHashMap<>();
@@ -72,6 +76,7 @@ public final class Settings {
    * @return whether it has value or not
    */
   public boolean has(Setting<?> setting) {
+    Objects.requireNonNull(setting, "setting");
     return this.values.containsKey(setting.key());
   }
 
@@ -98,6 +103,8 @@ public final class Settings {
     if (immutable) {
       throw new UnsupportedOperationException("This settings instance is immutable");
     }
+    Objects.requireNonNull(setting, "setting");
+    Objects.requireNonNull(value, "value");
     if (this.values.containsKey(setting.key())) {
       Object val = this.values.get(setting.key());
       if (!setting.type().isAssignableFrom(val.getClass())) {
@@ -129,6 +136,7 @@ public final class Settings {
     if (immutable) {
       throw new UnsupportedOperationException("This settings instance is immutable");
     }
+    Objects.requireNonNull(settings, "settings");
     if (!settings.values.isEmpty()) {
       for (Map.Entry<String, Object> entry : settings.values.entrySet()) {
         if (!this.values.containsKey(entry.getKey())) {
@@ -149,6 +157,7 @@ public final class Settings {
    * @param <T> value type
    */
   public <T> Optional<T> get(Setting<T> setting) {
+    Objects.requireNonNull(setting, "setting");
     if (!this.values.containsKey(setting.key())) {
       return Optional.empty();
     }
@@ -167,7 +176,7 @@ public final class Settings {
   }
 
   @Override
-  public boolean equals(Object o) {
+  public boolean equals(@Nullable Object o) {
     if (this == o) {
       return true;
     }

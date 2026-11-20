@@ -32,6 +32,7 @@ import java.io.StringReader;
 import java.io.StringWriter;
 import java.util.Arrays;
 import java.util.List;
+import org.jspecify.annotations.NullMarked;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
@@ -44,6 +45,7 @@ class TestListObjectOnlyObjectSerializer {
 
   static class TestObject {
 
+    @NullMarked
     static class Serializer implements FieldTypeSerializer<TestObject> {
 
       @Override

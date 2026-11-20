@@ -49,10 +49,13 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.function.Supplier;
 import java.util.stream.Stream;
+import org.jspecify.annotations.NullMarked;
+import org.jspecify.annotations.Nullable;
 
 /**
  * @hidden
  */
+@NullMarked
 public final class ConfigResolverImpl implements ConfigResolver {
 
   private final String commentPrefix;
@@ -66,8 +69,8 @@ public final class ConfigResolverImpl implements ConfigResolver {
       String commentPrefix,
       ValueWriter valueWriter,
       ValueReader valueReader,
-      Settings settings,
-      KeyResolver keyResolver,
+      @Nullable Settings settings,
+      @Nullable KeyResolver keyResolver,
       String[] fileExtensions) {
     this.commentPrefix = commentPrefix;
     this.valueWriter = Objects.requireNonNull(valueWriter, "valueWriter");
@@ -320,7 +323,7 @@ public final class ConfigResolverImpl implements ConfigResolver {
       return Collections.emptyMap();
     } else {
       File[] files =
-          dir.listFiles(($, name) -> {
+          dir.listFiles((_, name) -> {
             for (String extension : fileExtensions) {
               if (name.endsWith(extension)) {
                 return true;
@@ -517,7 +520,7 @@ public final class ConfigResolverImpl implements ConfigResolver {
     }
   }
 
-  private <T> T getSetting(Setting<T> setting, Settings fromMethod) {
+  private <T> T getSetting(Setting<T> setting, @Nullable Settings fromMethod) {
     if (fromMethod == null || this.settings.equals(fromMethod)) {
       return this.settings.get(setting).orElse(ACDefaultSettings.getDefault().get(setting).get());
     }

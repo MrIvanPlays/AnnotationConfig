@@ -33,6 +33,8 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
+import org.jspecify.annotations.NullMarked;
+import org.jspecify.annotations.Nullable;
 
 /**
  * Represents configuration, utilising .conf/.properties configuration type.
@@ -40,9 +42,10 @@ import java.util.Properties;
  * @since 1.0
  * @author Ivan Pekov
  */
+@NullMarked
 public final class PropertyConfig {
 
-  private static ConfigResolver configResolver;
+  @Nullable private static ConfigResolver configResolver;
 
   /**
    * Returns the {@link ConfigResolver} instance of PropertyConfig
@@ -88,6 +91,7 @@ public final class PropertyConfig {
             .build();
   }
 
+  @NullMarked
   private static final class PropertyValueWriter implements ValueWriter {
 
     @Override

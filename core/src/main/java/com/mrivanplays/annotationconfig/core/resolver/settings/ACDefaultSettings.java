@@ -22,12 +22,16 @@
 
 package com.mrivanplays.annotationconfig.core.resolver.settings;
 
+import org.jspecify.annotations.NullMarked;
+import org.jspecify.annotations.Nullable;
+
 /**
  * Represents a holder of the default {@link Settings} for AnnotationConfig.
  *
  * @since 3.0.0
  * @author Ivan Pekov
  */
+@NullMarked
 public final class ACDefaultSettings {
 
   public static final Setting<Boolean> SHOULD_REVERSE_FIELDS =
@@ -63,7 +67,7 @@ public final class ACDefaultSettings {
   public static final Setting<Boolean> FIND_PARENT_FIELDS =
       Setting.of("find_parent_fields", Boolean.class);
 
-  private static Settings defaults;
+  @Nullable private static Settings defaults;
 
   public static Settings getDefault() {
     if (defaults != null) {

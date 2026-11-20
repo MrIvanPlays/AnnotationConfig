@@ -33,8 +33,10 @@ import com.mrivanplays.annotationconfig.core.annotations.comment.Comment;
 import com.mrivanplays.annotationconfig.core.annotations.comment.Comments;
 import java.lang.annotation.Annotation;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
+import org.jspecify.annotations.NullMarked;
 
 /**
  * Represents an annotation type, holding utility methods for the held raw annotation type.
@@ -42,6 +44,7 @@ import java.util.concurrent.ConcurrentHashMap;
  * @author Ivan Pekov
  * @since 2.0.0
  */
+@NullMarked
 public enum AnnotationType {
   COMMENT(Comment.class),
   COMMENTS(Comments.class),
@@ -95,6 +98,7 @@ public enum AnnotationType {
    * @return boolean value, representing the outcome of this check
    */
   public boolean is(Class<? extends Annotation> anno) {
+    Objects.requireNonNull(anno, "anno");
     return anno.isAssignableFrom(annotationType);
   }
 
@@ -104,6 +108,7 @@ public enum AnnotationType {
    * @see #is(Class)
    */
   public boolean is(AnnotationType type) {
+    Objects.requireNonNull(type, "type");
     return is(type.getRawType());
   }
 

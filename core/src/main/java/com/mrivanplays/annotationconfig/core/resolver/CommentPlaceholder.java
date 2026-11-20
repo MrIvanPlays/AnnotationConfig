@@ -24,6 +24,7 @@ package com.mrivanplays.annotationconfig.core.resolver;
 
 import java.util.Objects;
 import java.util.function.Function;
+import org.jspecify.annotations.NullMarked;
 
 /**
  * Represents a placeholder for comments.
@@ -31,6 +32,7 @@ import java.util.function.Function;
  * @author Ivan Pekov
  * @since 3.0.4
  */
+@NullMarked
 public interface CommentPlaceholder extends Function<String, String> {
 
   /**

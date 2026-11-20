@@ -28,8 +28,10 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import org.jspecify.annotations.NullMarked;
 
 /**
  * Represents a registry for placeholders for {@link
@@ -39,6 +41,7 @@ import java.util.concurrent.ConcurrentHashMap;
  * @since 3.0.1
  * @author Ivan Pekov
  */
+@NullMarked
 public enum CommentPlaceholderRegistry {
   INSTANCE;
 
@@ -68,6 +71,7 @@ public enum CommentPlaceholderRegistry {
    * @since 3.0.4
    */
   public void registerPlaceholder(CommentPlaceholder placeholder) {
+    Objects.requireNonNull(placeholder, "placeholder");
     this.placeholderMap.add(placeholder);
   }
 
@@ -78,6 +82,7 @@ public enum CommentPlaceholderRegistry {
    * @since 3.0.4
    */
   public void unregisterPlaceholder(CommentPlaceholder placeholder) {
+    Objects.requireNonNull(placeholder, "placeholder");
     this.placeholderMap.removeIf(p -> p.matches(placeholder));
   }
 
@@ -89,6 +94,10 @@ public enum CommentPlaceholderRegistry {
    * @return comments with applied placeholders
    */
   public List<String> applyPlaceholders(List<String> comments) {
+    Objects.requireNonNull(comments, "comments");
+    if (comments.isEmpty()) {
+      return comments;
+    }
     if (this.placeholderMap.isEmpty()) {
       return comments;
     }
@@ -108,6 +117,7 @@ public enum CommentPlaceholderRegistry {
    * @since 3.0.4
    */
   public List<String> applyPlaceholders(Comments annotation) {
+    Objects.requireNonNull(annotation, "annotation");
     if (this.placeholderMap.isEmpty()) {
       return Arrays.stream(annotation.value()).map(Comment::value).toList();
     }
@@ -127,6 +137,7 @@ public enum CommentPlaceholderRegistry {
    * @since 3.0.4
    */
   public String applyPlaceholders(Comment annotation) {
+    Objects.requireNonNull(annotation, "annotation");
     return this.applyPlaceholders(annotation.value());
   }
 
@@ -138,6 +149,7 @@ public enum CommentPlaceholderRegistry {
    * @since 3.0.4
    */
   public String applyPlaceholders(String comment) {
+    Objects.requireNonNull(comment, "comment");
     if (this.placeholderMap.isEmpty()) {
       return comment;
     }

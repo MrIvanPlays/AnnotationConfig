@@ -32,6 +32,7 @@ import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import org.jspecify.annotations.NullMarked;
 
 /**
  * Represents the default toml value writer. Has a lot of stuff homebrew but the main dumping is
@@ -40,6 +41,7 @@ import java.util.Map;
  * @author Ivan Pekov
  * @since 2.1.0
  */
+@NullMarked
 public final class TomlValueWriter implements ValueWriter {
 
   private final TomlMapper defaultMapper;

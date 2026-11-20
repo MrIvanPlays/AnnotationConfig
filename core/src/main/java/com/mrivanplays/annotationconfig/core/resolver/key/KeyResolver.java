@@ -23,6 +23,8 @@
 package com.mrivanplays.annotationconfig.core.resolver.key;
 
 import java.util.Map;
+import org.jspecify.annotations.NullMarked;
+import org.jspecify.annotations.Nullable;
 
 /**
  * Represents a resolver of config keys, which boxes and unboxes them.
@@ -30,6 +32,7 @@ import java.util.Map;
  * @author Ivan Pekov
  * @since 2.0.1
  */
+@NullMarked
 public interface KeyResolver {
 
   /** Returns the default key resolver used by AnnotationConfig. */
@@ -57,7 +60,7 @@ public interface KeyResolver {
    * @param values the values to unbox it from
    * @return value or null
    */
-  Object unbox(String key, Map<String, Object> values);
+  @Nullable Object unbox(String key, Map<String, Object> values);
 
   /**
    * AnnotationConfig calls this method whenever it needs to populate the specified {@link Map}

@@ -24,6 +24,8 @@ package com.mrivanplays.annotationconfig.core.resolver.key;
 
 import java.util.LinkedHashMap;
 import java.util.Map;
+import org.jspecify.annotations.NullMarked;
+import org.jspecify.annotations.Nullable;
 
 /**
  * Represents a resolver of dotted keys.
@@ -55,9 +57,10 @@ import java.util.Map;
  * @since 2.0.1
  */
 @SuppressWarnings("unchecked")
+@NullMarked
 public final class DottedResolver implements KeyResolver {
 
-  private static DottedResolver instance;
+  @Nullable private static DottedResolver instance;
 
   /**
    * Returns the instance of the {@link DottedResolver}
@@ -75,6 +78,7 @@ public final class DottedResolver implements KeyResolver {
 
   /** {@inheritDoc} */
   @Override
+  @Nullable
   public Object unbox(String key, Map<String, Object> values) {
     if (!key.contains(".")) {
       return values.get(key);
@@ -146,7 +150,9 @@ public final class DottedResolver implements KeyResolver {
         currentMap = newMap;
       }
     }
-    values.put(parts[0], currentMap);
+    if (currentMap != null) {
+      values.put(parts[0], currentMap);
+    }
   }
 
   private Map<String, Object> getCurrentMap(

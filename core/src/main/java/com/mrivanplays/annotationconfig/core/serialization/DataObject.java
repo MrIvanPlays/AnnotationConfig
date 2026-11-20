@@ -30,6 +30,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import org.jspecify.annotations.NullUnmarked;
 
 /**
  * A class, which stores read from config values or serialized values in a developer friendly way.
@@ -38,6 +39,7 @@ import java.util.Objects;
  * @author Ivan Pekov
  */
 @SuppressWarnings("unchecked")
+@NullUnmarked
 public final class DataObject {
 
   /**

@@ -25,6 +25,8 @@ package com.mrivanplays.annotationconfig.core.serialization;
 import java.lang.reflect.Field;
 import java.lang.reflect.Type;
 import java.util.Optional;
+import org.jspecify.annotations.NullMarked;
+import org.jspecify.annotations.Nullable;
 
 /**
  * Represents a serialization context. This holds information about the {@link Field} that's being
@@ -35,7 +37,8 @@ import java.util.Optional;
  * @author Ivan Pekov
  * @since 3.0.0
  */
-@SuppressWarnings("unchecked")
+@SuppressWarnings({"unchecked", "OptionalUsedAsFieldOrParameterType"})
+@NullMarked
 public final class SerializationContext<T> {
 
   /**
@@ -82,7 +85,7 @@ public final class SerializationContext<T> {
    * @return new serialization context
    */
   public static <T> SerializationContext<T> of(
-      T def, Class<?> classType, Type genericType, Object annotatedConfig) {
+      @Nullable T def, Class<?> classType, Type genericType, Object annotatedConfig) {
     return of(null, def, classType, genericType, annotatedConfig);
   }
 
@@ -98,7 +101,12 @@ public final class SerializationContext<T> {
    * @return new serialization context
    */
   public static <T> SerializationContext<T> of(
-      String name, T def, Class<?> classType, Type genericType, Object annotatedConfig) {
+      @Nullable String name,
+      @Nullable T def,
+      Class<?> classType,
+      Type genericType,
+      Object annotatedConfig) {
+    //noinspection NullableProblems
     return new SerializationContext<>(
         Optional.ofNullable(name),
         Optional.ofNullable(def),

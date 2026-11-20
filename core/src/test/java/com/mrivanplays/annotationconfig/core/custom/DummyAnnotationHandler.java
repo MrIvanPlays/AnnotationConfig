@@ -26,7 +26,9 @@ import com.mrivanplays.annotationconfig.core.annotations.custom.AnnotationValida
 import com.mrivanplays.annotationconfig.core.annotations.custom.ValidationResponse;
 import com.mrivanplays.annotationconfig.core.resolver.settings.Settings;
 import java.lang.reflect.Field;
+import org.jspecify.annotations.NullMarked;
 
+@NullMarked
 public class DummyAnnotationHandler implements AnnotationValidator<DummyAnnotation> {
 
   @Override

@@ -22,6 +22,9 @@
 
 package com.mrivanplays.annotationconfig.core.utils;
 
+import org.jspecify.annotations.NullMarked;
+import org.jspecify.annotations.Nullable;
+
 /**
  * Represents a function, taking 3 inputs and receiving a return value.
  *
@@ -33,6 +36,7 @@ package com.mrivanplays.annotationconfig.core.utils;
  * @author Ivan Pekov
  */
 @FunctionalInterface
+@NullMarked
 public interface TriFunction<A, B, C, R> {
 
   /**
@@ -43,5 +47,5 @@ public interface TriFunction<A, B, C, R> {
    * @param c function argument c
    * @return function result
    */
-  R apply(A a, B b, C c);
+  @Nullable R apply(A a, B b, C c);
 }

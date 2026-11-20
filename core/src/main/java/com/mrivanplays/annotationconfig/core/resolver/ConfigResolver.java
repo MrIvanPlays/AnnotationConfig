@@ -39,6 +39,9 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Supplier;
+import org.jspecify.annotations.NonNull;
+import org.jspecify.annotations.NullMarked;
+import org.jspecify.annotations.NullUnmarked;
 
 /**
  * Represents a resolver of configurations.
@@ -48,6 +51,7 @@ import java.util.function.Supplier;
  * @since 2.0.0
  * @author Ivan Pekov
  */
+@NullMarked
 public interface ConfigResolver {
 
   /**
@@ -375,6 +379,7 @@ public interface ConfigResolver {
    * @since 2.0.0
    * @author Ivan Pekov
    */
+  @NullUnmarked
   class Builder {
 
     private String commentPrefix;
@@ -501,7 +506,7 @@ public interface ConfigResolver {
      * @param val whether to reverse fields
      * @return this instance for chaining
      * @deprecated use {@link #withSetting(Setting, Object)} with the {@link
-     *     ACDefaultSettings#SHOULD_REVERSE_FIELDS} seting.
+     *     ACDefaultSettings#SHOULD_REVERSE_FIELDS} setting.
      */
     @Deprecated(since = "3.0.2", forRemoval = true)
     public Builder shouldReverseFields(boolean val) {
@@ -513,6 +518,7 @@ public interface ConfigResolver {
      *
      * @return new config resolver instance
      */
+    @NonNull
     public ConfigResolver build() {
       if (fileExtensions == null || fileExtensions.isEmpty()) {
         throw new IllegalArgumentException("No file extensions specified");

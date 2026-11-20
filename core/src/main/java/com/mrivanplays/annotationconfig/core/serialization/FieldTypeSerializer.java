@@ -23,6 +23,9 @@
 package com.mrivanplays.annotationconfig.core.serialization;
 
 import com.mrivanplays.annotationconfig.core.utils.TriFunction;
+import java.util.Objects;
+import org.jspecify.annotations.NullMarked;
+import org.jspecify.annotations.Nullable;
 
 /**
  * Interface representing a custom serializer and deserializer of a field type. You should write a
@@ -34,6 +37,7 @@ import com.mrivanplays.annotationconfig.core.utils.TriFunction;
  * @since 2.0.0
  * @author Ivan Pekov
  */
+@NullMarked
 public interface FieldTypeSerializer<T> {
 
   /**
@@ -49,8 +53,11 @@ public interface FieldTypeSerializer<T> {
   static <T> FieldTypeSerializer<T> functional(
       TriFunction<DataObject, SerializationContext<T>, AnnotationAccessor, T> deserialize,
       TriFunction<T, SerializationContext<T>, AnnotationAccessor, DataObject> serialize) {
-    return new FieldTypeSerializer<T>() {
+    Objects.requireNonNull(deserialize, "deserialize");
+    Objects.requireNonNull(serialize, "serialize");
+    return new FieldTypeSerializer<>() {
       @Override
+      @Nullable
       public T deserialize(
           DataObject data, SerializationContext<T> context, AnnotationAccessor annotations) {
         return deserialize.apply(data, context, annotations);
@@ -65,6 +72,7 @@ public interface FieldTypeSerializer<T> {
       @Override
       public DataObject serialize(
           T value, SerializationContext<T> context, AnnotationAccessor annotations) {
+        //noinspection DataFlowIssue
         return serialize.apply(value, context, annotations);
       }
 
@@ -87,7 +95,8 @@ public interface FieldTypeSerializer<T> {
    * @see SerializationContext
    * @see AnnotationAccessor
    */
-  T deserialize(DataObject data, SerializationContext<T> context, AnnotationAccessor annotations);
+  @Nullable T deserialize(
+      DataObject data, SerializationContext<T> context, AnnotationAccessor annotations);
 
   /**
    * Returns {@link #deserialize(DataObject, SerializationContext, AnnotationAccessor)} as a {@link

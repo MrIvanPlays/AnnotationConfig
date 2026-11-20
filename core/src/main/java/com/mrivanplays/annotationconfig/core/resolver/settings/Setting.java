@@ -23,6 +23,8 @@
 package com.mrivanplays.annotationconfig.core.resolver.settings;
 
 import java.util.Objects;
+import org.jspecify.annotations.NullMarked;
+import org.jspecify.annotations.Nullable;
 
 /**
  * Represents a modifiable setting.
@@ -31,6 +33,8 @@ import java.util.Objects;
  * @since 3.0.0
  * @author Ivan Pekov
  */
+@NullMarked
+@SuppressWarnings("rawtypes")
 public interface Setting<T> {
 
   /**
@@ -53,7 +57,7 @@ public interface Setting<T> {
    * @return new setting instance
    * @param <T> value type held
    */
-  static <T> Setting<T> of(String key, Class<T> type) {
+  static <T> Setting<T> of(@Nullable String key, Class<T> type) {
     Objects.requireNonNull(type, "type");
     return new Setting<>() {
       @Override
@@ -67,7 +71,7 @@ public interface Setting<T> {
       }
 
       @Override
-      public boolean equals(Object o) {
+      public boolean equals(@Nullable Object o) {
         if (this == o) {
           return true;
         }
@@ -104,5 +108,5 @@ public interface Setting<T> {
    * @return whether equals
    */
   @Override
-  boolean equals(Object o);
+  boolean equals(@Nullable Object o);
 }

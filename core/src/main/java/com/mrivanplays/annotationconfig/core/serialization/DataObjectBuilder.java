@@ -23,6 +23,7 @@
 package com.mrivanplays.annotationconfig.core.serialization;
 
 import java.util.Objects;
+import org.jspecify.annotations.NullMarked;
 
 /**
  * Represents a builder of {@link DataObject}. Shall be used for multi value DataObject e.g. {@link
@@ -31,6 +32,7 @@ import java.util.Objects;
  * @since 2.1.0
  * @author Ivan Pekov
  */
+@NullMarked
 public final class DataObjectBuilder {
 
   private final DataObject object;
@@ -75,6 +77,8 @@ public final class DataObjectBuilder {
    * @return this instance for chaining
    */
   public DataObjectBuilder with(String key, String value) {
+    Objects.requireNonNull(key, "key");
+    Objects.requireNonNull(value, "value");
     object.put(key, value);
     return this;
   }
@@ -87,6 +91,7 @@ public final class DataObjectBuilder {
    * @return this instance for chaining
    */
   public DataObjectBuilder with(String key, boolean value) {
+    Objects.requireNonNull(key, "key");
     object.put(key, value);
     return this;
   }
@@ -99,6 +104,8 @@ public final class DataObjectBuilder {
    * @return this instance for chaining
    */
   public DataObjectBuilder with(String key, Number value) {
+    Objects.requireNonNull(key, "key");
+    Objects.requireNonNull(value, "value");
     object.put(key, value);
     return this;
   }
@@ -122,6 +129,8 @@ public final class DataObjectBuilder {
    * @return this instance for chaining
    */
   public DataObjectBuilder with(String key, DataObject object) {
+    Objects.requireNonNull(key, "key");
+    Objects.requireNonNull(object, "object");
     this.object.putAll(key, object);
     return this;
   }

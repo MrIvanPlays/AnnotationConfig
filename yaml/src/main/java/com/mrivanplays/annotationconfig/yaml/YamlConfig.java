@@ -31,6 +31,8 @@ import com.mrivanplays.annotationconfig.core.resolver.settings.Settings;
 import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.Objects;
+import org.jspecify.annotations.NullMarked;
+import org.jspecify.annotations.Nullable;
 import org.yaml.snakeyaml.Yaml;
 
 /**
@@ -40,6 +42,7 @@ import org.yaml.snakeyaml.Yaml;
  * @author Ivan Pekov
  */
 @SuppressWarnings("unchecked")
+@NullMarked
 public final class YamlConfig {
 
   private static final Yaml YAML = new Yaml();
@@ -49,7 +52,7 @@ public final class YamlConfig {
    */
   public static final Setting<Yaml> YAML_INSTANCE = Setting.of("yaml", Yaml.class);
 
-  private static ConfigResolver configResolver;
+  @Nullable private static ConfigResolver configResolver;
 
   /**
    * Returns the {@link ConfigResolver} instance of YamlConfig

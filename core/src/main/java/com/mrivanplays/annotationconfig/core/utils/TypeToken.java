@@ -24,6 +24,7 @@ package com.mrivanplays.annotationconfig.core.utils;
 
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
+import org.jspecify.annotations.NullMarked;
 
 /**
  * Represents a helper of capturing types of {@link java.util.List Lists} or other generics for ease
@@ -33,6 +34,7 @@ import java.lang.reflect.Type;
  * @author Ivan Pekov
  * @since v2.1.1
  */
+@NullMarked
 public abstract class TypeToken<T> {
 
   private final Type type;

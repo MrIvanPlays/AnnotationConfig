@@ -25,6 +25,8 @@ package com.mrivanplays.annotationconfig.core.annotations.custom;
 import com.mrivanplays.annotationconfig.core.resolver.settings.Settings;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Field;
+import org.jspecify.annotations.NullMarked;
+import org.jspecify.annotations.Nullable;
 
 /**
  * Represents a validator of a custom annotation.
@@ -33,6 +35,7 @@ import java.lang.reflect.Field;
  * @author Ivan Pekov
  * @since 2.0.0
  */
+@NullMarked
 public interface AnnotationValidator<T extends Annotation> {
 
   /**
@@ -62,6 +65,7 @@ public interface AnnotationValidator<T extends Annotation> {
    * @param value the value to write
    * @return an easier serializable value
    */
+  @Nullable
   default Object writeValue(Object value) {
     return null;
   }

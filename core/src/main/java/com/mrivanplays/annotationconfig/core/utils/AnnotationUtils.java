@@ -35,6 +35,8 @@ import java.lang.reflect.Field;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.Objects;
+import org.jspecify.annotations.NullMarked;
 
 /**
  * A utility class with utilities about AnnotationConfig's default annotations.
@@ -42,6 +44,7 @@ import java.util.List;
  * @author Ivan Pekov
  * @since 2.1.0
  */
+@NullMarked
 public final class AnnotationUtils {
 
   /**
@@ -51,6 +54,7 @@ public final class AnnotationUtils {
    * @return the key, always a non-null value
    */
   public static String getKey(Field field) {
+    Objects.requireNonNull(field, "field");
     if (field.isAnnotationPresent(Key.class)) {
       return field.getDeclaredAnnotation(Key.class).value();
     }
@@ -64,6 +68,7 @@ public final class AnnotationUtils {
    * @return true or false
    */
   public static boolean isIgnored(Field field) {
+    Objects.requireNonNull(field, "field");
     return field.isAnnotationPresent(Ignore.class);
   }
 
@@ -74,6 +79,7 @@ public final class AnnotationUtils {
    * @return true or false
    */
   public static boolean isConfigObject(Field field) {
+    Objects.requireNonNull(field, "field");
     return field.isAnnotationPresent(ConfigObject.class);
   }
 
@@ -87,6 +93,7 @@ public final class AnnotationUtils {
    * @return true or false
    */
   public static boolean isRawConfigAccess(Field field) {
+    Objects.requireNonNull(field, "field");
     return field.isAnnotationPresent(RawConfig.class);
   }
 
@@ -99,6 +106,7 @@ public final class AnnotationUtils {
    */
   @Deprecated(since = "3.0.4")
   public static List<String> getComments(Field field) {
+    Objects.requireNonNull(field, "field");
     return getComments(AnnotationAccessor.createFromField(field), false);
   }
 
@@ -124,6 +132,7 @@ public final class AnnotationUtils {
    */
   public static List<String> getComments(
       AnnotationAccessor annotationAccessor, boolean applyPlaceholders) {
+    Objects.requireNonNull(annotationAccessor, "annotationAccessor");
     if (!annotationAccessor.hasAnnotation(AnnotationType.COMMENT)
         && !annotationAccessor.hasAnnotation(AnnotationType.COMMENTS)) {
       return Collections.emptyList();

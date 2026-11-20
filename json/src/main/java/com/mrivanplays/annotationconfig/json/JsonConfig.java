@@ -32,6 +32,8 @@ import com.mrivanplays.annotationconfig.core.resolver.settings.Settings;
 import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.Objects;
+import org.jspecify.annotations.NullMarked;
+import org.jspecify.annotations.Nullable;
 
 /**
  * Represents configuration, utilising JSON
@@ -40,6 +42,7 @@ import java.util.Objects;
  * @author Ivan Pekov
  */
 @SuppressWarnings("unchecked")
+@NullMarked
 public final class JsonConfig {
 
   private static final Gson GSON =
@@ -50,7 +53,7 @@ public final class JsonConfig {
    */
   public static final Setting<Gson> GSON_INSTANCE = Setting.of("gson", Gson.class);
 
-  private static ConfigResolver configResolver;
+  @Nullable private static ConfigResolver configResolver;
 
   /**
    * Returns the {@link ConfigResolver} instance of JsonConfig

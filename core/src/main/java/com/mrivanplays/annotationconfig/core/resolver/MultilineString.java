@@ -25,6 +25,8 @@ package com.mrivanplays.annotationconfig.core.resolver;
 import com.mrivanplays.annotationconfig.core.annotations.Multiline;
 import java.lang.reflect.Field;
 import java.util.Objects;
+import org.jspecify.annotations.NullMarked;
+import org.jspecify.annotations.Nullable;
 
 /**
  * Represents a {@link String} value, which is annotated with {@link Multiline}, marking that it
@@ -50,6 +52,7 @@ import java.util.Objects;
  * @author Ivan Pekov
  * @see Multiline
  */
+@NullMarked
 public final class MultilineString {
 
   private final String value;
@@ -102,7 +105,7 @@ public final class MultilineString {
   }
 
   @Override
-  public boolean equals(Object o) {
+  public boolean equals(@Nullable Object o) {
     if (this == o) {
       return true;
     }

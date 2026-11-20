@@ -26,6 +26,7 @@ import com.mrivanplays.annotationconfig.core.annotations.type.AnnotationType;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Field;
 import java.util.Optional;
+import org.jspecify.annotations.NullMarked;
 
 /**
  * Represents an annotation accessor, a controlled manner of accessing (field) annotations.
@@ -33,6 +34,7 @@ import java.util.Optional;
  * @author Ivan Pekov
  * @since 3.0.0
  */
+@NullMarked
 public sealed interface AnnotationAccessor permits AnnotationAccessorImpl {
 
   /**

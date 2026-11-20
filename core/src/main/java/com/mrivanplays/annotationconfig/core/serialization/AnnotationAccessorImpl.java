@@ -28,17 +28,20 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.function.Function;
 import java.util.function.Predicate;
+import org.jspecify.annotations.NullMarked;
+import org.jspecify.annotations.Nullable;
 
 /**
  * @hidden
  */
 @SuppressWarnings("unchecked")
+@NullMarked
 final class AnnotationAccessorImpl implements AnnotationAccessor {
 
   static AnnotationAccessorImpl EMPTY = new AnnotationAccessorImpl();
 
   private final Predicate<Class<? extends Annotation>> hasAnnotationPredicate;
-  private Function<Class<? extends Annotation>, ? extends Annotation> getAnnotationFunc;
+  @Nullable private Function<Class<? extends Annotation>, ? extends Annotation> getAnnotationFunc;
 
   private AnnotationAccessorImpl() {
     this.hasAnnotationPredicate = _ -> false;
@@ -65,6 +68,7 @@ final class AnnotationAccessorImpl implements AnnotationAccessor {
   public <T extends Annotation> Optional<T> getAnnotation(Class<T> annotationClass) {
     Objects.requireNonNull(annotationClass, "annotationClass");
     if (this.hasAnnotation(annotationClass)) {
+      //noinspection SingleStatementInBlock,OptionalOfNullableMisuse,DataFlowIssue
       return Optional.ofNullable((T) getAnnotationFunc.apply(annotationClass));
     }
     return Optional.empty();

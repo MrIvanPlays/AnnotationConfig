@@ -28,6 +28,8 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Objects;
+import org.jspecify.annotations.NullMarked;
+import org.jspecify.annotations.Nullable;
 
 /**
  * Represents a section list. A YAML example:
@@ -53,6 +55,7 @@ import java.util.Objects;
  * @author Ivan Pekov
  * @since v2.1.1
  */
+@NullMarked
 public final class SectionObjectList<T> implements Iterable<Entry<String, T>> {
 
   /**
@@ -70,7 +73,7 @@ public final class SectionObjectList<T> implements Iterable<Entry<String, T>> {
   private final Class<? extends T> clazz;
 
   SectionObjectList(Class<? extends T> clazz, Map<String, T> values) {
-    this.clazz = clazz;
+    this.clazz = Objects.requireNonNull(clazz, "class");
     this.values = values;
   }
 
@@ -93,7 +96,7 @@ public final class SectionObjectList<T> implements Iterable<Entry<String, T>> {
   }
 
   /**
-   * Returns a immutable {@link Iterator} representation of the keys and values held in this {@code
+   * Returns an immutable {@link Iterator} representation of the keys and values held in this {@code
    * SectionObjectList}.
    *
    * @return iterator
@@ -135,7 +138,7 @@ public final class SectionObjectList<T> implements Iterable<Entry<String, T>> {
    * @param newValue new value to update with
    * @since 3.0.4
    */
-  public void update(String key, T newValue) {
+  public void update(String key, @Nullable T newValue) {
     Objects.requireNonNull(key, "key");
     if (newValue == null) {
       this.values.remove(key);
@@ -180,7 +183,7 @@ public final class SectionObjectList<T> implements Iterable<Entry<String, T>> {
      * Specify a default value held by the created {@link SectionObjectList}
      *
      * @param key default value key
-     * @param value default value value
+     * @param value default value
      * @return this instance for chaining
      */
     public SectionObjectListBuilder<T> defaultValue(String key, T value) {

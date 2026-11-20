@@ -30,6 +30,8 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Objects;
 import java.util.function.BiPredicate;
+import org.jspecify.annotations.NullMarked;
+import org.jspecify.annotations.Nullable;
 
 /**
  * {@link Enum} serializer, which uses different tricks to serialize enum constants to user-friendly
@@ -69,6 +71,7 @@ import java.util.function.BiPredicate;
  * @author Ivan Pekov
  * @param <E> enum class
  */
+@NullMarked
 public final class AdvancedEnumSerializer<E extends Enum<E>> implements FieldTypeSerializer<E> {
 
   /**
@@ -116,9 +119,7 @@ public final class AdvancedEnumSerializer<E extends Enum<E>> implements FieldTyp
 
   private AdvancedEnumSerializer(
       Class<E> enumClass, BiPredicate<Integer, List<String>> matchesCondition) {
-    if (enumClass == null) {
-      throw new NullPointerException("enumClass");
-    }
+    Objects.requireNonNull(enumClass, "enumClass");
     if (!enumClass.isEnum()) {
       throw new IllegalArgumentException("Not an enum");
     }
@@ -128,6 +129,7 @@ public final class AdvancedEnumSerializer<E extends Enum<E>> implements FieldTyp
 
   /** {@inheritDoc} */
   @Override
+  @Nullable
   public E deserialize(
       DataObject data, SerializationContext<E> context, AnnotationAccessor annotations) {
     return this.deserializeSimple(data);
@@ -141,7 +143,11 @@ public final class AdvancedEnumSerializer<E extends Enum<E>> implements FieldTyp
    * @return enum constant deserialized, or null
    * @since 3.0.4
    */
-  public E deserializeSimple(DataObject data) {
+  @Nullable
+  public E deserializeSimple(@Nullable DataObject data) {
+    if (data == null) {
+      return null;
+    }
     String input = data.getAsString();
     if (input == null) {
       return null;
@@ -157,7 +163,8 @@ public final class AdvancedEnumSerializer<E extends Enum<E>> implements FieldTyp
    * @return enum constant deserialized, or null
    * @since 3.0.4
    */
-  public E deserializeSimple(String input) {
+  @Nullable
+  public E deserializeSimple(@Nullable String input) {
     if (input == null) {
       return null;
     }
@@ -211,6 +218,7 @@ public final class AdvancedEnumSerializer<E extends Enum<E>> implements FieldTyp
    * @param parts the matches to search for in a constant parts
    * @return best match
    */
+  @Nullable
   private E findTheBestMatch(EnumSet<E> values, List<String> parts) {
     for (E val : values) {
       // this filters out even more the possible values

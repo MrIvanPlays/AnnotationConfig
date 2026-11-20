@@ -24,6 +24,7 @@ package com.mrivanplays.annotationconfig.core.utils;
 
 import java.util.Iterator;
 import java.util.Map;
+import org.jspecify.annotations.NullMarked;
 
 /**
  * A utility class for interacting with {@link Map Maps} and combining them, putting values at the
@@ -34,6 +35,7 @@ import java.util.Map;
  * @since 2.1.0
  */
 @SuppressWarnings("unchecked")
+@NullMarked
 public final class MapUtils {
 
   public static Map<String, Object> getLastCommonMap(
@@ -67,7 +69,9 @@ public final class MapUtils {
     if (lastCommonMap2.containsKey(lastKeyMap1)) {
       Object contained = lastCommonMap2.get(lastKeyMap1);
       if (!(contained instanceof Map)) {
-        lastCommonMap2.put(lastKeyMap1, contained);
+        if (lastKeyMap1 != null) {
+          lastCommonMap2.put(lastKeyMap1, contained);
+        }
         return;
       }
       Map<String, Object> mContained = (Map<String, Object>) contained;
