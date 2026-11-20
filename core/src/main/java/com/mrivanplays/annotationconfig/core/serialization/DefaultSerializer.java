@@ -103,8 +103,7 @@ final class DefaultSerializer implements FieldTypeSerializer<Object> {
             Array.set(arr, i, forcePrimitive(o, type));
           } else {
             Object deserialized =
-                serializer.deserialize(
-                    new DataObject(o, true), serializationContext, AnnotationAccessor.EMPTY);
+                serializer.deserialize(new DataObject(o, true), serializationContext, annotations);
             Array.set(arr, i, deserialized);
           }
         }
@@ -123,8 +122,7 @@ final class DefaultSerializer implements FieldTypeSerializer<Object> {
               SerializationContext.of(type, type, context.getAnnotatedConfig());
           for (Object o : (Object[]) dataRaw) {
             Object deserialized =
-                serializer.deserialize(
-                    new DataObject(o, true), serializationContext, AnnotationAccessor.EMPTY);
+                serializer.deserialize(new DataObject(o, true), serializationContext, annotations);
             list.add(deserialized);
           }
           return list.toArray();
@@ -149,8 +147,7 @@ final class DefaultSerializer implements FieldTypeSerializer<Object> {
             ret.add(o);
           } else {
             ret.add(
-                serializer.deserialize(
-                    new DataObject(o, true), serializationContext, AnnotationAccessor.EMPTY));
+                serializer.deserialize(new DataObject(o, true), serializationContext, annotations));
           }
         }
         return ret;
@@ -311,7 +308,8 @@ final class DefaultSerializer implements FieldTypeSerializer<Object> {
               toSerialize.add(val);
             }
           } else {
-            callParentSerializer(toSerialize, neededType, serializer, serializationContext, val);
+            callParentSerializer(
+                toSerialize, neededType, serializer, serializationContext, val, annotations);
           }
         }
         return new DataObject(toSerialize);
@@ -333,7 +331,8 @@ final class DefaultSerializer implements FieldTypeSerializer<Object> {
             if (toSerialize == null) {
               continue;
             }
-            callParentSerializer(list, type, serializer, serializationContext, toSerialize);
+            callParentSerializer(
+                list, type, serializer, serializationContext, toSerialize, annotations);
           }
           return new DataObject(list);
         } catch (ClassNotFoundException e) {
@@ -418,9 +417,9 @@ final class DefaultSerializer implements FieldTypeSerializer<Object> {
       Class<?> neededType,
       FieldTypeSerializer serializer,
       SerializationContext serializationContext,
-      Object val) {
-    DataObject serialized =
-        serializer.serialize(val, serializationContext, AnnotationAccessor.EMPTY);
+      Object val,
+      AnnotationAccessor annotations) {
+    DataObject serialized = serializer.serialize(val, serializationContext, annotations);
     if (serialized == null) {
       throw new NullPointerException(
           "Expected DataObject, but got null ; Serialized type: " + neededType.getName());

@@ -22,9 +22,9 @@
 
 package com.mrivanplays.annotationconfig.core.resolver.settings;
 
-import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Optional;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * Represents a {@link Setting} holder.
@@ -34,7 +34,7 @@ import java.util.Optional;
  */
 public final class Settings {
 
-  private Map<String, Object> values = new LinkedHashMap<>();
+  private Map<String, Object> values = new ConcurrentHashMap<>();
   private final boolean immutable;
 
   public Settings() {

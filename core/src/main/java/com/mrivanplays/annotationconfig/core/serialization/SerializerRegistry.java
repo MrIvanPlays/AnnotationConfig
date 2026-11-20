@@ -128,7 +128,7 @@ public enum SerializerRegistry {
         FieldTypeSerializer.<T>functional(
             (data, context, annotations) ->
                 SimpleValueSerializer.deserialize(
-                    data, serializedType, context.getAnnotatedConfig()),
+                    data, serializedType, context.getAnnotatedConfig(), annotations),
             (value, context, annotations) -> serialize.apply(value)));
   }
 
@@ -161,7 +161,7 @@ public enum SerializerRegistry {
             (data, context, annotations) -> deserialize.apply(data),
             (value, context, annotations) ->
                 SimpleValueSerializer.serialize(
-                    value, serializedType, context.getAnnotatedConfig())));
+                    value, serializedType, context.getAnnotatedConfig(), annotations)));
   }
 
   /**

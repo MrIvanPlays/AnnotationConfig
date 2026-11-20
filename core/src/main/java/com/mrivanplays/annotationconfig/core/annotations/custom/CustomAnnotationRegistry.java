@@ -23,9 +23,9 @@
 package com.mrivanplays.annotationconfig.core.annotations.custom;
 
 import java.lang.annotation.Annotation;
-import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Optional;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * Represents a registry for custom annotations.
@@ -37,7 +37,7 @@ public enum CustomAnnotationRegistry {
   INSTANCE;
 
   private Map<Class<? extends Annotation>, AnnotationValidator<? extends Annotation>> registry =
-      new LinkedHashMap<>();
+      new ConcurrentHashMap<>();
 
   /**
    * Binds the specified {@link AnnotationValidator} {@code validator} to the specified {@code
