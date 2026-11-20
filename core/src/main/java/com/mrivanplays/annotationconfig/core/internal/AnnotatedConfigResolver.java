@@ -70,7 +70,14 @@ import java.util.TreeSet;
 /**
  * @hidden
  */
-@SuppressWarnings({"unchecked", "rawtypes", "FieldMayBeFinal"})
+@SuppressWarnings({
+  "unchecked",
+  "rawtypes",
+  "FieldMayBeFinal",
+  "ConstantValue",
+  "DataFlowIssue",
+  "OptionalGetWithoutIsPresent"
+})
 public final class AnnotatedConfigResolver {
 
   public static Map<AnnotationHolder, Set<AnnotationType>> resolveAnnotations(
