@@ -62,6 +62,13 @@ public final class YamlValueWriter implements ValueWriter {
       int childIndents,
       boolean child,
       boolean additional2Spaces) {
+    if (value == null) {
+      // edge case with section object lists
+      if (!child) {
+        writer.append('\n');
+      }
+      return;
+    }
     String intentPrefix = " ".repeat(Math.max(0, childIndents));
     String parentSpec = parentKey != null ? parentKey.concat("." + key) : key;
     if (value instanceof Map<?, ?>) {

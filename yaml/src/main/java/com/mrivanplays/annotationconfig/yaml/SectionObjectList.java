@@ -92,10 +92,66 @@ public final class SectionObjectList<T> implements Iterable<Entry<String, T>> {
     return Collections.unmodifiableMap(values);
   }
 
-  /** {@inheritDoc} */
+  /**
+   * Returns a immutable {@link Iterator} representation of the keys and values held in this {@code
+   * SectionObjectList}.
+   *
+   * @return iterator
+   */
   @Override
   public Iterator<Entry<String, T>> iterator() {
-    return this.values.entrySet().iterator();
+    // immutable since 3.0.4
+    Iterator<Entry<String, T>> original = this.values.entrySet().iterator();
+    return new Iterator<>() {
+      @Override
+      public boolean hasNext() {
+        return original.hasNext();
+      }
+
+      @Override
+      public Entry<String, T> next() {
+        return original.next();
+      }
+    };
+  }
+
+  /**
+   * Check whether this {@code SectionObjectList} contains a specific key
+   *
+   * @param key key to check, cannot be null
+   * @return true if contains, false otherwise
+   * @since 3.0.4
+   */
+  public boolean contains(String key) {
+    Objects.requireNonNull(key, "key");
+    return this.values.containsKey(key);
+  }
+
+  /**
+   * Update the specified {@code key} with a new value. Setting the value to {@code null} will
+   * remove existing keys.
+   *
+   * @param key key to update, cannot be null
+   * @param newValue new value to update with
+   * @since 3.0.4
+   */
+  public void update(String key, T newValue) {
+    Objects.requireNonNull(key, "key");
+    if (newValue == null) {
+      this.values.remove(key);
+    } else {
+      this.values.put(key, newValue);
+    }
+  }
+
+  /**
+   * Check whether this {@code SectionObjectList} is empty.
+   *
+   * @return empty or not
+   * @since 3.0.4
+   */
+  public boolean isEmpty() {
+    return this.values.isEmpty();
   }
 
   /**

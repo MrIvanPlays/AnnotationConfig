@@ -86,6 +86,9 @@ public final class SectionObjectListSerializer<T>
       SerializationContext<SectionObjectList<T>> context,
       AnnotationAccessor annotations) {
     DataObject ret = new DataObject();
+    if (value.isEmpty()) {
+      return ret;
+    }
     SerializerRegistry serializerRegistry = SerializerRegistry.INSTANCE;
     FieldTypeSerializer serializer =
         serializerRegistry
