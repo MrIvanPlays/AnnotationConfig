@@ -69,6 +69,7 @@ public final class TomlConfig {
     return configResolver;
   }
 
+  // <editor-fold desc="Internal Implementation" defaultstate="collapsed">
   private static final ValueWriter TOML_VALUE_WRITER = new TomlValueWriter(DEFAULT_TOML_MAPPER);
 
   private static void generateConfigResolver() {
@@ -114,4 +115,5 @@ public final class TomlConfig {
                         .readValue(reader, LinkedHashMap.class))
             .build();
   }
+  // </editor-fold>
 }

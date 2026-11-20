@@ -67,6 +67,7 @@ public final class JsonConfig {
     return configResolver;
   }
 
+  // <editor-fold desc="Internal Implementation" defaultstate="collapsed">
   private static void generateConfigResolver() {
     configResolver =
         ConfigResolver.newBuilder()
@@ -80,4 +81,5 @@ public final class JsonConfig {
                     Collections.emptyMap()))
             .build();
   }
+  // </editor-fold>
 }

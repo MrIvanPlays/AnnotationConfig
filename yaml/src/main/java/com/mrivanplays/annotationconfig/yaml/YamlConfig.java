@@ -66,6 +66,7 @@ public final class YamlConfig {
     return configResolver;
   }
 
+  // <editor-fold desc="Internal Implementation" defaultstate="collapsed">
   private static final ValueWriter YAML_VALUE_WRITER = new YamlValueWriter();
 
   private static void generateConfigResolver() {
@@ -83,4 +84,5 @@ public final class YamlConfig {
                     Collections.emptyMap()))
             .build();
   }
+  // </editor-fold>
 }

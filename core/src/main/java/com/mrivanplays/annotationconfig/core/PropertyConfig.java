@@ -59,6 +59,7 @@ public final class PropertyConfig {
     return configResolver;
   }
 
+  // <editor-fold desc="Internal implementation" defaultstate="collapsed">
   private static final ValueWriter PROPERTIES_VALUE_WRITER = new PropertyValueWriter();
 
   private static void generateConfigResolver() {
@@ -132,4 +133,5 @@ public final class PropertyConfig {
       }
     }
   }
+  // </editor-fold>
 }
