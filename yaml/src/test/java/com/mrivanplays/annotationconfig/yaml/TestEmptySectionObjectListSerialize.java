@@ -49,6 +49,8 @@ public class TestEmptySectionObjectListSerialize {
         SectionObjectList.newBuilderForType(SubjectValue.class)
             .defaultValue("baz", new SubjectValue("lorem ipsum", "dolor sit amet"))
             .build();
+
+    private int controlInteger = 1;
   }
 
   @Test
@@ -64,12 +66,14 @@ public class TestEmptySectionObjectListSerialize {
             + "  baz:\n"
             + "    foo: \"lorem ipsum\"\n"
             + "    bar: \"dolor sit amet\"\n"
+            + "\n"
+            + "controlInteger: 1\n"
             + "\n";
 
     Assertions.assertEquals(expected, writer.toString().replaceAll("\\R", "\n"));
     writer = new StringWriter();
     subj.list.update("baz", null);
     YamlConfig.getConfigResolver().dump(subj, writer);
-    Assertions.assertEquals("\n", writer.toString().replaceAll("\\R", "\n"));
+    Assertions.assertEquals("\ncontrolInteger: 1\n\n", writer.toString().replaceAll("\\R", "\n"));
   }
 }
