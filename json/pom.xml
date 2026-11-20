@@ -16,6 +16,10 @@
 
   <url>https://github.com/MrIvanPlays/AnnotationConfig</url>
 
+  <properties>
+    <gson.version>2.15.0</gson.version>
+  </properties>
+
   <developers>
     <developer>
       <id>MrIvanPlays</id>
@@ -49,7 +53,7 @@
     <dependency>
       <groupId>com.google.code.gson</groupId>
       <artifactId>gson</artifactId>
-      <version>2.15.0</version>
+      <version>${gson.version}</version>
     </dependency>
   </dependencies>
 

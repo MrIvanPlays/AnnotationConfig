@@ -16,6 +16,10 @@
 
   <url>https://github.com/MrIvanPlays/AnnotationConfig</url>
 
+  <properties>
+    <jackson.version>2.22.4</jackson.version>
+  </properties>
+
   <developers>
     <developer>
       <id>MrIvanPlays</id>
@@ -49,7 +53,7 @@
     <dependency>
       <groupId>com.fasterxml.jackson.dataformat</groupId>
       <artifactId>jackson-dataformat-toml</artifactId>
-      <version>2.22.4</version>
+      <version>${jackson.version}</version>
     </dependency>
   </dependencies>
 
