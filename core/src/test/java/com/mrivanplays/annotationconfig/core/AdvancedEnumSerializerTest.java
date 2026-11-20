@@ -26,8 +26,6 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 
 import com.mrivanplays.annotationconfig.core.serialization.AdvancedEnumSerializer;
-import com.mrivanplays.annotationconfig.core.serialization.AnnotationAccessor;
-import com.mrivanplays.annotationconfig.core.serialization.DataObject;
 import org.junit.jupiter.api.Test;
 
 public class AdvancedEnumSerializerTest {
@@ -48,12 +46,11 @@ public class AdvancedEnumSerializerTest {
       AdvancedEnumSerializer.forEnum(Values.class);
 
   private static Values deserialize(String input) {
-    // it is safe to call with null field because the serializer doesn't use it
-    return serializer.deserialize(new DataObject(input), null, AnnotationAccessor.EMPTY);
+    return serializer.deserializeSimple(input);
   }
 
   private static String serialize(Values input) {
-    return serializer.serialize(input, null, AnnotationAccessor.EMPTY).getAsString();
+    return serializer.serializeSimple(input).getAsString();
   }
 
   @Test

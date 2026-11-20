@@ -130,11 +130,37 @@ public final class AdvancedEnumSerializer<E extends Enum<E>> implements FieldTyp
   @Override
   public E deserialize(
       DataObject data, SerializationContext<E> context, AnnotationAccessor annotations) {
+    return this.deserializeSimple(data);
+  }
+
+  /**
+   * Tries to deserialize the inputted {@link DataObject data object} into an {@link Enum enum
+   * constant}. If no match is found, returns {@code null}.
+   *
+   * @param data data object
+   * @return enum constant deserialized, or null
+   * @since 3.0.4
+   */
+  public E deserializeSimple(DataObject data) {
     String input = data.getAsString();
     if (input == null) {
       return null;
     }
+    return this.deserializeSimple(input);
+  }
 
+  /**
+   * Tries to deserialize the inputted string into an {@link Enum enum constant}. If no match is
+   * found, returns {@code null}
+   *
+   * @param input input to deserialize
+   * @return enum constant deserialized, or null
+   * @since 3.0.4
+   */
+  public E deserializeSimple(String input) {
+    if (input == null) {
+      return null;
+    }
     // try firstly to parse it using Enum#valueOf
     try {
       return Enum.valueOf(enumClass, input.toUpperCase(Locale.ROOT));
@@ -147,7 +173,7 @@ public final class AdvancedEnumSerializer<E extends Enum<E>> implements FieldTyp
       return null;
     }
     // ofc try to combine them first using _ so if we got an input of "something_asd fp" to be
-    // normalized and tried again
+    // normalised and tried again
     StringBuilder enumFriendlyNormalizedInput = new StringBuilder();
     for (int i = 0; i < parts.size(); i++) {
       String part = parts.get(i);
@@ -182,7 +208,7 @@ public final class AdvancedEnumSerializer<E extends Enum<E>> implements FieldTyp
    * Tries to find the most matching enum constant from the inputted values with the parts inputted.
    *
    * @param values the values to search from
-   * @param parts the matches to search for in an constant parts
+   * @param parts the matches to search for in a constant parts
    * @return best match
    */
   private E findTheBestMatch(EnumSet<E> values, List<String> parts) {
@@ -195,7 +221,7 @@ public final class AdvancedEnumSerializer<E extends Enum<E>> implements FieldTyp
       } else {
         // skip entirely the map if parts.size() is 1
         if (parts.size() == 1) {
-          if (name.equalsIgnoreCase(parts.get(0))) {
+          if (name.equalsIgnoreCase(parts.getFirst())) {
             return val;
           }
         }
@@ -280,6 +306,18 @@ public final class AdvancedEnumSerializer<E extends Enum<E>> implements FieldTyp
   @Override
   public DataObject serialize(
       E value, SerializationContext<E> context, AnnotationAccessor annotations) {
+    return this.serializeSimple(value);
+  }
+
+  /**
+   * Serializes the specified {@link Enum enum constant} in a config user-friendly way, by replacing
+   * underscores with spaces, and lowercase.
+   *
+   * @param value value to serialize
+   * @return {@link DataObject data object}
+   * @since 3.0.4
+   */
+  public DataObject serializeSimple(E value) {
     return new DataObject(value.name().toLowerCase(Locale.ROOT).replace("_", " "));
   }
 }
