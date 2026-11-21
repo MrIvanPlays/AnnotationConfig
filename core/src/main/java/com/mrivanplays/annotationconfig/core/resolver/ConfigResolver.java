@@ -87,6 +87,23 @@ public interface ConfigResolver {
   void dump(Object annotatedConfig, File file);
 
   /**
+   * Dumps the specified {@code annotatedConfig} to the specified {@link File file}, using the
+   * specified {@link Settings settings}. If, at the time of calling this method, the file exists,
+   * it will get deleted ( default implementation ).
+   *
+   * <p>If you are going to call {@link #load(Object, File, Settings)} after calling this method,
+   * consider using {@link #loadOrDump(Object, File, Settings)} rather than calling dump and load
+   * one after each other. This way you save CPU time by not making the library find annotations
+   * twice.
+   *
+   * @param annotatedConfig the annotated config to dump
+   * @param file the file to dump to
+   * @param settings the settings to use
+   * @since 3.0.4
+   */
+  void dump(Object annotatedConfig, File file, Settings settings);
+
+  /**
    * Dumps the specified {@code annotatedConfig} to the specified {@link Path} {@code path}. If, at
    * the time of calling this method, the file exists, it will get deleted ( default implementation
    * ).
@@ -102,6 +119,23 @@ public interface ConfigResolver {
   void dump(Object annotatedConfig, Path path);
 
   /**
+   * Dumps the specified {@code annotatedConfig} to the specified {@link Path path}, using the
+   * specified {@link Settings settings}. If, at the time of calling this method, the file exists,
+   * it will get deleted ( default implementation ).
+   *
+   * <p>If you are going to call {@link #load(Object, Path, Settings)} after calling this method,
+   * consider using {@link #loadOrDump(Object, Path, Settings)} rather than calling dump and load
+   * one after each other. This way you save CPU time by not making the library find annotations
+   * twice.
+   *
+   * @param annotatedConfig the annotated config to dump
+   * @param path the file path to dump to
+   * @param settings the settings to use
+   * @since 3.0.4
+   */
+  void dump(Object annotatedConfig, Path path, Settings settings);
+
+  /**
    * Dumps the specified {@code annotatedConfig} to the specified {@link OutputStream} {@code os}.
    *
    * @param annotatedConfig the annotated config you want to dump
@@ -112,12 +146,61 @@ public interface ConfigResolver {
   }
 
   /**
+   * Dumps the specified {@code annotatedConfig} to the specified {@link OutputStream output stream}
+   * using the specified {@link Settings settings}.
+   *
+   * @param annotatedConfig the annotated config to dump
+   * @param os the output stream to dump to
+   * @param settings the settings to use
+   * @since 3.0.4
+   */
+  default void dump(Object annotatedConfig, OutputStream os, Settings settings) {
+    this.dump(annotatedConfig, new OutputStreamWriter(os), settings);
+  }
+
+  /**
+   * Dumps the specified {@code annotatedConfig} to the specified {@link WritableObject writable
+   * object}
+   *
+   * @param annotatedConfig the annotated config to dump
+   * @param writableObject the writable object to dump to
+   * @since 3.0.4
+   */
+  default void dump(Object annotatedConfig, WritableObject writableObject) {
+    this.dump(annotatedConfig, writableObject.writer());
+  }
+
+  /**
+   * Dumps rhe specified {@code annotatedConfig} to the specified {@link WritableObject writable
+   * object} using the specified {@link Settings settings}.
+   *
+   * @param annotatedConfig the annotated config to dump
+   * @param writableObject the writable object to dump to
+   * @param settings the settings to use
+   * @since 3.0.4
+   */
+  default void dump(Object annotatedConfig, WritableObject writableObject, Settings settings) {
+    this.dump(annotatedConfig, writableObject.writer(), settings);
+  }
+
+  /**
    * Dumps the specified {@code annotatedConfig} to the specified {@link Writer} {@code writer}.
    *
    * @param annotatedConfig the annotated config you want to dump
    * @param writer the writer to dump the annotated config to
    */
   void dump(Object annotatedConfig, Writer writer);
+
+  /**
+   * Dumps the specified {@code annotatedConfig} to the specified {@link Writer writer}, using the
+   * provided {@link Settings settings}.
+   *
+   * @param annotatedConfig the config to dump
+   * @param writer the writer to dump to
+   * @param settings the settings to use
+   * @since 3.0.4
+   */
+  void dump(Object annotatedConfig, Writer writer, Settings settings);
 
   /**
    * Loads the specified {@code annotatedConfig} from the specified {@link File} {@code file} using
@@ -524,12 +607,7 @@ public interface ConfigResolver {
         throw new IllegalArgumentException("No file extensions specified");
       }
       return new ConfigResolverImpl(
-          commentPrefix,
-          valueWriter,
-          valueReader,
-          settings,
-          keyResolver,
-          fileExtensions.toArray(new String[0]));
+          commentPrefix, valueWriter, valueReader, settings, keyResolver, fileExtensions);
     }
   }
 }

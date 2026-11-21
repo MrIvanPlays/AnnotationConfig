@@ -44,6 +44,7 @@ import java.nio.file.Path;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
@@ -63,7 +64,7 @@ public final class ConfigResolverImpl implements ConfigResolver {
   private final ValueReader valueReader;
   private final Settings settings;
   private final KeyResolver keyResolver;
-  private final String[] fileExtensions;
+  private final List<String> fileExtensions;
 
   public ConfigResolverImpl(
       String commentPrefix,
@@ -71,11 +72,14 @@ public final class ConfigResolverImpl implements ConfigResolver {
       ValueReader valueReader,
       @Nullable Settings settings,
       @Nullable KeyResolver keyResolver,
-      String[] fileExtensions) {
+      List<String> fileExtensions) {
     this.commentPrefix = commentPrefix;
     this.valueWriter = Objects.requireNonNull(valueWriter, "valueWriter");
     this.valueReader = Objects.requireNonNull(valueReader, "valueReader");
     this.fileExtensions = Objects.requireNonNull(fileExtensions, "fileExtensions");
+    if (this.fileExtensions.isEmpty()) {
+      throw new IllegalArgumentException("No file extensions specified.");
+    }
     this.settings = Objects.requireNonNullElse(settings, ACDefaultSettings.getDefault().copy());
     this.keyResolver = Objects.requireNonNullElse(keyResolver, KeyResolver.DEFAULT);
   }
@@ -87,11 +91,19 @@ public final class ConfigResolverImpl implements ConfigResolver {
 
   @Override
   public void dump(Object annotatedConfig, File file) {
+    this.dump(annotatedConfig, file, this.settings);
+  }
+
+  @Override
+  public void dump(Object annotatedConfig, File file, Settings passthrough) {
+    Objects.requireNonNull(annotatedConfig, "annotatedConfig");
+    Objects.requireNonNull(file, "file");
+    Objects.requireNonNull(passthrough, "settings");
     if (file.exists()) {
       file.delete();
     }
-    boolean findParentFields = this.getSetting(ACDefaultSettings.FIND_PARENT_FIELDS, null);
-    boolean reverseFields = this.getSetting(ACDefaultSettings.SHOULD_REVERSE_FIELDS, null);
+    boolean findParentFields = this.getSetting(ACDefaultSettings.FIND_PARENT_FIELDS, passthrough);
+    boolean reverseFields = this.getSetting(ACDefaultSettings.SHOULD_REVERSE_FIELDS, passthrough);
     Map<AnnotationHolder, Set<AnnotationType>> resolvedAnnotations =
         AnnotatedConfigResolver.resolveAnnotations(
             annotatedConfig, reverseFields, findParentFields);
@@ -109,11 +121,19 @@ public final class ConfigResolverImpl implements ConfigResolver {
 
   @Override
   public void dump(Object annotatedConfig, Path path) {
+    this.dump(annotatedConfig, path, this.settings);
+  }
+
+  @Override
+  public void dump(Object annotatedConfig, Path path, Settings passthrough) {
+    Objects.requireNonNull(annotatedConfig, "annotatedConfig");
+    Objects.requireNonNull(path, "path");
+    Objects.requireNonNull(passthrough, "settings");
     if (Files.isDirectory(path)) {
       throw new IllegalArgumentException("Cannot dump a config FILE to a DIRECTORY: " + path);
     }
-    boolean findParentFields = this.getSetting(ACDefaultSettings.FIND_PARENT_FIELDS, null);
-    boolean reverseFields = this.getSetting(ACDefaultSettings.SHOULD_REVERSE_FIELDS, null);
+    boolean findParentFields = this.getSetting(ACDefaultSettings.FIND_PARENT_FIELDS, passthrough);
+    boolean reverseFields = this.getSetting(ACDefaultSettings.SHOULD_REVERSE_FIELDS, passthrough);
     AnnotatedConfigResolver.dump(
         annotatedConfig,
         AnnotatedConfigResolver.resolveAnnotations(
@@ -129,8 +149,16 @@ public final class ConfigResolverImpl implements ConfigResolver {
 
   @Override
   public void dump(Object annotatedConfig, Writer writer) {
-    boolean findParentFields = this.getSetting(ACDefaultSettings.FIND_PARENT_FIELDS, null);
-    boolean reverseFields = this.getSetting(ACDefaultSettings.SHOULD_REVERSE_FIELDS, null);
+    this.dump(annotatedConfig, writer, this.settings);
+  }
+
+  @Override
+  public void dump(Object annotatedConfig, Writer writer, Settings passthrough) {
+    Objects.requireNonNull(annotatedConfig, "annotatedConfig");
+    Objects.requireNonNull(writer, "writer");
+    Objects.requireNonNull(passthrough, "settings");
+    boolean findParentFields = this.getSetting(ACDefaultSettings.FIND_PARENT_FIELDS, passthrough);
+    boolean reverseFields = this.getSetting(ACDefaultSettings.SHOULD_REVERSE_FIELDS, passthrough);
     Map<AnnotationHolder, Set<AnnotationType>> resolvedAnnotations =
         AnnotatedConfigResolver.resolveAnnotations(
             annotatedConfig, reverseFields, findParentFields);
@@ -158,6 +186,9 @@ public final class ConfigResolverImpl implements ConfigResolver {
 
   @Override
   public void load(Object annotatedConfig, File file, Settings settings) {
+    Objects.requireNonNull(annotatedConfig, "annotatedConfig");
+    Objects.requireNonNull(file, "file");
+    Objects.requireNonNull(settings, "settings");
     if (!file.exists()) {
       return;
     }
@@ -189,6 +220,9 @@ public final class ConfigResolverImpl implements ConfigResolver {
 
   @Override
   public void load(Object annotatedConfig, Map<String, Object> values, Settings settings) {
+    Objects.requireNonNull(annotatedConfig, "annotatedConfig");
+    Objects.requireNonNull(values, "values");
+    Objects.requireNonNull(settings, "settings");
     if (values.isEmpty()) {
       return;
     }
@@ -217,6 +251,9 @@ public final class ConfigResolverImpl implements ConfigResolver {
 
   @Override
   public void load(Object annotatedConfig, Reader reader, Settings settings) {
+    Objects.requireNonNull(annotatedConfig, "annotatedConfig");
+    Objects.requireNonNull(reader, "reader");
+    Objects.requireNonNull(settings, "settings");
     boolean findParentFields = this.getSetting(ACDefaultSettings.FIND_PARENT_FIELDS, settings);
     boolean reverseFields = this.getSetting(ACDefaultSettings.SHOULD_REVERSE_FIELDS, settings);
     Map<AnnotationHolder, Set<AnnotationType>> resolvedAnnotations =
@@ -255,6 +292,9 @@ public final class ConfigResolverImpl implements ConfigResolver {
 
   @Override
   public void loadOrDump(Object annotatedConfig, File file, Settings settings) {
+    Objects.requireNonNull(annotatedConfig, "annotatedConfig");
+    Objects.requireNonNull(file, "file");
+    Objects.requireNonNull(settings, "settings");
     boolean findParentFields = this.getSetting(ACDefaultSettings.FIND_PARENT_FIELDS, settings);
     boolean reverseFields = this.getSetting(ACDefaultSettings.SHOULD_REVERSE_FIELDS, settings);
     Map<AnnotationHolder, Set<AnnotationType>> resolvedAnnotations =
@@ -278,6 +318,9 @@ public final class ConfigResolverImpl implements ConfigResolver {
 
   @Override
   public void loadOrDump(Object annotatedConfig, Path path, Settings settings) {
+    Objects.requireNonNull(annotatedConfig, "annotatedConfig");
+    Objects.requireNonNull(path, "path");
+    Objects.requireNonNull(settings, "settings");
     if (Files.isDirectory(path)) {
       throw new IllegalArgumentException("Cannot write a config FILE to a DIRECTORY " + path);
     }
@@ -311,6 +354,10 @@ public final class ConfigResolverImpl implements ConfigResolver {
   @Override
   public <T> Map<String, T> resolveMultiple(
       File dir, Supplier<T> configToResolveTo, WritableObject dumpFile, Settings settings) {
+    Objects.requireNonNull(dir, "dir");
+    Objects.requireNonNull(configToResolveTo, "configToResolveTo");
+    Objects.requireNonNull(dumpFile, "dumpFile");
+    Objects.requireNonNull(settings, "settings");
     if (!dir.isDirectory()) {
       throw new IllegalArgumentException(dir + " is not a directory!");
     }
@@ -363,6 +410,10 @@ public final class ConfigResolverImpl implements ConfigResolver {
   @Override
   public <T> Map<String, T> resolveMultiple(
       Path dir, Supplier<T> configToResolveTo, WritableObject dumpFile, Settings settings) {
+    Objects.requireNonNull(dir, "dir");
+    Objects.requireNonNull(configToResolveTo, "configToResolveTo");
+    Objects.requireNonNull(dumpFile, "dumpFile");
+    Objects.requireNonNull(settings, "settings");
     if (!Files.isDirectory(dir)) {
       throw new IllegalArgumentException(dir + " is not a directory!");
     }
@@ -520,10 +571,7 @@ public final class ConfigResolverImpl implements ConfigResolver {
     }
   }
 
-  private <T> T getSetting(Setting<T> setting, @Nullable Settings fromMethod) {
-    if (fromMethod == null || this.settings.equals(fromMethod)) {
-      return this.settings.get(setting).orElse(ACDefaultSettings.getDefault().get(setting).get());
-    }
+  private <T> T getSetting(Setting<T> setting, Settings fromMethod) {
     return fromMethod
         .get(setting)
         .orElse(
