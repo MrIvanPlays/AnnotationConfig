@@ -25,6 +25,8 @@ package com.mrivanplays.annotationconfig.core.utils;
 import com.mrivanplays.annotationconfig.core.annotations.ConfigObject;
 import com.mrivanplays.annotationconfig.core.annotations.Ignore;
 import com.mrivanplays.annotationconfig.core.annotations.Key;
+import com.mrivanplays.annotationconfig.core.annotations.Max;
+import com.mrivanplays.annotationconfig.core.annotations.Min;
 import com.mrivanplays.annotationconfig.core.annotations.RawConfig;
 import com.mrivanplays.annotationconfig.core.annotations.comment.Comment;
 import com.mrivanplays.annotationconfig.core.annotations.comment.Comments;
@@ -45,7 +47,6 @@ import org.jspecify.annotations.NullMarked;
  * @since 2.1.0
  */
 @NullMarked
-@SuppressWarnings("unused")
 public final class AnnotationUtils {
 
   /**
@@ -96,6 +97,30 @@ public final class AnnotationUtils {
   public static boolean isRawConfigAccess(Field field) {
     Objects.requireNonNull(field, "field");
     return field.isAnnotationPresent(RawConfig.class);
+  }
+
+  /**
+   * Returns whether the specified {@link Field} has been annotated with the {@code @Min}
+   * annotation.
+   *
+   * @param field field to check
+   * @return true if present, false otherwise
+   */
+  public static boolean hasMinimumRequirement(Field field) {
+    Objects.requireNonNull(field, "field");
+    return field.isAnnotationPresent(Min.class);
+  }
+
+  /**
+   * Returns whether the specified {@link Field} has been annotated with the {@code @Max}
+   * annotation.
+   *
+   * @param field field to check
+   * @return true if present, false otherwise
+   */
+  public static boolean hasMaximumRequirement(Field field) {
+    Objects.requireNonNull(field, "field");
+    return field.isAnnotationPresent(Max.class);
   }
 
   /**

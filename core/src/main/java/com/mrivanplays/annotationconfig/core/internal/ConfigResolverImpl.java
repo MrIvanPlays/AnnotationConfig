@@ -22,13 +22,11 @@
 
 package com.mrivanplays.annotationconfig.core.internal;
 
-import com.mrivanplays.annotationconfig.core.annotations.type.AnnotationType;
 import com.mrivanplays.annotationconfig.core.resolver.ConfigResolver;
 import com.mrivanplays.annotationconfig.core.resolver.ValueReader;
 import com.mrivanplays.annotationconfig.core.resolver.ValueWriter;
 import com.mrivanplays.annotationconfig.core.resolver.WritableObject;
 import com.mrivanplays.annotationconfig.core.resolver.settings.ACDefaultSettings;
-import com.mrivanplays.annotationconfig.core.resolver.settings.NullReadHandleOption;
 import com.mrivanplays.annotationconfig.core.resolver.settings.Setting;
 import com.mrivanplays.annotationconfig.core.resolver.settings.Settings;
 import java.io.File;
@@ -98,8 +96,8 @@ public final class ConfigResolverImpl implements ConfigResolver {
     if (file.exists()) {
       file.delete();
     }
-    Map<AnnotationHolder, Set<AnnotationType>> resolvedAnnotations =
-        AnnotatedConfigResolver.resolveAnnotations(annotatedConfig, passthrough);
+    Set<AnnotationHolder> resolvedAnnotations =
+        AnnotatedConfigResolver.resolveAnnotationHolders(annotatedConfig, passthrough);
     AnnotatedConfigResolver.dump(
         annotatedConfig, resolvedAnnotations, file, passthrough, commentPrefix, valueWriter);
   }
@@ -119,7 +117,7 @@ public final class ConfigResolverImpl implements ConfigResolver {
     }
     AnnotatedConfigResolver.dump(
         annotatedConfig,
-        AnnotatedConfigResolver.resolveAnnotations(annotatedConfig, passthrough),
+        AnnotatedConfigResolver.resolveAnnotationHolders(annotatedConfig, passthrough),
         path,
         passthrough,
         commentPrefix,
@@ -136,10 +134,13 @@ public final class ConfigResolverImpl implements ConfigResolver {
     Objects.requireNonNull(annotatedConfig, "annotatedConfig");
     Objects.requireNonNull(writer, "writer");
     Objects.requireNonNull(passthrough, "settings");
-    Map<AnnotationHolder, Set<AnnotationType>> resolvedAnnotations =
-        AnnotatedConfigResolver.resolveAnnotations(annotatedConfig, passthrough);
     AnnotatedConfigResolver.dump(
-        annotatedConfig, resolvedAnnotations, writer, passthrough, commentPrefix, valueWriter);
+        annotatedConfig,
+        AnnotatedConfigResolver.resolveAnnotationHolders(annotatedConfig, passthrough),
+        writer,
+        passthrough,
+        commentPrefix,
+        valueWriter);
   }
 
   @Override
@@ -160,9 +161,11 @@ public final class ConfigResolverImpl implements ConfigResolver {
     if (!file.exists()) {
       return;
     }
-    Map<AnnotationHolder, Set<AnnotationType>> resolvedAnnotations =
-        AnnotatedConfigResolver.resolveAnnotations(annotatedConfig, settings);
-    handleFileLoad(annotatedConfig, resolvedAnnotations, file, settings);
+    handleFileLoad(
+        annotatedConfig,
+        AnnotatedConfigResolver.resolveAnnotationHolders(annotatedConfig, settings),
+        file,
+        settings);
   }
 
   @Override
@@ -170,9 +173,11 @@ public final class ConfigResolverImpl implements ConfigResolver {
     if (Files.notExists(path) || Files.isDirectory(path)) {
       return;
     }
-    Map<AnnotationHolder, Set<AnnotationType>> resolvedAnnotations =
-        AnnotatedConfigResolver.resolveAnnotations(annotatedConfig, settings);
-    handlePathLoad(annotatedConfig, resolvedAnnotations, path, settings);
+    handlePathLoad(
+        annotatedConfig,
+        AnnotatedConfigResolver.resolveAnnotationHolders(annotatedConfig, settings),
+        path,
+        settings);
   }
 
   @Override
@@ -188,12 +193,11 @@ public final class ConfigResolverImpl implements ConfigResolver {
     if (values.isEmpty()) {
       return;
     }
-    Map<AnnotationHolder, Set<AnnotationType>> resolvedAnnotations =
-        AnnotatedConfigResolver.resolveAnnotations(annotatedConfig, settings);
-    NullReadHandleOption nullReadHandler =
-        this.getSetting(ACDefaultSettings.NULL_READ_HANDLER, settings);
     AnnotatedConfigResolver.setFields(
-        annotatedConfig, values, resolvedAnnotations, nullReadHandler, settings);
+        annotatedConfig,
+        values,
+        AnnotatedConfigResolver.resolveAnnotationHolders(annotatedConfig, settings),
+        settings);
   }
 
   @Override
@@ -206,8 +210,6 @@ public final class ConfigResolverImpl implements ConfigResolver {
     Objects.requireNonNull(annotatedConfig, "annotatedConfig");
     Objects.requireNonNull(reader, "reader");
     Objects.requireNonNull(settings, "settings");
-    Map<AnnotationHolder, Set<AnnotationType>> resolvedAnnotations =
-        AnnotatedConfigResolver.resolveAnnotations(annotatedConfig, settings);
     Map<String, Object> values;
     try {
       try (reader) {
@@ -216,10 +218,11 @@ public final class ConfigResolverImpl implements ConfigResolver {
     } catch (IOException e) {
       throw new RuntimeException(e);
     }
-    NullReadHandleOption nullReadHandler =
-        this.getSetting(ACDefaultSettings.NULL_READ_HANDLER, settings);
     AnnotatedConfigResolver.setFields(
-        annotatedConfig, values, resolvedAnnotations, nullReadHandler, settings);
+        annotatedConfig,
+        values,
+        AnnotatedConfigResolver.resolveAnnotationHolders(annotatedConfig, settings),
+        settings);
   }
 
   @Override
@@ -237,14 +240,14 @@ public final class ConfigResolverImpl implements ConfigResolver {
     Objects.requireNonNull(annotatedConfig, "annotatedConfig");
     Objects.requireNonNull(file, "file");
     Objects.requireNonNull(settings, "settings");
-    Map<AnnotationHolder, Set<AnnotationType>> resolvedAnnotations =
-        AnnotatedConfigResolver.resolveAnnotations(annotatedConfig, settings);
+    Set<AnnotationHolder> holders =
+        AnnotatedConfigResolver.resolveAnnotationHolders(annotatedConfig, settings);
     if (!file.exists()) {
       AnnotatedConfigResolver.dump(
-          annotatedConfig, resolvedAnnotations, file, settings, commentPrefix, valueWriter);
+          annotatedConfig, holders, file, settings, commentPrefix, valueWriter);
       return;
     }
-    handleFileLoad(annotatedConfig, resolvedAnnotations, file, settings);
+    handleFileLoad(annotatedConfig, holders, file, settings);
   }
 
   @Override
@@ -255,14 +258,14 @@ public final class ConfigResolverImpl implements ConfigResolver {
     if (Files.isDirectory(path)) {
       throw new IllegalArgumentException("Cannot write a config FILE to a DIRECTORY " + path);
     }
-    Map<AnnotationHolder, Set<AnnotationType>> resolvedAnnotations =
-        AnnotatedConfigResolver.resolveAnnotations(annotatedConfig, settings);
+    Set<AnnotationHolder> holders =
+        AnnotatedConfigResolver.resolveAnnotationHolders(annotatedConfig, settings);
     if (Files.notExists(path)) {
       AnnotatedConfigResolver.dump(
-          annotatedConfig, resolvedAnnotations, path, settings, commentPrefix, valueWriter);
+          annotatedConfig, holders, path, settings, commentPrefix, valueWriter);
       return;
     }
-    handlePathLoad(annotatedConfig, resolvedAnnotations, path, settings);
+    handlePathLoad(annotatedConfig, holders, path, settings);
   }
 
   @Override
@@ -302,16 +305,16 @@ public final class ConfigResolverImpl implements ConfigResolver {
         return Collections.emptyMap();
       }
       Map<String, T> ret = new LinkedHashMap<>();
-      Map<AnnotationHolder, Set<AnnotationType>> resolvedAnnotations = null;
+      Set<AnnotationHolder> holders = null;
       for (File file : files) {
         if (file.isDirectory()) {
           continue;
         }
         T config = configToResolveTo.get();
-        if (resolvedAnnotations == null) {
-          resolvedAnnotations = AnnotatedConfigResolver.resolveAnnotations(config, settings);
+        if (holders == null) {
+          holders = AnnotatedConfigResolver.resolveAnnotationHolders(config, settings);
         }
-        handleFileLoad(config, resolvedAnnotations, file, settings);
+        handleFileLoad(config, holders, file, settings);
         ret.put(file.getName(), config);
       }
       return ret;
@@ -351,7 +354,7 @@ public final class ConfigResolverImpl implements ConfigResolver {
           dump(config, dumpFile.writer());
           return Collections.emptyMap();
         }
-        Map<AnnotationHolder, Set<AnnotationType>> resolvedAnnotations = null;
+        Set<AnnotationHolder> holders = null;
         Map<String, T> ret = new LinkedHashMap<>();
         while (iterator.hasNext()) {
           Path path = iterator.next();
@@ -370,10 +373,10 @@ public final class ConfigResolverImpl implements ConfigResolver {
             continue;
           }
           T config = configToResolveTo.get();
-          if (resolvedAnnotations == null) {
-            resolvedAnnotations = AnnotatedConfigResolver.resolveAnnotations(config, settings);
+          if (holders == null) {
+            holders = AnnotatedConfigResolver.resolveAnnotationHolders(config, settings);
           }
-          handlePathLoad(config, resolvedAnnotations, path, settings);
+          handlePathLoad(config, holders, path, settings);
           ret.put(fileName, config);
         }
         return ret;
@@ -384,10 +387,7 @@ public final class ConfigResolverImpl implements ConfigResolver {
   }
 
   private void handleFileLoad(
-      Object annotatedConfig,
-      Map<AnnotationHolder, Set<AnnotationType>> resolvedAnnotations,
-      File file,
-      Settings settings) {
+      Object annotatedConfig, Set<AnnotationHolder> holders, File file, Settings settings) {
     Map<String, Object> values;
     try (Reader reader = new InputStreamReader(new FileInputStream(file), StandardCharsets.UTF_8)) {
       values = valueReader.read(reader, settings);
@@ -396,21 +396,18 @@ public final class ConfigResolverImpl implements ConfigResolver {
     }
     finishLoad(
         annotatedConfig,
-        resolvedAnnotations,
+        holders,
         values,
         settings,
         () -> {
           file.delete();
           AnnotatedConfigResolver.dump(
-              annotatedConfig, resolvedAnnotations, file, settings, commentPrefix, valueWriter);
+              annotatedConfig, holders, file, settings, commentPrefix, valueWriter);
         });
   }
 
   private void handlePathLoad(
-      Object annotatedConfig,
-      Map<AnnotationHolder, Set<AnnotationType>> resolvedAnnotations,
-      Path path,
-      Settings settings) {
+      Object annotatedConfig, Set<AnnotationHolder> holders, Path path, Settings settings) {
     Map<String, Object> values;
     try (Reader reader =
         new InputStreamReader(Files.newInputStream(path), StandardCharsets.UTF_8)) {
@@ -420,7 +417,7 @@ public final class ConfigResolverImpl implements ConfigResolver {
     }
     this.finishLoad(
         annotatedConfig,
-        resolvedAnnotations,
+        holders,
         values,
         settings,
         () -> {
@@ -430,25 +427,22 @@ public final class ConfigResolverImpl implements ConfigResolver {
             throw new RuntimeException(e);
           }
           AnnotatedConfigResolver.dump(
-              annotatedConfig, resolvedAnnotations, path, settings, commentPrefix, valueWriter);
+              annotatedConfig, holders, path, settings, commentPrefix, valueWriter);
         });
   }
 
   private void finishLoad(
       Object annotatedConfig,
-      Map<AnnotationHolder, Set<AnnotationType>> resolvedAnnotations,
+      Set<AnnotationHolder> holders,
       Map<String, Object> values,
       Settings settings,
       Runnable missingOptionsAction) {
     if (values.isEmpty()) {
       return;
     }
-    NullReadHandleOption nullReadHandler =
-        this.getSetting(ACDefaultSettings.NULL_READ_HANDLER, settings);
     boolean generateNewOptions = this.getSetting(ACDefaultSettings.GENERATE_NEW_OPTIONS, settings);
     boolean missingOptions =
-        AnnotatedConfigResolver.setFields(
-            annotatedConfig, values, resolvedAnnotations, nullReadHandler, settings);
+        AnnotatedConfigResolver.setFields(annotatedConfig, values, holders, settings);
     if (missingOptions && generateNewOptions) {
       missingOptionsAction.run();
     }

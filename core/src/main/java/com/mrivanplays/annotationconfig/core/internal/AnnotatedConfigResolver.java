@@ -22,7 +22,6 @@
 
 package com.mrivanplays.annotationconfig.core.internal;
 
-import com.mrivanplays.annotationconfig.core.annotations.Key;
 import com.mrivanplays.annotationconfig.core.annotations.Max;
 import com.mrivanplays.annotationconfig.core.annotations.Min;
 import com.mrivanplays.annotationconfig.core.annotations.Multiline;
@@ -65,7 +64,6 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
-import java.util.TreeMap;
 import java.util.TreeSet;
 
 /**
@@ -74,7 +72,7 @@ import java.util.TreeSet;
 @SuppressWarnings({"unchecked", "rawtypes", "ConstantValue", "OptionalGetWithoutIsPresent"})
 public final class AnnotatedConfigResolver {
 
-  public static Map<AnnotationHolder, Set<AnnotationType>> resolveAnnotations(
+  public static Set<AnnotationHolder> resolveAnnotationHolders(
       Object annotatedClass, Settings settings) {
     boolean findParentFields =
         settings
@@ -85,35 +83,21 @@ public final class AnnotatedConfigResolver {
             .get(ACDefaultSettings.SHOULD_REVERSE_FIELDS)
             .orElse(
                 ACDefaultSettings.getDefault().get(ACDefaultSettings.SHOULD_REVERSE_FIELDS).get());
-    Map<AnnotationHolder, Set<AnnotationType>> annotationData = new TreeMap<>();
+
+    Set<AnnotationHolder> ret = new TreeSet<>();
     Class<?> theClass = annotatedClass.getClass();
-    AnnotationHolder CLASS_ANNOTATION_HOLDER = new AnnotationHolder(theClass);
-    List<ParentData> parentData = null;
-    if (findParentFields) {
-      parentData = getParentData(theClass);
+    if (theClass.getDeclaredAnnotations().length > 0) {
+      ret.add(new AnnotationHolder(theClass));
     }
-    for (Annotation annotation : theClass.getAnnotations()) {
-      Optional<AnnotationType> typeOpt = AnnotationType.match(annotation.annotationType());
-      if (typeOpt.isEmpty()) {
-        continue;
-      }
-      populate(CLASS_ANNOTATION_HOLDER, typeOpt.get(), annotationData);
-    }
+    List<ParentData> parentData = findParentFields ? getParentData(theClass) : null;
     List<Field> fields = new ArrayList<>(Arrays.asList(theClass.getDeclaredFields()));
     if (parentData != null) {
-      for (ParentData data : parentData) {
-        if (data.annotations != null) {
-          AnnotationHolder classAnnotationHolder = new AnnotationHolder(data.parent);
-          for (Annotation annotation : data.annotations) {
-            Optional<AnnotationType> typeOpt = AnnotationType.match(annotation.annotationType());
-            if (typeOpt.isEmpty()) {
-              continue;
-            }
-            populate(classAnnotationHolder, typeOpt.get(), annotationData);
-          }
+      for (ParentData parent : parentData) {
+        if (parent.annotations != null) {
+          ret.add(new AnnotationHolder(parent.parent));
         }
-        if (data.fields != null && !data.fields.isEmpty()) {
-          fields.addAll(data.fields);
+        if (parent.fields != null && !parent.fields.isEmpty()) {
+          fields.addAll(parent.fields);
         }
       }
     }
@@ -124,30 +108,13 @@ public final class AnnotatedConfigResolver {
 
     int order = 1;
     for (Field field : fields) {
-      if (field.getDeclaredAnnotations().length == 1) {
-        Annotation anno = field.getDeclaredAnnotations()[0];
-        if (AnnotationType.IGNORE.is(anno.annotationType())) {
-          continue;
-        }
+      if (field.getDeclaredAnnotations().length == 1 && AnnotationUtils.isIgnored(field)) {
+        continue;
       }
-      AnnotationHolder holder = new AnnotationHolder(field, order);
-      if (field.getDeclaredAnnotations().length == 0) {
-        annotationData.put(holder, Collections.emptySet());
-      } else {
-        for (Annotation annotation : field.getDeclaredAnnotations()) {
-          Optional<AnnotationType> typeOpt = AnnotationType.match(annotation.annotationType());
-          if (typeOpt.isEmpty()) {
-            continue;
-          }
-          populate(holder, typeOpt.get(), annotationData);
-        }
-        if (!annotationData.containsKey(holder)) {
-          annotationData.put(holder, Collections.emptySet());
-        }
-      }
+      ret.add(new AnnotationHolder(field, order));
       order++;
     }
-    return annotationData;
+    return ret;
   }
 
   private static List<ParentData> getParentData(Class<?> theClass) {
@@ -184,7 +151,7 @@ public final class AnnotatedConfigResolver {
 
   public static void dump(
       Object annotatedConfig,
-      Map<AnnotationHolder, Set<AnnotationType>> map,
+      Set<AnnotationHolder> holders,
       File file,
       Settings settings,
       String commentChar,
@@ -192,7 +159,7 @@ public final class AnnotatedConfigResolver {
     try {
       file.createNewFile();
       try (PrintWriter writer = new PrintWriter(new FileWriter(file))) {
-        toWriter(annotatedConfig, writer, map, commentChar, valueWriter, settings);
+        toWriter(annotatedConfig, writer, holders, commentChar, valueWriter, settings);
       }
     } catch (IOException e) {
       throw new RuntimeException(e);
@@ -201,7 +168,7 @@ public final class AnnotatedConfigResolver {
 
   public static void dump(
       Object annotatedConfig,
-      Map<AnnotationHolder, Set<AnnotationType>> map,
+      Set<AnnotationHolder> holders,
       Path path,
       Settings settings,
       String commentChar,
@@ -210,7 +177,7 @@ public final class AnnotatedConfigResolver {
       Files.deleteIfExists(path);
       Files.createFile(path);
       try (PrintWriter writer = new PrintWriter(Files.newBufferedWriter(path))) {
-        toWriter(annotatedConfig, writer, map, commentChar, valueWriter, settings);
+        toWriter(annotatedConfig, writer, holders, commentChar, valueWriter, settings);
       }
     } catch (IOException e) {
       throw new RuntimeException(e);
@@ -219,13 +186,13 @@ public final class AnnotatedConfigResolver {
 
   public static void dump(
       Object annotatedConfig,
-      Map<AnnotationHolder, Set<AnnotationType>> map,
+      Set<AnnotationHolder> holders,
       Writer writerFeed,
       Settings settings,
       String commentChar,
       ValueWriter valueWriter) {
     try (PrintWriter writer = new PrintWriter(writerFeed)) {
-      toWriter(annotatedConfig, writer, map, commentChar, valueWriter, settings);
+      toWriter(annotatedConfig, writer, holders, commentChar, valueWriter, settings);
     } catch (IOException e) {
       throw new RuntimeException(e);
     }
@@ -234,15 +201,14 @@ public final class AnnotatedConfigResolver {
   private static void toWriter(
       Object annotatedConfig,
       PrintWriter writer,
-      Map<AnnotationHolder, Set<AnnotationType>> map,
+      Set<AnnotationHolder> holders,
       String commentChar,
       ValueWriter valueWriter,
       Settings settings)
       throws IOException {
     WriteData parentData = new WriteData();
     Field rawConfigField = null;
-    for (Map.Entry<AnnotationHolder, Set<AnnotationType>> entry : map.entrySet()) {
-      AnnotationHolder holder = entry.getKey();
+    for (AnnotationHolder holder : holders) {
       if (holder.isClass()) {
         List<String> comments =
             AnnotationUtils.getComments(
@@ -255,18 +221,17 @@ public final class AnnotatedConfigResolver {
         writer.append('\n');
         continue;
       }
-      if (entry.getValue().size() > 1) {
-        if (entry.getValue().contains(AnnotationType.RAW_CONFIG)) {
-          throw new IllegalArgumentException(
-              "Found illegal annotation placement ; @RawConfig on a field with other annotations except @RawConfig.");
-        }
-      } else if (entry.getValue().size() == 1
-          && entry.getValue().contains(AnnotationType.RAW_CONFIG)) {
-        rawConfigField = holder.getField();
+      Field field = holder.getField();
+      if (field.getDeclaredAnnotations().length > 1 && AnnotationUtils.isRawConfigAccess(field)) {
+        throw new IllegalArgumentException(
+            "Found illegal annotation placement ; @RawConfig on a field with other annotations except @RawConfig.");
+      } else if (field.getDeclaredAnnotations().length == 1
+          && AnnotationUtils.isRawConfigAccess(field)) {
+        rawConfigField = field;
         continue;
       }
       try {
-        WriteData current = getWriteData(annotatedConfig, entry, settings);
+        WriteData current = getWriteData(annotatedConfig, holder, settings);
         for (Map.Entry<String, Object> childDataWrite : current.getToWrite().entrySet()) {
           String childDataKey = childDataWrite.getKey();
           Object childDataValue = childDataWrite.getValue();
@@ -312,12 +277,9 @@ public final class AnnotatedConfigResolver {
   }
 
   private static WriteData getWriteData(
-      Object annotatedConfig,
-      Map.Entry<AnnotationHolder, Set<AnnotationType>> entry,
-      Settings settings)
+      Object annotatedConfig, AnnotationHolder holder, Settings settings)
       throws IllegalAccessException {
     SerializerRegistry serializerRegistry = SerializerRegistry.INSTANCE;
-    AnnotationHolder holder = entry.getKey();
     WriteData ret = new WriteData();
     if (holder.isClass()) {
       ret.getClassComments()
@@ -326,31 +288,22 @@ public final class AnnotatedConfigResolver {
                   AnnotationAccessor.createFromClass(annotatedConfig.getClass()), true));
       return ret;
     }
-    Field field = entry.getKey().getField();
+    Field field = holder.getField();
     field.setAccessible(true);
-    String keyName = field.getName();
+    String keyName = AnnotationUtils.getKey(field);
     List<String> comments =
         AnnotationUtils.getComments(AnnotationAccessor.createFromField(field), true);
-    boolean configObject = false;
+    boolean configObject = AnnotationUtils.isConfigObject(field);
     Character multilineCharacter = null;
-    for (AnnotationType type : entry.getValue()) {
-      if (type.is(AnnotationType.KEY)) {
-        keyName = field.getDeclaredAnnotation(Key.class).value();
-      }
-      if (type.is(AnnotationType.CONFIG_OBJECT)) {
-        configObject = true;
-      }
-      if (type.is(AnnotationType.MULTILINE)) {
-        multilineCharacter = field.getDeclaredAnnotation(Multiline.class).value();
-      }
+    if (field.isAnnotationPresent(Multiline.class)) {
+      multilineCharacter = field.getDeclaredAnnotation(Multiline.class).value();
     }
     if (configObject) {
       Object cfgObject = field.get(annotatedConfig);
-      Map<AnnotationHolder, Set<AnnotationType>> annotations =
-          resolveAnnotations(cfgObject, settings);
+      Set<AnnotationHolder> annotations = resolveAnnotationHolders(cfgObject, settings);
 
       WriteData combinedData = new WriteData();
-      for (Map.Entry<AnnotationHolder, Set<AnnotationType>> e1 : annotations.entrySet()) {
+      for (AnnotationHolder e1 : annotations) {
         WriteData childData = getWriteData(cfgObject, e1, settings);
         combinedData.getClassComments().addAll(childData.getClassComments());
         for (Map.Entry<String, Object> childDataWrite : childData.getToWrite().entrySet()) {
@@ -525,28 +478,29 @@ public final class AnnotatedConfigResolver {
   public static boolean setFields(
       Object annotatedConfig,
       Map<String, Object> values,
-      Map<AnnotationHolder, Set<AnnotationType>> map,
-      NullReadHandleOption nullReadHandler,
+      Set<AnnotationHolder> holders,
       Settings settings) {
     KeyResolver keyResolver =
         settings
             .get(ACDefaultSettings.KEY_RESOLVER)
             .orElse(ACDefaultSettings.getDefault().get(ACDefaultSettings.KEY_RESOLVER).get());
+    NullReadHandleOption nullReadHandler =
+        settings
+            .get(ACDefaultSettings.NULL_READ_HANDLER)
+            .orElse(ACDefaultSettings.getDefault().get(ACDefaultSettings.NULL_READ_HANDLER).get());
     boolean missingOptions = false;
     SerializerRegistry serializerRegistry = SerializerRegistry.INSTANCE;
-    for (Map.Entry<AnnotationHolder, Set<AnnotationType>> entry : map.entrySet()) {
-      AnnotationHolder holder = entry.getKey();
+    for (AnnotationHolder holder : holders) {
       if (holder.isClass()) {
         continue;
       }
       Field field = holder.getField();
       field.setAccessible(true);
-      Set<AnnotationType> annotationTypes = entry.getValue();
-      if (annotationTypes.size() > 1 && annotationTypes.contains(AnnotationType.RAW_CONFIG)) {
+      if (field.getDeclaredAnnotations().length > 1 && AnnotationUtils.isRawConfigAccess(field)) {
         throw new IllegalArgumentException(
             "Found illegal annotation placement ; @RawConfig on a field with other annotations except @RawConfig.");
-      } else if (annotationTypes.size() == 1
-          && annotationTypes.contains(AnnotationType.RAW_CONFIG)) {
+      } else if (field.getDeclaredAnnotations().length == 1
+          && AnnotationUtils.isRawConfigAccess(field)) {
         if (!field.getType().isAssignableFrom(DataObject.class)) {
           throw new IllegalArgumentException("@RawConfig on a field which is not DataObject");
         }
@@ -561,26 +515,24 @@ public final class AnnotatedConfigResolver {
       String keyName = AnnotationUtils.getKey(field);
       boolean configObject = false;
       Object section = null;
+      if (AnnotationUtils.isConfigObject(field)) {
+        configObject = true;
+        try {
+          section = field.get(annotatedConfig);
+        } catch (IllegalAccessException e) {
+          throw new IllegalArgumentException(
+              "Could not get config object from annotated config '"
+                  + annotatedConfig.getClass().getSimpleName()
+                  + "'");
+        }
+      }
       NumberResult min = NumberResult.stateOnly(State.START);
+      if (AnnotationUtils.hasMinimumRequirement(field)) {
+        min = MinMaxHandler.getNumber(field.getDeclaredAnnotation(Min.class));
+      }
       NumberResult max = NumberResult.stateOnly(State.START);
-      for (AnnotationType type : annotationTypes) {
-        if (type.is(AnnotationType.MIN)) {
-          min = MinMaxHandler.getNumber(field.getDeclaredAnnotation(Min.class));
-        }
-        if (type.is(AnnotationType.MAX)) {
-          max = MinMaxHandler.getNumber(field.getDeclaredAnnotation(Max.class));
-        }
-        if (type.is(AnnotationType.CONFIG_OBJECT)) {
-          configObject = true;
-          try {
-            section = field.get(annotatedConfig);
-          } catch (IllegalAccessException e) {
-            throw new IllegalArgumentException(
-                "Could not get config object from annotated config '"
-                    + annotatedConfig.getClass().getSimpleName()
-                    + "'");
-          }
-        }
+      if (AnnotationUtils.hasMaximumRequirement(field)) {
+        max = MinMaxHandler.getNumber(field.getDeclaredAnnotation(Max.class));
       }
       Object value = keyResolver.unbox(keyName, values);
       boolean thisMissingOption = false;
@@ -638,8 +590,7 @@ public final class AnnotatedConfigResolver {
             setFields(
                 section,
                 (Map<String, Object>) value,
-                resolveAnnotations(section, settings),
-                nullReadHandler,
+                resolveAnnotationHolders(section, settings),
                 settings);
         if (thMissing && !missingOptions) {
           missingOptions = true;
@@ -812,13 +763,6 @@ public final class AnnotatedConfigResolver {
         throw new IllegalArgumentException(message);
       }
     }
-  }
-
-  private static void populate(
-      AnnotationHolder holder,
-      AnnotationType putData,
-      Map<AnnotationHolder, Set<AnnotationType>> map) {
-    map.computeIfAbsent(holder, _ -> new TreeSet<>()).add(putData);
   }
 
   private AnnotatedConfigResolver() {
