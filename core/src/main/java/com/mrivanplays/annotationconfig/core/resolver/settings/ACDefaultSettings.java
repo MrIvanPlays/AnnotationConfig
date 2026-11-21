@@ -44,6 +44,9 @@ public final class ACDefaultSettings {
   public static final Setting<Boolean> GENERATE_NEW_OPTIONS =
       Setting.of("generate_new_options", Boolean.class);
 
+  /**
+   * @since 3.0.4
+   */
   public static final Setting<KeyResolver> KEY_RESOLVER = Setting.of(KeyResolver.class);
 
   /**
