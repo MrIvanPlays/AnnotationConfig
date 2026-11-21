@@ -87,13 +87,25 @@ public enum CommentPlaceholderRegistry {
   }
 
   /**
+   * Check whether a placeholder has already been registered.
+   *
+   * @param placeholder placeholder to check
+   * @return true if registered, false otherwise
+   * @since 3.0.4
+   */
+  public boolean hasPlaceholder(CommentPlaceholder placeholder) {
+    Objects.requireNonNull(placeholder, "placeholder");
+    return this.placeholderMap.contains(placeholder)
+        || this.placeholderMap.stream().anyMatch(p -> p.matches(placeholder));
+  }
+
+  /**
    * Returns a mutable {@link LinkedList} copy of the inputted {@code comments} with all the
    * registered placeholders applied.
    *
    * @param comments comments to apply placeholders to
    * @return comments with applied placeholders
    */
-  @SuppressWarnings("unused")
   public List<String> applyPlaceholders(List<String> comments) {
     Objects.requireNonNull(comments, "comments");
     if (comments.isEmpty()) {
