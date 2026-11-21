@@ -469,7 +469,11 @@ public final class ConfigResolverImpl implements ConfigResolver {
     if (passed.equals(this.settings)) {
       return this.settings;
     } else {
-      return this.settings.copyWithOverrides(passed);
+      if (passed.immutable()) {
+        throw new IllegalArgumentException(
+            "Settings passed in #load, #dump and #loadOrDump must be mutable");
+      }
+      return passed.combine(this.settings);
     }
   }
 }

@@ -38,11 +38,11 @@ import org.jspecify.annotations.Nullable;
 @NullMarked
 public final class Settings {
 
-  private Map<String, Object> values = new ConcurrentHashMap<>();
+  private final Map<String, Object> values;
   private final boolean immutable;
 
   public Settings() {
-    this.immutable = false;
+    this(false, new ConcurrentHashMap<>());
   }
 
   private Settings(boolean immutable, Map<String, Object> values) {
@@ -56,7 +56,7 @@ public final class Settings {
    * @return copy
    */
   public Settings copy() {
-    return new Settings(false, this.values);
+    return this.copy(false);
   }
 
   /**
@@ -66,7 +66,7 @@ public final class Settings {
    * @return copy
    */
   public Settings copy(boolean immutable) {
-    return new Settings(immutable, this.values);
+    return new Settings(immutable, new ConcurrentHashMap<>(this.values));
   }
 
   /**
@@ -105,19 +105,21 @@ public final class Settings {
     }
     Objects.requireNonNull(setting, "setting");
     Objects.requireNonNull(value, "value");
-    Object val = this.values.put(setting.key(), value);
-    if (val != null) {
-      if (!setting.type().isAssignableFrom(val.getClass())) {
-        throw new IllegalArgumentException(
-            "key matches for 2 different data types: key '"
-                + setting.key()
-                + "' cannot store both "
-                + val.getClass().getName()
-                + "' and '"
-                + setting.type().getName()
-                + "' value types");
-      }
-    }
+    this.values.compute(
+        setting.key(),
+        (key, existing) -> {
+          if (existing != null && !setting.type().isAssignableFrom(existing.getClass())) {
+            throw new IllegalArgumentException(
+                "key matches for 2 different data types: key '"
+                    + key
+                    + "' cannot store both "
+                    + existing.getClass().getName()
+                    + " and "
+                    + setting.type().getName()
+                    + " value types");
+          }
+          return value;
+        });
     return this;
   }
 
@@ -134,13 +136,7 @@ public final class Settings {
       throw new UnsupportedOperationException("This settings instance is immutable");
     }
     Objects.requireNonNull(settings, "settings");
-    if (!settings.values.isEmpty()) {
-      for (Map.Entry<String, Object> entry : settings.values.entrySet()) {
-        if (!this.values.containsKey(entry.getKey())) {
-          this.values.put(entry.getKey(), entry.getValue());
-        }
-      }
-    }
+    settings.values.forEach(this.values::putIfAbsent);
     return this;
   }
 
@@ -154,11 +150,11 @@ public final class Settings {
    */
   public Settings copyWithOverrides(Settings other) {
     Objects.requireNonNull(other, "settings");
-    Settings newInstance = new Settings(false, new ConcurrentHashMap<>(values));
-    for (String key : other.values.keySet()) {
-      newInstance.values.put(key, other.values.get(key));
-    }
-    return newInstance;
+
+    Map<String, Object> combined = new ConcurrentHashMap<>(this.values);
+    combined.putAll(other.values);
+
+    return new Settings(false, combined);
   }
 
   /**

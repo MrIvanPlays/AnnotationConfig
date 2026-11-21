@@ -95,9 +95,13 @@ public interface ConfigResolver {
    * one after each other. This way you save CPU time by not making the library find annotations
    * twice.
    *
+   * <p>The provided settings must be <i>mutable</i> as AnnotationConfig will fill them with
+   * defaults if they are missing.
+   *
    * @param annotatedConfig the annotated config to dump
    * @param file the file to dump to
    * @param settings the settings to use
+   * @throws IllegalArgumentException if the provided settings are immutable
    * @since 3.0.4
    */
   void dump(Object annotatedConfig, File file, Settings settings);
@@ -127,9 +131,13 @@ public interface ConfigResolver {
    * one after each other. This way you save CPU time by not making the library find annotations
    * twice.
    *
+   * <p>The provided settings must be <i>mutable</i> as AnnotationConfig will fill them with
+   * defaults if they are missing.
+   *
    * @param annotatedConfig the annotated config to dump
    * @param path the file path to dump to
    * @param settings the settings to use
+   * @throws IllegalArgumentException if the provided settings are immutable
    * @since 3.0.4
    */
   void dump(Object annotatedConfig, Path path, Settings settings);
@@ -148,9 +156,13 @@ public interface ConfigResolver {
    * Dumps the specified {@code annotatedConfig} to the specified {@link OutputStream output stream}
    * using the specified {@link Settings settings}.
    *
+   * <p>The provided settings must be <i>mutable</i> as AnnotationConfig will fill them with
+   * defaults if they are missing.
+   *
    * @param annotatedConfig the annotated config to dump
    * @param os the output stream to dump to
    * @param settings the settings to use
+   * @throws IllegalArgumentException if the provided settings are immutable
    * @since 3.0.4
    */
   default void dump(Object annotatedConfig, OutputStream os, Settings settings) {
@@ -173,9 +185,13 @@ public interface ConfigResolver {
    * Dumps rhe specified {@code annotatedConfig} to the specified {@link WritableObject writable
    * object} using the specified {@link Settings settings}.
    *
+   * <p>The provided settings must be <i>mutable</i> as AnnotationConfig will fill them with
+   * defaults if they are missing.
+   *
    * @param annotatedConfig the annotated config to dump
    * @param writableObject the writable object to dump to
    * @param settings the settings to use
+   * @throws IllegalArgumentException if the provided settings are immutable
    * @since 3.0.4
    */
   default void dump(Object annotatedConfig, WritableObject writableObject, Settings settings) {
@@ -194,9 +210,13 @@ public interface ConfigResolver {
    * Dumps the specified {@code annotatedConfig} to the specified {@link Writer writer}, using the
    * provided {@link Settings settings}.
    *
+   * <p>The provided settings must be <i>mutable</i> as AnnotationConfig will fill them with
+   * defaults if they are missing.
+   *
    * @param annotatedConfig the config to dump
    * @param writer the writer to dump to
    * @param settings the settings to use
+   * @throws IllegalArgumentException if the provided settings are immutable
    * @since 3.0.4
    */
   void dump(Object annotatedConfig, Writer writer, Settings settings);
@@ -237,8 +257,12 @@ public interface ConfigResolver {
    * {@link #loadOrDump(Object, File, Settings)} rather than calling dump and load one after each
    * other. This way you save CPU time by not making the library find annotations twice.
    *
+   * <p>The provided settings must be <i>mutable</i> as AnnotationConfig will fill them with
+   * defaults if they are missing.
+   *
    * @param annotatedConfig the annotated config you want to load to
    * @param file the file you want to load
+   * @throws IllegalArgumentException if the provided settings are immutable
    * @param settings the load settings
    */
   void load(Object annotatedConfig, File file, Settings settings);
@@ -251,9 +275,13 @@ public interface ConfigResolver {
    * {@link #loadOrDump(Object, Path, Settings)} rather than calling dump and load one after each
    * other. This way you save CPU time by not making the library find annotations twice.
    *
+   * <p>The provided settings must be <i>mutable</i> as AnnotationConfig will fill them with
+   * defaults if they are missing.
+   *
    * @param annotatedConfig the annotated config you want to load to
    * @param path the file path you want to load
    * @param settings the load settings
+   * @throws IllegalArgumentException if the provided settings are immutable
    */
   void load(Object annotatedConfig, Path path, Settings settings);
 
@@ -271,9 +299,13 @@ public interface ConfigResolver {
    * Loads the specified {@code annotatedConfig} from the specified {@link Map} {@code values} using
    * the {@link Settings} {@code settings} specified.
    *
+   * <p>The provided settings must be <i>mutable</i> as AnnotationConfig will fill them with
+   * defaults if they are missing.
+   *
    * @param annotatedConfig the annotated you config you want to load to
    * @param values the values you want to load
    * @param settings the load settings
+   * @throws IllegalArgumentException if the provided settings are immutable
    */
   void load(Object annotatedConfig, Map<String, Object> values, Settings settings);
 
@@ -301,9 +333,13 @@ public interface ConfigResolver {
    * {@link #load(Object, File, Settings)}. This way you allow AnnotatedConfig to generate missing
    * options if the load settings allow it.
    *
+   * <p>The provided settings must be <i>mutable</i> as AnnotationConfig will fill them with
+   * defaults if they are missing.
+   *
    * @param annotatedConfig the annotated config you want to load to
    * @param in the input stream you want to load
    * @param settings the load settings
+   * @throws IllegalArgumentException if the provided settings are immutable
    */
   default void load(Object annotatedConfig, InputStream in, Settings settings) {
     load(annotatedConfig, new InputStreamReader(in), settings);
@@ -331,9 +367,13 @@ public interface ConfigResolver {
    * {@link #load(Object, File, Settings)}. This way you allow AnnotatedConfig to generate missing
    * options if the load settings allow it.
    *
+   * <p>The provided settings must be <i>mutable</i> as AnnotationConfig will fill them with
+   * defaults if they are missing.
+   *
    * @param annotatedConfig the annotated config you want to load to
    * @param reader the reader you want to load
    * @param settings the load settings
+   * @throws IllegalArgumentException if the provided settings are immutable
    */
   void load(Object annotatedConfig, Reader reader, Settings settings);
 
@@ -364,9 +404,13 @@ public interface ConfigResolver {
    * exists, if not, dumps the specified {@code annotatedConfig} to the specified file, using the
    * {@link Settings} {@code settings} specified.
    *
+   * <p>The provided settings must be <i>mutable</i> as AnnotationConfig will fill them with
+   * defaults if they are missing.
+   *
    * @param annotatedConfig the annotated config you want to load/dump
    * @param file the file you want to load/dump to
    * @param settings the load settings
+   * @throws IllegalArgumentException if the provided settings are immutable
    */
   void loadOrDump(Object annotatedConfig, File file, Settings settings);
 
@@ -375,9 +419,13 @@ public interface ConfigResolver {
    * exists, if not, dumps the specified {@code annotatedConfig} to the specified file, using the
    * {@link Settings} {@code settings} specified.
    *
+   * <p>The provided settings must be <i>mutable</i> as AnnotationConfig will fill them with
+   * defaults if they are missing.
+   *
    * @param annotatedConfig the annotated config you want to load/dump
    * @param path the file path you want to load/dump to
    * @param settings the load settings
+   * @throws IllegalArgumentException if the provided settings are immutable
    */
   void loadOrDump(Object annotatedConfig, Path path, Settings settings);
 
@@ -405,6 +453,9 @@ public interface ConfigResolver {
    * dumpFile}. <br>
    * <b>WARNING: The specified {@link File} {@code dir} has to be a directory!!!!!</b>
    *
+   * <p>The provided settings must be <i>mutable</i> as AnnotationConfig will fill them with
+   * defaults if they are missing.
+   *
    * @param dir the directory to load configurations from
    * @param configToResolveTo a {@link Supplier} of the needed configuration objects
    * @param dumpFile the default dump file
@@ -413,6 +464,7 @@ public interface ConfigResolver {
    *     AnnotationConfig couldn't find any configurations in the folder, and you should fall back
    *     to the defaults.
    * @throws IllegalArgumentException if the specified {@code dir} is not a directory!
+   * @throws IllegalArgumentException if the provided settings are immutable
    * @param <T> configuration type needed
    */
   <T> Map<String, T> resolveMultiple(
@@ -442,6 +494,9 @@ public interface ConfigResolver {
    * dumpFile}. <br>
    * <b>WARNING: The specified {@link Path} {@code dir} has to be a directory!!!!!</b>
    *
+   * <p>The provided settings must be <i>mutable</i> as AnnotationConfig will fill them with
+   * defaults if they are missing.
+   *
    * @param dir the directory to load configurations from
    * @param configToResolveTo a {@link Supplier} of the needed configuration objects
    * @param dumpFile the default dump file
@@ -450,6 +505,7 @@ public interface ConfigResolver {
    *     AnnotationConfig couldn't find any configurations in the folder, and you should fall back
    *     to the defaults.
    * @throws IllegalArgumentException if the specified {@code dir} is not a directory!
+   * @throws IllegalArgumentException if the provided settings are immutable
    * @param <T> configuration type needed
    */
   <T> Map<String, T> resolveMultiple(
