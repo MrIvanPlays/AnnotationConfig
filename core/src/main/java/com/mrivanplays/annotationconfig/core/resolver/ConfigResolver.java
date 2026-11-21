@@ -469,7 +469,6 @@ public interface ConfigResolver {
     private ValueWriter valueWriter;
     private ValueReader valueReader;
     private Settings settings;
-    private KeyResolver keyResolver;
     private List<String> fileExtensions;
 
     public Builder() {}
@@ -484,7 +483,6 @@ public interface ConfigResolver {
       this.valueWriter = copy.valueWriter;
       this.valueReader = copy.valueReader;
       this.settings = copy.settings;
-      this.keyResolver = copy.keyResolver;
       this.fileExtensions = copy.fileExtensions;
     }
 
@@ -554,10 +552,12 @@ public interface ConfigResolver {
      *
      * @param resolver the resolver you want to set
      * @return this instance for chaining
+     * @deprecated use {@link #withSetting(Setting, Object)} with the {@link
+     *     ACDefaultSettings#KEY_RESOLVER} setting.
      */
+    @Deprecated(since = "3.0.4", forRemoval = true)
     public Builder withKeyResolver(KeyResolver resolver) {
-      this.keyResolver = resolver;
-      return this;
+      return withSetting(ACDefaultSettings.KEY_RESOLVER, resolver);
     }
 
     /**
@@ -607,7 +607,7 @@ public interface ConfigResolver {
         throw new IllegalArgumentException("No file extensions specified");
       }
       return new ConfigResolverImpl(
-          commentPrefix, valueWriter, valueReader, settings, keyResolver, fileExtensions);
+          commentPrefix, valueWriter, valueReader, settings, fileExtensions);
     }
   }
 }

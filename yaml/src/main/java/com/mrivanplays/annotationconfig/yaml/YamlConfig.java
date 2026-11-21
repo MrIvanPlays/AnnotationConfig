@@ -72,9 +72,9 @@ public final class YamlConfig {
   private static void generateConfigResolver() {
     configResolver =
         ConfigResolver.newBuilder()
-            .withKeyResolver(DottedResolver.getInstance())
             .withValueWriter(YAML_VALUE_WRITER)
             .withSetting(ACDefaultSettings.SHOULD_REVERSE_FIELDS, true)
+            .withSetting(ACDefaultSettings.KEY_RESOLVER, DottedResolver.getInstance())
             .withCommentPrefix("# ")
             .withFileExtension(".yml")
             .withFileExtension(".yaml")

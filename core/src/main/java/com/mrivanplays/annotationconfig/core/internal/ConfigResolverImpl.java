@@ -63,7 +63,6 @@ public final class ConfigResolverImpl implements ConfigResolver {
   private final ValueWriter valueWriter;
   private final ValueReader valueReader;
   private final Settings settings;
-  private final KeyResolver keyResolver;
   private final List<String> fileExtensions;
 
   public ConfigResolverImpl(
@@ -71,7 +70,6 @@ public final class ConfigResolverImpl implements ConfigResolver {
       ValueWriter valueWriter,
       ValueReader valueReader,
       @Nullable Settings settings,
-      @Nullable KeyResolver keyResolver,
       List<String> fileExtensions) {
     this.commentPrefix = commentPrefix;
     this.valueWriter = Objects.requireNonNull(valueWriter, "valueWriter");
@@ -81,7 +79,6 @@ public final class ConfigResolverImpl implements ConfigResolver {
       throw new IllegalArgumentException("No file extensions specified.");
     }
     this.settings = Objects.requireNonNullElse(settings, ACDefaultSettings.getDefault().copy());
-    this.keyResolver = Objects.requireNonNullElse(keyResolver, KeyResolver.DEFAULT);
   }
 
   @Override
@@ -104,6 +101,7 @@ public final class ConfigResolverImpl implements ConfigResolver {
     }
     boolean findParentFields = this.getSetting(ACDefaultSettings.FIND_PARENT_FIELDS, passthrough);
     boolean reverseFields = this.getSetting(ACDefaultSettings.SHOULD_REVERSE_FIELDS, passthrough);
+    KeyResolver keyResolver = this.getSetting(ACDefaultSettings.KEY_RESOLVER, passthrough);
     Map<AnnotationHolder, Set<AnnotationType>> resolvedAnnotations =
         AnnotatedConfigResolver.resolveAnnotations(
             annotatedConfig, reverseFields, findParentFields);
@@ -111,7 +109,7 @@ public final class ConfigResolverImpl implements ConfigResolver {
         annotatedConfig,
         resolvedAnnotations,
         file,
-        settings,
+        passthrough,
         commentPrefix,
         valueWriter,
         keyResolver,
@@ -134,12 +132,13 @@ public final class ConfigResolverImpl implements ConfigResolver {
     }
     boolean findParentFields = this.getSetting(ACDefaultSettings.FIND_PARENT_FIELDS, passthrough);
     boolean reverseFields = this.getSetting(ACDefaultSettings.SHOULD_REVERSE_FIELDS, passthrough);
+    KeyResolver keyResolver = this.getSetting(ACDefaultSettings.KEY_RESOLVER, passthrough);
     AnnotatedConfigResolver.dump(
         annotatedConfig,
         AnnotatedConfigResolver.resolveAnnotations(
             annotatedConfig, reverseFields, findParentFields),
         path,
-        settings,
+        passthrough,
         commentPrefix,
         valueWriter,
         keyResolver,
@@ -159,6 +158,7 @@ public final class ConfigResolverImpl implements ConfigResolver {
     Objects.requireNonNull(passthrough, "settings");
     boolean findParentFields = this.getSetting(ACDefaultSettings.FIND_PARENT_FIELDS, passthrough);
     boolean reverseFields = this.getSetting(ACDefaultSettings.SHOULD_REVERSE_FIELDS, passthrough);
+    KeyResolver keyResolver = this.getSetting(ACDefaultSettings.KEY_RESOLVER, passthrough);
     Map<AnnotationHolder, Set<AnnotationType>> resolvedAnnotations =
         AnnotatedConfigResolver.resolveAnnotations(
             annotatedConfig, reverseFields, findParentFields);
@@ -166,7 +166,7 @@ public final class ConfigResolverImpl implements ConfigResolver {
         annotatedConfig,
         resolvedAnnotations,
         writer,
-        settings,
+        passthrough,
         commentPrefix,
         valueWriter,
         keyResolver,
@@ -228,6 +228,7 @@ public final class ConfigResolverImpl implements ConfigResolver {
     }
     boolean findParentFields = this.getSetting(ACDefaultSettings.FIND_PARENT_FIELDS, settings);
     boolean reverseFields = this.getSetting(ACDefaultSettings.SHOULD_REVERSE_FIELDS, settings);
+    KeyResolver keyResolver = this.getSetting(ACDefaultSettings.KEY_RESOLVER, settings);
     Map<AnnotationHolder, Set<AnnotationType>> resolvedAnnotations =
         AnnotatedConfigResolver.resolveAnnotations(
             annotatedConfig, reverseFields, findParentFields);
@@ -269,6 +270,7 @@ public final class ConfigResolverImpl implements ConfigResolver {
     }
     NullReadHandleOption nullReadHandler =
         this.getSetting(ACDefaultSettings.NULL_READ_HANDLER, settings);
+    KeyResolver keyResolver = this.getSetting(ACDefaultSettings.KEY_RESOLVER, settings);
     AnnotatedConfigResolver.setFields(
         annotatedConfig,
         values,
@@ -301,6 +303,7 @@ public final class ConfigResolverImpl implements ConfigResolver {
         AnnotatedConfigResolver.resolveAnnotations(
             annotatedConfig, reverseFields, findParentFields);
     if (!file.exists()) {
+      KeyResolver keyResolver = this.getSetting(ACDefaultSettings.KEY_RESOLVER, settings);
       AnnotatedConfigResolver.dump(
           annotatedConfig,
           resolvedAnnotations,
@@ -330,6 +333,7 @@ public final class ConfigResolverImpl implements ConfigResolver {
         AnnotatedConfigResolver.resolveAnnotations(
             annotatedConfig, reverseFields, findParentFields);
     if (Files.notExists(path)) {
+      KeyResolver keyResolver = this.getSetting(ACDefaultSettings.KEY_RESOLVER, settings);
       AnnotatedConfigResolver.dump(
           annotatedConfig,
           resolvedAnnotations,
@@ -482,6 +486,7 @@ public final class ConfigResolverImpl implements ConfigResolver {
       throw new RuntimeException(e);
     }
     boolean reverseFields = this.getSetting(ACDefaultSettings.SHOULD_REVERSE_FIELDS, settings);
+    KeyResolver keyResolver = this.getSetting(ACDefaultSettings.KEY_RESOLVER, settings);
     finishLoad(
         annotatedConfig,
         resolvedAnnotations,
@@ -517,6 +522,7 @@ public final class ConfigResolverImpl implements ConfigResolver {
       throw new RuntimeException(e);
     }
     boolean reverseFields = this.getSetting(ACDefaultSettings.SHOULD_REVERSE_FIELDS, settings);
+    KeyResolver keyResolver = this.getSetting(ACDefaultSettings.KEY_RESOLVER, settings);
     this.finishLoad(
         annotatedConfig,
         resolvedAnnotations,
@@ -556,6 +562,7 @@ public final class ConfigResolverImpl implements ConfigResolver {
         this.getSetting(ACDefaultSettings.NULL_READ_HANDLER, settings);
     boolean generateNewOptions = this.getSetting(ACDefaultSettings.GENERATE_NEW_OPTIONS, settings);
     boolean reverseFields = this.getSetting(ACDefaultSettings.SHOULD_REVERSE_FIELDS, settings);
+    KeyResolver keyResolver = this.getSetting(ACDefaultSettings.KEY_RESOLVER, settings);
     boolean missingOptions =
         AnnotatedConfigResolver.setFields(
             annotatedConfig,

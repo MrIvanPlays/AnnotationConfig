@@ -22,6 +22,7 @@
 
 package com.mrivanplays.annotationconfig.core.resolver.settings;
 
+import com.mrivanplays.annotationconfig.core.resolver.key.KeyResolver;
 import org.jspecify.annotations.NullMarked;
 import org.jspecify.annotations.Nullable;
 
@@ -42,6 +43,8 @@ public final class ACDefaultSettings {
 
   public static final Setting<Boolean> GENERATE_NEW_OPTIONS =
       Setting.of("generate_new_options", Boolean.class);
+
+  public static final Setting<KeyResolver> KEY_RESOLVER = Setting.of(KeyResolver.class);
 
   /**
    * A setting indicating whether to find {@link java.lang.reflect.Field fields} of classes which
@@ -79,6 +82,7 @@ public final class ACDefaultSettings {
             .put(NULL_READ_HANDLER, NullReadHandleOption.SET_NULL)
             .put(GENERATE_NEW_OPTIONS, true)
             .put(FIND_PARENT_FIELDS, false)
+            .put(KEY_RESOLVER, KeyResolver.DEFAULT)
             .copy(true);
   }
 }
