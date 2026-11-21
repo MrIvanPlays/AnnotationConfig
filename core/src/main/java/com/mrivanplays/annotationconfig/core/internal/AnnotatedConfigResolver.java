@@ -65,11 +65,15 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.TreeSet;
+import org.jspecify.annotations.NullMarked;
+import org.jspecify.annotations.NullUnmarked;
+import org.jspecify.annotations.Nullable;
 
 /**
  * @hidden
  */
 @SuppressWarnings({"unchecked", "rawtypes", "ConstantValue", "OptionalGetWithoutIsPresent"})
+@NullMarked
 public final class AnnotatedConfigResolver {
 
   public static Set<AnnotationHolder> resolveAnnotationHolders(
@@ -93,11 +97,11 @@ public final class AnnotatedConfigResolver {
     List<Field> fields = new ArrayList<>(Arrays.asList(theClass.getDeclaredFields()));
     if (parentData != null) {
       for (ParentData parent : parentData) {
-        if (parent.annotations != null) {
-          ret.add(new AnnotationHolder(parent.parent));
+        if (parent.annotations() != null) {
+          ret.add(new AnnotationHolder(parent.parent()));
         }
-        if (parent.fields != null && !parent.fields.isEmpty()) {
-          fields.addAll(parent.fields);
+        if (parent.fields() != null) {
+          fields.addAll(parent.fields());
         }
       }
     }
@@ -130,24 +134,22 @@ public final class AnnotatedConfigResolver {
           || superClass.getCanonicalName().equalsIgnoreCase("java.lang.Object")) {
         break;
       }
-      ParentData parentData = new ParentData();
-      parentData.parent = superClass;
+      List<Field> currentFields = null;
       if (superClass.getDeclaredFields().length > 0) {
-        parentData.fields = Arrays.asList(superClass.getDeclaredFields());
+        currentFields = Arrays.asList(superClass.getDeclaredFields());
       }
+      Annotation[] currentAnnotations = null;
       if (superClass.getAnnotations().length > 0) {
-        parentData.annotations = superClass.getAnnotations();
+        currentAnnotations = superClass.getAnnotations();
       }
-      ret.add(parentData);
+      ret.add(new ParentData(superClass, currentFields, currentAnnotations));
     }
     return ret;
   }
 
-  private static class ParentData {
-    Class<?> parent;
-    List<Field> fields;
-    Annotation[] annotations;
-  }
+  @NullUnmarked
+  private record ParentData(
+      Class<?> parent, @Nullable List<Field> fields, @Nullable Annotation[] annotations) {}
 
   public static void dump(
       Object annotatedConfig,

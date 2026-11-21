@@ -32,7 +32,6 @@ import org.jspecify.annotations.Nullable;
  * @since 2.0.0
  */
 @NullMarked
-@SuppressWarnings("unused")
 public interface ValidationResponse {
 
   /**

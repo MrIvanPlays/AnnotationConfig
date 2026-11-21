@@ -51,7 +51,6 @@ import org.jspecify.annotations.Nullable;
  * @author Ivan Pekov
  */
 @NullMarked
-@SuppressWarnings("unused")
 public interface ConfigResolver {
 
   /**

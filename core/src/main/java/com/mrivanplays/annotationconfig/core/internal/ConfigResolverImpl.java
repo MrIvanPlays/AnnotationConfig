@@ -27,7 +27,6 @@ import com.mrivanplays.annotationconfig.core.resolver.ValueReader;
 import com.mrivanplays.annotationconfig.core.resolver.ValueWriter;
 import com.mrivanplays.annotationconfig.core.resolver.WritableObject;
 import com.mrivanplays.annotationconfig.core.resolver.settings.ACDefaultSettings;
-import com.mrivanplays.annotationconfig.core.resolver.settings.Setting;
 import com.mrivanplays.annotationconfig.core.resolver.settings.Settings;
 import java.io.File;
 import java.io.FileInputStream;
@@ -440,19 +439,17 @@ public final class ConfigResolverImpl implements ConfigResolver {
     if (values.isEmpty()) {
       return;
     }
-    boolean generateNewOptions = this.getSetting(ACDefaultSettings.GENERATE_NEW_OPTIONS, settings);
+    boolean generateNewOptions =
+        settings
+            .get(ACDefaultSettings.GENERATE_NEW_OPTIONS)
+            .orElse(
+                this.settings
+                    .get(ACDefaultSettings.GENERATE_NEW_OPTIONS)
+                    .orElse(this.settings.get(ACDefaultSettings.GENERATE_NEW_OPTIONS).get()));
     boolean missingOptions =
         AnnotatedConfigResolver.setFields(annotatedConfig, values, holders, settings);
     if (missingOptions && generateNewOptions) {
       missingOptionsAction.run();
     }
-  }
-
-  private <T> T getSetting(Setting<T> setting, Settings fromMethod) {
-    //noinspection OptionalGetWithoutIsPresent
-    return fromMethod
-        .get(setting)
-        .orElse(
-            this.settings.get(setting).orElse(ACDefaultSettings.getDefault().get(setting).get()));
   }
 }

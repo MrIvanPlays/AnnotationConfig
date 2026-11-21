@@ -36,7 +36,6 @@ import org.jspecify.annotations.NullMarked;
  * @since 2.0.0
  */
 @NullMarked
-@SuppressWarnings("unused")
 public enum CustomAnnotationRegistry {
   INSTANCE;
 

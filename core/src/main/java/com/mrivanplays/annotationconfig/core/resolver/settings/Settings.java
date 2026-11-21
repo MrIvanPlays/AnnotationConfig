@@ -36,7 +36,6 @@ import org.jspecify.annotations.Nullable;
  * @author Ivan Pekov
  */
 @NullMarked
-@SuppressWarnings("unused")
 public final class Settings {
 
   private Map<String, Object> values = new ConcurrentHashMap<>();

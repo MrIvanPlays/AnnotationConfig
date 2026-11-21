@@ -43,7 +43,6 @@ import org.jspecify.annotations.NullMarked;
  * @since 3.0.0
  */
 @NullMarked
-@SuppressWarnings("unused")
 public interface WritableObject {
 
   /**
