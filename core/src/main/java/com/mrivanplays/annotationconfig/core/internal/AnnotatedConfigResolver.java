@@ -105,7 +105,7 @@ public final class AnnotatedConfigResolver {
 
     int order = 1;
     for (Field field : fields) {
-      if (AnnotationUtils.isIgnored(field)) {
+      if (AnnotationUtils.isIgnored(field) && !theClass.isRecord()) {
         continue;
       }
       ret.add(new AnnotationHolder(field, order));

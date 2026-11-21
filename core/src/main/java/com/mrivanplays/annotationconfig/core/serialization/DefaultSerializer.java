@@ -264,6 +264,23 @@ final class DefaultSerializer implements FieldTypeSerializer<Object> {
         for (Field f : recordFields) {
           f.setAccessible(true); // dirty workaround!?
           Object val = dataMap.get(AnnotationUtils.getKey(f));
+          if ((AnnotationUtils.isIgnored(f) || AnnotationUtils.isRawConfigAccess(f))
+              && System.getProperty(
+                      neededInstanceAllocation.getCanonicalName() + "annotationConfigNagged")
+                  == null) {
+            System.setProperty(
+                neededInstanceAllocation.getCanonicalName() + "annotationConfigNagged", "true");
+
+            System.err.println(
+                "[AnnotationConfig] Warning: unsupported annotation on record ( NAG AUTHORS OF ) "
+                    + neededInstanceAllocation.getCanonicalName());
+            System.err.println(
+                "[AnnotationConfig] @Ignore and @RawConfig are not supported on record components.");
+            System.err.println("[AnnotationConfig] The annotation will currently be ignored.");
+            System.err.println(
+                "[AnnotationConfig] This may change to an exception in a future release.");
+            System.err.println("[AnnotationConfig] Component: " + f.getName());
+          }
           if (val == null) {
             NullReadHandleOption nullReadHandle =
                 context.getSettings().get(ACDefaultSettings.NULL_READ_HANDLER).orElseThrow();
