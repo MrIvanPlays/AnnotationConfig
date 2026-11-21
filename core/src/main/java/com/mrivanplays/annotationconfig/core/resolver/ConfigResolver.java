@@ -39,9 +39,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Supplier;
-import org.jspecify.annotations.NonNull;
 import org.jspecify.annotations.NullMarked;
-import org.jspecify.annotations.NullUnmarked;
+import org.jspecify.annotations.Nullable;
 
 /**
  * Represents a resolver of configurations.
@@ -52,6 +51,7 @@ import org.jspecify.annotations.NullUnmarked;
  * @author Ivan Pekov
  */
 @NullMarked
+@SuppressWarnings("unused")
 public interface ConfigResolver {
 
   /**
@@ -462,14 +462,14 @@ public interface ConfigResolver {
    * @since 2.0.0
    * @author Ivan Pekov
    */
-  @NullUnmarked
+  @NullMarked
   class Builder {
 
-    private String commentPrefix;
-    private ValueWriter valueWriter;
-    private ValueReader valueReader;
-    private Settings settings;
-    private List<String> fileExtensions;
+    @Nullable private String commentPrefix;
+    @Nullable private ValueWriter valueWriter;
+    @Nullable private ValueReader valueReader;
+    @Nullable private Settings settings;
+    @Nullable private List<String> fileExtensions;
 
     public Builder() {}
 
@@ -601,11 +601,11 @@ public interface ConfigResolver {
      *
      * @return new config resolver instance
      */
-    @NonNull
     public ConfigResolver build() {
       if (fileExtensions == null || fileExtensions.isEmpty()) {
         throw new IllegalArgumentException("No file extensions specified");
       }
+      //noinspection DataFlowIssue
       return new ConfigResolverImpl(
           commentPrefix, valueWriter, valueReader, settings, fileExtensions);
     }
