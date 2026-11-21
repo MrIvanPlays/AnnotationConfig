@@ -55,7 +55,6 @@ import org.jspecify.annotations.Nullable;
 /**
  * @hidden
  */
-@SuppressWarnings("ResultOfMethodCallIgnored")
 @NullMarked
 public final class ConfigResolverImpl implements ConfigResolver {
 

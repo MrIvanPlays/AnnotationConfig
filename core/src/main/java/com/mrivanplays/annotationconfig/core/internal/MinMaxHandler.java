@@ -25,11 +25,13 @@ package com.mrivanplays.annotationconfig.core.internal;
 import com.mrivanplays.annotationconfig.core.annotations.Max;
 import com.mrivanplays.annotationconfig.core.annotations.Min;
 import java.util.Optional;
+import org.jspecify.annotations.NullMarked;
+import org.jspecify.annotations.Nullable;
 
 /**
  * @hidden
  */
-@SuppressWarnings("OptionalGetWithoutIsPresent")
+@NullMarked
 class MinMaxHandler {
 
   enum State {
@@ -43,27 +45,26 @@ class MinMaxHandler {
     ALRIGHT
   }
 
-  @SuppressWarnings("OptionalUsedAsFieldOrParameterType")
   static class NumberResult {
 
     static NumberResult stateOnly(State state) {
-      return result(state, Optional.empty());
+      return result(state, null);
     }
 
-    static NumberResult result(State state, Optional<Number> number) {
+    static NumberResult result(State state, @Nullable Number number) {
       return new NumberResult(state, number);
     }
 
     private final State state;
-    private final Optional<Number> number;
+    @Nullable private final Number number;
 
-    private NumberResult(State state, Optional<Number> number) {
+    private NumberResult(State state, @Nullable Number number) {
       this.state = state;
       this.number = number;
     }
 
     public boolean isStateOnly() {
-      return number.isEmpty();
+      return number == null;
     }
 
     public State getState() {
@@ -71,7 +72,7 @@ class MinMaxHandler {
     }
 
     public Optional<Number> getNumber() {
-      return number;
+      return Optional.ofNullable(number);
     }
   }
 
@@ -126,7 +127,7 @@ class MinMaxHandler {
           || min.minDouble() != -1) {
         return NumberResult.stateOnly(State.MORE_THAN_ONE_MIN);
       }
-      return NumberResult.result(State.ALRIGHT, Optional.of(min.minByte()));
+      return NumberResult.result(State.ALRIGHT, (min.minByte()));
     }
     if (min.minLong() != -1) {
       if (min.minFloat() != -1
@@ -135,27 +136,27 @@ class MinMaxHandler {
           || min.minDouble() != -1) {
         return NumberResult.stateOnly(State.MORE_THAN_ONE_MIN);
       }
-      return NumberResult.result(State.ALRIGHT, Optional.of(min.minLong()));
+      return NumberResult.result(State.ALRIGHT, (min.minLong()));
     }
     if (min.minFloat() != -1) {
       if (min.minShort() != -1 || min.minInt() != -1 || min.minDouble() != -1) {
         return NumberResult.stateOnly(State.MORE_THAN_ONE_MIN);
       }
-      return NumberResult.result(State.ALRIGHT, Optional.of(min.minFloat()));
+      return NumberResult.result(State.ALRIGHT, (min.minFloat()));
     }
     if (min.minShort() != -1) {
       if (min.minInt() != -1 || min.minDouble() != -1) {
         return NumberResult.stateOnly(State.MORE_THAN_ONE_MIN);
       }
-      return NumberResult.result(State.ALRIGHT, Optional.of(min.minShort()));
+      return NumberResult.result(State.ALRIGHT, (min.minShort()));
     }
     if (min.minInt() != -1) {
       if (min.minDouble() != -1) {
         return NumberResult.stateOnly(State.MORE_THAN_ONE_MIN);
       }
-      return NumberResult.result(State.ALRIGHT, Optional.of(min.minInt()));
+      return NumberResult.result(State.ALRIGHT, (min.minInt()));
     }
-    return NumberResult.result(State.ALRIGHT, Optional.of(min.minDouble()));
+    return NumberResult.result(State.ALRIGHT, (min.minDouble()));
   }
 
   static NumberResult getNumber(Max max) {
@@ -170,7 +171,7 @@ class MinMaxHandler {
           || max.maxDouble() != -1) {
         return NumberResult.stateOnly(State.MORE_THAN_ONE_MAX);
       }
-      return NumberResult.result(State.ALRIGHT, Optional.of(max.maxByte()));
+      return NumberResult.result(State.ALRIGHT, (max.maxByte()));
     }
     if (max.maxLong() != -1) {
       if (max.maxFloat() != -1
@@ -179,27 +180,27 @@ class MinMaxHandler {
           || max.maxDouble() != -1) {
         return NumberResult.stateOnly(State.MORE_THAN_ONE_MAX);
       }
-      return NumberResult.result(State.ALRIGHT, Optional.of(max.maxLong()));
+      return NumberResult.result(State.ALRIGHT, (max.maxLong()));
     }
     if (max.maxFloat() != -1) {
       if (max.maxShort() != -1 || max.maxInt() != -1 || max.maxDouble() != -1) {
         return NumberResult.stateOnly(State.MORE_THAN_ONE_MAX);
       }
-      return NumberResult.result(State.ALRIGHT, Optional.of(max.maxFloat()));
+      return NumberResult.result(State.ALRIGHT, (max.maxFloat()));
     }
     if (max.maxShort() != -1) {
       if (max.maxInt() != -1 || max.maxDouble() != -1) {
         return NumberResult.stateOnly(State.MORE_THAN_ONE_MAX);
       }
-      return NumberResult.result(State.ALRIGHT, Optional.of(max.maxShort()));
+      return NumberResult.result(State.ALRIGHT, (max.maxShort()));
     }
     if (max.maxInt() != -1) {
       if (max.maxDouble() != -1) {
         return NumberResult.stateOnly(State.MORE_THAN_ONE_MAX);
       }
-      return NumberResult.result(State.ALRIGHT, Optional.of(max.maxInt()));
+      return NumberResult.result(State.ALRIGHT, (max.maxInt()));
     }
-    return NumberResult.result(State.ALRIGHT, Optional.of(max.maxDouble()));
+    return NumberResult.result(State.ALRIGHT, (max.maxDouble()));
   }
 
   private static boolean isValid(Min min) {

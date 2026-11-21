@@ -118,6 +118,13 @@ public final class SectionObjectList<T> implements Iterable<Entry<String, T>> {
     };
   }
 
+  /**
+   * Get the stored value specified by this key.
+   *
+   * @param key key to get value for
+   * @return value if present, null otherwise
+   * @since 3.0.4
+   */
   @Nullable
   public T get(String key) {
     return this.values.get(key);

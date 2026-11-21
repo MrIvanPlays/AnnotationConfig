@@ -71,14 +71,7 @@ import java.util.TreeSet;
 /**
  * @hidden
  */
-@SuppressWarnings({
-  "unchecked",
-  "rawtypes",
-  "FieldMayBeFinal",
-  "ConstantValue",
-  "DataFlowIssue",
-  "OptionalGetWithoutIsPresent"
-})
+@SuppressWarnings({"unchecked", "rawtypes", "ConstantValue", "OptionalGetWithoutIsPresent"})
 public final class AnnotatedConfigResolver {
 
   public static Map<AnnotationHolder, Set<AnnotationType>> resolveAnnotations(
@@ -301,9 +294,9 @@ public final class AnnotatedConfigResolver {
 
   private static class WriteData {
 
-    private List<String> classComments = new LinkedList<>();
-    private Map<String, Object> toWrite = new LinkedHashMap<>();
-    private Map<String, List<String>> fieldComments = new LinkedHashMap<>();
+    private final List<String> classComments = new LinkedList<>();
+    private final Map<String, Object> toWrite = new LinkedHashMap<>();
+    private final Map<String, List<String>> fieldComments = new LinkedHashMap<>();
 
     public List<String> getClassComments() {
       return classComments;
@@ -535,15 +528,6 @@ public final class AnnotatedConfigResolver {
       Map<AnnotationHolder, Set<AnnotationType>> map,
       NullReadHandleOption nullReadHandler,
       Settings settings) {
-    boolean findParentFields =
-        settings
-            .get(ACDefaultSettings.FIND_PARENT_FIELDS)
-            .orElse(ACDefaultSettings.getDefault().get(ACDefaultSettings.FIND_PARENT_FIELDS).get());
-    boolean reverseFields =
-        settings
-            .get(ACDefaultSettings.SHOULD_REVERSE_FIELDS)
-            .orElse(
-                ACDefaultSettings.getDefault().get(ACDefaultSettings.SHOULD_REVERSE_FIELDS).get());
     KeyResolver keyResolver =
         settings
             .get(ACDefaultSettings.KEY_RESOLVER)
@@ -628,7 +612,12 @@ public final class AnnotatedConfigResolver {
               serializer.deserialize(
                   new DataObject(value, true),
                   SerializationContext.of(
-                      field.getName(), section, field.getType(), fieldType, null, settings),
+                      field.getName(),
+                      section,
+                      field.getType(),
+                      fieldType,
+                      annotatedConfig,
+                      settings),
                   AnnotationAccessor.createFromField(field));
           if (deserialized == null && !thisMissingOption) {
             if (nullReadHandler == NullReadHandleOption.USE_DEFAULT_VALUE) {
@@ -710,6 +699,7 @@ public final class AnnotatedConfigResolver {
               cARegistry.getValidator(type);
           if (validatorOpt.isPresent()) {
             AnnotationValidator validator = validatorOpt.get();
+            //noinspection DataFlowIssue
             ValidationResponse validatorResponse =
                 validator.validate(field.getAnnotation(type), deserialized, settings, field);
             if (validatorResponse.throwError() != null) {
@@ -720,8 +710,9 @@ public final class AnnotatedConfigResolver {
               failed = validatorResponse.shouldFailSilently();
               break;
             }
-            if (validatorResponse.onSuccess() != null) {
-              validatorResponse.onSuccess().run();
+            Runnable onSuccess = validatorResponse.onSuccess();
+            if (onSuccess != null) {
+              onSuccess.run();
             }
           }
         }
