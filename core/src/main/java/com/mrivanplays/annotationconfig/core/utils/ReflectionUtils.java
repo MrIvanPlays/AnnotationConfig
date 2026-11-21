@@ -25,13 +25,17 @@ package com.mrivanplays.annotationconfig.core.utils;
 import java.lang.reflect.Array;
 import java.math.BigDecimal;
 import java.math.BigInteger;
+import org.jspecify.annotations.NullMarked;
+import org.jspecify.annotations.Nullable;
 
 /**
- * Utilities to help with reflection stuff
+ * Utilities to help with reflection stuff. <br>
+ * NOTICE: Please read {@link ReflectionUtils.PrimitiveNameTypes}
  *
  * @author Ivan Pekov
  * @since 3.0.0
  */
+@NullMarked
 public final class ReflectionUtils {
 
   public static boolean isPrimitive(String typeName) {
@@ -91,6 +95,15 @@ public final class ReflectionUtils {
     throw new IllegalArgumentException("Instantiation of utility-type class.");
   }
 
+  /**
+   * NOTICE: This was never really ment to be a public API of AnnotationConfig, yet the methods
+   * (with questionable java standards and API design) are present and used internally. If you wish
+   * to use this on your own, then do so. Since this was written like 4 years ago (comment written
+   * in 2026), even I (MrIvanPlays) don't remember the sole reason why this exists and why it exists
+   * in this way. Although this is unlikely to change (or break in any ways), breakages may occur
+   * between versions if the behaviour of the current code changes, and starts to not suite the
+   * internals of AnnotationConfig. That being said, PROCEED ON YOUR OWN and DO NOT EXPECT SUPPORT.
+   */
   @SuppressWarnings("UnnecessaryUnboxing")
   public enum PrimitiveNameTypes {
     BYTE(byte.class, Byte.class, "[B", "byte", "java.lang.Byte") {
@@ -383,6 +396,7 @@ public final class ReflectionUtils {
       }
     };
 
+    @Nullable
     public static PrimitiveNameTypes getNameType(String typeName) {
       for (PrimitiveNameTypes val : PrimitiveNameTypes.values()) {
         for (String name : val.names) {
