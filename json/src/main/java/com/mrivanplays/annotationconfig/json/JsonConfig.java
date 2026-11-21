@@ -64,6 +64,7 @@ public final class JsonConfig {
     if (configResolver == null) {
       generateConfigResolver();
     }
+    //noinspection DataFlowIssue
     return configResolver;
   }
 
@@ -71,7 +72,7 @@ public final class JsonConfig {
   private static void generateConfigResolver() {
     configResolver =
         ConfigResolver.newBuilder()
-            .withValueWriter((values, fieldComments, writer, settings) ->
+            .withValueWriter((values, _, writer, settings) ->
                 writer.print(settings.get(GSON_INSTANCE).orElse(GSON).toJson(values)))
             .withSetting(ACDefaultSettings.SHOULD_REVERSE_FIELDS, true)
             .withFileExtension(".json")

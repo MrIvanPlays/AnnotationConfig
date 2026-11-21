@@ -34,6 +34,7 @@ import org.jspecify.annotations.NullMarked;
  * @author Ivan Pekov
  * @since v2.1.1
  */
+@SuppressWarnings("unused")
 @NullMarked
 public abstract class TypeToken<T> {
 

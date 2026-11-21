@@ -63,6 +63,7 @@ public final class YamlConfig {
     if (configResolver == null) {
       generateConfigResolver();
     }
+    //noinspection DataFlowIssue
     return configResolver;
   }
 

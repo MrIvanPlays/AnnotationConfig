@@ -23,6 +23,7 @@
 package com.mrivanplays.annotationconfig.core.internal;
 
 import java.lang.reflect.Field;
+import org.jspecify.annotations.NonNull;
 
 /**
  * @hidden
@@ -73,7 +74,7 @@ public final class AnnotationHolder implements Comparable<AnnotationHolder> {
   }
 
   @Override
-  public int compareTo(AnnotationHolder o) {
+  public int compareTo(@NonNull AnnotationHolder o) {
     if (isClass) {
       return -1;
     } else if (o.isClass()) {

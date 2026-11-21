@@ -36,11 +36,12 @@ import org.jspecify.annotations.NullMarked;
  * @since 2.0.0
  */
 @NullMarked
+@SuppressWarnings("unused")
 public enum CustomAnnotationRegistry {
   INSTANCE;
 
-  private Map<Class<? extends Annotation>, AnnotationValidator<? extends Annotation>> registry =
-      new ConcurrentHashMap<>();
+  private final Map<Class<? extends Annotation>, AnnotationValidator<? extends Annotation>>
+      registry = new ConcurrentHashMap<>();
 
   /**
    * Binds the specified {@link AnnotationValidator} {@code validator} to the specified {@code

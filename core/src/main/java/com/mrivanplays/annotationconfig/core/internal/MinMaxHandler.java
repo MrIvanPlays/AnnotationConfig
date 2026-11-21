@@ -29,6 +29,7 @@ import java.util.Optional;
 /**
  * @hidden
  */
+@SuppressWarnings("OptionalGetWithoutIsPresent")
 class MinMaxHandler {
 
   enum State {
@@ -42,6 +43,7 @@ class MinMaxHandler {
     ALRIGHT
   }
 
+  @SuppressWarnings("OptionalUsedAsFieldOrParameterType")
   static class NumberResult {
 
     static NumberResult stateOnly(State state) {
@@ -61,7 +63,7 @@ class MinMaxHandler {
     }
 
     public boolean isStateOnly() {
-      return !number.isPresent();
+      return number.isEmpty();
     }
 
     public State getState() {

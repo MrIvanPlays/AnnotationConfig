@@ -38,7 +38,7 @@ import org.jspecify.annotations.NullUnmarked;
  * @since 2.0.0
  * @author Ivan Pekov
  */
-@SuppressWarnings("unchecked")
+@SuppressWarnings({"unchecked", "unused"})
 @NullUnmarked
 public final class DataObject {
 

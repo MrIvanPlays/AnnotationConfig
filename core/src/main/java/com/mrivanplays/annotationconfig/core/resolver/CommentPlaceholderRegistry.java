@@ -93,6 +93,7 @@ public enum CommentPlaceholderRegistry {
    * @param comments comments to apply placeholders to
    * @return comments with applied placeholders
    */
+  @SuppressWarnings("unused")
   public List<String> applyPlaceholders(List<String> comments) {
     Objects.requireNonNull(comments, "comments");
     if (comments.isEmpty()) {

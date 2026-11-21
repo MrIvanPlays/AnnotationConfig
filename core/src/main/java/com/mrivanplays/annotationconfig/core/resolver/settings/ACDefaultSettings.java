@@ -88,4 +88,8 @@ public final class ACDefaultSettings {
             .put(KEY_RESOLVER, KeyResolver.DEFAULT)
             .copy(true);
   }
+
+  private ACDefaultSettings() {
+    throw new IllegalStateException("Instantiation of utility-type class");
+  }
 }

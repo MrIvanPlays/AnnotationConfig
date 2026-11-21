@@ -91,6 +91,7 @@ public final class ReflectionUtils {
     throw new IllegalArgumentException("Instantiation of utility-type class.");
   }
 
+  @SuppressWarnings("UnnecessaryUnboxing")
   public enum PrimitiveNameTypes {
     BYTE(byte.class, Byte.class, "[B", "byte", "java.lang.Byte") {
       @Override
@@ -257,8 +258,7 @@ public final class ReflectionUtils {
           Character[] cArr = new Character[c.length];
           for (int i = 0; i < c.length; i++) {
             Object val = c[i];
-            if (val instanceof String) {
-              String valStr = (String) val;
+            if (val instanceof String valStr) {
               if (valStr.length() != 1) {
                 throw new IllegalArgumentException(
                     "Invalid input; expected character got String: " + valStr);

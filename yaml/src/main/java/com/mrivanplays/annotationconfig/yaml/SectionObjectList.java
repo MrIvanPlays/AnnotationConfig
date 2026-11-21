@@ -125,6 +125,7 @@ public final class SectionObjectList<T> implements Iterable<Entry<String, T>> {
    * @return true if contains, false otherwise
    * @since 3.0.4
    */
+  @SuppressWarnings("unused")
   public boolean contains(String key) {
     Objects.requireNonNull(key, "key");
     return this.values.containsKey(key);

@@ -56,6 +56,7 @@ import org.jspecify.annotations.Nullable;
 /**
  * @hidden
  */
+@SuppressWarnings("ResultOfMethodCallIgnored")
 @NullMarked
 public final class ConfigResolverImpl implements ConfigResolver {
 
@@ -579,6 +580,7 @@ public final class ConfigResolverImpl implements ConfigResolver {
   }
 
   private <T> T getSetting(Setting<T> setting, Settings fromMethod) {
+    //noinspection OptionalGetWithoutIsPresent
     return fromMethod
         .get(setting)
         .orElse(

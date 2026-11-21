@@ -56,6 +56,7 @@ public final class DataObjectBuilder {
    *
    * @param from the data object to build from
    */
+  @SuppressWarnings("unused")
   public DataObjectBuilder(DataObject from) {
     this.object = Objects.requireNonNull(from, "from");
   }

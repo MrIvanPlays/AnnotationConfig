@@ -56,6 +56,7 @@ public final class PropertyConfig {
     if (configResolver == null) {
       generateConfigResolver();
     }
+    //noinspection DataFlowIssue
     return configResolver;
   }
 

@@ -66,6 +66,7 @@ public final class TomlConfig {
     if (configResolver == null) {
       generateConfigResolver();
     }
+    //noinspection DataFlowIssue
     return configResolver;
   }
 

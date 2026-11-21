@@ -45,6 +45,7 @@ import org.jspecify.annotations.NullMarked;
  * @since 2.1.0
  */
 @NullMarked
+@SuppressWarnings("unused")
 public final class AnnotationUtils {
 
   /**

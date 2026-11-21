@@ -36,7 +36,7 @@ import org.jspecify.annotations.NullMarked;
  * @since 2.0.0
  * @author Ivan Pekov
  */
-@SuppressWarnings("unchecked")
+@SuppressWarnings({"unchecked", "unused"})
 @NullMarked
 public enum SerializerRegistry {
   INSTANCE;

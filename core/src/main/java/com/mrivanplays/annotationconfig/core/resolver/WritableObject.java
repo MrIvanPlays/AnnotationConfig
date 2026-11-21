@@ -43,6 +43,7 @@ import org.jspecify.annotations.NullMarked;
  * @since 3.0.0
  */
 @NullMarked
+@SuppressWarnings("unused")
 public interface WritableObject {
 
   /**
@@ -56,6 +57,7 @@ public interface WritableObject {
     return () -> {
       try {
         if (!file.exists()) {
+          //noinspection ResultOfMethodCallIgnored
           file.createNewFile();
         }
         return new PrintWriter(
