@@ -102,7 +102,7 @@ class SectionObjectListTest {
     }
     String input =
         "list:\n"
-            + "  bar:\n"
+            + "  baz:\n"
             + "    foo: 3\n"
             + "    baz: \"dolor\"\n"
             + "  foo:\n"
@@ -114,8 +114,8 @@ class SectionObjectListTest {
 
     Map<String, SerializedObject> serialized = subject.list.getAsMap();
 
-    Assertions.assertEquals(3, serialized.get("bar").getFoo());
-    Assertions.assertEquals("dolor", serialized.get("bar").getBaz());
+    Assertions.assertEquals(3, serialized.get("baz").getFoo());
+    Assertions.assertEquals("dolor", serialized.get("baz").getBaz());
     Assertions.assertEquals(69, serialized.get("foo").getFoo());
     Assertions.assertEquals("sit", serialized.get("foo").getBaz());
   }

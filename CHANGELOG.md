@@ -47,6 +47,17 @@ class Subject {
 `Subject` is to be our config class, `SerializedObject` is to be the the custom data type. Notice it
 needs a declared empty constructor in order for AnnotationConfig to work properly.
 
+#### As of latest improvements
+
+Not all custom data types require an empty constructor, for example if your custom data type is not
+used in a `List/Map/SectionObjectList` AnnotationConfig will try to directly modify the default
+provided instance. However, it is still **recommended** to have an empty constructor just for a
+failsafe.
+
+Records are deserialized completely differently, hence the reason they are the only custom data type
+you can use that does _not_ require an empty constructor, and is _not_ needed. However due to
+AnnotationConfig's nature, that's the _only_ class type that is 100% supported _not_ to have it.
+
 ### Support for records
 
 AnnotatedConfig now supports serializing and deserializing records properly.

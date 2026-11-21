@@ -29,8 +29,8 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
 /**
- * Annotation, which is marking field(s) to be excluded from dumping in the config and modifying,
- * whenever they don't have any of the other annotations.
+ * Annotation, which is marking field(s) to be excluded from the configuration. They will not be
+ * touched by AnnotationConfig's handler.
  *
  * @author Ivan Pekov
  * @since 1.0.0

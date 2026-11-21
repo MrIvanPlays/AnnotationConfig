@@ -112,7 +112,7 @@ public final class AnnotatedConfigResolver {
 
     int order = 1;
     for (Field field : fields) {
-      if (field.getDeclaredAnnotations().length == 1 && AnnotationUtils.isIgnored(field)) {
+      if (AnnotationUtils.isIgnored(field)) {
         continue;
       }
       ret.add(new AnnotationHolder(field, order));
@@ -224,11 +224,7 @@ public final class AnnotatedConfigResolver {
         continue;
       }
       Field field = holder.getField();
-      if (field.getDeclaredAnnotations().length > 1 && AnnotationUtils.isRawConfigAccess(field)) {
-        throw new IllegalArgumentException(
-            "Found illegal annotation placement ; @RawConfig on a field with other annotations except @RawConfig.");
-      } else if (field.getDeclaredAnnotations().length == 1
-          && AnnotationUtils.isRawConfigAccess(field)) {
+      if (AnnotationUtils.isRawConfigAccess(field)) {
         rawConfigField = field;
         continue;
       }
@@ -241,7 +237,7 @@ public final class AnnotatedConfigResolver {
         }
         parentData.getFieldComments().putAll(current.getFieldComments());
       } catch (IllegalAccessException e) {
-        throw new IllegalArgumentException("A field became inaccessible");
+        throw new IllegalArgumentException("A field became inaccessible", e);
       }
     }
     if (rawConfigField != null) {
@@ -253,7 +249,7 @@ public final class AnnotatedConfigResolver {
         rawConfigField.set(annotatedConfig, new DataObject(parentData.getToWrite(), true));
       } catch (IllegalAccessException e) {
         throw new IllegalArgumentException(
-            "Could not set a field's value ; field not accessible anymore");
+            "Could not set a field's value ; field not accessible anymore", e);
       }
     }
     valueWriter.write(parentData.getToWrite(), parentData.getFieldComments(), writer, settings);
@@ -498,11 +494,7 @@ public final class AnnotatedConfigResolver {
       }
       Field field = holder.getField();
       field.setAccessible(true);
-      if (field.getDeclaredAnnotations().length > 1 && AnnotationUtils.isRawConfigAccess(field)) {
-        throw new IllegalArgumentException(
-            "Found illegal annotation placement ; @RawConfig on a field with other annotations except @RawConfig.");
-      } else if (field.getDeclaredAnnotations().length == 1
-          && AnnotationUtils.isRawConfigAccess(field)) {
+      if (AnnotationUtils.isRawConfigAccess(field)) {
         if (!field.getType().isAssignableFrom(DataObject.class)) {
           throw new IllegalArgumentException("@RawConfig on a field which is not DataObject");
         }
@@ -510,7 +502,7 @@ public final class AnnotatedConfigResolver {
           field.set(annotatedConfig, new DataObject(values, true));
         } catch (IllegalAccessException e) {
           throw new IllegalArgumentException(
-              "Could not set a field's value ; field not accessible anymore");
+              "Could not set a field's value ; field not accessible anymore", e);
         }
         continue;
       }
@@ -525,7 +517,8 @@ public final class AnnotatedConfigResolver {
           throw new IllegalArgumentException(
               "Could not get config object from annotated config '"
                   + annotatedConfig.getClass().getSimpleName()
-                  + "'");
+                  + "'",
+              e);
         }
       }
       NumberResult min = NumberResult.stateOnly(State.START);
@@ -584,7 +577,7 @@ public final class AnnotatedConfigResolver {
             field.set(annotatedConfig, deserialized);
           } catch (IllegalAccessException e) {
             throw new IllegalArgumentException(
-                "Could not set a field's value ; field not accessible anymore");
+                "Could not set a field's value ; field not accessible anymore", e);
           }
           continue;
         }
@@ -612,7 +605,7 @@ public final class AnnotatedConfigResolver {
                 SerializationContext.fromField(field, annotatedConfig, settings),
                 AnnotationAccessor.createFromField(field));
       } catch (IllegalAccessException e) {
-        throw new IllegalArgumentException("Field became inaccessible");
+        throw new IllegalArgumentException("Field became inaccessible", e);
       }
       if (deserialized == null && !thisMissingOption) {
         if (nullReadHandler == NullReadHandleOption.USE_DEFAULT_VALUE) {
@@ -681,7 +674,7 @@ public final class AnnotatedConfigResolver {
         field.set(annotatedConfig, deserialized);
       } catch (IllegalAccessException e) {
         throw new IllegalArgumentException(
-            "Could not set a field's value ; field not accessible anymore");
+            "Could not set a field's value ; field not accessible anymore", e);
       }
     }
     return missingOptions;

@@ -138,4 +138,8 @@ public class YAMLSecondTestSubject {
   public LocationNoConfigObject getLocationTwo() {
     return locationTwo;
   }
+
+  public LocationNoConfigObject getLocationThree() {
+    return locationThree;
+  }
 }

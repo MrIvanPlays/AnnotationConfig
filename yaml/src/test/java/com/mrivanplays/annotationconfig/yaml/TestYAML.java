@@ -61,4 +61,15 @@ public class TestYAML {
       Assertions.fail(e);
     }
   }
+
+  @Test
+  void testLoad() throws Exception {
+    YAMLSecondTestSubject config = new YAMLSecondTestSubject();
+    resolver.load(config, getClass().getClassLoader().getResourceAsStream("test.yml"));
+
+    Assertions.assertEquals("foo", config.getLocationThree().getWorld());
+    Assertions.assertEquals(1, config.getLocationThree().getX());
+    Assertions.assertEquals(223, config.getLocationThree().getY());
+    Assertions.assertEquals(445, config.getLocationThree().getZ());
+  }
 }

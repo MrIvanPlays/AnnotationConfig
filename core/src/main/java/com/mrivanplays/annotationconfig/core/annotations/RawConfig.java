@@ -29,12 +29,9 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
 /**
- * Annotation, which can be put on a {@link java.lang.reflect.Field} with type {@link
- * com.mrivanplays.annotationconfig.core.serialization.DataObject} in order to inject the raw
- * configuration read.
- *
- * <p>The field annotated with this annotation shall not have any other annotations, otherwise
- * AnnotationConfig will throw an error.
+ * Annotation which marks a {@link java.lang.reflect.Field field} a raw config. AnnotationConfig
+ * will inject the raw configuration read from the file, if the field is of type {@link
+ * com.mrivanplays.annotationconfig.core.serialization.DataObject}.
  *
  * @since 2.1.0
  * @author Ivan Pekov
