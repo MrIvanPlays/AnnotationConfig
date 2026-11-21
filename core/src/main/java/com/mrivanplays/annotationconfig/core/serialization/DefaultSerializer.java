@@ -29,10 +29,14 @@ import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import java.lang.reflect.Parameter;
 import java.lang.reflect.ParameterizedType;
 import java.math.BigDecimal;
 import java.math.BigInteger;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Locale;
@@ -220,31 +224,100 @@ final class DefaultSerializer implements FieldTypeSerializer<Object> {
         neededInstanceAllocation =
             (Class<?>) ((ParameterizedType) context.getGenericType()).getActualTypeArguments()[0];
       }
-      Object fieldTypeInstance = getFieldTypeInstance(neededInstanceAllocation);
-      for (Field desField : fieldTypeInstance.getClass().getDeclaredFields()) {
-        desField.setAccessible(true);
-        if (AnnotationUtils.isIgnored(desField)) {
-          continue;
-        }
-        Object val = dataMap.get(AnnotationUtils.getKey(desField));
-        if (val == null) {
-          continue;
-        }
-        FieldTypeSerializer serializer =
-            serializerRegistry.getSerializer(desField.getGenericType()).orElse(this);
-        try {
-          desField.set(
-              fieldTypeInstance,
-              serializer.deserialize(
-                  new DataObject(val, true),
-                  SerializationContext.fromField(desField, fieldTypeInstance),
-                  AnnotationAccessor.createFromField(desField)));
-        } catch (IllegalAccessException e) {
-          throw new IllegalArgumentException("A field became inaccessible");
-        }
-      }
+      if (neededInstanceAllocation.isRecord()) {
 
-      return fieldTypeInstance;
+        /*
+         * CONTRIBUTOR NOTE: DO NOT TOUCH THIS SECTION AT ALL
+         * THIS IS PURE HELL AND TORTURE OF REFLECTION UNRAVELLED
+         * and, probably a big hack, but it works
+         * IF IT WORKS, DO NOT, FOR ANY CIRCUMSTANCE WHATSOEVER, TOUCH
+         */
+
+        List<Field> recordFields = Arrays.asList(neededInstanceAllocation.getDeclaredFields());
+        // try to not set with fields and directly use a ctor
+        Constructor<?> ctor;
+        if (neededInstanceAllocation.getDeclaredConstructors().length == 1) {
+          ctor = neededInstanceAllocation.getDeclaredConstructors()[0];
+        } else {
+          // try to find the one which matches with the fields
+          try {
+            ctor =
+                neededInstanceAllocation.getDeclaredConstructor(
+                    recordFields.stream().map(Field::getType).toArray(Class[]::new));
+          } catch (NoSuchMethodException e) {
+            throw new RuntimeException(
+                "could not find record ctor of '" + neededInstanceAllocation.getName() + "'", e);
+          }
+        }
+        if (!ctor.trySetAccessible()) {
+          throw new RuntimeException(
+              "ctor of record is not accessible '" + neededInstanceAllocation.getName() + "'");
+        }
+        Map<String, Object> deserialized = new HashMap<>();
+        for (Field f : recordFields) {
+          f.setAccessible(true); // dirty workaround!?
+          Object val = dataMap.get(AnnotationUtils.getKey(f));
+          if (val == null) {
+            // actually put a null value otherwise the record won't be constructed properly
+            // todo: null read handle settings?
+            deserialized.put(f.getName(), null);
+            continue;
+          }
+          FieldTypeSerializer serializer =
+              serializerRegistry.getSerializer(f.getType()).orElse(this);
+          try {
+            deserialized.put(
+                f.getName(),
+                serializer.deserialize(
+                    new DataObject(val, true),
+                    SerializationContext.fromField(f, context.getAnnotatedConfig()),
+                    AnnotationAccessor.createFromField(f)));
+          } catch (IllegalAccessException e) {
+            throw new IllegalArgumentException("A field became inaccessible");
+          }
+        }
+        try {
+          List<Object> ctorValues = new ArrayList<>();
+          // sort values by the order they occur
+          for (Parameter parameter : ctor.getParameters()) {
+            ctorValues.add(deserialized.get(parameter.getName()));
+          }
+
+          return ctor.newInstance(ctorValues.toArray());
+        } catch (InvocationTargetException e) {
+          throw new RuntimeException("ctor invoke threw exception", e);
+        } catch (InstantiationException e) {
+          throw new RuntimeException("could not instantiate '" + fieldType.getName() + "'", e);
+        } catch (IllegalAccessException e) {
+          throw new RuntimeException("ctor became inaccessible '" + fieldType.getName() + "'", e);
+        }
+      } else {
+        Object fieldTypeInstance = getFieldTypeInstance(neededInstanceAllocation);
+        for (Field desField : fieldTypeInstance.getClass().getDeclaredFields()) {
+          desField.setAccessible(true);
+          if (AnnotationUtils.isIgnored(desField)) {
+            continue;
+          }
+          Object val = dataMap.get(AnnotationUtils.getKey(desField));
+          if (val == null) {
+            continue;
+          }
+          FieldTypeSerializer serializer =
+              serializerRegistry.getSerializer(desField.getGenericType()).orElse(this);
+          try {
+            desField.set(
+                fieldTypeInstance,
+                serializer.deserialize(
+                    new DataObject(val, true),
+                    SerializationContext.fromField(desField, fieldTypeInstance),
+                    AnnotationAccessor.createFromField(desField)));
+          } catch (IllegalAccessException e) {
+            throw new IllegalArgumentException("A field became inaccessible");
+          }
+        }
+
+        return fieldTypeInstance;
+      }
     }
   }
 

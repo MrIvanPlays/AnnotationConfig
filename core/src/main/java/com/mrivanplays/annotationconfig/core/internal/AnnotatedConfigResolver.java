@@ -566,6 +566,7 @@ public final class AnnotatedConfigResolver {
       boolean reverseFields,
       boolean findParentFields) {
     boolean missingOptions = false;
+    SerializerRegistry serializerRegistry = SerializerRegistry.INSTANCE;
     for (Map.Entry<AnnotationHolder, Set<AnnotationType>> entry : map.entrySet()) {
       AnnotationHolder holder = entry.getKey();
       if (holder.isClass()) {
@@ -590,15 +591,12 @@ public final class AnnotatedConfigResolver {
         }
         continue;
       }
-      String keyName = field.getName();
+      String keyName = AnnotationUtils.getKey(field);
       boolean configObject = false;
       Object section = null;
       NumberResult min = NumberResult.stateOnly(State.START);
       NumberResult max = NumberResult.stateOnly(State.START);
       for (AnnotationType type : annotationTypes) {
-        if (type.is(AnnotationType.KEY)) {
-          keyName = field.getDeclaredAnnotation(Key.class).value();
-        }
         if (type.is(AnnotationType.MIN)) {
           min = MinMaxHandler.getNumber(field.getDeclaredAnnotation(Min.class));
         }
@@ -636,6 +634,38 @@ public final class AnnotatedConfigResolver {
           // sections not supported, continue on
           continue;
         }
+        if (field.getType().isRecord()) {
+          // directly deserialize the value and set the field, do NOT try to set record fields
+          Type fieldType = field.getGenericType();
+          FieldTypeSerializer<?> serializer =
+              serializerRegistry
+                  .getSerializer(fieldType)
+                  .orElse(serializerRegistry.getDefaultSerializer());
+          Object deserialized;
+          try {
+            deserialized =
+                serializer.deserialize(
+                    new DataObject(value, true),
+                    SerializationContext.fromField(field, annotatedConfig),
+                    AnnotationAccessor.createFromField(field));
+          } catch (IllegalAccessException e) {
+            throw new IllegalArgumentException("Field became inaccessible");
+          }
+          if (deserialized == null && !thisMissingOption) {
+            if (nullReadHandler == NullReadHandleOption.USE_DEFAULT_VALUE) {
+              continue;
+            }
+          } else if (deserialized == null) {
+            continue;
+          }
+          try {
+            field.set(annotatedConfig, deserialized);
+          } catch (IllegalAccessException e) {
+            throw new IllegalArgumentException(
+                "Could not set a field's value ; field not accessible anymore");
+          }
+          continue;
+        }
         boolean thMissing =
             setFields(
                 section,
@@ -651,7 +681,6 @@ public final class AnnotatedConfigResolver {
         }
         continue;
       }
-      SerializerRegistry serializerRegistry = SerializerRegistry.INSTANCE;
       Type fieldType = field.getGenericType();
       FieldTypeSerializer<?> serializer =
           serializerRegistry

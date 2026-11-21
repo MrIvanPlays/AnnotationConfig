@@ -52,9 +52,19 @@ public final class SerializationContext<T> {
    */
   public static <T> SerializationContext<T> fromField(Field field, Object annotatedConfig)
       throws IllegalAccessException {
+    // todo: rework serialization context to support record types
+    // since in records we cannot have a originated from annotatedConfig instance.
+    Optional<T> def;
+    // this is just a hacky workaround
+    // see above
+    try {
+      def = Optional.ofNullable((T) field.get(annotatedConfig));
+    } catch (IllegalArgumentException e) {
+      def = Optional.empty();
+    }
     return new SerializationContext<>(
         Optional.of(field.getName()),
-        Optional.ofNullable((T) field.get(annotatedConfig)),
+        def,
         field.getType(),
         field.getGenericType(),
         annotatedConfig);

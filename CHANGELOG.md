@@ -47,6 +47,23 @@ class Subject {
 `Subject` is to be our config class, `SerializedObject` is to be the the custom data type. Notice it
 needs a declared empty constructor in order for AnnotationConfig to work properly.
 
+### Support for records
+
+AnnotatedConfig now supports serializing and deserializing records properly.
+
+#### Examples
+
+```java
+public class MyConfig {
+
+  private MyRecord record = new MyRecord("foo", "bar", 3);
+
+  record MyRecord(@Key("my-super-cool-key") String key, String value, int foo) {
+
+  }
+}
+```
+
 ### Changes in `AnnotationAccessor`
 
 `AnnotationAccessor` is now a `sealed interface`, and supports accessing annotations from `Class<?>`
