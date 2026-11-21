@@ -105,8 +105,8 @@ public final class Settings {
     }
     Objects.requireNonNull(setting, "setting");
     Objects.requireNonNull(value, "value");
-    if (this.values.containsKey(setting.key())) {
-      Object val = this.values.get(setting.key());
+    Object val = this.values.put(setting.key(), value);
+    if (val != null) {
       if (!setting.type().isAssignableFrom(val.getClass())) {
         throw new IllegalArgumentException(
             "key matches for 2 different data types: key '"
@@ -117,9 +117,6 @@ public final class Settings {
                 + setting.type().getName()
                 + "' value types");
       }
-      this.values.replace(setting.key(), value);
-    } else {
-      this.values.put(setting.key(), value);
     }
     return this;
   }
@@ -145,6 +142,23 @@ public final class Settings {
       }
     }
     return this;
+  }
+
+  /**
+   * Copies this settings instance and overrides the values which the provided settings instance has
+   * defined.
+   *
+   * @param other other settings to override these settings from
+   * @return new mutable settings instance
+   * @since 3.0.4
+   */
+  public Settings copyWithOverrides(Settings other) {
+    Objects.requireNonNull(other, "settings");
+    Settings newInstance = new Settings(false, new ConcurrentHashMap<>(values));
+    for (String key : other.values.keySet()) {
+      newInstance.values.put(key, other.values.get(key));
+    }
+    return newInstance;
   }
 
   /**

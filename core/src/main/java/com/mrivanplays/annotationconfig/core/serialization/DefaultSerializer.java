@@ -266,13 +266,7 @@ final class DefaultSerializer implements FieldTypeSerializer<Object> {
           Object val = dataMap.get(AnnotationUtils.getKey(f));
           if (val == null) {
             NullReadHandleOption nullReadHandle =
-                context
-                    .getSettings()
-                    .get(ACDefaultSettings.NULL_READ_HANDLER)
-                    .orElse(
-                        ACDefaultSettings.getDefault()
-                            .get(ACDefaultSettings.NULL_READ_HANDLER)
-                            .get());
+                context.getSettings().get(ACDefaultSettings.NULL_READ_HANDLER).orElseThrow();
             if (nullReadHandle == NullReadHandleOption.SET_NULL) {
               // actually put a null value otherwise the record won't be constructed properly
               deserialized.put(f.getName(), null);

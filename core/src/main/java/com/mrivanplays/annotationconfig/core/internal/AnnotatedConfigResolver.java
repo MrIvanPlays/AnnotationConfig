@@ -78,15 +78,8 @@ public final class AnnotatedConfigResolver {
 
   public static Set<AnnotationHolder> resolveAnnotationHolders(
       Object annotatedClass, Settings settings) {
-    boolean findParentFields =
-        settings
-            .get(ACDefaultSettings.FIND_PARENT_FIELDS)
-            .orElse(ACDefaultSettings.getDefault().get(ACDefaultSettings.FIND_PARENT_FIELDS).get());
-    boolean reverseFields =
-        settings
-            .get(ACDefaultSettings.SHOULD_REVERSE_FIELDS)
-            .orElse(
-                ACDefaultSettings.getDefault().get(ACDefaultSettings.SHOULD_REVERSE_FIELDS).get());
+    boolean findParentFields = settings.get(ACDefaultSettings.FIND_PARENT_FIELDS).orElseThrow();
+    boolean reverseFields = settings.get(ACDefaultSettings.SHOULD_REVERSE_FIELDS).orElseThrow();
 
     Set<AnnotationHolder> ret = new TreeSet<>();
     Class<?> theClass = annotatedClass.getClass();
@@ -431,10 +424,7 @@ public final class AnnotatedConfigResolver {
     }
     // manipulate the defaultsToValueObject once again before sending it to the writer
     Map<String, Object> dummyValues = new LinkedHashMap<>();
-    KeyResolver keyResolver =
-        settings
-            .get(ACDefaultSettings.KEY_RESOLVER)
-            .orElse(ACDefaultSettings.getDefault().get(ACDefaultSettings.KEY_RESOLVER).get());
+    KeyResolver keyResolver = settings.get(ACDefaultSettings.KEY_RESOLVER).orElseThrow();
     keyResolver.boxTo(keyName, defaultsToValueObject, dummyValues);
     if (dummyValues.size() != 1) {
       throw new IllegalArgumentException("Invalid key resolver.");
@@ -478,14 +468,9 @@ public final class AnnotatedConfigResolver {
       Map<String, Object> values,
       Set<AnnotationHolder> holders,
       Settings settings) {
-    KeyResolver keyResolver =
-        settings
-            .get(ACDefaultSettings.KEY_RESOLVER)
-            .orElse(ACDefaultSettings.getDefault().get(ACDefaultSettings.KEY_RESOLVER).get());
+    KeyResolver keyResolver = settings.get(ACDefaultSettings.KEY_RESOLVER).orElseThrow();
     NullReadHandleOption nullReadHandler =
-        settings
-            .get(ACDefaultSettings.NULL_READ_HANDLER)
-            .orElse(ACDefaultSettings.getDefault().get(ACDefaultSettings.NULL_READ_HANDLER).get());
+        settings.get(ACDefaultSettings.NULL_READ_HANDLER).orElseThrow();
     boolean missingOptions = false;
     SerializerRegistry serializerRegistry = SerializerRegistry.INSTANCE;
     for (AnnotationHolder holder : holders) {
