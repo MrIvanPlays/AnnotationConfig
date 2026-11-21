@@ -113,7 +113,8 @@ final class DefaultSerializer implements FieldTypeSerializer<Object> {
             Array.set(arr, i, forcePrimitive(o, type));
           } else {
             Object deserialized =
-                serializer.deserialize(new DataObject(o, true), serializationContext, annotations);
+                serializer.deserialize(
+                    new DataObject(o, true), serializationContext, AnnotationAccessor.EMPTY);
             Array.set(arr, i, deserialized);
           }
         }
@@ -159,7 +160,8 @@ final class DefaultSerializer implements FieldTypeSerializer<Object> {
             ret.add(o);
           } else {
             ret.add(
-                serializer.deserialize(new DataObject(o, true), serializationContext, annotations));
+                serializer.deserialize(
+                    new DataObject(o, true), serializationContext, AnnotationAccessor.EMPTY));
           }
         }
         return ret;
