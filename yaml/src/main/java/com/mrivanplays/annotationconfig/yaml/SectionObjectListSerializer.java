@@ -63,16 +63,21 @@ public final class SectionObjectListSerializer<T>
         serializerRegistry
             .getSerializer(def.getObjectsType())
             .orElse(serializerRegistry.getDefaultSerializer());
-    SerializationContext serializationContext =
-        SerializationContext.of(
-            def.getObjectsType(), def.getObjectsType(), context.getAnnotatedConfig());
     for (Map.Entry<String, Object> entry : map.entrySet()) {
       if (!(entry.getValue() instanceof Map)) {
         throw new IllegalArgumentException("Illegal SectionObjectList inputted: " + data);
       }
       Object obj =
           serializer.deserialize(
-              new DataObject(entry.getValue()), serializationContext, AnnotationAccessor.EMPTY);
+              new DataObject(entry.getValue()),
+              SerializationContext.of(
+                  null,
+                  def.get(entry.getKey()),
+                  def.getObjectsType(),
+                  def.getObjectsType(),
+                  def.getObjectsType().isRecord() ? null : context.getAnnotatedConfig(),
+                  context.getSettings()),
+              AnnotationAccessor.EMPTY);
       if (obj != null) {
         deserialized.put(entry.getKey(), (T) obj);
       }
@@ -104,7 +109,8 @@ public final class SectionObjectListSerializer<T>
                   value.getObjectsType().cast(entry.getValue()),
                   value.getObjectsType(),
                   value.getObjectsType(),
-                  context.getAnnotatedConfig()),
+                  context.getAnnotatedConfig(),
+                  context.getSettings()),
               AnnotationAccessor.EMPTY));
     }
     return ret;

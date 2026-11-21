@@ -23,6 +23,8 @@
 package com.mrivanplays.annotationconfig.yaml;
 
 import com.mrivanplays.annotationconfig.core.annotations.ConfigObject;
+import com.mrivanplays.annotationconfig.core.resolver.settings.ACDefaultSettings;
+import com.mrivanplays.annotationconfig.core.resolver.settings.NullReadHandleOption;
 import java.io.StringReader;
 import java.io.StringWriter;
 import org.junit.jupiter.api.Assertions;
@@ -87,6 +89,36 @@ public class RecordTest {
     Assertions.assertEquals("cc", s.b.name);
     Assertions.assertEquals("ppp", s.b.type);
     Assertions.assertEquals("llll", s.b.value);
+    Assertions.assertEquals("pong", s.b.foo);
+    Assertions.assertEquals(1, s.b.bar);
+    Assertions.assertFalse(s.b.perf);
+    Assertions.assertEquals(6.9, s.b.aa);
+  }
+
+  @Test
+  void testNullRead() {
+    String payload =
+        "b:\n"
+            + "  name: \"cc\"\n"
+            + "  type: \"ppp\"\n"
+            + "  foo: \"pong\"\n"
+            + "  bar: 1\n"
+            + "  perf: false\n"
+            + "  aa: 6.9\n";
+
+    StringReader r = new StringReader(payload);
+    Subj s = new Subj();
+    YamlConfig.getConfigResolver()
+        .load(
+            s,
+            r,
+            ACDefaultSettings.getDefault()
+                .copy()
+                .put(ACDefaultSettings.NULL_READ_HANDLER, NullReadHandleOption.USE_DEFAULT_VALUE));
+
+    Assertions.assertEquals("cc", s.b.name);
+    Assertions.assertEquals("ppp", s.b.type);
+    Assertions.assertEquals("cc", s.b.value);
     Assertions.assertEquals("pong", s.b.foo);
     Assertions.assertEquals(1, s.b.bar);
     Assertions.assertFalse(s.b.perf);

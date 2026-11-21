@@ -22,6 +22,8 @@
 
 package com.mrivanplays.annotationconfig.core.serialization;
 
+import com.mrivanplays.annotationconfig.core.resolver.settings.ACDefaultSettings;
+import com.mrivanplays.annotationconfig.core.resolver.settings.NullReadHandleOption;
 import com.mrivanplays.annotationconfig.core.utils.AnnotationUtils;
 import com.mrivanplays.annotationconfig.core.utils.ReflectionUtils;
 import java.lang.reflect.Array;
@@ -103,7 +105,8 @@ final class DefaultSerializer implements FieldTypeSerializer<Object> {
         Object arr = Array.newInstance(type, read.size());
         FieldTypeSerializer serializer = serializerRegistry.getSerializer(type).orElse(this);
         SerializationContext serializationContext =
-            SerializationContext.of(type, type, context.getAnnotatedConfig());
+            SerializationContext.of(
+                type, type, context.getAnnotatedConfig(), context.getSettings());
         for (int i = 0; i < read.size(); i++) {
           Object o = read.get(i);
           if (isPrimitive(o, false) && isPrimitiveClass(type)) {
@@ -126,7 +129,8 @@ final class DefaultSerializer implements FieldTypeSerializer<Object> {
           List<Object> list = new LinkedList<>();
           FieldTypeSerializer serializer = serializerRegistry.getSerializer(type).orElse(this);
           SerializationContext serializationContext =
-              SerializationContext.of(type, type, context.getAnnotatedConfig());
+              SerializationContext.of(
+                  type, type, context.getAnnotatedConfig(), context.getSettings());
           for (Object o : (Object[]) dataRaw) {
             Object deserialized =
                 serializer.deserialize(new DataObject(o, true), serializationContext, annotations);
@@ -148,7 +152,8 @@ final class DefaultSerializer implements FieldTypeSerializer<Object> {
             (Class<?>) ((ParameterizedType) context.getGenericType()).getActualTypeArguments()[0];
         FieldTypeSerializer serializer = serializerRegistry.getSerializer(neededType).orElse(this);
         SerializationContext serializationContext =
-            SerializationContext.of(neededType, neededType, context.getAnnotatedConfig());
+            SerializationContext.of(
+                neededType, neededType, context.getAnnotatedConfig(), context.getSettings());
         for (Object o : read) {
           if (isPrimitive(o, false) && isPrimitiveClass(neededType)) {
             ret.add(o);
@@ -185,7 +190,7 @@ final class DefaultSerializer implements FieldTypeSerializer<Object> {
           // ignored
         }
       }
-      Object fieldTypeInstance = getFieldTypeInstance(fieldType);
+      Object fieldTypeInstance = this.tryGetFieldTypeInstance(fieldType, context);
       Field[] fields = fieldTypeInstance.getClass().getDeclaredFields();
       if (fields.length != 1) {
         throw new IllegalArgumentException(
@@ -209,7 +214,7 @@ final class DefaultSerializer implements FieldTypeSerializer<Object> {
             fieldTypeInstance,
             serializer.deserialize(
                 data,
-                SerializationContext.fromField(desField, fieldTypeInstance),
+                SerializationContext.fromField(desField, fieldTypeInstance, context.getSettings()),
                 AnnotationAccessor.createFromField(desField)));
       } catch (IllegalAccessException e) {
         throw new IllegalArgumentException("A field became inaccessible");
@@ -258,9 +263,54 @@ final class DefaultSerializer implements FieldTypeSerializer<Object> {
           f.setAccessible(true); // dirty workaround!?
           Object val = dataMap.get(AnnotationUtils.getKey(f));
           if (val == null) {
-            // actually put a null value otherwise the record won't be constructed properly
-            // todo: null read handle settings?
-            deserialized.put(f.getName(), null);
+            NullReadHandleOption nullReadHandle =
+                context
+                    .getSettings()
+                    .get(ACDefaultSettings.NULL_READ_HANDLER)
+                    .orElse(
+                        ACDefaultSettings.getDefault()
+                            .get(ACDefaultSettings.NULL_READ_HANDLER)
+                            .get());
+            if (nullReadHandle == NullReadHandleOption.SET_NULL) {
+              // actually put a null value otherwise the record won't be constructed properly
+              deserialized.put(f.getName(), null);
+            } else {
+              if (context.getDefaultValue().isPresent()) {
+                Object defValue = context.getDefaultValue().get();
+                try {
+                  deserialized.put(f.getName(), f.get(defValue));
+                } catch (IllegalAccessException e) {
+                  throw new IllegalArgumentException("A field became inaccessible", e);
+                }
+              } else {
+                if (context.getAnnotatedConfig() != null && context.getName().isPresent()) {
+                  try {
+                    Field parentField =
+                        context
+                            .getAnnotatedConfig()
+                            .getClass()
+                            .getDeclaredField(context.getName().get());
+                    parentField.setAccessible(true);
+                    Object defValue = parentField.get(context.getAnnotatedConfig());
+                    if (defValue != null) {
+                      deserialized.put(f.getName(), f.get(defValue));
+                    } else {
+                      // at least we _tried_ though
+                      deserialized.put(f.getName(), null);
+                    }
+                  } catch (NoSuchFieldException e) {
+                    // ignored
+                  } catch (IllegalAccessException e) {
+                    deserialized.put(f.getName(), null);
+                    new RuntimeException("Field became inaccessible, will be set to null", e)
+                        .printStackTrace();
+                  }
+                } else {
+                  // again, set null (unfortunately)
+                  deserialized.put(f.getName(), null);
+                }
+              }
+            }
             continue;
           }
           FieldTypeSerializer serializer =
@@ -270,10 +320,10 @@ final class DefaultSerializer implements FieldTypeSerializer<Object> {
                 f.getName(),
                 serializer.deserialize(
                     new DataObject(val, true),
-                    SerializationContext.fromField(f, context.getAnnotatedConfig()),
+                    SerializationContext.fromField(f, null, context.getSettings()),
                     AnnotationAccessor.createFromField(f)));
           } catch (IllegalAccessException e) {
-            throw new IllegalArgumentException("A field became inaccessible");
+            throw new IllegalArgumentException("A field became inaccessible", e);
           }
         }
         try {
@@ -292,7 +342,7 @@ final class DefaultSerializer implements FieldTypeSerializer<Object> {
           throw new RuntimeException("ctor became inaccessible '" + fieldType.getName() + "'", e);
         }
       } else {
-        Object fieldTypeInstance = getFieldTypeInstance(neededInstanceAllocation);
+        Object fieldTypeInstance = this.tryGetFieldTypeInstance(fieldType, context);
         for (Field desField : fieldTypeInstance.getClass().getDeclaredFields()) {
           desField.setAccessible(true);
           if (AnnotationUtils.isIgnored(desField)) {
@@ -309,10 +359,11 @@ final class DefaultSerializer implements FieldTypeSerializer<Object> {
                 fieldTypeInstance,
                 serializer.deserialize(
                     new DataObject(val, true),
-                    SerializationContext.fromField(desField, fieldTypeInstance),
+                    SerializationContext.fromField(
+                        desField, fieldTypeInstance, context.getSettings()),
                     AnnotationAccessor.createFromField(desField)));
           } catch (IllegalAccessException e) {
-            throw new IllegalArgumentException("A field became inaccessible");
+            throw new IllegalArgumentException("A field became inaccessible", e);
           }
         }
 
@@ -321,7 +372,31 @@ final class DefaultSerializer implements FieldTypeSerializer<Object> {
     }
   }
 
-  private Object getFieldTypeInstance(Class<?> fieldType) {
+  private Object tryGetFieldTypeInstance(Class<?> fieldType, SerializationContext<Object> context) {
+    Object fieldTypeInstance;
+    if (context.getDefaultValue().isPresent()) {
+      fieldTypeInstance = context.getDefaultValue().get();
+    } else {
+      try {
+        if (context.getAnnotatedConfig() != null && context.getName().isPresent()) {
+          Field orig =
+              context.getAnnotatedConfig().getClass().getDeclaredField(context.getName().get());
+          orig.setAccessible(true);
+          fieldTypeInstance = orig.get(context.getAnnotatedConfig());
+          if (fieldTypeInstance == null) {
+            fieldTypeInstance = this.createFieldTypeInstance(fieldType);
+          }
+        } else {
+          fieldTypeInstance = this.createFieldTypeInstance(fieldType);
+        }
+      } catch (NoSuchFieldException | IllegalAccessException e) {
+        fieldTypeInstance = this.createFieldTypeInstance(fieldType);
+      }
+    }
+    return fieldTypeInstance;
+  }
+
+  private Object createFieldTypeInstance(Class<?> fieldType) {
     Object fieldTypeInstance;
     try {
       Constructor<?> constructor = fieldType.getConstructor();
@@ -376,7 +451,8 @@ final class DefaultSerializer implements FieldTypeSerializer<Object> {
             (Class<?>) ((ParameterizedType) context.getGenericType()).getActualTypeArguments()[0];
         FieldTypeSerializer serializer = serializerRegistry.getSerializer(neededType).orElse(this);
         SerializationContext serializationContext =
-            SerializationContext.of(neededType, neededType, context.getAnnotatedConfig());
+            SerializationContext.of(
+                neededType, neededType, context.getAnnotatedConfig(), context.getSettings());
         for (Object val : values) {
           if (isPrimitive(val)) {
             if (val instanceof BigDecimal) {
@@ -404,7 +480,8 @@ final class DefaultSerializer implements FieldTypeSerializer<Object> {
           Class<?> type = Class.forName(typeName);
           FieldTypeSerializer serializer = serializerRegistry.getSerializer(type).orElse(this);
           SerializationContext serializationContext =
-              SerializationContext.of(type, type, context.getAnnotatedConfig());
+              SerializationContext.of(
+                  type, type, context.getAnnotatedConfig(), context.getSettings());
           List<Object> list = new LinkedList<>();
           for (Object toSerialize : (Object[]) value) {
             if (toSerialize == null) {
@@ -443,7 +520,8 @@ final class DefaultSerializer implements FieldTypeSerializer<Object> {
                 def,
                 desField.getType(),
                 desField.getGenericType(),
-                context.getAnnotatedConfig()),
+                context.getAnnotatedConfig(),
+                context.getSettings()),
             AnnotationAccessor.createFromField(desField));
       } catch (IllegalAccessException e) {
         throw new IllegalArgumentException("Field became inaccessible.", e);
@@ -471,7 +549,8 @@ final class DefaultSerializer implements FieldTypeSerializer<Object> {
                     def,
                     desField.getType(),
                     desField.getGenericType(),
-                    context.getAnnotatedConfig()),
+                    context.getAnnotatedConfig(),
+                    context.getSettings()),
                 AnnotationAccessor.createFromField(desField));
         if (serialized == null) {
           throw new NullPointerException(

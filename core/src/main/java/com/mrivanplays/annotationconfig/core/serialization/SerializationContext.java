@@ -22,8 +22,11 @@
 
 package com.mrivanplays.annotationconfig.core.serialization;
 
+import com.mrivanplays.annotationconfig.core.resolver.settings.ACDefaultSettings;
+import com.mrivanplays.annotationconfig.core.resolver.settings.Settings;
 import java.lang.reflect.Field;
 import java.lang.reflect.Type;
+import java.util.Objects;
 import java.util.Optional;
 import org.jspecify.annotations.NullMarked;
 import org.jspecify.annotations.Nullable;
@@ -37,7 +40,6 @@ import org.jspecify.annotations.Nullable;
  * @author Ivan Pekov
  * @since 3.0.0
  */
-@SuppressWarnings({"unchecked", "OptionalUsedAsFieldOrParameterType"})
 @NullMarked
 public final class SerializationContext<T> {
 
@@ -50,24 +52,33 @@ public final class SerializationContext<T> {
    * @return new serialization context
    * @throws IllegalAccessException see {@link Field#get(Object)}
    */
-  public static <T> SerializationContext<T> fromField(Field field, Object annotatedConfig)
+  public static <T> SerializationContext<T> fromField(Field field, @Nullable Object annotatedConfig)
       throws IllegalAccessException {
-    // todo: rework serialization context to support record types
-    // since in records we cannot have a originated from annotatedConfig instance.
-    Optional<T> def;
-    // this is just a hacky workaround
-    // see above
-    try {
-      def = Optional.ofNullable((T) field.get(annotatedConfig));
-    } catch (IllegalArgumentException e) {
-      def = Optional.empty();
+    return fromField(field, annotatedConfig, null);
+  }
+
+  /**
+   * Creates a new {@link SerializationContext} from a {@link Field}
+   *
+   * @param field field to create context from
+   * @param annotatedConfig annotated config
+   * @param settings used settings
+   * @param <T> type
+   * @return new serialization context
+   * @since 3.0.4
+   * @throws IllegalAccessException see {@link Field#get(Object)}
+   */
+  public static <T> SerializationContext<T> fromField(
+      Field field, @Nullable Object annotatedConfig, @Nullable Settings settings)
+      throws IllegalAccessException {
+    Objects.requireNonNull(field, "field");
+    T def = null;
+    if (annotatedConfig != null) {
+      //noinspection unchecked
+      def = (T) field.get(annotatedConfig);
     }
     return new SerializationContext<>(
-        Optional.of(field.getName()),
-        def,
-        field.getType(),
-        field.getGenericType(),
-        annotatedConfig);
+        field.getName(), def, field.getType(), field.getGenericType(), annotatedConfig, settings);
   }
 
   /**
@@ -80,8 +91,27 @@ public final class SerializationContext<T> {
    * @return new serialization context
    */
   public static <T> SerializationContext<T> of(
-      Class<?> classType, Type genericType, Object annotatedConfig) {
+      Class<?> classType, Type genericType, @Nullable Object annotatedConfig) {
     return of(null, classType, genericType, annotatedConfig);
+  }
+
+  /**
+   * Creates a new {@link SerializationContext}
+   *
+   * @param classType class type
+   * @param genericType generic class type
+   * @param annotatedConfig annotatedConfig
+   * @param settings used settings
+   * @param <T> type
+   * @return new serialization context
+   * @since 3.0.4
+   */
+  public static <T> SerializationContext<T> of(
+      Class<?> classType,
+      Type genericType,
+      @Nullable Object annotatedConfig,
+      @Nullable Settings settings) {
+    return of(null, classType, genericType, annotatedConfig, settings);
   }
 
   /**
@@ -95,8 +125,29 @@ public final class SerializationContext<T> {
    * @return new serialization context
    */
   public static <T> SerializationContext<T> of(
-      @Nullable T def, Class<?> classType, Type genericType, Object annotatedConfig) {
+      @Nullable T def, Class<?> classType, Type genericType, @Nullable Object annotatedConfig) {
     return of(null, def, classType, genericType, annotatedConfig);
+  }
+
+  /**
+   * Creates a new {@link SerializationContext}
+   *
+   * @param def default value. can be null
+   * @param classType class type
+   * @param genericType generic class type
+   * @param annotatedConfig annotatedConfig
+   * @param settings used settings
+   * @param <T> type
+   * @return new serialization context
+   * @since 3.0.4
+   */
+  public static <T> SerializationContext<T> of(
+      @Nullable T def,
+      Class<?> classType,
+      Type genericType,
+      @Nullable Object annotatedConfig,
+      @Nullable Settings settings) {
+    return of(null, def, classType, genericType, annotatedConfig, settings);
   }
 
   /**
@@ -115,33 +166,53 @@ public final class SerializationContext<T> {
       @Nullable T def,
       Class<?> classType,
       Type genericType,
-      Object annotatedConfig) {
-    //noinspection NullableProblems
-    return new SerializationContext<>(
-        Optional.ofNullable(name),
-        Optional.ofNullable(def),
-        classType,
-        genericType,
-        annotatedConfig);
+      @Nullable Object annotatedConfig) {
+    return of(name, def, classType, genericType, annotatedConfig, null);
   }
 
-  private final Optional<String> name;
-  private final Optional<T> def;
-  private final Class<?> classType;
-  private final Type genericType;
-  private final Object annotatedConfig;
-
-  private SerializationContext(
-      Optional<String> name,
-      Optional<T> def,
+  /**
+   * Creates a new {@link SerializationContext}
+   *
+   * @param name name of field. can be null
+   * @param def default value. can be null
+   * @param classType class type
+   * @param genericType generic class type
+   * @param annotatedConfig annotatedConfig
+   * @param settings used settings
+   * @param <T> type
+   * @return new serialization context
+   * @since 3.0.4
+   */
+  public static <T> SerializationContext<T> of(
+      @Nullable String name,
+      @Nullable T def,
       Class<?> classType,
       Type genericType,
-      Object annotatedConfig) {
+      @Nullable Object annotatedConfig,
+      @Nullable Settings settings) {
+    return new SerializationContext<>(name, def, classType, genericType, annotatedConfig, settings);
+  }
+
+  @Nullable private final String name;
+  @Nullable private final T def;
+  private final Class<?> classType;
+  private final Type genericType;
+  @Nullable private final Object annotatedConfig;
+  private final Settings settings;
+
+  private SerializationContext(
+      @Nullable String name,
+      @Nullable T def,
+      Class<?> classType,
+      Type genericType,
+      @Nullable Object annotatedConfig,
+      @Nullable Settings settings) {
     this.name = name;
     this.def = def;
-    this.classType = classType;
-    this.genericType = genericType;
+    this.classType = Objects.requireNonNull(classType, "classType");
+    this.genericType = Objects.requireNonNull(genericType, "genericType");
     this.annotatedConfig = annotatedConfig;
+    this.settings = Objects.requireNonNullElse(settings, ACDefaultSettings.getDefault());
   }
 
   /**
@@ -151,7 +222,7 @@ public final class SerializationContext<T> {
    * @return name or empty optional
    */
   public Optional<String> getName() {
-    return name;
+    return Optional.ofNullable(name);
   }
 
   /**
@@ -161,7 +232,7 @@ public final class SerializationContext<T> {
    * @return default value or empty optional
    */
   public Optional<T> getDefaultValue() {
-    return def;
+    return Optional.ofNullable(def);
   }
 
   /**
@@ -183,11 +254,23 @@ public final class SerializationContext<T> {
   }
 
   /**
-   * Returns the annotated config this context originated from.
+   * Returns the annotated config this context originated from. Will always return <code>null</code>
+   * if this context originated from a record-type class.
    *
    * @return annotated config
    */
+  @Nullable
   public Object getAnnotatedConfig() {
     return annotatedConfig;
+  }
+
+  /**
+   * Returns the used {@link Settings settings} for serializing/deserializing.
+   *
+   * @return used settings
+   * @since 3.0.4
+   */
+  public Settings getSettings() {
+    return this.settings;
   }
 }

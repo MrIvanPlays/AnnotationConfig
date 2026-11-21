@@ -23,6 +23,8 @@
 package com.mrivanplays.annotationconfig.yaml;
 
 import com.mrivanplays.annotationconfig.core.annotations.Key;
+import com.mrivanplays.annotationconfig.core.resolver.settings.ACDefaultSettings;
+import com.mrivanplays.annotationconfig.core.resolver.settings.NullReadHandleOption;
 import com.mrivanplays.annotationconfig.core.serialization.SerializerRegistry;
 import com.mrivanplays.annotationconfig.core.utils.TypeToken;
 import java.io.StringReader;
@@ -207,5 +209,24 @@ public class SectionListRecordTest {
     Assertions.assertNull(map.get("foo").key());
     Assertions.assertEquals(-5, map.get("foo").num());
     Assertions.assertFalse(map.get("foo").persist());
+  }
+
+  @Test
+  void testNullReadPersistsValue() {
+    String payload = "list:\n" + "  pump:\n" + "    num: -5\n" + "    persist: false\n" + "\n";
+
+    StringReader r = new StringReader(payload);
+    Subj3 s = new Subj3();
+    YamlConfig.getConfigResolver()
+        .load(
+            s,
+            r,
+            ACDefaultSettings.getDefault()
+                .copy()
+                .put(ACDefaultSettings.NULL_READ_HANDLER, NullReadHandleOption.USE_DEFAULT_VALUE));
+
+    Assertions.assertNotNull(s.list.get("pump").key());
+    Assertions.assertEquals(-5, s.list.get("pump").num());
+    Assertions.assertFalse(s.list.get("pump").persist());
   }
 }

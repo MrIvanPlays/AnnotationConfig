@@ -118,6 +118,11 @@ public final class SectionObjectList<T> implements Iterable<Entry<String, T>> {
     };
   }
 
+  @Nullable
+  public T get(String key) {
+    return this.values.get(key);
+  }
+
   /**
    * Check whether this {@code SectionObjectList} contains a specific key
    *

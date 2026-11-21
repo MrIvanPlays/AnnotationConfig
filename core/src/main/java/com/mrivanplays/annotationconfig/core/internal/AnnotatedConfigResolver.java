@@ -35,6 +35,7 @@ import com.mrivanplays.annotationconfig.core.internal.MinMaxHandler.State;
 import com.mrivanplays.annotationconfig.core.resolver.MultilineString;
 import com.mrivanplays.annotationconfig.core.resolver.ValueWriter;
 import com.mrivanplays.annotationconfig.core.resolver.key.KeyResolver;
+import com.mrivanplays.annotationconfig.core.resolver.settings.ACDefaultSettings;
 import com.mrivanplays.annotationconfig.core.resolver.settings.NullReadHandleOption;
 import com.mrivanplays.annotationconfig.core.resolver.settings.Settings;
 import com.mrivanplays.annotationconfig.core.serialization.AnnotationAccessor;
@@ -81,7 +82,16 @@ import java.util.TreeSet;
 public final class AnnotatedConfigResolver {
 
   public static Map<AnnotationHolder, Set<AnnotationType>> resolveAnnotations(
-      Object annotatedClass, boolean reverseFields, boolean findParentFields) {
+      Object annotatedClass, Settings settings) {
+    boolean findParentFields =
+        settings
+            .get(ACDefaultSettings.FIND_PARENT_FIELDS)
+            .orElse(ACDefaultSettings.getDefault().get(ACDefaultSettings.FIND_PARENT_FIELDS).get());
+    boolean reverseFields =
+        settings
+            .get(ACDefaultSettings.SHOULD_REVERSE_FIELDS)
+            .orElse(
+                ACDefaultSettings.getDefault().get(ACDefaultSettings.SHOULD_REVERSE_FIELDS).get());
     Map<AnnotationHolder, Set<AnnotationType>> annotationData = new TreeMap<>();
     Class<?> theClass = annotatedClass.getClass();
     AnnotationHolder CLASS_ANNOTATION_HOLDER = new AnnotationHolder(theClass);
@@ -185,23 +195,11 @@ public final class AnnotatedConfigResolver {
       File file,
       Settings settings,
       String commentChar,
-      ValueWriter valueWriter,
-      KeyResolver keyResolver,
-      boolean reverseFields,
-      boolean findParentFields) {
+      ValueWriter valueWriter) {
     try {
       file.createNewFile();
       try (PrintWriter writer = new PrintWriter(new FileWriter(file))) {
-        toWriter(
-            annotatedConfig,
-            writer,
-            map,
-            commentChar,
-            valueWriter,
-            settings,
-            keyResolver,
-            reverseFields,
-            findParentFields);
+        toWriter(annotatedConfig, writer, map, commentChar, valueWriter, settings);
       }
     } catch (IOException e) {
       throw new RuntimeException(e);
@@ -214,24 +212,12 @@ public final class AnnotatedConfigResolver {
       Path path,
       Settings settings,
       String commentChar,
-      ValueWriter valueWriter,
-      KeyResolver keyResolver,
-      boolean reverseFields,
-      boolean findParentFields) {
+      ValueWriter valueWriter) {
     try {
       Files.deleteIfExists(path);
       Files.createFile(path);
       try (PrintWriter writer = new PrintWriter(Files.newBufferedWriter(path))) {
-        toWriter(
-            annotatedConfig,
-            writer,
-            map,
-            commentChar,
-            valueWriter,
-            settings,
-            keyResolver,
-            reverseFields,
-            findParentFields);
+        toWriter(annotatedConfig, writer, map, commentChar, valueWriter, settings);
       }
     } catch (IOException e) {
       throw new RuntimeException(e);
@@ -244,21 +230,9 @@ public final class AnnotatedConfigResolver {
       Writer writerFeed,
       Settings settings,
       String commentChar,
-      ValueWriter valueWriter,
-      KeyResolver keyResolver,
-      boolean reverseFields,
-      boolean findParentFields) {
+      ValueWriter valueWriter) {
     try (PrintWriter writer = new PrintWriter(writerFeed)) {
-      toWriter(
-          annotatedConfig,
-          writer,
-          map,
-          commentChar,
-          valueWriter,
-          settings,
-          keyResolver,
-          reverseFields,
-          findParentFields);
+      toWriter(annotatedConfig, writer, map, commentChar, valueWriter, settings);
     } catch (IOException e) {
       throw new RuntimeException(e);
     }
@@ -270,10 +244,7 @@ public final class AnnotatedConfigResolver {
       Map<AnnotationHolder, Set<AnnotationType>> map,
       String commentChar,
       ValueWriter valueWriter,
-      Settings settings,
-      KeyResolver keyResolver,
-      boolean reverseFields,
-      boolean findParentFields)
+      Settings settings)
       throws IOException {
     WriteData parentData = new WriteData();
     Field rawConfigField = null;
@@ -302,8 +273,7 @@ public final class AnnotatedConfigResolver {
         continue;
       }
       try {
-        WriteData current =
-            getWriteData(annotatedConfig, entry, keyResolver, reverseFields, findParentFields);
+        WriteData current = getWriteData(annotatedConfig, entry, settings);
         for (Map.Entry<String, Object> childDataWrite : current.getToWrite().entrySet()) {
           String childDataKey = childDataWrite.getKey();
           Object childDataValue = childDataWrite.getValue();
@@ -351,9 +321,7 @@ public final class AnnotatedConfigResolver {
   private static WriteData getWriteData(
       Object annotatedConfig,
       Map.Entry<AnnotationHolder, Set<AnnotationType>> entry,
-      KeyResolver keyResolver,
-      boolean reverseFields,
-      boolean findParentFields)
+      Settings settings)
       throws IllegalAccessException {
     SerializerRegistry serializerRegistry = SerializerRegistry.INSTANCE;
     AnnotationHolder holder = entry.getKey();
@@ -386,12 +354,11 @@ public final class AnnotatedConfigResolver {
     if (configObject) {
       Object cfgObject = field.get(annotatedConfig);
       Map<AnnotationHolder, Set<AnnotationType>> annotations =
-          resolveAnnotations(cfgObject, reverseFields, findParentFields);
+          resolveAnnotations(cfgObject, settings);
 
       WriteData combinedData = new WriteData();
       for (Map.Entry<AnnotationHolder, Set<AnnotationType>> e1 : annotations.entrySet()) {
-        WriteData childData =
-            getWriteData(cfgObject, e1, keyResolver, reverseFields, findParentFields);
+        WriteData childData = getWriteData(cfgObject, e1, settings);
         combinedData.getClassComments().addAll(childData.getClassComments());
         for (Map.Entry<String, Object> childDataWrite : childData.getToWrite().entrySet()) {
           String childDataKey = childDataWrite.getKey();
@@ -431,7 +398,8 @@ public final class AnnotatedConfigResolver {
                 defaultsToValueObject,
                 field.getType(),
                 field.getGenericType(),
-                annotatedConfig),
+                annotatedConfig,
+                settings),
             AnnotationAccessor.createFromField(field));
     if (serialized == null) {
       throw new NullPointerException(
@@ -486,7 +454,8 @@ public final class AnnotatedConfigResolver {
                         defaultsToValueObject,
                         field.getType(),
                         field.getGenericType(),
-                        annotatedConfig),
+                        annotatedConfig,
+                        settings),
                     AnnotationAccessor.createFromField(field));
             if (newSerialized == null) {
               throw new NullPointerException(
@@ -518,6 +487,10 @@ public final class AnnotatedConfigResolver {
     }
     // manipulate the defaultsToValueObject once again before sending it to the writer
     Map<String, Object> dummyValues = new LinkedHashMap<>();
+    KeyResolver keyResolver =
+        settings
+            .get(ACDefaultSettings.KEY_RESOLVER)
+            .orElse(ACDefaultSettings.getDefault().get(ACDefaultSettings.KEY_RESOLVER).get());
     keyResolver.boxTo(keyName, defaultsToValueObject, dummyValues);
     if (dummyValues.size() != 1) {
       throw new IllegalArgumentException("Invalid key resolver.");
@@ -561,10 +534,20 @@ public final class AnnotatedConfigResolver {
       Map<String, Object> values,
       Map<AnnotationHolder, Set<AnnotationType>> map,
       NullReadHandleOption nullReadHandler,
-      Settings settings,
-      KeyResolver keyResolver,
-      boolean reverseFields,
-      boolean findParentFields) {
+      Settings settings) {
+    boolean findParentFields =
+        settings
+            .get(ACDefaultSettings.FIND_PARENT_FIELDS)
+            .orElse(ACDefaultSettings.getDefault().get(ACDefaultSettings.FIND_PARENT_FIELDS).get());
+    boolean reverseFields =
+        settings
+            .get(ACDefaultSettings.SHOULD_REVERSE_FIELDS)
+            .orElse(
+                ACDefaultSettings.getDefault().get(ACDefaultSettings.SHOULD_REVERSE_FIELDS).get());
+    KeyResolver keyResolver =
+        settings
+            .get(ACDefaultSettings.KEY_RESOLVER)
+            .orElse(ACDefaultSettings.getDefault().get(ACDefaultSettings.KEY_RESOLVER).get());
     boolean missingOptions = false;
     SerializerRegistry serializerRegistry = SerializerRegistry.INSTANCE;
     for (Map.Entry<AnnotationHolder, Set<AnnotationType>> entry : map.entrySet()) {
@@ -637,20 +620,16 @@ public final class AnnotatedConfigResolver {
         if (field.getType().isRecord()) {
           // directly deserialize the value and set the field, do NOT try to set record fields
           Type fieldType = field.getGenericType();
-          FieldTypeSerializer<?> serializer =
+          FieldTypeSerializer serializer =
               serializerRegistry
                   .getSerializer(fieldType)
                   .orElse(serializerRegistry.getDefaultSerializer());
-          Object deserialized;
-          try {
-            deserialized =
-                serializer.deserialize(
-                    new DataObject(value, true),
-                    SerializationContext.fromField(field, annotatedConfig),
-                    AnnotationAccessor.createFromField(field));
-          } catch (IllegalAccessException e) {
-            throw new IllegalArgumentException("Field became inaccessible");
-          }
+          Object deserialized =
+              serializer.deserialize(
+                  new DataObject(value, true),
+                  SerializationContext.of(
+                      field.getName(), section, field.getType(), fieldType, null, settings),
+                  AnnotationAccessor.createFromField(field));
           if (deserialized == null && !thisMissingOption) {
             if (nullReadHandler == NullReadHandleOption.USE_DEFAULT_VALUE) {
               continue;
@@ -670,12 +649,9 @@ public final class AnnotatedConfigResolver {
             setFields(
                 section,
                 (Map<String, Object>) value,
-                resolveAnnotations(section, reverseFields, findParentFields),
+                resolveAnnotations(section, settings),
                 nullReadHandler,
-                settings,
-                keyResolver,
-                reverseFields,
-                findParentFields);
+                settings);
         if (thMissing && !missingOptions) {
           missingOptions = true;
         }
@@ -691,7 +667,7 @@ public final class AnnotatedConfigResolver {
         deserialized =
             serializer.deserialize(
                 new DataObject(value, true),
-                SerializationContext.fromField(field, annotatedConfig),
+                SerializationContext.fromField(field, annotatedConfig, settings),
                 AnnotationAccessor.createFromField(field));
       } catch (IllegalAccessException e) {
         throw new IllegalArgumentException("Field became inaccessible");
