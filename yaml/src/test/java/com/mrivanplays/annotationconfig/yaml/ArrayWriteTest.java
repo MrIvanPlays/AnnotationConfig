@@ -22,6 +22,7 @@
 
 package com.mrivanplays.annotationconfig.yaml;
 
+import java.io.StringReader;
 import java.io.StringWriter;
 import java.math.BigDecimal;
 import org.junit.jupiter.api.Assertions;
@@ -58,6 +59,10 @@ public class ArrayWriteTest {
     }
   }
 
+  static class Simple {
+    private int[] foo = new int[] {1, 2, 3};
+  }
+
   @Test
   public void testWriteArray() {
     Subject config = new Subject();
@@ -91,5 +96,24 @@ public class ArrayWriteTest {
     Assertions.assertEquals(3, config.myObjectArr[0].foo);
     Assertions.assertEquals(2, config.bigDec.length);
     Assertions.assertEquals(4444.5555, config.bigDec[1].doubleValue());
+  }
+
+  @Test
+  void testReadEmptyArray() {
+    Simple s = new Simple();
+    StringReader r = new StringReader("foo: []");
+    YamlConfig.getConfigResolver().load(s, r);
+
+    Assertions.assertEquals(0, s.foo.length);
+  }
+
+  @Test
+  void testReadSimple() {
+    Simple s = new Simple();
+    StringReader r = new StringReader("foo: [5, 6, 7]");
+    YamlConfig.getConfigResolver().load(s, r);
+
+    Assertions.assertEquals(3, s.foo.length);
+    Assertions.assertEquals(5, s.foo[0]);
   }
 }

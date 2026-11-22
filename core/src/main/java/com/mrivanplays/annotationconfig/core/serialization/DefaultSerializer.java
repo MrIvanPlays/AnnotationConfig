@@ -89,19 +89,10 @@ final class DefaultSerializer implements FieldTypeSerializer<Object> {
       if (dataRaw instanceof List) {
         List<Object> read = (List<Object>) dataRaw;
         if (read.isEmpty()) {
-          return Array.newInstance(fieldType, 0);
+          return Array.newInstance(fieldType.getComponentType(), 0);
         }
         // snakeyaml returns a list instead of an array for all types
-        Class<?> type;
-        if (ReflectionUtils.isPrimitive(typeName)) {
-          type = ReflectionUtils.getPrimitiveClass(typeName);
-        } else {
-          try {
-            type = Class.forName(typeName);
-          } catch (ClassNotFoundException e) {
-            throw new RuntimeException("Couldn't get class of non primitive array", e);
-          }
-        }
+        Class<?> type = fieldType.getComponentType();
         Object arr = Array.newInstance(type, read.size());
         FieldTypeSerializer serializer = serializerRegistry.getSerializer(type).orElse(this);
         SerializationContext serializationContext =

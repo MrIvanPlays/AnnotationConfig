@@ -42,6 +42,7 @@ public final class ReflectionUtils {
     return PrimitiveNameTypes.getNameType(typeName) != null;
   }
 
+  @Deprecated(since = "3.0.4", forRemoval = true)
   public static Class<?> getPrimitiveClass(String typeName) {
     PrimitiveNameTypes nameType = PrimitiveNameTypes.getNameType(typeName);
     if (nameType == null) {
