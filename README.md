@@ -67,6 +67,7 @@ in the changelog.
 configuration file format. Each module that AnnotationConfig ships by default has a standardised
 class named `[Configuration type]Config` which consists of `getConfigResolver()` and (if applicable)
 custom settings.
+The only exception to that rule is `JsonConfig`, as it contains two parsers for different JSON spec (good ol' JSON and JSON5).
 
 YAML example:
 
