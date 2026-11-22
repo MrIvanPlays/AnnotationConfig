@@ -68,16 +68,17 @@ public class ListEntryMapWithMapValueMapTest {
 
     String expected =
         "values:\n"
-            + "  - bar: 2\n"
-            + "    foo: 1\n"
-            + "    baz:\n"
-            + "    - \"baba\"\n"
-            + "    - \"yaga\"\n"
-            + "  - bar: 4\n"
-            + "    foo: 3\n"
-            + "    baz:\n"
-            + "      baba: \"yaga\"\n"
-            + "      lorem: \"ipsum\"\n\n";
+            + "  values:\n"
+            + "    - bar: 2\n"
+            + "      foo: 1\n"
+            + "      baz:\n"
+            + "        - \"baba\"\n"
+            + "        - \"yaga\"\n"
+            + "    - bar: 4\n"
+            + "      foo: 3\n"
+            + "      baz:\n"
+            + "        baba: \"yaga\"\n"
+            + "        lorem: \"ipsum\"\n";
 
     Assertions.assertEquals(expected, writer.toString().replaceAll("\\R", "\n"));
   }

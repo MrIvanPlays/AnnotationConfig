@@ -42,7 +42,7 @@ By default the supported configuration file formats are "properties", [JSON](htt
 using [gson](https://github.com/google/gson) ; [TOML](https://toml.io/)
 utilising [Jackson data formats](https://github.com/FasterXML/jackson-dataformats-text) and last but
 not least - [YAML](https://yaml.org/) utilising [snakeyaml](https://github.com/snakeyaml/snakeyaml)
-for reading configuration files (writing for YAML is home-grown inside the `yaml` module).
+with some custom backend logic for dumping, backed by snakeyaml.
 
 # Prerequisites
 

@@ -23,14 +23,10 @@
 package com.mrivanplays.annotationconfig.yaml;
 
 import com.mrivanplays.annotationconfig.core.resolver.ConfigResolver;
-import com.mrivanplays.annotationconfig.core.resolver.ValueWriter;
 import com.mrivanplays.annotationconfig.core.resolver.key.DottedResolver;
 import com.mrivanplays.annotationconfig.core.resolver.settings.ACDefaultSettings;
 import com.mrivanplays.annotationconfig.core.resolver.settings.Setting;
 import com.mrivanplays.annotationconfig.core.resolver.settings.Settings;
-import java.util.Collections;
-import java.util.LinkedHashMap;
-import java.util.Objects;
 import org.jspecify.annotations.NullMarked;
 import org.jspecify.annotations.Nullable;
 import org.yaml.snakeyaml.Yaml;
@@ -41,11 +37,8 @@ import org.yaml.snakeyaml.Yaml;
  * @since 1.0
  * @author Ivan Pekov
  */
-@SuppressWarnings("unchecked")
 @NullMarked
 public final class YamlConfig {
-
-  private static final Yaml YAML = new Yaml();
 
   /**
    * Returns the {@link Setting} with which the yaml instance is referenced in the {@link Settings}
@@ -68,21 +61,18 @@ public final class YamlConfig {
   }
 
   // <editor-fold desc="Internal Implementation" defaultstate="collapsed">
-  private static final ValueWriter YAML_VALUE_WRITER = new YamlValueWriter();
+  static final YamlHandler HANDLER = new YamlHandler();
 
   private static void generateConfigResolver() {
     configResolver =
         ConfigResolver.newBuilder()
-            .withValueWriter(YAML_VALUE_WRITER)
+            .withValueReader(HANDLER)
+            .withValueWriter(HANDLER)
             .withSetting(ACDefaultSettings.SHOULD_REVERSE_FIELDS, true)
             .withSetting(ACDefaultSettings.KEY_RESOLVER, DottedResolver.getInstance())
             .withCommentPrefix("# ")
             .withFileExtension(".yml")
             .withFileExtension(".yaml")
-            .withValueReader((reader, settings) ->
-                Objects.requireNonNullElse(
-                    settings.get(YAML_INSTANCE).orElse(YAML).loadAs(reader, LinkedHashMap.class),
-                    Collections.emptyMap()))
             .build();
   }
   // </editor-fold>

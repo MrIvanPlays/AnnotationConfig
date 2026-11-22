@@ -31,7 +31,7 @@ import org.junit.jupiter.api.Test;
 
 public class TestDottedKeysMultipleDump {
 
-  @Comment("Generated using AnnotationConfig v2.1.0-SNAPSHOT")
+  @Comment("Generated using AnnotationConfig v3.0.4")
   private static final class Subject {
 
     @ConfigObject private BarSection bar = new BarSection();
@@ -68,7 +68,7 @@ public class TestDottedKeysMultipleDump {
     YamlConfig.getConfigResolver().dump(config, dumpTo);
 
     String expected =
-        "# Generated using AnnotationConfig v2.1.0-SNAPSHOT\n"
+        "# Generated using AnnotationConfig v3.0.4\n"
             + "\n"
             + "# This is a test comment on top of a section\n"
             + "bar:\n"
@@ -86,8 +86,7 @@ public class TestDottedKeysMultipleDump {
             + "    bar: \"foo\"\n"
             + "\n"
             + "# This is a control field\n"
-            + "control-field: -1\n"
-            + "\n";
+            + "control-field: -1\n";
 
     Assertions.assertEquals(expected, dumpTo.toString().replaceAll("\\R", "\n"));
   }

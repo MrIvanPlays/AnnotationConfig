@@ -65,7 +65,7 @@ public class RecordTest {
             + "  foo: \"aaaa\"\n"
             + "  bar: 255\n"
             + "  perf: true\n"
-            + "  aa: 2.5\n\n";
+            + "  aa: 2.5\n";
 
     Assertions.assertEquals(expected, w.toString().replaceAll("\\R", "\n"));
   }

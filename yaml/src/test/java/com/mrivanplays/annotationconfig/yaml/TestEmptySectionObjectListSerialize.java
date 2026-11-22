@@ -67,13 +67,12 @@ public class TestEmptySectionObjectListSerialize {
             + "    foo: \"lorem ipsum\"\n"
             + "    bar: \"dolor sit amet\"\n"
             + "\n"
-            + "controlInteger: 1\n"
-            + "\n";
+            + "controlInteger: 1\n";
 
     Assertions.assertEquals(expected, writer.toString().replaceAll("\\R", "\n"));
     writer = new StringWriter();
     subj.list.update("baz", null);
     YamlConfig.getConfigResolver().dump(subj, writer);
-    Assertions.assertEquals("\ncontrolInteger: 1\n\n", writer.toString().replaceAll("\\R", "\n"));
+    Assertions.assertEquals("controlInteger: 1\n", writer.toString().replaceAll("\\R", "\n"));
   }
 }

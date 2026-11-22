@@ -69,8 +69,7 @@ public class TestSectionChildSections {
             + "  # Child section comment\n"
             + "  barSect:\n"
             + "    # Bar comment\n"
-            + "    bar: \"aabb\"\n"
-            + "\n";
+            + "    bar: \"aabb\"\n";
 
     Assertions.assertEquals(expected, writer.toString().replaceAll("\\R", "\n"));
   }

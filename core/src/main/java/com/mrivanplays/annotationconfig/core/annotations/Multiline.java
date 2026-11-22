@@ -33,11 +33,20 @@ import java.lang.annotation.Target;
  * multiline {@link String}. This annotation can only be applied on {@link java.lang.reflect.Field
  * Fields} with type {@link String}.
  *
- * <p>If the {@code String} does not contain a '\n' character, it will be dumped as a regular {@code
- * String}.
+ * <p>(YAML specific) Since 3.0.4, if the {@code String} is not java multiline one e.g.
  *
- * <p>If the configuration type AnnotationConfig is dumping to, the {@code String} will be dumped
- * just as a regular {@code String}.
+ * <pre>
+ *   <code>
+ *     private String foo =
+ * """
+ * Foo
+ * Bar
+ * """;
+ *   </code>
+ * </pre>
+ *
+ * the YAML serializer will dump it as a inline string, no matter whether the string contains '\n'
+ * or not. And, double quotes in YAML are no longer supported to dump a multiline string with.
  *
  * @since 2.1.0
  * @author Ivan Pekov
@@ -48,11 +57,10 @@ import java.lang.annotation.Target;
 public @interface Multiline {
 
   /**
-   * The character to dump which indicates a multiline {@code String}. AnnotationConfig supports
-   * double quotes, '>' and '|', but if a custom configuration type is used, it may support other
-   * characters.
+   * The character to dump which indicates a multiline {@code String}. AnnotationConfig supports '>'
+   * and '|', but if a custom configuration type is used, it may support other characters.
    *
    * @return character indicating multiline string
    */
-  char value() default '"';
+  char value() default '|';
 }

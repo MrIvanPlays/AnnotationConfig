@@ -104,7 +104,7 @@ public class SectionListRecordTest {
             + "    value: \"baz\"\n"
             + "  bar:\n"
             + "    key: \"lorem\"\n"
-            + "    value: \"ipsum\"\n\n";
+            + "    value: \"ipsum\"\n";
 
     Assertions.assertEquals(expected, w.toString().replaceAll("\\R", "\n"));
   }
@@ -169,8 +169,7 @@ public class SectionListRecordTest {
             + "  llll:\n"
             + "    super-cool-key: \"wh\"\n"
             + "    num: 34\n"
-            + "    persist: false\n"
-            + "\n";
+            + "    persist: false\n";
 
     Assertions.assertEquals(expected, w.toString().replaceAll("\\R", "\n"));
   }

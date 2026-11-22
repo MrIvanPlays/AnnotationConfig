@@ -34,8 +34,12 @@ import org.jspecify.annotations.Nullable;
  *
  * @author Ivan Pekov
  * @since 3.0.0
+ * @deprecated this was never meant to be public API, and the internal usage of this class has
+ *     rapidly decreased in 3.0.4 . Maintainer is trying to completely remove internal usage of
+ *     these so-called hacky "utilities".
  */
 @NullMarked
+@Deprecated(since = "3.0.4")
 public final class ReflectionUtils {
 
   public static boolean isPrimitive(String typeName) {
@@ -51,6 +55,7 @@ public final class ReflectionUtils {
     return nameType.primitiveType;
   }
 
+  @Deprecated(since = "3.0.4", forRemoval = true)
   public static Object[] castToArray(Object obj) {
     if (!obj.getClass().isArray()) {
       throw new IllegalArgumentException("Not array");

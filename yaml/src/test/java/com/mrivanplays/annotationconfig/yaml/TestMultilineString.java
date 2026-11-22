@@ -35,7 +35,12 @@ public class TestMultilineString {
     @Key("control-field")
     public int controlField = -1;
 
-    @Multiline public String multiline = " Look at ma! \n I am a multiline string!";
+    @Multiline
+    public String multiline =
+"""
+Look at ma!
+I am a multiline string!
+""";
   }
 
   static class FailSubject {
@@ -59,13 +64,13 @@ public class TestMultilineString {
     StringWriter writer = new StringWriter();
     YamlConfig.getConfigResolver().dump(config, writer);
 
-    String expected =
-        "control-field: -1\n"
-            + "\n"
-            + "multiline: \"\n"
-            + " Look at ma! \\n\n"
-            + " I am a multiline string!\"\n"
-            + "\n";
+    String expectedMultiline =
+"""
+  Look at ma!
+  I am a multiline string!
+""";
+
+    String expected = "control-field: -1\n" + "\n" + "multiline: |\n" + expectedMultiline;
 
     Assertions.assertEquals(expected, writer.toString().replaceAll("\\R", "\n"));
   }

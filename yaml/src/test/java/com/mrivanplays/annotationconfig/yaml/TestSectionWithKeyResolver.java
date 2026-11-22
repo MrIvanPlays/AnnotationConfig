@@ -62,8 +62,7 @@ public class TestSectionWithKeyResolver {
             + "      # Bar comment\n"
             + "      bar: \"aaa\"\n"
             + "      # baz\n"
-            + "      baz: -1\n"
-            + "\n";
+            + "      baz: -1\n";
 
     Assertions.assertEquals(expected, writer.toString().replaceAll("\\R", "\n"));
   }

@@ -84,8 +84,7 @@ class SectionObjectListTest {
             + "    baz: \"lorem\"\n"
             + "  bar:\n"
             + "    foo: 2\n"
-            + "    baz: \"ipsum\"\n"
-            + "\n";
+            + "    baz: \"ipsum\"\n";
 
     resolver.dump(subject, writer);
 

@@ -119,14 +119,14 @@ class TestListObjectOnlyObjectSerializer {
     StringWriter writer = new StringWriter();
     resolver.dump(config, writer);
 
-    String expected = "objects:\n  - \"foo\"\n  - \"bar\"\n\n";
+    String expected = "objects:\n  - \"foo\"\n  - \"bar\"\n";
 
     Assertions.assertEquals(expected, writer.toString().replaceAll("\\R", "\n"));
   }
 
   void testLoad() {
     Subject config = new Subject();
-    StringReader reader = new StringReader("objects:\n  - \"baz\"\n  - \"aabb\"\n\n");
+    StringReader reader = new StringReader("objects:\n  - \"baz\"\n  - \"aabb\"\n");
     resolver.load(config, reader);
 
     Assertions.assertEquals(2, config.objects.size());

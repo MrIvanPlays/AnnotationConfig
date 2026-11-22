@@ -52,7 +52,7 @@ public class TestDataObjectSerialization {
     StringWriter writer = new StringWriter();
     YamlConfig.getConfigResolver().dump(config, writer);
 
-    String expected = "data:\n" + "  foo: 2\n" + "  bar: \"baz\"\n" + "  baz: 69420\n" + "\n";
+    String expected = "data:\n" + "  foo: 2\n" + "  bar: \"baz\"\n" + "  baz: 69420\n";
 
     Assertions.assertEquals(expected, writer.toString().replaceAll("\\R", "\n"));
   }
