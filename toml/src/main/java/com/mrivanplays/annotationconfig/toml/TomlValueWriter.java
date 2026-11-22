@@ -97,8 +97,10 @@ public final class TomlValueWriter implements ValueWriter {
     StringBuilder line = new StringBuilder(256);
     boolean first = true;
     for (Map.Entry<String, Object> entry : values.entrySet()) {
+      // '\n' and not println(): the line separator of the OS would mix with the '\n' of the class
+      // comment
       if (!first) {
-        writer.println();
+        writer.append('\n');
       }
       first = false;
       String key = entry.getKey();
@@ -147,13 +149,13 @@ public final class TomlValueWriter implements ValueWriter {
     line.append(tomlKey).append(" = ");
     appendValue(line, value, path);
     writer.append(line);
-    writer.println();
+    writer.append('\n');
   }
 
   private static void writeComments(PrintWriter writer, List<String> comments) {
     for (String comment : comments) {
       for (String part : LINE_BREAK.split(comment, -1)) {
-        writer.println(part.isEmpty() ? "#" : "# " + part);
+        writer.append(part.isEmpty() ? "#" : "# " + part).append('\n');
       }
     }
   }

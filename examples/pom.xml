@@ -16,13 +16,19 @@
     <maven.javadoc.skip>true</maven.javadoc.skip>
   </properties>
 
-  <description>A module containing example configurations utilising AnnotationConfig and YAML
+  <description>A module containing example configurations utilising AnnotationConfig with YAML and
+    JSON5
   </description>
 
   <dependencies>
     <dependency>
       <groupId>com.mrivanplays</groupId>
       <artifactId>annotationconfig-yaml</artifactId>
+      <version>${project.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>com.mrivanplays</groupId>
+      <artifactId>annotationconfig-json</artifactId>
       <version>${project.version}</version>
     </dependency>
   </dependencies>

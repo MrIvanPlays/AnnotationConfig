@@ -39,7 +39,8 @@ import java.util.regex.Pattern;
  */
 final class PropertiesDumper {
 
-  private static final String EOL = System.lineSeparator();
+  // the same on every OS, as the other formats and the class comment are written
+  private static final String EOL = "\n";
   private static final Pattern LINE_BREAK = Pattern.compile("\r\n|\r|\n");
   private static final char[] HEX = "0123456789ABCDEF".toCharArray();
 

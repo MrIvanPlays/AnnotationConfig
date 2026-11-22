@@ -702,11 +702,19 @@ final class DefaultSerializer implements FieldTypeSerializer<Object> {
       registerSerializer(byte.class, byteSerializer);
       registerSerializer(Byte.class, byteSerializer);
 
-      Function<Object, Double> doubleSerializer = validateO(Double.class, Double::parseDouble);
+      // Gson and Jackson's TOML parser read decimals as BigDecimal. Its doubleValue() and
+      // floatValue() are correctly rounded (since Java 21), so they give what parsing its text
+      // gives, without building the text. Other numbers, e.g. a Float, still go through their
+      // text, so that 3.11f is read as 3.11 and not as 3.109999895095825.
+      Function<Object, Double> parseDouble = validateO(Double.class, Double::parseDouble);
+      Function<Object, Double> doubleSerializer =
+          o -> o instanceof BigDecimal decimal ? decimal.doubleValue() : parseDouble.apply(o);
       registerSerializer(double.class, doubleSerializer);
       registerSerializer(Double.class, doubleSerializer);
 
-      Function<Object, Float> floatSerializer = validateO(Float.class, Float::parseFloat);
+      Function<Object, Float> parseFloat = validateO(Float.class, Float::parseFloat);
+      Function<Object, Float> floatSerializer =
+          o -> o instanceof BigDecimal decimal ? decimal.floatValue() : parseFloat.apply(o);
       registerSerializer(float.class, floatSerializer);
       registerSerializer(Float.class, floatSerializer);
 

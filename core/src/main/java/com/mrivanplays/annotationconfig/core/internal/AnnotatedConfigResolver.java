@@ -195,7 +195,8 @@ public final class AnnotatedConfigResolver {
         // which has none) it would be a stray leading line
         if (commentChar != null && !comments.isEmpty()) {
           for (String comment : comments) {
-            writer.println(commentChar + comment);
+            writer.print(commentChar + comment);
+            writer.append('\n');
           }
           writer.append('\n');
         }
@@ -285,8 +286,7 @@ public final class AnnotatedConfigResolver {
         mergeInto(combinedData, childData);
       }
       ret.toWrite().put(keyName, combinedData.toWrite());
-      for (Map.Entry<String, List<String>> fieldComment :
-          combinedData.fieldComments().entrySet()) {
+      for (Map.Entry<String, List<String>> fieldComment : combinedData.fieldComments().entrySet()) {
         ret.fieldComments().put(keyName + "." + fieldComment.getKey(), fieldComment.getValue());
       }
 
@@ -570,8 +570,8 @@ public final class AnnotatedConfigResolver {
   }
 
   /**
-   * Whether a deserialized {@code null} should leave the field untouched: always when the option
-   * is missing, and when it is present but read as null only with {@code USE_DEFAULT_VALUE}.
+   * Whether a deserialized {@code null} should leave the field untouched: always when the option is
+   * missing, and when it is present but read as null only with {@code USE_DEFAULT_VALUE}.
    */
   private static boolean skipNull(
       @Nullable Object deserialized, boolean missingOption, NullReadHandleOption handler) {

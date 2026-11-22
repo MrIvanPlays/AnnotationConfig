@@ -28,7 +28,12 @@ Java 25, Maven multi-module build.
 ## Formats
 
 - Reading goes through each format's library: `java.util.Properties`, SnakeYAML, Gson (numbers
-  read as `BigDecimal`), Jackson's `TomlMapper`.
+  read as `BigDecimal`), Jackson's `TomlMapper` (floats read as `BigDecimal`, also in 2.15.2, the
+  version 3.0.x used). `DataObject#getAsMap()` hands numbers on as read, so these `BigDecimal`s
+  reach `Map<String, Object>` fields; in 3.0.x they were turned into `Double`. A `BigDecimal` for a
+  `double` / `float` field is converted with `doubleValue()` / `floatValue()`, which are correctly
+  rounded since Java 21 and were checked to equal parsing the text; other numbers go through their
+  text (so `3.11f` stays `3.11` in a `double` field).
 - Writing: `.properties` by `PropertiesDumper`, YAML by `YamlHandler` (a SnakeYAML node tree; for
   the default `Yaml` instance numbers and booleans are built by hand exactly as SnakeYAML's
   representer would, guarded by `TestYamlScalars`), JSON by Gson, TOML by `TomlValueWriter`
@@ -40,12 +45,25 @@ Java 25, Maven multi-module build.
   unquoted identifier keys, `NaN` / `Infinity`), so JSON5 is read with the same Gson settings as
   JSON; keep it that way, or reading needs a JSON5 parser. No JSON5 validator is available
   offline, so `TestJson5ValueWriter` checks exact output and reads it back with Gson.
-- Writers build the whole output in a `StringBuilder` and write it to the `PrintWriter` once:
-  many small writes through the `PrintWriter` (each takes its lock) measured ~35% slower.
-  `YamlHandler` gives SnakeYAML's emitter an unlocked `Writer` over a `StringBuilder` for the same
-  reason. Buffering centrally in `AnnotatedConfigResolver` instead was benchmarked and was slower
-  (an extra copy of the output, and SnakeYAML's writes still go through a `PrintWriter`), so each
+- Gson's lenient reader (2.15) does not read all of JSON5: a trailing comma fails in an object and
+  adds a `null` element in an array; hex numbers, a leading `+` and a leading or trailing decimal
+  point are read as strings (number fields parse all but hex); the `\x`, `\v` and `\0` escapes fail;
+  a line continuation (backslash before a line break) keeps the line break, which JSON5 drops. So
+  `@Multiline` strings are written on one line with `\n` escapes. The CHANGELOG and the Javadoc of
+  `JsonConfig#getJSON5ConfigResolver()` list these limits; keep them in sync.
+- `PropertiesDumper` and `Json5ValueWriter` build the whole output in a `StringBuilder` and write
+  it to the `PrintWriter` once, and JSON is written by one `Gson#toJson` call: many small writes
+  through the `PrintWriter` (each takes its lock) measured ~35% slower. `YamlHandler` gives
+  SnakeYAML's emitter an unlocked `Writer` over a `StringBuilder` for the same reason.
+  `TomlValueWriter` is the exception: it builds each line in a `StringBuilder` but writes line by
+  line. Buffering centrally in `AnnotatedConfigResolver` instead was benchmarked and was slower (an
+  extra copy of the output, and SnakeYAML's writes still go through a `PrintWriter`), so each
   writer buffers on its own.
+- Every writer ends lines with `'\n'`, never `println()` or `System.lineSeparator()`, and so does
+  the class comment written by `AnnotatedConfigResolver`. Mixing them gave files with CRLF and LF
+  on Windows. `TestLineEndings` (core) and `TestYamlLineEndings`, `TestJsonLineEndings` and
+  `TestTomlLineEndings` compare output without normalizing line endings; they can only catch a
+  regression when run on Windows.
 - Field order: `.properties` writes fields in reverse declaration order; YAML, JSON and TOML set
   `SHOULD_REVERSE_FIELDS`, so they write them in declaration order.
 - Jackson's TOML parser before 2.23 misreads 19-digit integers (drops the first 9 digits);

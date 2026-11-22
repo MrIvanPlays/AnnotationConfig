@@ -113,6 +113,23 @@ Empty values of other types, such as a number written as `count=`, are still rea
 Loading an enum value that matches no constant now throws an `IllegalArgumentException` that names
 the enum and lists its constants. It used to fail later with an unrelated error.
 
+#### Numbers in maps keep their type
+
+`DataObject#getAsMap()`, which also fills `Map<String, Object>` fields, returns numbers as they were
+read. It used to turn every `BigDecimal` into a `double` and every `BigInteger` into an `int`.
+
+Jackson's TOML parser reads every float as a `BigDecimal`, so a float in a TOML
+`Map<String, Object>` field, or in a map read through `getAsMap()` in a custom serializer, is now a
+`BigDecimal` instead of a `Double`. Code that casts such a value to `Double` fails with a
+`ClassCastException`; read it as a `Number` instead (`((Number) map.get("ratio")).doubleValue()`).
+JSON numbers in maps are `BigDecimal` as well. YAML is not affected, as SnakeYAML reads floats as
+`Double`.
+
+Integers beyond the `long` range in a YAML map, which SnakeYAML reads as `BigInteger`, used to throw
+an `ArithmeticException` and are now read. Lists are written the same way: `BigDecimal`s
+in lists used to be written as `double`s and are now written exactly, and `BigInteger`s beyond the
+`int` range no longer throw. TOML, whose integers are 64-bit, writes larger integers as strings.
+
 #### YAML output changed
 
 The YAML module now writes through SnakeYAML (see
@@ -296,12 +313,8 @@ reads back exactly:
 - Reading an empty list into an array field creates an empty array of the field's type.
 - `BigInteger` and `BigDecimal` are read exactly. They used to be parsed through `long` and
   `double`, which lost precision and failed past 2^63.
-- `BigDecimal` and `BigInteger` values in maps and lists are kept exact. `DataObject#getAsMap()`,
-  which fills `Map<String, Object>` fields, turned them into `double` and `int`, and lists were
-  written the same way: a `BigInteger` beyond the `int` range threw an `ArithmeticException`, and
-  `BigDecimal`s lost precision. `getAsMap()` now returns numbers as they are held, so custom
-  serializers reading from it can get a `BigDecimal` or `BigInteger` where they used to get a
-  `Double` or `Integer`. TOML, whose integers are 64-bit, writes larger integers as strings.
+- `BigDecimal` and `BigInteger` values in maps and lists are kept exact, see
+  [Numbers in maps keep their type](#numbers-in-maps-keep-their-type).
 - Whole numbers that arrive with an exponent are read as their value. A double such as
   `2000000000.0` has the text form `2.0E9`, which used to be read as `2`.
 - `char` fields accept one character strings, which is how text formats store them.
@@ -323,6 +336,10 @@ reads back exactly:
   longer leaves a half written config behind.
 - Errors about duplicate keys and invalid `@Min` / `@Max` values name the key.
 - A config class with annotations but no `@Comment` no longer starts the file with a blank line.
+- Configs are written with `\n` line endings on every OS. On Windows, files mixed CRLF and LF: the
+  class comment was written with the OS line separator, as were `.properties` and TOML files, while
+  YAML and JSON used `\n`. `.properties` and TOML files written on Windows now end their lines with
+  `\n` instead of `\r\n`; both are read either way.
 - `resolveMultiple` creates a missing directory and dumps the defaults into it, instead of
   throwing an `IllegalArgumentException`. It also dumps the defaults when the directory only holds
   files that are not configs, and returns the configs sorted by file name.

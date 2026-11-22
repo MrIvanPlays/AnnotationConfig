@@ -120,6 +120,35 @@ public class TestJsonValues {
     Assertions.assertEquals(expected, dump(config));
   }
 
+  static class Floating {
+
+    public double decimal = 0;
+    public float single = 0;
+  }
+
+  @Test
+  public void decimalsAreReadAsParsingTheirTextWould() {
+    // Gson reads decimals as BigDecimal, which is converted with doubleValue() / floatValue()
+    // instead of through its text; both must give the same value, also when rounding
+    String[] texts = {
+      "0.1",
+      "2.5",
+      "0.12345678901234567890",
+      "9007199254740993",
+      "2.4703282292062328e-324",
+      "1.7976931348623159e308",
+      "3.4028236e38",
+      "7.0064923216240862e-46",
+      "-1e-400"
+    };
+    for (String text : texts) {
+      Floating config =
+          load(new Floating(), "{\"decimal\": " + text + ", \"single\": " + text + "}");
+      Assertions.assertEquals(Double.parseDouble(text), config.decimal, text);
+      Assertions.assertEquals(Float.parseFloat(text), config.single, text);
+    }
+  }
+
   static class UntypedNumbers {
 
     public Map<String, Object> map = Map.of();
