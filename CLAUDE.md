@@ -88,10 +88,18 @@ Java 25, Maven multi-module build.
 - `BENCHMARKS.md` holds measured dump and load times. The harness is not in the repository (JMH is
   not available offline): a standalone class compiled against the module jars, one JVM per
   benchmark, 3 s warm-up, 10 measured rounds, median per operation, allocation per thread. It
-  dumps and loads three configs (flat, nested, large) per format, plus the format's parser alone.
-- When a change can affect a writer's or reader's speed, measure it the same way against the
-  previous commit before calling it an improvement, and update `BENCHMARKS.md` with the new numbers.
-  Differences below ~10% are noise.
+  dumps and loads four configs (flat, nested, large, dotted; `.properties` only flat) per format,
+  plus the format's parser alone. Every benchmark runs in two passes; one whose passes differ by
+  more than 10% runs twice more, and the median of all runs counts.
+- When a change can affect a writer's or reader's speed, measure the affected benchmarks the same
+  way against the previous commit before calling it an improvement. Differences below ~10% are
+  noise.
+- Then update `BENCHMARKS.md` by re-measuring the current version and replacing the numbers in the
+  result tables and notes. Don't add a note about the change on top of old numbers.
+- Don't rebuild or re-measure old commits for the comparison with `6207cbc` (3.0.x): its column is
+  fixed. Only the current version's column and the "Change" column are updated.
+- A change in percent is relative to the old value (`new / old - 1`, so 3.18 -> 3.56 is +12%),
+  computed from the rounded numbers the tables show; from 2x on it is written as "4.4x slower".
 
 ## Conventions
 

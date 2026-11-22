@@ -84,46 +84,29 @@ public final class DottedResolver implements KeyResolver {
       return values.get(key);
     }
 
-    String[] parts = key.split("\\.");
-    int partsLength = parts.length;
-    Map<String, Object> currentMap = null;
-    for (int i = 0; i < partsLength; i++) {
-      String currentPart = parts[i];
-      if (currentMap == null) {
-        if (!values.containsKey(currentPart)) {
-          return null;
-        }
-        currentMap = getCurrentMap(values, currentPart, key, values);
-      } else {
-        if (!currentMap.containsKey(currentPart)) {
-          return null;
-        }
-        Object next = currentMap.get(currentPart);
-        if ((i + 1) == partsLength) {
-          return next;
-        } else {
-          if (!(next instanceof Map)) {
-            throw new IllegalArgumentException(
-                "Invalid unbox ; either key is invalid or the values map ; "
-                    + key
-                    + " ; "
-                    + values);
-          }
-          currentMap = (Map<String, Object>) next;
-        }
-      }
-    }
-    return null;
-  }
+    Map<String, Object> currentMap = values;
+    int start = 0;
+    int end;
 
-  private Map<String, Object> getCurrentMap(
-      Map<String, Object> current, String part, String key, Map<String, Object> values) {
-    Object curr = current.get(part);
-    if (!(curr instanceof Map)) {
-      throw new IllegalArgumentException(
-          "Invalid unbox ; either key is invalid or the values map ; " + key + " ; " + values);
+    while ((end = key.indexOf('.', start)) != -1) {
+      String part = key.substring(start, end);
+
+      if (!currentMap.containsKey(part)) {
+        return null;
+      }
+
+      Object next = currentMap.get(part);
+
+      if (!(next instanceof Map)) {
+        throw new IllegalArgumentException(
+            "Invalid unbox ; either key is invalid or the values map ; " + key + " ; " + values);
+      }
+
+      currentMap = (Map<String, Object>) next;
+      start = end + 1;
     }
-    return (Map<String, Object>) curr;
+
+    return currentMap.get(key.substring(start));
   }
 
   /** {@inheritDoc} */
@@ -134,46 +117,33 @@ public final class DottedResolver implements KeyResolver {
       return;
     }
 
-    String[] parts = key.split("\\.");
-    int partsLength = parts.length;
-    Map<String, Object> currentMap = null;
-    for (int i = (partsLength - 1); i > 0; i--) {
-      if (currentMap == null) {
-        currentMap = getCurrentMap(parts, i, values);
-        if (currentMap.containsKey(parts[i])) {
-          throw new IllegalArgumentException("Illegal key to box '" + key + "'");
-        }
-        currentMap.put(parts[i], value);
-      } else {
-        Map<String, Object> newMap = getCurrentMap(parts, i, values);
-        newMap.put(parts[i], currentMap);
-        currentMap = newMap;
-      }
-    }
-    if (currentMap != null) {
-      values.put(parts[0], currentMap);
-    }
-  }
+    Map<String, Object> currentMap = values;
+    int start = 0;
+    int end;
 
-  private Map<String, Object> getCurrentMap(
-      String[] keyParts, int currentPart, Map<String, Object> target) {
-    Map<String, Object> currentMap = target;
-    for (int i = 0; i < keyParts.length; i++) {
-      String part = keyParts[i];
-      if (currentMap.containsKey(part)) {
-        Object val = currentMap.get(part);
-        if (!(val instanceof Map)) {
-          throw new IllegalArgumentException("Illegal dotted key syntax.");
-        }
-        currentMap = (Map<String, Object>) val;
+    while ((end = key.indexOf('.', start)) != -1) {
+      String part = key.substring(start, end);
+      Object next = currentMap.get(part);
+
+      if (next == null) {
+        Map<String, Object> newMap = new LinkedHashMap<>();
+        currentMap.put(part, newMap);
+        currentMap = newMap;
+      } else if (next instanceof Map) {
+        currentMap = (Map<String, Object>) next;
       } else {
-        currentMap = new LinkedHashMap<>();
-        break;
+        throw new IllegalArgumentException("Illegal dotted key syntax.");
       }
-      if (i == (currentPart - 1)) {
-        break;
-      }
+
+      start = end + 1;
     }
-    return currentMap;
+
+    String lastPart = key.substring(start);
+
+    if (currentMap.containsKey(lastPart)) {
+      throw new IllegalArgumentException("Illegal key to box '" + key + "'");
+    }
+
+    currentMap.put(lastPart, value);
   }
 }
