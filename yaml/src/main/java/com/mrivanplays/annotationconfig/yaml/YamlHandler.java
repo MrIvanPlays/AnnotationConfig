@@ -28,7 +28,9 @@ import com.mrivanplays.annotationconfig.core.resolver.ValueWriter;
 import com.mrivanplays.annotationconfig.core.resolver.settings.Settings;
 import java.io.PrintWriter;
 import java.io.Reader;
+import java.io.Writer;
 import java.lang.reflect.Array;
+import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -37,6 +39,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Objects;
+import java.util.regex.Pattern;
 import org.jspecify.annotations.NonNull;
 import org.yaml.snakeyaml.DumperOptions;
 import org.yaml.snakeyaml.DumperOptions.FlowStyle;
@@ -70,6 +73,8 @@ import org.yaml.snakeyaml.nodes.Tag;
  */
 public final class YamlHandler implements ValueReader, ValueWriter {
 
+  private static final Pattern LINE_BREAK = Pattern.compile("\\R");
+
   /** Used when no instance is configured. Created on first use, then reused for every write. */
   private Yaml defaultYaml;
 
@@ -90,16 +95,29 @@ public final class YamlHandler implements ValueReader, ValueWriter {
       @NonNull Map<String, List<String>> fieldComments,
       @NonNull PrintWriter writer,
       @NonNull Settings settings) {
-    Yaml yaml = settings.get(YamlConfig.YAML_INSTANCE).orElseGet(this::defaultYaml);
+    Yaml yaml = settings.get(YamlConfig.YAML_INSTANCE).orElse(null);
+    // numbers and booleans are only built by hand for the default instance, a configured one may
+    // represent them differently
+    boolean defaultInstance = yaml == null;
+    if (defaultInstance) {
+      yaml = defaultYaml();
+    }
+    // SnakeYAML emits token by token; collecting the output and writing it once avoids thousands
+    // of small writes through the PrintWriter, each of which takes its lock
+    StringBuilderWriter output = new StringBuilderWriter();
     // A YAML instance is not thread safe (its representer keeps state while converting values),
     // and it is reused between writes, so only one thread may use it at a time.
     synchronized (yaml) {
-      MappingNode root = new TreeBuilder(yaml, fieldComments).mapping(values, "", true);
+      // without comments there is nothing to look up, so no dotted paths are built
+      String rootPath = fieldComments.isEmpty() ? null : "";
+      MappingNode root =
+          new TreeBuilder(yaml, fieldComments, defaultInstance).mapping(values, rootPath, true);
       if (root.getValue().isEmpty()) {
         return;
       }
-      yaml.serialize(root, writer); // uses the instance's own options and resolver
+      yaml.serialize(root, output); // uses the instance's own options and resolver
     }
+    writer.append(output.builder);
   }
 
   private synchronized Yaml defaultYaml() {
@@ -116,15 +134,21 @@ public final class YamlHandler implements ValueReader, ValueWriter {
     return defaultYaml;
   }
 
-  /** Converts plain Java values into a SnakeYAML node tree. Created once per write call. */
-  private record TreeBuilder(Yaml yaml, Map<String, List<String>> comments) {
+  /**
+   * Converts plain Java values into a SnakeYAML node tree. Created once per write call.
+   *
+   * @param fastScalars whether numbers and booleans may be built directly instead of through
+   *     {@link Yaml#represent(Object)}, which is only correct for the default instance
+   */
+  private record TreeBuilder(
+      Yaml yaml, Map<String, List<String>> comments, boolean fastScalars) {
 
     /**
      * @param path dotted path of this map ("" for the root), or null to write no comments below it
      * @param topLevel true for the root map: a blank line is added between its entries
      */
     MappingNode mapping(Map<?, ?> map, String path, boolean topLevel) {
-      List<NodeTuple> tuples = new ArrayList<>();
+      List<NodeTuple> tuples = new ArrayList<>(map.size());
       boolean first = true;
       for (Entry<?, ?> entry : map.entrySet()) {
         if (entry.getValue() == null) {
@@ -134,15 +158,23 @@ public final class YamlHandler implements ValueReader, ValueWriter {
         String childPath = path == null ? null : path.isEmpty() ? key : path + "." + key;
         Node value = node(entry.getValue(), childPath);
 
-        List<CommentLine> lines = new ArrayList<>();
+        // most keys have neither a blank line nor comments, so the list is only made when needed
+        List<CommentLine> lines = null;
         if (topLevel && !first) {
+          lines = new ArrayList<>();
           lines.add(new CommentLine(null, null, "", CommentType.BLANK_LINE));
         }
         if (childPath != null) {
-          lines.addAll(commentLines(childPath, key, value instanceof MappingNode));
+          List<CommentLine> found = commentLines(childPath, key, value instanceof MappingNode);
+          if (!found.isEmpty()) {
+            if (lines == null) {
+              lines = new ArrayList<>(found.size());
+            }
+            lines.addAll(found);
+          }
         }
         ScalarNode keyNode = new ScalarNode(Tag.STR, key, null, null, ScalarStyle.PLAIN);
-        if (!lines.isEmpty()) {
+        if (lines != null) {
           keyNode.setBlockComments(lines);
         }
         tuples.add(new NodeTuple(keyNode, value));
@@ -177,10 +209,43 @@ public final class YamlHandler implements ValueReader, ValueWriter {
         return new ScalarNode(Tag.STR, string, null, null, ScalarStyle.DOUBLE_QUOTED);
       }
       if (value instanceof Number || value instanceof Boolean) {
-        return yaml.represent(value); // correct tag and formatting (.nan, .inf, ...)
+        // correct tag and formatting (.nan, .inf, ...)
+        return fastScalars ? scalar(value) : yaml.represent(value);
       }
       // enums and anything else: plain text, SnakeYAML quotes it if it would be ambiguous
       return new ScalarNode(Tag.STR, String.valueOf(value), null, null, ScalarStyle.PLAIN);
+    }
+
+    /**
+     * The node the default instance's representer would create for a number or boolean (see
+     * SnakeYAML's {@code SafeRepresenter.RepresentNumber} and {@code RepresentBoolean}), without
+     * its per-call bookkeeping: {@link Yaml#represent(Object)} clears an identity map every time.
+     */
+    private static ScalarNode scalar(Object value) {
+      if (value instanceof Boolean bool) {
+        return new ScalarNode(Tag.BOOL, bool ? "true" : "false", null, null, ScalarStyle.PLAIN);
+      }
+      if (value instanceof Byte
+          || value instanceof Short
+          || value instanceof Integer
+          || value instanceof Long
+          || value instanceof BigInteger) {
+        return new ScalarNode(Tag.INT, value.toString(), null, null, ScalarStyle.PLAIN);
+      }
+      Number number = (Number) value;
+      String text;
+      // the same checks as SnakeYAML: a Float NaN is not equal to Double.NaN, so it is written as
+      // Float.toString writes it
+      if (number.equals(Double.NaN)) {
+        text = ".NaN";
+      } else if (number.equals(Double.POSITIVE_INFINITY)) {
+        text = ".inf";
+      } else if (number.equals(Double.NEGATIVE_INFINITY)) {
+        text = "-.inf";
+      } else {
+        text = number.toString();
+      }
+      return new ScalarNode(Tag.FLOAT, text, null, null, ScalarStyle.PLAIN);
     }
 
     /** List and array elements: no comments, and null is written as an explicit null. */
@@ -221,12 +286,50 @@ public final class YamlHandler implements ValueReader, ValueWriter {
       }
       List<CommentLine> lines = new ArrayList<>();
       for (String comment : found) {
-        for (String line : comment.split("\\R", -1)) { // one '#' per line
+        for (String line : LINE_BREAK.split(comment, -1)) { // one '#' per line
           lines.add(
               new CommentLine(null, null, line.isEmpty() ? "" : " " + line, CommentType.BLOCK));
         }
       }
       return lines;
     }
+  }
+
+  /** A {@link Writer} into a {@link StringBuilder}, without the locking of a StringWriter. */
+  private static final class StringBuilderWriter extends Writer {
+
+    private final StringBuilder builder = new StringBuilder(1024);
+
+    @Override
+    public void write(int c) {
+      builder.append((char) c);
+    }
+
+    @Override
+    public void write(char @NonNull [] buffer, int offset, int length) {
+      builder.append(buffer, offset, length);
+    }
+
+    @Override
+    public void write(@NonNull String string) {
+      builder.append(string);
+    }
+
+    @Override
+    public void write(@NonNull String string, int offset, int length) {
+      builder.append(string, offset, offset + length);
+    }
+
+    @Override
+    public Writer append(CharSequence sequence) {
+      builder.append(sequence);
+      return this;
+    }
+
+    @Override
+    public void flush() {}
+
+    @Override
+    public void close() {}
   }
 }

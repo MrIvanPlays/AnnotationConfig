@@ -229,9 +229,9 @@ dotted keys (`server.ip = 'localhost'`), objects inside arrays as inline tables.
 - `OffsetDateTime`, `LocalDateTime`, `LocalDate` and `LocalTime` are written as TOML date-times
   instead of strings, with seconds always present as TOML requires. Files with dates written as
   strings still load. Other formats still write these types as strings.
-- Integers outside of 64 bits, which TOML does not allow, are written as strings. So are `long`
-  values with 19 digits, as Jackson's TOML parser reads them wrong (`9223372036854775807` is read
-  as `6854775807`); such values typed into a file by hand are still read wrong.
+- Integers outside of 64 bits, which TOML does not allow, are written as strings.
+- Jackson is updated to 2.23.0, whose TOML parser reads integers with 19 digits correctly; 2.22
+  dropped their first 9 digits (`9223372036854775807` was read as `6854775807`).
 - A `null` value fails with an error that names its key, as TOML has no null.
 - Files no longer end with an empty line.
 - `TomlValueWriter(TomlMapper)` is deprecated in favour of `TomlValueWriter()`, as the mapper is

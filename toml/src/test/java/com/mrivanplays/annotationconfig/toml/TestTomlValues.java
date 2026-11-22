@@ -217,14 +217,14 @@ public class TestTomlValues {
   }
 
   @Test
-  public void integersTheParserCannotReadBackAreStrings() {
-    // TOML integers are 64 bit, and Jackson misreads 19 digit ones: both are written as strings
+  public void integersBeyond64BitsAreStrings() {
+    // TOML integers are 64 bit: the limits of long are integers, anything larger is a string
     String toml = dump(new OutOfRange());
     Assertions.assertEquals(
         """
-        max = '9223372036854775807'
+        max = 9223372036854775807
 
-        min = '-9223372036854775808'
+        min = -9223372036854775808
 
         huge = '123456789012345678901234567890'
         """,
@@ -238,6 +238,15 @@ public class TestTomlValues {
     Assertions.assertEquals(Long.MAX_VALUE, target.max);
     Assertions.assertEquals(Long.MIN_VALUE, target.min);
     Assertions.assertEquals(new BigInteger("123456789012345678901234567890"), target.huge);
+  }
+
+  @Test
+  public void nineteenDigitIntegersAreReadExactly() {
+    // Jackson's TOML parser before 2.23 dropped the first 9 digits of these
+    OutOfRange loaded =
+        load(new OutOfRange(), "max = 9223372036854775807\nmin = -1000000000000000000");
+    Assertions.assertEquals(Long.MAX_VALUE, loaded.max);
+    Assertions.assertEquals(-1_000_000_000_000_000_000L, loaded.min);
   }
 
   // </editor-fold>

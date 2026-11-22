@@ -93,7 +93,6 @@ public final class JsonConfig {
                 writer.print(
                     settings.get(GSON_INSTANCE).orElse(GSON).toJson(unwrapMultiline(values))))
             .withSetting(ACDefaultSettings.SHOULD_REVERSE_FIELDS, true)
-            // dotted keys become nested objects, like config objects do
             .withSetting(ACDefaultSettings.KEY_RESOLVER, DottedResolver.getInstance())
             .withFileExtension(".json")
             .withValueReader((reader, settings) ->
@@ -111,15 +110,37 @@ public final class JsonConfig {
     if (value instanceof MultilineString multiline) {
       return multiline.getString();
     }
+    // a map or list is only copied once a value in it changes, so values without @Multiline
+    // strings, which is most of them, are written as they are
     if (value instanceof Map<?, ?> map) {
-      Map<Object, Object> unwrapped = new LinkedHashMap<>();
-      map.forEach((key, entry) -> unwrapped.put(key, unwrapMultiline(entry)));
-      return unwrapped;
+      Map<Object, Object> copy = null;
+      for (Map.Entry<?, ?> entry : map.entrySet()) {
+        Object original = entry.getValue();
+        Object unwrapped = unwrapMultiline(original);
+        if (unwrapped != original) {
+          if (copy == null) {
+            copy = new LinkedHashMap<>(map);
+          }
+          // replacing the value of an existing key keeps its position
+          copy.put(entry.getKey(), unwrapped);
+        }
+      }
+      return copy != null ? copy : map;
     }
     if (value instanceof List<?> list) {
-      List<Object> unwrapped = new ArrayList<>(list.size());
-      list.forEach(entry -> unwrapped.add(unwrapMultiline(entry)));
-      return unwrapped;
+      List<Object> copy = null;
+      int index = 0;
+      for (Object original : list) {
+        Object unwrapped = unwrapMultiline(original);
+        if (unwrapped != original) {
+          if (copy == null) {
+            copy = new ArrayList<>(list);
+          }
+          copy.set(index, unwrapped);
+        }
+        index++;
+      }
+      return copy != null ? copy : list;
     }
     return value;
   }

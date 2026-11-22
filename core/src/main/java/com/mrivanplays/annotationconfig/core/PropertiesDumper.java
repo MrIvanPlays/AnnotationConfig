@@ -28,7 +28,7 @@ import java.lang.reflect.Array;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
-import java.util.StringJoiner;
+import java.util.regex.Pattern;
 
 /**
  * Writes an ordered map as a .properties file. Per-key comments are kept, and keys and values are
@@ -40,6 +40,8 @@ import java.util.StringJoiner;
 final class PropertiesDumper {
 
   private static final String EOL = System.lineSeparator();
+  private static final Pattern LINE_BREAK = Pattern.compile("\r\n|\r|\n");
+  private static final char[] HEX = "0123456789ABCDEF".toCharArray();
 
   private PropertiesDumper() {}
 
@@ -56,58 +58,62 @@ final class PropertiesDumper {
       Map<String, Object> values,
       Map<String, List<String>> fieldComments,
       boolean escapeUnicode) {
+    // The file is built first and written once, instead of several writes per entry through the
+    // PrintWriter. An unsupported value therefore fails before anything is written.
+    StringBuilder out = new StringBuilder(64 * values.size() + 16);
     boolean first = true;
     for (Map.Entry<String, Object> entry : values.entrySet()) {
-      String key = entry.getKey();
-      // Render first, so an unsupported value fails before anything is written for this entry.
-      String renderedValue = render(key, entry.getValue(), escapeUnicode);
-
       if (!first) {
-        writer.println();
+        out.append(EOL);
       }
       first = false;
 
+      String key = entry.getKey();
       List<String> comments = fieldComments == null ? null : fieldComments.get(key);
       if (comments != null) {
         for (String comment : comments) {
-          writeComment(writer, comment);
+          appendComment(out, comment);
         }
       }
-      writer.println(escape(key, true, false, escapeUnicode) + "=" + renderedValue);
+      appendEscaped(out, key, true, false, escapeUnicode);
+      out.append('=');
+      appendValue(out, key, entry.getValue(), escapeUnicode);
+      out.append(EOL);
     }
+    writer.append(out);
     writer.flush();
   }
 
-  private static void writeComment(PrintWriter writer, String comment) {
-    for (String line : comment.split("\r\n|\r|\n", -1)) {
-      writer.println(line.isEmpty() ? "#" : "# " + line);
+  private static void appendComment(StringBuilder out, String comment) {
+    for (String line : LINE_BREAK.split(comment, -1)) {
+      out.append(line.isEmpty() ? "#" : "# ").append(line).append(EOL);
     }
   }
 
-  private static String render(String key, Object value, boolean escapeUnicode) {
+  private static void appendValue(
+      StringBuilder out, String key, Object value, boolean escapeUnicode) {
     switch (value) {
       case null -> {
-        return ""; // .properties has no null; an empty value is the closest thing
+        // .properties has no null; an empty value is the closest thing
       }
       case Map<?, ?> map ->
           throw new IllegalArgumentException("'" + key + "': .properties does not support maps");
       case List<?> objects ->
           throw new IllegalArgumentException("'" + key + "': .properties does not support lists");
-      case MultilineString multilineString -> {
-        return escape(multilineString.getString(), false, true, escapeUnicode);
+      case MultilineString multilineString ->
+          appendEscaped(out, multilineString.getString(), false, true, escapeUnicode);
+      default -> {
+        String text =
+            value.getClass().isArray() ? arrayToString(key, value) : String.valueOf(value);
+        appendEscaped(out, text, false, false, escapeUnicode);
       }
-      default -> {}
     }
-    if (value.getClass().isArray()) {
-      return escape(arrayToString(key, value), false, false, escapeUnicode);
-    }
-    return escape(String.valueOf(value), false, false, escapeUnicode);
   }
 
   /** Works for primitive and object arrays. Elements are joined with ", " (not escaped). */
   private static String arrayToString(String key, Object array) {
     int length = Array.getLength(array);
-    StringJoiner joiner = new StringJoiner(", ");
+    StringBuilder joined = new StringBuilder(length * 8);
     for (int i = 0; i < length; i++) {
       Object element = Array.get(array, i);
       if (element != null
@@ -117,19 +123,27 @@ final class PropertiesDumper {
         throw new IllegalArgumentException(
             "'" + key + "': .properties does not support nested arrays, maps or lists");
       }
-      joiner.add(String.valueOf(element));
+      if (i > 0) {
+        joined.append(", ");
+      }
+      joined.append(element);
     }
-    return joiner.toString();
+    return joined.toString();
   }
 
   /**
-   * Escapes text for the key or value side of a .properties line.
+   * Appends text escaped for the key or value side of a .properties line.
    *
    * @param isKey keys also escape spaces and the separator/comment characters '=', ':', '#', '!'
    * @param multiline write line breaks as "\n" plus a continuation line instead of one long line
    */
-  private static String escape(String s, boolean isKey, boolean multiline, boolean escapeUnicode) {
-    StringBuilder sb = new StringBuilder(s.length() + 16);
+  private static void appendEscaped(
+      StringBuilder out, String s, boolean isKey, boolean multiline, boolean escapeUnicode) {
+    // most keys and values need no escaping: append them as they are
+    if (!needsEscaping(s, isKey, escapeUnicode)) {
+      out.append(s);
+      return;
+    }
     // True while the next output char is the first one on a (continuation) line. Whitespace there
     // would be stripped on load, so it has to be escaped.
     boolean atLineStart = true;
@@ -137,35 +151,35 @@ final class PropertiesDumper {
       char c = s.charAt(i);
       switch (c) {
         case '\\':
-          sb.append("\\\\");
+          out.append("\\\\");
           atLineStart = false;
           break;
         case '\n':
           if (multiline) {
-            sb.append("\\n\\").append(EOL);
+            out.append("\\n\\").append(EOL);
             atLineStart = true;
           } else {
-            sb.append("\\n");
+            out.append("\\n");
             atLineStart = false;
           }
           break;
         case '\r':
-          sb.append("\\r");
+          out.append("\\r");
           atLineStart = false;
           break;
         case '\t':
-          sb.append("\\t");
+          out.append("\\t");
           atLineStart = false;
           break;
         case '\f':
-          sb.append("\\f");
+          out.append("\\f");
           atLineStart = false;
           break;
         case ' ':
           if (isKey || atLineStart) {
-            sb.append("\\ ");
+            out.append("\\ ");
           } else {
-            sb.append(' ');
+            out.append(' ');
           }
           break; // leading spaces keep atLineStart true so all of them get escaped
         case '=':
@@ -173,20 +187,45 @@ final class PropertiesDumper {
         case '#':
         case '!':
           if (isKey) {
-            sb.append('\\');
+            out.append('\\');
           }
-          sb.append(c);
+          out.append(c);
           atLineStart = false;
           break;
         default:
           if (c < 0x20 || c == 0x7f || (escapeUnicode && c > 0x7e)) {
-            sb.append(String.format("\\u%04X", (int) c));
+            out.append("\\u")
+                .append(HEX[(c >> 12) & 0xF])
+                .append(HEX[(c >> 8) & 0xF])
+                .append(HEX[(c >> 4) & 0xF])
+                .append(HEX[c & 0xF]);
           } else {
-            sb.append(c);
+            out.append(c);
           }
           atLineStart = false;
       }
     }
-    return sb.toString();
+  }
+
+  /**
+   * Whether {@link #appendEscaped} would change {@code s}: when this is false, every character is
+   * written as it is.
+   */
+  private static boolean needsEscaping(String s, boolean isKey, boolean escapeUnicode) {
+    for (int i = 0; i < s.length(); i++) {
+      char c = s.charAt(i);
+      if (c == '\\' || c < 0x20 || c == 0x7f || (escapeUnicode && c > 0x7e)) {
+        return true;
+      }
+      if (isKey) {
+        if (c == ' ' || c == '=' || c == ':' || c == '#' || c == '!') {
+          return true;
+        }
+      } else if (i == 0 && c == ' ') {
+        // a value can only start a line at its first character: line breaks are escaped above
+        return true;
+      }
+    }
+    return false;
   }
 }

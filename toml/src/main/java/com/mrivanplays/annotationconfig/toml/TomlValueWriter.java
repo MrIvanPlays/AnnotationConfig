@@ -38,12 +38,10 @@ import java.time.LocalTime;
 import java.time.OffsetDateTime;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.StringJoiner;
 import java.util.regex.Pattern;
 import org.jspecify.annotations.NullMarked;
 import org.jspecify.annotations.Nullable;
@@ -71,12 +69,9 @@ import org.jspecify.annotations.Nullable;
 @NullMarked
 public final class TomlValueWriter implements ValueWriter {
 
-  private static final Pattern BARE_KEY = Pattern.compile("[A-Za-z0-9_-]+");
+  private static final char[] HEX = "0123456789ABCDEF".toCharArray();
 
-  // Jackson's TOML parser (2.22) reads integers with 19 digits that fit in a long without their
-  // first 9 digits (9223372036854775807 is read as 6854775807). Such values are written as strings,
-  // which the default serializer reads back exactly.
-  private static final long JACKSON_SAFE_LIMIT = 1_000_000_000_000_000_000L;
+  private static final Pattern LINE_BREAK = Pattern.compile("\\R");
 
   public TomlValueWriter() {}
 
@@ -98,31 +93,38 @@ public final class TomlValueWriter implements ValueWriter {
       Map<String, List<String>> fieldComments,
       PrintWriter writer,
       Settings settings) {
+    // one buffer for every line: values are appended to it instead of building strings per part
+    StringBuilder line = new StringBuilder(256);
     boolean first = true;
     for (Map.Entry<String, Object> entry : values.entrySet()) {
       if (!first) {
         writer.println();
       }
       first = false;
-      List<String> path = new ArrayList<>();
-      path.add(entry.getKey());
-      writeEntry(writer, path, entry.getValue(), fieldComments);
+      String key = entry.getKey();
+      writeEntry(writer, line, key, formatKey(key), entry.getValue(), fieldComments);
     }
   }
 
-  private void writeEntry(
+  /**
+   * Writes one option, or one line per value of a section.
+   *
+   * @param path the dotted key as the comments are stored under, also used in error messages
+   * @param tomlKey the same key, quoted where TOML requires it
+   */
+  private static void writeEntry(
       PrintWriter writer,
-      List<String> path,
+      StringBuilder line,
+      String path,
+      String tomlKey,
       @Nullable Object value,
       Map<String, List<String>> fieldComments) {
     // comments are looked up by the exact dotted path, so "port" never gets the comments of
     // "portal" and a value inside a section gets its own comments
-    List<String> comments = fieldComments.get(String.join(".", path));
-    if (comments != null) {
-      for (String comment : comments) {
-        for (String line : comment.split("\\R", -1)) {
-          writer.println(line.isEmpty() ? "#" : "# " + line);
-        }
+    if (!fieldComments.isEmpty()) {
+      List<String> comments = fieldComments.get(path);
+      if (comments != null) {
+        writeComments(writer, comments);
       }
     }
     if (value instanceof DataObject data) {
@@ -130,186 +132,299 @@ public final class TomlValueWriter implements ValueWriter {
     }
     if (value instanceof Map<?, ?> map && !map.isEmpty()) {
       for (Map.Entry<?, ?> child : map.entrySet()) {
-        List<String> childPath = new ArrayList<>(path);
-        childPath.add(String.valueOf(child.getKey()));
-        writeEntry(writer, childPath, child.getValue(), fieldComments);
+        String key = String.valueOf(child.getKey());
+        writeEntry(
+            writer,
+            line,
+            path + '.' + key,
+            tomlKey + '.' + formatKey(key),
+            child.getValue(),
+            fieldComments);
       }
       return;
     }
-    StringJoiner key = new StringJoiner(".");
-    for (String segment : path) {
-      key.add(formatKey(segment));
-    }
-    writer.println(key + " = " + formatValue(path, value));
+    line.setLength(0);
+    line.append(tomlKey).append(" = ");
+    appendValue(line, value, path);
+    writer.append(line);
+    writer.println();
   }
 
-  private static String formatKey(String key) {
-    if (BARE_KEY.matcher(key).matches()) {
-      return key;
+  private static void writeComments(PrintWriter writer, List<String> comments) {
+    for (String comment : comments) {
+      for (String part : LINE_BREAK.split(comment, -1)) {
+        writer.println(part.isEmpty() ? "#" : "# " + part);
+      }
     }
-    return formatString(key);
   }
 
-  private static String formatValue(List<String> path, @Nullable Object value) {
-    return switch (value) {
-      case null ->
-          throw new IllegalArgumentException(
-              "'" + String.join(".", path) + "': TOML has no null value");
+  // <editor-fold desc="Values">
+
+  /**
+   * Appends {@code value} in TOML syntax.
+   *
+   * @param path the option the value belongs to, only used in error messages
+   */
+  private static void appendValue(StringBuilder out, @Nullable Object value, String path) {
+    switch (value) {
+      case null -> throw noNull(path);
       case DataObject data ->
-          formatValue(path, data.isSingleValue() ? data.getAsObject() : data.getAsMap());
-      case MultilineString multiline -> formatMultilineString(multiline.getString());
-      case String string -> formatString(string);
-      case Character character -> formatString(String.valueOf(character));
-      case Boolean bool -> bool.toString();
-      case Byte _, Short _, Integer _ -> value.toString();
-      case Long number -> formatLong(number);
-      case BigInteger number ->
-          number.bitLength() < Long.SIZE
-              ? formatLong(number.longValue())
-              : formatString(number.toString());
-      case Double number -> formatDouble(number);
-      case Float number -> formatFloat(number);
+          appendValue(out, data.isSingleValue() ? data.getAsObject() : data.getAsMap(), path);
+      case MultilineString multiline -> appendMultilineString(out, multiline.getString());
+      case String string -> appendString(out, string);
+      case Character character -> appendString(out, String.valueOf(character.charValue()));
+      case Boolean bool -> out.append(bool.booleanValue());
+      case Integer number -> out.append(number.intValue());
+      case Long number -> out.append(number.longValue());
+      case Short number -> out.append(number.intValue());
+      case Byte number -> out.append(number.intValue());
+      case Double number -> appendDouble(out, number);
+      case Float number -> appendFloat(out, number);
       // TOML floats only need an integer part followed by a fraction or exponent, which is what
       // BigDecimal#toString writes; a scale of 0 is written as an integer
-      case BigDecimal number -> number.toString();
-      case OffsetDateTime dateTime -> DateTimeFormatter.ISO_OFFSET_DATE_TIME.format(dateTime);
-      case ZonedDateTime dateTime -> DateTimeFormatter.ISO_OFFSET_DATE_TIME.format(dateTime);
-      case Instant instant -> DateTimeFormatter.ISO_INSTANT.format(instant);
-      case LocalDateTime dateTime -> DateTimeFormatter.ISO_LOCAL_DATE_TIME.format(dateTime);
-      case LocalDate date -> DateTimeFormatter.ISO_LOCAL_DATE.format(date);
-      case LocalTime time -> DateTimeFormatter.ISO_LOCAL_TIME.format(time);
-      case Map<?, ?> map -> formatInlineTable(path, map);
-      case Collection<?> collection -> formatArray(path, collection);
-      default -> {
-        if (value.getClass().isArray()) {
-          int length = Array.getLength(value);
-          List<Object> elements = new ArrayList<>(length);
-          for (int i = 0; i < length; i++) {
-            elements.add(Array.get(value, i));
-          }
-          yield formatArray(path, elements);
+      case BigDecimal number -> out.append(number);
+      case BigInteger number -> {
+        if (number.bitLength() < Long.SIZE) {
+          out.append(number.longValue());
+        } else {
+          appendString(out, number.toString());
         }
-        throw new IllegalArgumentException(
-            "'"
-                + String.join(".", path)
-                + "': cannot write a value of type "
-                + value.getClass().getName()
-                + " as TOML");
       }
-    };
+      case OffsetDateTime dateTime -> DateTimeFormatter.ISO_OFFSET_DATE_TIME.formatTo(dateTime, out);
+      case ZonedDateTime dateTime -> DateTimeFormatter.ISO_OFFSET_DATE_TIME.formatTo(dateTime, out);
+      case Instant instant -> DateTimeFormatter.ISO_INSTANT.formatTo(instant, out);
+      case LocalDateTime dateTime -> DateTimeFormatter.ISO_LOCAL_DATE_TIME.formatTo(dateTime, out);
+      case LocalDate date -> DateTimeFormatter.ISO_LOCAL_DATE.formatTo(date, out);
+      case LocalTime time -> DateTimeFormatter.ISO_LOCAL_TIME.formatTo(time, out);
+      case Map<?, ?> map -> appendInlineTable(out, map, path);
+      case Collection<?> collection -> appendCollection(out, collection, path);
+      default -> appendArray(out, value, path);
+    }
   }
 
-  private static String formatArray(List<String> path, Collection<?> elements) {
-    StringJoiner joiner = new StringJoiner(", ", "[", "]");
-    for (Object element : elements) {
-      joiner.add(formatValue(path, element));
-    }
-    return joiner.toString();
-  }
-
-  private static String formatInlineTable(List<String> path, Map<?, ?> table) {
-    if (table.isEmpty()) {
-      return "{}";
-    }
-    StringJoiner joiner = new StringJoiner(", ", "{", "}");
+  private static void appendInlineTable(StringBuilder out, Map<?, ?> table, String path) {
+    out.append('{');
+    boolean first = true;
     for (Map.Entry<?, ?> entry : table.entrySet()) {
+      if (!first) {
+        out.append(", ");
+      }
+      first = false;
       String key = String.valueOf(entry.getKey());
-      List<String> entryPath = new ArrayList<>(path);
-      entryPath.add(key);
-      joiner.add(formatKey(key) + " = " + formatValue(entryPath, entry.getValue()));
+      Object value = entry.getValue();
+      if (value == null) {
+        // the path is only built for the error
+        throw noNull(path + '.' + key);
+      }
+      appendKey(out, key);
+      out.append(" = ");
+      appendValue(out, value, path);
     }
-    return joiner.toString();
+    out.append('}');
   }
 
-  private static String formatLong(long value) {
-    if (value >= JACKSON_SAFE_LIMIT || value <= -JACKSON_SAFE_LIMIT) {
-      return formatString(Long.toString(value));
+  private static void appendCollection(StringBuilder out, Collection<?> elements, String path) {
+    out.append('[');
+    boolean first = true;
+    for (Object element : elements) {
+      if (!first) {
+        out.append(", ");
+      }
+      first = false;
+      appendValue(out, element, path);
     }
-    return Long.toString(value);
+    out.append(']');
   }
 
-  private static String formatDouble(double value) {
+  private static void appendArray(StringBuilder out, Object array, String path) {
+    // the common primitive arrays are written without boxing every element
+    switch (array) {
+      case int[] numbers -> {
+        out.append('[');
+        for (int i = 0; i < numbers.length; i++) {
+          if (i > 0) {
+            out.append(", ");
+          }
+          out.append(numbers[i]);
+        }
+        out.append(']');
+      }
+      case long[] numbers -> {
+        out.append('[');
+        for (int i = 0; i < numbers.length; i++) {
+          if (i > 0) {
+            out.append(", ");
+          }
+          out.append(numbers[i]);
+        }
+        out.append(']');
+      }
+      case double[] numbers -> {
+        out.append('[');
+        for (int i = 0; i < numbers.length; i++) {
+          if (i > 0) {
+            out.append(", ");
+          }
+          appendDouble(out, numbers[i]);
+        }
+        out.append(']');
+      }
+      default -> {
+        if (!array.getClass().isArray()) {
+          throw new IllegalArgumentException(
+              "'"
+                  + path
+                  + "': cannot write a value of type "
+                  + array.getClass().getName()
+                  + " as TOML");
+        }
+        out.append('[');
+        int length = Array.getLength(array);
+        for (int i = 0; i < length; i++) {
+          if (i > 0) {
+            out.append(", ");
+          }
+          appendValue(out, Array.get(array, i), path);
+        }
+        out.append(']');
+      }
+    }
+  }
+
+
+  private static void appendDouble(StringBuilder out, double value) {
     if (Double.isNaN(value)) {
-      return "nan";
+      out.append("nan");
+    } else if (Double.isInfinite(value)) {
+      out.append(value > 0 ? "inf" : "-inf");
+    } else {
+      out.append(value);
     }
-    if (Double.isInfinite(value)) {
-      return value > 0 ? "inf" : "-inf";
-    }
-    return Double.toString(value);
   }
 
-  private static String formatFloat(float value) {
+  private static void appendFloat(StringBuilder out, float value) {
     if (Float.isNaN(value)) {
-      return "nan";
+      out.append("nan");
+    } else if (Float.isInfinite(value)) {
+      out.append(value > 0 ? "inf" : "-inf");
+    } else {
+      out.append(value);
     }
-    if (Float.isInfinite(value)) {
-      return value > 0 ? "inf" : "-inf";
+  }
+
+  private static IllegalArgumentException noNull(String path) {
+    return new IllegalArgumentException("'" + path + "': TOML has no null value");
+  }
+
+  // </editor-fold>
+
+  // <editor-fold desc="Keys and strings">
+
+  /** The key as written in TOML: bare when it can be, quoted otherwise. */
+  private static String formatKey(String key) {
+    if (isBareKey(key)) {
+      return key;
     }
-    return Float.toString(value);
+    StringBuilder out = new StringBuilder(key.length() + 2);
+    appendString(out, key);
+    return out.toString();
+  }
+
+  private static void appendKey(StringBuilder out, String key) {
+    if (isBareKey(key)) {
+      out.append(key);
+    } else {
+      appendString(out, key);
+    }
+  }
+
+  /** Bare keys may only contain A-Z, a-z, 0-9, '_' and '-'. */
+  private static boolean isBareKey(String key) {
+    if (key.isEmpty()) {
+      return false;
+    }
+    for (int i = 0; i < key.length(); i++) {
+      char c = key.charAt(i);
+      if (!((c >= 'a' && c <= 'z')
+          || (c >= 'A' && c <= 'Z')
+          || (c >= '0' && c <= '9')
+          || c == '_'
+          || c == '-')) {
+        return false;
+      }
+    }
+    return true;
   }
 
   /** A literal string when nothing needs escaping, a basic string otherwise. */
-  private static String formatString(String value) {
+  private static void appendString(StringBuilder out, String value) {
     boolean literal = true;
-    for (int i = 0; i < value.length() && literal; i++) {
+    for (int i = 0; i < value.length(); i++) {
       char c = value.charAt(i);
-      literal = c != '\'' && !isControl(c, true);
+      if (c == '\'' || isControl(c, true)) {
+        literal = false;
+        break;
+      }
     }
     if (literal) {
-      return "'" + value + "'";
+      out.append('\'').append(value).append('\'');
+      return;
     }
-    StringBuilder builder = new StringBuilder(value.length() + 8).append('"');
+    out.append('"');
     for (int i = 0; i < value.length(); i++) {
       char c = value.charAt(i);
       switch (c) {
-        case '"' -> builder.append("\\\"");
-        case '\\' -> builder.append("\\\\");
-        case '\n' -> builder.append("\\n");
-        default -> appendChar(builder, c);
+        case '"' -> out.append("\\\"");
+        case '\\' -> out.append("\\\\");
+        case '\n' -> out.append("\\n");
+        default -> appendChar(out, c);
       }
     }
-    return builder.append('"').toString();
+    out.append('"');
   }
 
   /**
-   * A multi-line basic string. The line break after the opening delimiter is not part of the value,
-   * and line breaks are written as {@code \n} so the value reads back the same on every platform.
+   * A multi-line basic string. The line break after the opening delimiter is not part of the
+   * value, and line breaks are written as {@code \n} so the value reads back the same on every
+   * platform.
    */
-  private static String formatMultilineString(String value) {
-    StringBuilder builder = new StringBuilder(value.length() + 8).append("\"\"\"\n");
+  private static void appendMultilineString(StringBuilder out, String value) {
+    out.append("\"\"\"\n");
     int quotes = 0;
     for (int i = 0; i < value.length(); i++) {
       char c = value.charAt(i);
       if (c == '"') {
         // at most two quotes in a row, a third would close the string
         quotes++;
-        builder.append(quotes == 3 ? "\\\"" : "\"");
         if (quotes == 3) {
+          out.append("\\\"");
           quotes = 0;
+        } else {
+          out.append('"');
         }
         continue;
       }
       quotes = 0;
       switch (c) {
-        case '\\' -> builder.append("\\\\");
-        case '\n' -> builder.append('\n');
-        default -> appendChar(builder, c);
+        case '\\' -> out.append("\\\\");
+        case '\n' -> out.append('\n');
+        default -> appendChar(out, c);
       }
     }
-    return builder.append("\"\"\"").toString();
+    out.append("\"\"\"");
   }
 
-  private static void appendChar(StringBuilder builder, char c) {
+  private static void appendChar(StringBuilder out, char c) {
     switch (c) {
-      case '\b' -> builder.append("\\b");
-      case '\t' -> builder.append("\\t");
-      case '\f' -> builder.append("\\f");
-      case '\r' -> builder.append("\\r");
+      case '\b' -> out.append("\\b");
+      case '\t' -> out.append("\\t");
+      case '\f' -> out.append("\\f");
+      case '\r' -> out.append("\\r");
       default -> {
         if (isControl(c, false)) {
-          builder.append(String.format("\\u%04X", (int) c));
+          out.append("\\u00").append(HEX[(c >> 4) & 0xF]).append(HEX[c & 0xF]);
         } else {
-          builder.append(c);
+          out.append(c);
         }
       }
     }
@@ -322,4 +437,6 @@ public final class TomlValueWriter implements ValueWriter {
     }
     return c < 0x20 || c == 0x7f;
   }
+
+  // </editor-fold>
 }
