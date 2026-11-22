@@ -12,11 +12,14 @@
     <module>toml</module>
     <module>yaml</module>
     <module>json</module>
+    <module>examples</module>
   </modules>
   <packaging>pom</packaging>
 
   <name>AnnotationConfig-Parent</name>
-  <description>Configuration framework using annotations. Parent POM</description>
+  <description>A reflection-based Java object-to-configuration mapping library with extensible
+    serialization and format-specific resolution.
+  </description>
   <url>https://github.com/MrIvanPlays/AnnotationConfig</url>
 
   <inceptionYear>2020</inceptionYear>

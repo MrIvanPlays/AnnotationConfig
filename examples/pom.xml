@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+  <parent>
+    <groupId>com.mrivanplays</groupId>
+    <artifactId>annotationconfig-parent</artifactId>
+    <version>3.0.4-SNAPSHOT</version>
+  </parent>
+
+  <artifactId>annotationconfig-examples</artifactId>
+
+  <properties>
+    <maven.deploy.skip>true</maven.deploy.skip>
+    <maven.javadoc.skip>true</maven.javadoc.skip>
+  </properties>
+
+  <description>A module containing example configurations utilising AnnotationConfig and YAML
+  </description>
+
+  <dependencies>
+    <dependency>
+      <groupId>com.mrivanplays</groupId>
+      <artifactId>annotationconfig-yaml</artifactId>
+      <version>${project.version}</version>
+    </dependency>
+  </dependencies>
+
+</project>

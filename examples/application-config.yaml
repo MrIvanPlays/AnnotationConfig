@@ -1,0 +1,82 @@
+# Generated using AnnotationConfig v3.0.4
+
+# This value can only be between 1 and 3 ( 1 and 3 included )
+foo: 2
+
+# This string cannot be longer than 20 characters ( spaces are included )
+bar: "This is some string"
+
+# All configurable messages
+messages:
+  # The no permission message
+  no-permission: "You don't have permission to perform this command"
+  # The no spamming message
+  no-spamming: "You can't spam this"
+
+# This is also going to be serialized as a config object,
+# but it is much more controllable rather than @ConfigObject
+serialize:
+  foo: "foo"
+  bar: 1
+  baz: 2
+
+# This cannot have a negative value
+barxtwo: 0.2
+
+# AnnotatedConfig can also read & write lists
+foo-list:
+  - "This is"
+  - "a lore"
+  - "as an example"
+  - "for list"
+
+# Lists can be of all primitive types
+bar-list:
+  - 1
+  - 2
+  - 3
+  - 4
+
+# And of non primitive types, which also include records
+foosList:
+  - bar: "baz"
+    baz: 1
+  - bar: "lorem"
+    baz: 3
+
+# Same for maps, but a map can only be Map<String, Object>
+# otherwise you will need another object
+foo-map:
+  foo: 1
+  bar: "This is a section value"
+  baz: 3
+
+# This doesn't have a serializer registered
+# so it gets serialized by the default serializer
+default-serializer-example:
+  foo: "bar"
+  bar: 1
+  baz: 5.6
+
+inside:
+  section:
+    # You can create sections like this too
+    foo: "foo"
+
+# This is a section inside a section example
+section-inside-section:
+  pp:
+    # Comments are supported here too!
+    baz: 69420
+    # And here!
+    foo: 3.3
+
+# This is a section object list
+sectionObjectList:
+  asdfp:
+    aabb: 1
+    ccdd: "lorem"
+  pepepepepe:
+    aabb: 2
+    ccdd: "ipsum"
+
