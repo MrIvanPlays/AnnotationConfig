@@ -3,7 +3,7 @@
 ## What
 
 AnnotationConfig is a "reflection-based Java object-to-configuration mapping library with extensible
-serialization and format-specific resolution.", or in simpler terms a library that cooks
+serialization and format-specific resolution", or in simpler terms a library that "cooks"
 
 ```java
 @Comment("Hello")
@@ -24,7 +24,7 @@ public class MyCoolConfig {
 
 ```
 
-into (YAML):
+and, generates the following config (YAML):
 
 ```yaml
 # Hello
@@ -46,7 +46,7 @@ for reading configuration files (writing for YAML is home-grown inside the `yaml
 
 # Prerequisites
 
-Versions >=3.0.3 require use of Java 25, ~~internet access and maven central~~
+Versions >=3.0.3 require Java 25, ~~internet access and maven central~~
 
 # Examples
 
@@ -97,6 +97,8 @@ ConfigResolver configResolver =
 configResolver.loadOrDump(
     annotatedConfig, file, /* loader settings */);
 ```
+
+WHILE ON THAT NOTE: `ConfigResolver` is not meant to be implemented, only created using the designated builder. Implementing it means YOU are going to deal with the internal code which can break without a moment's notice. Oh, something doesn't work properly? It looks like YOU implemented it and YOU used the internals incorrectly, and it is entirely YOUR fault.
 
 AnnotationConfig internals serialize to a `Map<String, Object>`, and for comments a
 `Map<String, List<String>>` where the map key is the specified field name, or, if annotated with
