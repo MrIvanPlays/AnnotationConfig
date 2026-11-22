@@ -175,10 +175,42 @@ not support comments, as JSON has none.
 - Dotted keys (`@Key("server.ip")`) are written and read as nested objects, as in YAML.
 - Numbers are read exactly, also beyond the precision of a `double`. Values of fields typed `Object`
   (e.g. inside a `Map<String, Object>` or `DataObject`) are read as `BigDecimal`.
-- Strings are written as they are, without HTML escaping (`=` is not written as `=`).
+- Strings are written as they are, without HTML escaping (`=` is not written as `\u003d`).
 - `@Multiline` strings are written as normal strings, since JSON has no multiline syntax.
 - A `Gson` instance can be passed through `JsonConfig.GSON_INSTANCE`. It is used for reading and
   writing, and should use `ToNumberPolicy.BIG_DECIMAL` to read numbers exactly.
+
+#### JSON5 support
+
+The `json` module also supports [JSON5](https://spec.json5.org) (spec 1.0.0), a superset of JSON
+that adds comments, unquoted keys, single-quoted strings and more.
+`JsonConfig.getJSON5ConfigResolver()` returns a resolver for `.json5` files. It writes with the new
+`Json5ValueWriter` and reads with Gson in lenient mode, like the JSON resolver, so existing `.json`
+files load with it too. `JsonConfig.GSON_INSTANCE` is used for reading.
+
+Writing uses only the JSON5 features that Gson reads back:
+
+- The comments of options, also of options inside config objects, are written as `//` lines above
+  their keys, and class comments at the top of the file. Comments of keys inside arrays are not
+  written.
+- Keys that are identifiers are written without quotes (`port: 25565`), other keys in double quotes
+  (`"world-name": "w"`).
+- Strings are written in double quotes. `@Multiline` strings are written on one line with `\n`
+  escapes: JSON5's line continuations (a backslash before a line break) drop the line break, but
+  Gson keeps it, so they would not read back the same.
+- Infinity and NaN are written as `Infinity`, `-Infinity` and `NaN`.
+- The layout is that of pretty-printed JSON, without trailing commas.
+
+Reading hand-written JSON5 is limited to what Gson's lenient mode understands. `//` and `/* */`
+comments, unquoted keys, single-quoted strings, `Infinity` and `NaN` are read. Gson does not read
+these JSON5 features as the spec defines them:
+
+- A trailing comma in an object fails to load; in an array it adds a `null` element.
+- Hexadecimal numbers (`0x1F`), numbers with a leading `+` or a leading or trailing decimal point
+  (`.5`, `5.`) are read as strings. Number fields parse all of them except hexadecimal ones; fields
+  typed `Object` get the string. The same holds for `Infinity` and `NaN`.
+- The `\x41`, `\v` and `\0` escapes fail to load.
+- A line continuation in a string keeps the line break in the value.
 
 #### `FIND_STATIC_FIELDS` setting
 
@@ -264,8 +296,12 @@ reads back exactly:
 - Reading an empty list into an array field creates an empty array of the field's type.
 - `BigInteger` and `BigDecimal` are read exactly. They used to be parsed through `long` and
   `double`, which lost precision and failed past 2^63.
-- `List<BigInteger>` values larger than `Integer.MAX_VALUE` no longer throw when written; they are
-  written as a `long`, or as a string when they do not fit in one.
+- `BigDecimal` and `BigInteger` values in maps and lists are kept exact. `DataObject#getAsMap()`,
+  which fills `Map<String, Object>` fields, turned them into `double` and `int`, and lists were
+  written the same way: a `BigInteger` beyond the `int` range threw an `ArithmeticException`, and
+  `BigDecimal`s lost precision. `getAsMap()` now returns numbers as they are held, so custom
+  serializers reading from it can get a `BigDecimal` or `BigInteger` where they used to get a
+  `Double` or `Integer`. TOML, whose integers are 64-bit, writes larger integers as strings.
 - Whole numbers that arrive with an exponent are read as their value. A double such as
   `2000000000.0` has the text form `2.0E9`, which used to be read as `2`.
 - `char` fields accept one character strings, which is how text formats store them.

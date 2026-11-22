@@ -39,10 +39,12 @@ messages:
 ```
 
 By default the supported configuration file formats are "properties", [JSON](https://www.json.org/)
-using [gson](https://github.com/google/gson) ; [TOML](https://toml.io/)
-utilising [Jackson data formats](https://github.com/FasterXML/jackson-dataformats-text) and last but
-not least - [YAML](https://yaml.org/) utilising [snakeyaml](https://github.com/snakeyaml/snakeyaml)
-with some custom backend logic for dumping, backed by snakeyaml.
+using [gson](https://github.com/google/gson), [JSON5](https://spec.json5.org) (JSON with comments)
+in the same module; [TOML](https://toml.io/), read
+with [Jackson data formats](https://github.com/FasterXML/jackson-dataformats-text) and written by
+AnnotationConfig itself, and last but not least - [YAML](https://yaml.org/)
+utilising [snakeyaml](https://github.com/snakeyaml/snakeyaml) with some custom backend logic for
+dumping, backed by snakeyaml.
 
 # Prerequisites
 

@@ -22,9 +22,11 @@
 
 package com.mrivanplays.annotationconfig.core;
 
+import com.mrivanplays.annotationconfig.core.serialization.DataObject;
 import java.io.StringWriter;
 import java.math.BigDecimal;
 import java.math.BigInteger;
+import java.util.Map;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
@@ -56,5 +58,17 @@ public class TestBigIntegerBigDecimal {
     // exact values: both are larger than an int, and the decimal has more digits than a double
     Assertions.assertEquals(new BigDecimal("3333333333.22222222"), config.decimal);
     Assertions.assertEquals(new BigInteger("3333333333"), config.integer);
+  }
+
+  @Test
+  public void dataObjectMapKeepsBigNumbers() {
+    // getAsMap() turned a BigDecimal into a double and a BigInteger into an int, which threw
+    // beyond the int range
+    BigDecimal decimal = new BigDecimal("0.12345678901234567890");
+    BigInteger integer = new BigInteger("123456789012345678901234567890");
+    Map<String, Object> values = Map.of("decimal", decimal, "integer", integer);
+    Map<String, Object> map = new DataObject(values).getAsMap();
+    Assertions.assertEquals(decimal, map.get("decimal"));
+    Assertions.assertEquals(integer, map.get("integer"));
   }
 }

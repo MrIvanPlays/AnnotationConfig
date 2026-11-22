@@ -263,6 +263,9 @@ public final class DataObject {
    * Returns this data object as a {@link Map} with key type of {@link String} and a value type of
    * {@link Object}. Modifying the returned map won't have any impact on this data object.
    *
+   * <p>Values are returned as they are held, like {@link #getAsObject()} returns them: a {@link
+   * BigDecimal} or {@link BigInteger} is not turned into a {@code double} or {@code int}.
+   *
    * @return data as base serialization map
    */
   public Map<String, Object> getAsMap() {
@@ -274,7 +277,8 @@ public final class DataObject {
       String key = entry.getKey();
       DataObject value = entry.getValue();
       if (value.isSingleValue()) {
-        ret.put(key, value.getAsObject(true));
+        // getAsObject(true) lost precision and threw for integers beyond the int range
+        ret.put(key, value.getAsObject());
       } else {
         ret.put(key, value.getAsMap());
       }

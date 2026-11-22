@@ -29,6 +29,7 @@ import java.io.StringWriter;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.util.List;
+import java.util.Map;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
@@ -117,6 +118,47 @@ public class TestJsonValues {
           ]
         }""";
     Assertions.assertEquals(expected, dump(config));
+  }
+
+  static class UntypedNumbers {
+
+    public Map<String, Object> map = Map.of();
+    public List<Object> objects = List.of();
+    public List<BigDecimal> decimals = List.of();
+    public List<BigInteger> integers = List.of();
+  }
+
+  @Test
+  public void numbersInMapsAndListsRoundTripExactly() {
+    // numbers in maps were read as doubles (1 came back as 1.0), and numbers in lists were written
+    // as doubles, or as strings beyond the long range
+    String json =
+        """
+        {
+          "map": {
+            "whole": 1,
+            "decimal": 0.12345678901234567890,
+            "big": 123456789012345678901234567890
+          },
+          "objects": [
+            1,
+            2.5
+          ],
+          "decimals": [
+            0.12345678901234567890
+          ],
+          "integers": [
+            123456789012345678901234567890
+          ]
+        }""";
+    UntypedNumbers config = load(new UntypedNumbers(), json);
+    Assertions.assertEquals(new BigDecimal("1"), config.map.get("whole"));
+    Assertions.assertEquals(new BigDecimal("0.12345678901234567890"), config.map.get("decimal"));
+    Assertions.assertEquals(List.of(new BigDecimal("1"), new BigDecimal("2.5")), config.objects);
+    Assertions.assertEquals(List.of(new BigDecimal("0.12345678901234567890")), config.decimals);
+    Assertions.assertEquals(
+        List.of(new BigInteger("123456789012345678901234567890")), config.integers);
+    Assertions.assertEquals(json, dump(config));
   }
 
   // </editor-fold>

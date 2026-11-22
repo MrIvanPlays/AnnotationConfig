@@ -425,17 +425,8 @@ final class DefaultSerializer implements FieldTypeSerializer<Object> {
                 neededType, neededType, context.getAnnotatedConfig(), context.getSettings());
         for (Object val : values) {
           if (isPrimitive(val)) {
-            if (val instanceof BigDecimal) {
-              toSerialize.add(((BigDecimal) val).doubleValue());
-            } else if (val instanceof BigInteger bigInteger) {
-              // intValueExact() threw for anything above Integer.MAX_VALUE
-              toSerialize.add(
-                  bigInteger.bitLength() < Long.SIZE
-                      ? (Object) bigInteger.longValue()
-                      : bigInteger.toString());
-            } else {
-              toSerialize.add(val);
-            }
+            // BigDecimal and BigInteger are kept as they are: every writer writes them exactly
+            toSerialize.add(val);
           } else {
             callParentSerializer(
                 toSerialize, neededType, serializer, serializationContext, val, annotations);
@@ -552,7 +543,7 @@ final class DefaultSerializer implements FieldTypeSerializer<Object> {
       return;
     }
     if (serialized.isSingleValue()) {
-      toSerialize.add(serialized.getAsObject(true));
+      toSerialize.add(serialized.getAsObject());
     } else {
       toSerialize.add(serialized.getAsMap());
     }

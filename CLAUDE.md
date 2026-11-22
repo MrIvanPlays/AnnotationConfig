@@ -35,6 +35,11 @@ Java 25, Maven multi-module build.
   (written by hand to the TOML 1.0 spec; Jackson only reads TOML). Jackson's TOML writer (checked
   with 2.23.0) can't write comments or `java.time` values, writes `null` as `''` and integers
   beyond 64 bits as bare integers, and was slower than `TomlValueWriter`.
+- JSON5 (JSON with comments) is written by `Json5ValueWriter` in the `json` module, by hand like
+  TOML. It only uses JSON5 features that Gson's lenient reader understands (`//` comments,
+  unquoted identifier keys, `NaN` / `Infinity`), so JSON5 is read with the same Gson settings as
+  JSON; keep it that way, or reading needs a JSON5 parser. No JSON5 validator is available
+  offline, so `TestJson5ValueWriter` checks exact output and reads it back with Gson.
 - Writers build the whole output in a `StringBuilder` and write it to the `PrintWriter` once:
   many small writes through the `PrintWriter` (each takes its lock) measured ~35% slower.
   `YamlHandler` gives SnakeYAML's emitter an unlocked `Writer` over a `StringBuilder` for the same
@@ -75,6 +80,9 @@ Java 25, Maven multi-module build.
   the CR from every line it rewrites. Use `perl -pi -e '...'` or an editor instead, and check with
   `file <path>` (it should say "with CRLF line terminators"). Perl also halves backslashes in
   replacement text, so make edits that contain backslashes with an editor, not a regex.
+- Java sources are plain ASCII: write non-ASCII characters as `\uXXXX` escapes. Tools that write
+  files can turn such escapes into the raw characters (in docs too), so check new files with
+  `grep -nP '[^\x00-\x7F]'` and look at every `\u` escape after writing it.
 - Commit messages follow Conventional Commits (`feat(core):`, `fix(core):`, ...); mark breaking
   changes with `!` and a `BREAKING CHANGE:` footer. Commits that only change documentation end
   their subject with `[ci skip]`.

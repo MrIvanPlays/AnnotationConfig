@@ -28,6 +28,7 @@ import java.io.StringWriter;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.util.List;
+import java.util.Map;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
@@ -147,5 +148,21 @@ public class TestDefaultSerializerTypes {
         load("bigInteger: 123456789012345678901234567890\nbigDecimal: '0.12345678901234567890'");
     Assertions.assertEquals(new BigInteger("123456789012345678901234567890"), subject.bigInteger);
     Assertions.assertEquals(new BigDecimal("0.12345678901234567890"), subject.bigDecimal);
+  }
+
+  static class UntypedMap {
+
+    public Map<String, Object> values = Map.of();
+  }
+
+  @Test
+  public void bigIntegersInMapsAreRead() {
+    // values in maps were turned into ints, which threw beyond the int range
+    UntypedMap config = new UntypedMap();
+    RESOLVER.load(
+        config, new StringReader("values:\n  big: 123456789012345678901234567890\n  small: 1\n"));
+    Assertions.assertEquals(
+        new BigInteger("123456789012345678901234567890"), config.values.get("big"));
+    Assertions.assertEquals(1, config.values.get("small"));
   }
 }
