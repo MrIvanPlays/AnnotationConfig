@@ -32,6 +32,10 @@ import java.lang.annotation.Target;
  * Annotation, representing a minimal string length or a minimal int/double/byte/float/short/long
  * value.
  *
+ * <p>Exactly one member has to be set. Each member defaults to the lowest value of its type
+ * ({@code Integer.MIN_VALUE}, {@code Double.NEGATIVE_INFINITY}, ...), which means "not set"; any
+ * other value, including {@code -1}, is a bound.
+ *
  * @since 2.0.0
  * @author Ivan Pekov
  */
@@ -40,15 +44,15 @@ import java.lang.annotation.Target;
 @Target(ElementType.FIELD)
 public @interface Min {
 
-  int minInt() default -1;
+  int minInt() default Integer.MIN_VALUE;
 
-  double minDouble() default -1;
+  double minDouble() default Double.NEGATIVE_INFINITY;
 
-  byte minByte() default -1;
+  byte minByte() default Byte.MIN_VALUE;
 
-  float minFloat() default -1;
+  float minFloat() default Float.NEGATIVE_INFINITY;
 
-  short minShort() default -1;
+  short minShort() default Short.MIN_VALUE;
 
-  long minLong() default -1;
+  long minLong() default Long.MIN_VALUE;
 }

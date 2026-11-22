@@ -73,6 +73,30 @@ public final class ACDefaultSettings {
   public static final Setting<Boolean> FIND_PARENT_FIELDS =
       Setting.of("find_parent_fields", Boolean.class);
 
+  /**
+   * A setting indicating whether {@code static} {@link java.lang.reflect.Field fields} of the
+   * config class (and, with {@link #FIND_PARENT_FIELDS}, of its parents) are options of the config.
+   * Defaults to {@code false}.
+   *
+   * <p>Consider this example:
+   *
+   * <pre>
+   *   <code>
+   * public class Config {
+   *       static int counter = 0;
+   *       String foo = "bar";
+   *     }
+   *   </code>
+   * </pre>
+   *
+   * <p>With this setting off only {@code foo} is dumped and loaded. With it on, {@code counter} is
+   * dumped too, and loading sets it, which changes it for every instance of the class.
+   *
+   * @since 3.0.4
+   */
+  public static final Setting<Boolean> FIND_STATIC_FIELDS =
+      Setting.of("find_static_fields", Boolean.class);
+
   @Nullable private static Settings defaults;
 
   public static Settings getDefault() {
@@ -85,6 +109,7 @@ public final class ACDefaultSettings {
             .put(NULL_READ_HANDLER, NullReadHandleOption.SET_NULL)
             .put(GENERATE_NEW_OPTIONS, true)
             .put(FIND_PARENT_FIELDS, false)
+            .put(FIND_STATIC_FIELDS, false)
             .put(KEY_RESOLVER, KeyResolver.DEFAULT)
             .copy(true);
   }

@@ -32,6 +32,10 @@ import java.lang.annotation.Target;
  * Annotation, representing the maximal string length or the maximal
  * int/double/byte/float/short/long value.
  *
+ * <p>Exactly one member has to be set. Each member defaults to the highest value of its type
+ * ({@code Integer.MAX_VALUE}, {@code Double.POSITIVE_INFINITY}, ...), which means "not set"; any
+ * other value, including {@code -1}, is a bound.
+ *
  * @since 2.0.0
  * @author Ivan Pekov
  */
@@ -40,15 +44,15 @@ import java.lang.annotation.Target;
 @Target(ElementType.FIELD)
 public @interface Max {
 
-  int maxInt() default -1;
+  int maxInt() default Integer.MAX_VALUE;
 
-  double maxDouble() default -1;
+  double maxDouble() default Double.POSITIVE_INFINITY;
 
-  byte maxByte() default -1;
+  byte maxByte() default Byte.MAX_VALUE;
 
-  float maxFloat() default -1;
+  float maxFloat() default Float.POSITIVE_INFINITY;
 
-  short maxShort() default -1;
+  short maxShort() default Short.MAX_VALUE;
 
-  long maxLong() default -1;
+  long maxLong() default Long.MAX_VALUE;
 }
