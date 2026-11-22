@@ -70,7 +70,7 @@ YAML example:
 
 ```java
 YamlConfig.getConfigResolver().
-      loadOrDump(anotatedConfig, file, /*opt:loader settings*/);
+      loadOrDump(annotatedConfig, file, /*opt:loader settings*/);
 ```
 
 Due to this abstraction layer existing, every feature AnnotationConfig adds can be and is 99%
@@ -85,7 +85,7 @@ ConfigResolver configResolver =
     ConfigResolver.newBuilder()
         .withValueWriter(/* value writer */)
         .withSetting(/* setting */, /* value */)
-        .withCommentPrefix("# ") // if the conf spedc supports
+        .withCommentPrefix("# ") // if the config format supports
         .withFileExtension(".myextension")
         .withFileExtension(".myotherextension")
         .withValueReader(/* value reader */)
