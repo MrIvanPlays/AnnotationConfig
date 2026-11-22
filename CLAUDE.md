@@ -6,7 +6,7 @@ Java 25, Maven multi-module build.
 ## Project state
 
 - The version is `3.1.0-SNAPSHOT` and not released yet. The last release is 3.0.3 (on Maven
-  Central, but without a git tag; the newest tag is `3.0.2`). Breaking changes are allowed in
+  Central). Breaking changes are allowed in
   3.1.0, but every user-visible one goes into the 3.1.0 section of `CHANGELOG.md`, under
   "Breaking changes" when it can change what existing configs do.
 - Decisions made on purpose, don't change them without asking:
