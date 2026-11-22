@@ -22,6 +22,10 @@ Java 25, Maven multi-module build.
   beyond 64 bits as bare integers, and was slower than `TomlValueWriter`.
 - Writers build the whole output in a `StringBuilder` and write it to the `PrintWriter` once:
   many small writes through the `PrintWriter` (each takes its lock) measured ~35% slower.
+  `YamlHandler` gives SnakeYAML's emitter an unlocked `Writer` over a `StringBuilder` for the same
+  reason. Buffering centrally in `AnnotatedConfigResolver` instead was benchmarked and was slower
+  (an extra copy of the output, and SnakeYAML's writes still go through a `PrintWriter`), so each
+  writer buffers on its own.
 - Field order: `.properties` writes fields in reverse declaration order; YAML, JSON and TOML set
   `SHOULD_REVERSE_FIELDS`, so they write them in declaration order.
 - Jackson's TOML parser before 2.23 misreads 19-digit integers (drops the first 9 digits);
