@@ -30,18 +30,17 @@ import org.jspecify.annotations.Nullable;
 
 /**
  * Utilities to help with reflection stuff. <br>
- * NOTICE: Please read {@link ReflectionUtils.PrimitiveNameTypes}
  *
  * @author Ivan Pekov
  * @since 3.0.0
- * @deprecated this was never meant to be public API, and the internal usage of this class has
- *     rapidly decreased in 3.0.4 . Maintainer is trying to completely remove internal usage of
- *     these so-called hacky "utilities".
+ * @deprecated AnnotationConfig does not use this internally anymore, and since it is basically a
+ *     bunch of hack code will be removed in a future release.
  */
 @NullMarked
-@Deprecated(since = "3.0.4")
+@Deprecated(since = "3.0.4", forRemoval = true)
 public final class ReflectionUtils {
 
+  @Deprecated(forRemoval = true, since = "3.0.4")
   public static boolean isPrimitive(String typeName) {
     return PrimitiveNameTypes.getNameType(typeName) != null;
   }
@@ -70,6 +69,7 @@ public final class ReflectionUtils {
     return nameType.castToArray(obj);
   }
 
+  @Deprecated(forRemoval = true, since = "3.0.4")
   public static Object castArrayToType(Class<?> type, Object obj) {
     if (!obj.getClass().isArray()) {
       throw new IllegalArgumentException("Not array");
@@ -87,6 +87,7 @@ public final class ReflectionUtils {
     return ret;
   }
 
+  @Deprecated(forRemoval = true, since = "3.0.4")
   private static String constructTypeName(String name) {
     if (name.startsWith("[L")) {
       name = name.substring(2);
@@ -102,18 +103,15 @@ public final class ReflectionUtils {
   }
 
   /**
-   * NOTICE: This was never really ment to be a public API of AnnotationConfig, yet the methods
-   * (with questionable java standards and API design) are present and used internally. If you wish
-   * to use this on your own, then do so. Since this was written like 4 years ago (comment written
-   * in 2026), even I (MrIvanPlays) don't remember the sole reason why this exists and why it exists
-   * in this way. Although this is unlikely to change (or break in any ways), breakages may occur
-   * between versions if the behaviour of the current code changes, and starts to not suite the
-   * internals of AnnotationConfig. That being said, PROCEED ON YOUR OWN and DO NOT EXPECT SUPPORT.
+   * @deprecated redundant as of 3.0.4
    */
+  @Deprecated(since = "3.0.4", forRemoval = true)
   @SuppressWarnings("UnnecessaryUnboxing")
   public enum PrimitiveNameTypes {
+    @Deprecated
     BYTE(byte.class, Byte.class, "[B", "byte", "java.lang.Byte") {
       @Override
+      @Deprecated
       public Object[] castToArray(Object obj) {
         try {
           byte[] b = (byte[]) obj;
@@ -133,12 +131,15 @@ public final class ReflectionUtils {
       }
 
       @Override
+      @Deprecated
       public Object resolveToPrimitiveType(Object obj) {
         return Byte.valueOf(String.valueOf(obj)).byteValue();
       }
     },
+    @Deprecated
     DOUBLE(double.class, Double.class, "[D", "double", "java.lang.Double") {
       @Override
+      @Deprecated
       public Object[] castToArray(Object obj) {
         try {
           double[] d = (double[]) obj;
@@ -158,12 +159,15 @@ public final class ReflectionUtils {
       }
 
       @Override
+      @Deprecated
       public Object resolveToPrimitiveType(Object obj) {
         return Double.valueOf(String.valueOf(obj)).doubleValue();
       }
     },
+    @Deprecated
     FLOAT(float.class, Float.class, "[F", "float", "java.lang.Float") {
       @Override
+      @Deprecated
       public Object[] castToArray(Object obj) {
         try {
           float[] f = (float[]) obj;
@@ -183,12 +187,15 @@ public final class ReflectionUtils {
       }
 
       @Override
+      @Deprecated
       public Object resolveToPrimitiveType(Object obj) {
         return Float.valueOf(String.valueOf(obj)).floatValue();
       }
     },
+    @Deprecated
     INTEGER(int.class, Integer.class, "[I", "int", "java.lang.Integer") {
       @Override
+      @Deprecated
       public Object[] castToArray(Object obj) {
         try {
           int[] in = (int[]) obj;
@@ -208,10 +215,12 @@ public final class ReflectionUtils {
       }
 
       @Override
+      @Deprecated
       public Object resolveToPrimitiveType(Object obj) {
         return (int) Integer.valueOf(String.valueOf(obj)).intValue();
       }
     },
+    @Deprecated
     SHORT(short.class, Short.class, "[S", "short", "java.lang.Short") {
       @Override
       public Object[] castToArray(Object obj) {
@@ -237,6 +246,7 @@ public final class ReflectionUtils {
         return Short.valueOf(String.valueOf(obj)).shortValue();
       }
     },
+    @Deprecated
     LONG(long.class, Long.class, "[J", "long", "java.lang.Long") {
       @Override
       public Object[] castToArray(Object obj) {
@@ -262,6 +272,7 @@ public final class ReflectionUtils {
         return Long.valueOf(String.valueOf(obj)).longValue();
       }
     },
+    @Deprecated
     CHAR(char.class, Character.class, "[C", "char", "java.lang.Character") {
       @Override
       public Object[] castToArray(Object obj) {
@@ -304,6 +315,7 @@ public final class ReflectionUtils {
         return (char) obj;
       }
     },
+    @Deprecated
     BOOLEAN(boolean.class, Boolean.class, "[Z", "boolean", "java.lang.Boolean") {
       @Override
       public Object[] castToArray(Object obj) {
@@ -329,6 +341,7 @@ public final class ReflectionUtils {
         return String.valueOf(obj).equalsIgnoreCase("true");
       }
     },
+    @Deprecated
     STRING(String.class, String.class, "String", "java.lang.String") {
       @Override
       public Object[] castToArray(Object obj) {
@@ -349,6 +362,7 @@ public final class ReflectionUtils {
         return String.valueOf(obj);
       }
     },
+    @Deprecated
     BIG_INTEGER(BigInteger.class, BigInteger.class, "BigInteger", "java.math.BigInteger") {
       @Override
       public Object[] castToArray(Object obj) {
@@ -375,6 +389,7 @@ public final class ReflectionUtils {
         return new BigInteger(String.valueOf(obj));
       }
     },
+    @Deprecated
     BIG_DECIMAL(BigDecimal.class, BigDecimal.class, "BigDecimal", "java.math.BigDecimal") {
       @Override
       public Object[] castToArray(Object obj) {
@@ -403,6 +418,7 @@ public final class ReflectionUtils {
     };
 
     @Nullable
+    @Deprecated
     public static PrimitiveNameTypes getNameType(String typeName) {
       for (PrimitiveNameTypes val : PrimitiveNameTypes.values()) {
         for (String name : val.names) {
@@ -425,8 +441,10 @@ public final class ReflectionUtils {
       this.names = names;
     }
 
+    @Deprecated
     public abstract Object[] castToArray(Object array);
 
+    @Deprecated
     public abstract Object resolveToPrimitiveType(Object obj);
   }
 }

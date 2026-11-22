@@ -25,7 +25,6 @@ package com.mrivanplays.annotationconfig.core.serialization;
 import com.mrivanplays.annotationconfig.core.resolver.settings.ACDefaultSettings;
 import com.mrivanplays.annotationconfig.core.resolver.settings.NullReadHandleOption;
 import com.mrivanplays.annotationconfig.core.utils.AnnotationUtils;
-import com.mrivanplays.annotationconfig.core.utils.ReflectionUtils;
 import java.lang.reflect.Array;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
@@ -62,7 +61,6 @@ final class DefaultSerializer implements FieldTypeSerializer<Object> {
       @NonNull DataObject data,
       @NonNull SerializationContext<Object> context,
       @NonNull AnnotationAccessor annotations) {
-    PrimitiveSerializers.registerSerializers();
     Class<?> fieldType = context.getClassType();
     Object dataRaw = data.getAsObject();
     if (data.isSingleValue() && dataRaw == null) {
@@ -111,8 +109,8 @@ final class DefaultSerializer implements FieldTypeSerializer<Object> {
         }
         return arr;
       } else {
-        if (ReflectionUtils.isPrimitive(typeName)) {
-          return ReflectionUtils.castArrayToType(fieldType, dataRaw);
+        if (isPrimitiveArray(fieldType)) {
+          return castArray(fieldType, dataRaw);
         }
         // this is (technically) not possible to be reached by the default serializer, but it's
         // better to have the belt than not to.
@@ -475,30 +473,22 @@ final class DefaultSerializer implements FieldTypeSerializer<Object> {
       }
     }
     if (fieldType.isArray()) {
-      String typeName = fieldType.getTypeName();
-      typeName = typeName.substring(0, typeName.length() - 2);
-      if (ReflectionUtils.isPrimitive(typeName)) {
+      if (isPrimitiveArray(fieldType)) {
         return new DataObject(value);
-      } else {
-        try {
-          Class<?> type = Class.forName(typeName);
-          FieldTypeSerializer serializer = serializerRegistry.getSerializer(type).orElse(this);
-          SerializationContext serializationContext =
-              SerializationContext.of(
-                  type, type, context.getAnnotatedConfig(), context.getSettings());
-          List<Object> list = new LinkedList<>();
-          for (Object toSerialize : (Object[]) value) {
-            if (toSerialize == null) {
-              continue;
-            }
-            callParentSerializer(
-                list, type, serializer, serializationContext, toSerialize, annotations);
-          }
-          return new DataObject(list);
-        } catch (ClassNotFoundException e) {
-          throw new RuntimeException("Couldn't get class of non primitive array", e);
+      }
+      Class<?> type = fieldType.getComponentType();
+      FieldTypeSerializer serializer = serializerRegistry.getSerializer(type).orElse(this);
+      SerializationContext serializationContext =
+          SerializationContext.of(type, type, context.getAnnotatedConfig(), context.getSettings());
+      Object[] array = (Object[]) value;
+      List<Object> list = new ArrayList<>(array.length);
+      for (Object toSerialize : array) {
+        if (toSerialize != null) {
+          callParentSerializer(
+              list, type, serializer, serializationContext, toSerialize, annotations);
         }
       }
+      return new DataObject(list);
     }
     Field[] fields = value.getClass().getDeclaredFields();
     if (fields.length == 0) {
@@ -596,6 +586,26 @@ final class DefaultSerializer implements FieldTypeSerializer<Object> {
     }
   }
 
+  /** isPrimitiveClass depends only on the class, so it is computed once per class. */
+  private static final ClassValue<Boolean> PRIMITIVE_CLASS =
+      new ClassValue<>() {
+        @Override
+        protected Boolean computeValue(Class<?> valClass) {
+          return valClass.isPrimitive()
+              || valClass.isAssignableFrom(String.class)
+              || valClass.isAssignableFrom(Boolean.class)
+              || valClass.isAssignableFrom(Byte.class)
+              || valClass.isAssignableFrom(Character.class)
+              || valClass.isAssignableFrom(Double.class)
+              || valClass.isAssignableFrom(Float.class)
+              || valClass.isAssignableFrom(Integer.class)
+              || valClass.isAssignableFrom(Short.class)
+              || valClass.isAssignableFrom(Long.class)
+              || valClass.isAssignableFrom(BigDecimal.class)
+              || valClass.isAssignableFrom(BigInteger.class);
+        }
+      };
+
   private Object forcePrimitive(Object val, Class<?> fieldType) {
     Function<Object, ?> mapper = PrimitiveSerializers.getMapper(fieldType);
     if (mapper != null) {
@@ -609,18 +619,7 @@ final class DefaultSerializer implements FieldTypeSerializer<Object> {
   }
 
   private boolean isPrimitiveClass(Class<?> valClass) {
-    return valClass.isPrimitive()
-        || valClass.isAssignableFrom(String.class)
-        || valClass.isAssignableFrom(Boolean.class)
-        || valClass.isAssignableFrom(Byte.class)
-        || valClass.isAssignableFrom(Character.class)
-        || valClass.isAssignableFrom(Double.class)
-        || valClass.isAssignableFrom(Float.class)
-        || valClass.isAssignableFrom(Integer.class)
-        || valClass.isAssignableFrom(Short.class)
-        || valClass.isAssignableFrom(Long.class)
-        || valClass.isAssignableFrom(BigDecimal.class)
-        || valClass.isAssignableFrom(BigInteger.class);
+    return PRIMITIVE_CLASS.get(valClass);
   }
 
   private boolean isPrimitive(Object value, boolean checkMap) {
@@ -628,10 +627,51 @@ final class DefaultSerializer implements FieldTypeSerializer<Object> {
     return isPrimitiveClass(valClass) || (checkMap && value instanceof Map);
   }
 
+  private boolean isPrimitiveArray(Class<?> type) {
+    return type.isArray() && PrimitiveSerializers.getMapper(type.getComponentType()) != null;
+  }
+
+  private Object castArray(Class<?> arrayType, Object source) {
+    if (!arrayType.isArray() || !source.getClass().isArray()) {
+      throw new IllegalArgumentException("Not an array");
+    }
+    Class<?> component = arrayType.getComponentType();
+    Function<Object, ?> mapper = PrimitiveSerializers.getMapper(component); // once per array
+    if (mapper == null) {
+      mapper = Function.identity();
+    }
+    int length = Array.getLength(source);
+    Object result = Array.newInstance(component, length);
+    Object[] objects = source instanceof Object[] array ? array : null; // no reflection needed
+    if (component.isPrimitive()) {
+      for (int i = 0; i < length; i++) {
+        Object converted = mapper.apply(objects != null ? objects[i] : Array.get(source, i));
+        if (converted == null) {
+          throw new IllegalArgumentException(
+              "No value for element " + i + " of " + component.getName() + " array");
+        }
+        Array.set(result, i, converted);
+      }
+    } else {
+      Object[] out = (Object[]) result;
+      for (int i = 0; i < length; i++) {
+        out[i] = mapper.apply(objects != null ? objects[i] : Array.get(source, i));
+      }
+    }
+    return result;
+  }
+
   private static final class PrimitiveSerializers {
 
     private static final Map<Class<?>, Function<Object, ?>> serializers = new ConcurrentHashMap<>();
     private static boolean registered = false;
+
+    // Registered when the class is initialised, which is thread safe and always happens before the
+    // first lookup. Otherwise getMapper (and so isPrimitiveArray and forcePrimitive) depends on
+    // someone having called registerSerializers() first. Calling it again later does nothing.
+    static {
+      registerSerializers();
+    }
 
     public static void registerSerializers() {
       if (registered) {
@@ -640,41 +680,50 @@ final class DefaultSerializer implements FieldTypeSerializer<Object> {
 
       registerSerializer(String.class, validateO(Function.identity()));
 
-      Function<Object, Byte> byteSerializer = stripDot(Byte::parseByte);
+      Function<Object, Byte> byteSerializer = stripDot(Byte.class, Byte::parseByte);
       registerSerializer(byte.class, byteSerializer);
       registerSerializer(Byte.class, byteSerializer);
 
-      Function<Object, Double> doubleSerializer = validateO(Double::parseDouble);
+      Function<Object, Double> doubleSerializer = validateO(Double.class, Double::parseDouble);
       registerSerializer(double.class, doubleSerializer);
       registerSerializer(Double.class, doubleSerializer);
 
-      Function<Object, Float> floatSerializer = validateO(Float::parseFloat);
+      Function<Object, Float> floatSerializer = validateO(Float.class, Float::parseFloat);
       registerSerializer(float.class, floatSerializer);
       registerSerializer(Float.class, floatSerializer);
 
-      Function<Object, Integer> intSerializer = stripDot(Integer::parseInt);
+      Function<Object, Integer> intSerializer = stripDot(Integer.class, Integer::parseInt);
       registerSerializer(Integer.class, intSerializer);
       registerSerializer(int.class, intSerializer);
 
-      Function<Object, Short> shortSerializer = stripDot(Short::parseShort);
+      Function<Object, Short> shortSerializer = stripDot(Short.class, Short::parseShort);
       registerSerializer(Short.class, shortSerializer);
       registerSerializer(short.class, shortSerializer);
 
-      Function<Object, Long> longSerializer = stripDot(Long::parseLong);
+      Function<Object, Long> longSerializer = stripDot(Long.class, Long::parseLong);
       registerSerializer(Long.class, longSerializer);
       registerSerializer(long.class, longSerializer);
 
+      // changed: also accepts one-character strings, which is how text formats store chars. The
       Function<Object, Character> charSerializer =
           o -> {
             if (o == null) {
               return null;
             }
-            return (char) o;
+            if (o instanceof Character c) {
+              return c;
+            }
+            String text = String.valueOf(o);
+            if (text.length() != 1) {
+              throw new IllegalArgumentException(
+                  "Invalid input; expected character got String: " + text);
+            }
+            return text.charAt(0);
           };
       registerSerializer(char.class, charSerializer);
       registerSerializer(Character.class, charSerializer);
 
-      Function<Object, Boolean> boolSerializer = validateO(Boolean::parseBoolean);
+      Function<Object, Boolean> boolSerializer = validateO(Boolean.class, Boolean::parseBoolean);
       registerSerializer(boolean.class, boolSerializer);
       registerSerializer(Boolean.class, boolSerializer);
 
@@ -699,19 +748,20 @@ final class DefaultSerializer implements FieldTypeSerializer<Object> {
       };
     }
 
-    private static <T> Function<Object, T> stripDot(Function<String, T> finish) {
-      return validateO(s -> {
-        if (s == null) {
-          return null;
-        }
-        // GSON passes every non-decimal number as <num>.0
-        // this makes sure that the correct values are passed to the finishing methods.
-        if (s.indexOf('.') == -1) {
-          return finish.apply(s);
-        }
-        String[] split = s.split("\\.");
-        return finish.apply(split[0]);
-      });
+    private static <T> Function<Object, T> validateO(Class<T> type, Function<String, T> cont) {
+      Function<Object, T> parse = validateO(cont);
+      return o -> type.isInstance(o) ? type.cast(o) : parse.apply(o);
+    }
+
+    private static <T> Function<Object, T> stripDot(Class<T> type, Function<String, T> finish) {
+      return validateO(
+          type,
+          s -> {
+            // GSON passes every non-decimal number as <num>.0
+            // this makes sure that the correct values are passed to the finishing methods.
+            int dot = s.indexOf('.');
+            return finish.apply(dot == -1 ? s : s.substring(0, dot));
+          });
     }
 
     public static Function<Object, ?> getMapper(Class<?> aClass) {
