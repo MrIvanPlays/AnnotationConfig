@@ -102,7 +102,7 @@ public interface ConfigResolver {
    * @param file the file to dump to
    * @param settings the settings to use
    * @throws IllegalArgumentException if the provided settings are immutable
-   * @since 3.0.4
+   * @since 3.1.0
    */
   void dump(Object annotatedConfig, File file, Settings settings);
 
@@ -138,7 +138,7 @@ public interface ConfigResolver {
    * @param path the file path to dump to
    * @param settings the settings to use
    * @throws IllegalArgumentException if the provided settings are immutable
-   * @since 3.0.4
+   * @since 3.1.0
    */
   void dump(Object annotatedConfig, Path path, Settings settings);
 
@@ -163,7 +163,7 @@ public interface ConfigResolver {
    * @param os the output stream to dump to
    * @param settings the settings to use
    * @throws IllegalArgumentException if the provided settings are immutable
-   * @since 3.0.4
+   * @since 3.1.0
    */
   default void dump(Object annotatedConfig, OutputStream os, Settings settings) {
     this.dump(annotatedConfig, new OutputStreamWriter(os), settings);
@@ -175,7 +175,7 @@ public interface ConfigResolver {
    *
    * @param annotatedConfig the annotated config to dump
    * @param writableObject the writable object to dump to
-   * @since 3.0.4
+   * @since 3.1.0
    */
   default void dump(Object annotatedConfig, WritableObject writableObject) {
     this.dump(annotatedConfig, writableObject.writer());
@@ -192,7 +192,7 @@ public interface ConfigResolver {
    * @param writableObject the writable object to dump to
    * @param settings the settings to use
    * @throws IllegalArgumentException if the provided settings are immutable
-   * @since 3.0.4
+   * @since 3.1.0
    */
   default void dump(Object annotatedConfig, WritableObject writableObject, Settings settings) {
     this.dump(annotatedConfig, writableObject.writer(), settings);
@@ -217,7 +217,7 @@ public interface ConfigResolver {
    * @param writer the writer to dump to
    * @param settings the settings to use
    * @throws IllegalArgumentException if the provided settings are immutable
-   * @since 3.0.4
+   * @since 3.1.0
    */
   void dump(Object annotatedConfig, Writer writer, Settings settings);
 
@@ -610,7 +610,7 @@ public interface ConfigResolver {
      * @deprecated use {@link #withSetting(Setting, Object)} with the {@link
      *     ACDefaultSettings#KEY_RESOLVER} setting.
      */
-    @Deprecated(since = "3.0.4", forRemoval = true)
+    @Deprecated(since = "3.1.0", forRemoval = true)
     public Builder withKeyResolver(KeyResolver resolver) {
       return withSetting(ACDefaultSettings.KEY_RESOLVER, resolver);
     }

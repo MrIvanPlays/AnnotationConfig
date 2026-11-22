@@ -58,7 +58,7 @@ public sealed interface AnnotationAccessor permits AnnotationAccessorImpl {
    *
    * @param clazz class to create annotation accessor from
    * @return annotation accessor
-   * @since 3.0.4
+   * @since 3.1.0
    */
   static AnnotationAccessor createFromClass(Class<?> clazz) {
     return new AnnotationAccessorImpl(clazz);
@@ -70,7 +70,7 @@ public sealed interface AnnotationAccessor permits AnnotationAccessorImpl {
    *
    * @param annotationClass annotation class, not null
    * @return true if holds, false otherwise
-   * @since 3.0.4
+   * @since 3.1.0
    */
   boolean hasAnnotation(Class<? extends Annotation> annotationClass);
 
@@ -80,7 +80,7 @@ public sealed interface AnnotationAccessor permits AnnotationAccessorImpl {
    *
    * @param annotationType annotation type to check
    * @return true if holds, false otherwise
-   * @since 3.0.4
+   * @since 3.1.0
    */
   @SuppressWarnings("BooleanMethodIsAlwaysInverted")
   default boolean hasAnnotation(AnnotationType annotationType) {

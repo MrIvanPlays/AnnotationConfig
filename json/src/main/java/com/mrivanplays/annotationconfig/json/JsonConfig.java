@@ -38,7 +38,7 @@ import org.jspecify.annotations.Nullable;
 /**
  * Represents configuration, utilising JSON
  *
- * @since 3.0.4
+ * @since 3.1.0
  * @author Ivan Pekov
  */
 @SuppressWarnings("unchecked")

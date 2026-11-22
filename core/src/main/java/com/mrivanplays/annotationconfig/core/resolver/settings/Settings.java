@@ -146,7 +146,7 @@ public final class Settings {
    *
    * @param other other settings to override these settings from
    * @return new mutable settings instance
-   * @since 3.0.4
+   * @since 3.1.0
    */
   public Settings copyWithOverrides(Settings other) {
     Objects.requireNonNull(other, "settings");

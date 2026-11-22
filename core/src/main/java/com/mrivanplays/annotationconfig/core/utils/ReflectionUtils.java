@@ -37,15 +37,15 @@ import org.jspecify.annotations.Nullable;
  *     bunch of hack code will be removed in a future release.
  */
 @NullMarked
-@Deprecated(since = "3.0.4", forRemoval = true)
+@Deprecated(since = "3.1.0", forRemoval = true)
 public final class ReflectionUtils {
 
-  @Deprecated(forRemoval = true, since = "3.0.4")
+  @Deprecated(forRemoval = true, since = "3.1.0")
   public static boolean isPrimitive(String typeName) {
     return PrimitiveNameTypes.getNameType(typeName) != null;
   }
 
-  @Deprecated(since = "3.0.4", forRemoval = true)
+  @Deprecated(since = "3.1.0", forRemoval = true)
   public static Class<?> getPrimitiveClass(String typeName) {
     PrimitiveNameTypes nameType = PrimitiveNameTypes.getNameType(typeName);
     if (nameType == null) {
@@ -54,7 +54,7 @@ public final class ReflectionUtils {
     return nameType.primitiveType;
   }
 
-  @Deprecated(since = "3.0.4", forRemoval = true)
+  @Deprecated(since = "3.1.0", forRemoval = true)
   public static Object[] castToArray(Object obj) {
     if (!obj.getClass().isArray()) {
       throw new IllegalArgumentException("Not array");
@@ -69,7 +69,7 @@ public final class ReflectionUtils {
     return nameType.castToArray(obj);
   }
 
-  @Deprecated(forRemoval = true, since = "3.0.4")
+  @Deprecated(forRemoval = true, since = "3.1.0")
   public static Object castArrayToType(Class<?> type, Object obj) {
     if (!obj.getClass().isArray()) {
       throw new IllegalArgumentException("Not array");
@@ -87,7 +87,7 @@ public final class ReflectionUtils {
     return ret;
   }
 
-  @Deprecated(forRemoval = true, since = "3.0.4")
+  @Deprecated(forRemoval = true, since = "3.1.0")
   private static String constructTypeName(String name) {
     if (name.startsWith("[L")) {
       name = name.substring(2);
@@ -103,9 +103,9 @@ public final class ReflectionUtils {
   }
 
   /**
-   * @deprecated redundant as of 3.0.4
+   * @deprecated redundant as of 3.1.0
    */
-  @Deprecated(since = "3.0.4", forRemoval = true)
+  @Deprecated(since = "3.1.0", forRemoval = true)
   @SuppressWarnings("UnnecessaryUnboxing")
   public enum PrimitiveNameTypes {
     @Deprecated

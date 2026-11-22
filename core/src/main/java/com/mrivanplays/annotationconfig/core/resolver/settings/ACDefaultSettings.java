@@ -45,7 +45,7 @@ public final class ACDefaultSettings {
       Setting.of("generate_new_options", Boolean.class);
 
   /**
-   * @since 3.0.4
+   * @since 3.1.0
    */
   public static final Setting<KeyResolver> KEY_RESOLVER = Setting.of(KeyResolver.class);
 
@@ -92,7 +92,7 @@ public final class ACDefaultSettings {
    * <p>With this setting off only {@code foo} is dumped and loaded. With it on, {@code counter} is
    * dumped too, and loading sets it, which changes it for every instance of the class.
    *
-   * @since 3.0.4
+   * @since 3.1.0
    */
   public static final Setting<Boolean> FIND_STATIC_FIELDS =
       Setting.of("find_static_fields", Boolean.class);

@@ -65,7 +65,7 @@ public final class SerializationContext<T> {
    * @param settings used settings
    * @param <T> type
    * @return new serialization context
-   * @since 3.0.4
+   * @since 3.1.0
    * @throws IllegalAccessException see {@link Field#get(Object)}
    */
   public static <T> SerializationContext<T> fromField(
@@ -104,7 +104,7 @@ public final class SerializationContext<T> {
    * @param settings used settings
    * @param <T> type
    * @return new serialization context
-   * @since 3.0.4
+   * @since 3.1.0
    */
   public static <T> SerializationContext<T> of(
       Class<?> classType,
@@ -139,7 +139,7 @@ public final class SerializationContext<T> {
    * @param settings used settings
    * @param <T> type
    * @return new serialization context
-   * @since 3.0.4
+   * @since 3.1.0
    */
   public static <T> SerializationContext<T> of(
       @Nullable T def,
@@ -181,7 +181,7 @@ public final class SerializationContext<T> {
    * @param settings used settings
    * @param <T> type
    * @return new serialization context
-   * @since 3.0.4
+   * @since 3.1.0
    */
   public static <T> SerializationContext<T> of(
       @Nullable String name,
@@ -268,7 +268,7 @@ public final class SerializationContext<T> {
    * Returns the used {@link Settings settings} for serializing/deserializing.
    *
    * @return used settings
-   * @since 3.0.4
+   * @since 3.1.0
    */
   public Settings getSettings() {
     return this.settings;

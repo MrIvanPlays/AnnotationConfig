@@ -103,7 +103,7 @@ public final class SectionObjectList<T> implements Iterable<Entry<String, T>> {
    */
   @Override
   public Iterator<Entry<String, T>> iterator() {
-    // immutable since 3.0.4
+    // immutable since 3.1.0
     Iterator<Entry<String, T>> original = this.values.entrySet().iterator();
     return new Iterator<>() {
       @Override
@@ -123,7 +123,7 @@ public final class SectionObjectList<T> implements Iterable<Entry<String, T>> {
    *
    * @param key key to get value for
    * @return value if present, null otherwise
-   * @since 3.0.4
+   * @since 3.1.0
    */
   @Nullable
   public T get(String key) {
@@ -135,7 +135,7 @@ public final class SectionObjectList<T> implements Iterable<Entry<String, T>> {
    *
    * @param key key to check, cannot be null
    * @return true if contains, false otherwise
-   * @since 3.0.4
+   * @since 3.1.0
    */
   public boolean contains(String key) {
     Objects.requireNonNull(key, "key");
@@ -148,7 +148,7 @@ public final class SectionObjectList<T> implements Iterable<Entry<String, T>> {
    *
    * @param key key to update, cannot be null
    * @param newValue new value to update with
-   * @since 3.0.4
+   * @since 3.1.0
    */
   public void update(String key, @Nullable T newValue) {
     Objects.requireNonNull(key, "key");
@@ -163,7 +163,7 @@ public final class SectionObjectList<T> implements Iterable<Entry<String, T>> {
    * Check whether this {@code SectionObjectList} is empty.
    *
    * @return empty or not
-   * @since 3.0.4
+   * @since 3.1.0
    */
   public boolean isEmpty() {
     return this.values.isEmpty();

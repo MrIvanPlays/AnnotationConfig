@@ -74,7 +74,7 @@ public class ExampleConfig {
   @Comment("but it is much more controllable rather than @ConfigObject")
   private SomethingToSerialize serialize = new SomethingToSerialize("foo", 1, (byte) 0x2);
 
-  // since 3.0.4 records are supported too!
+  // since 3.1.0 records are supported too!
   public record SomethingToSerialize(String foo, int bar, byte baz) {}
 
   /**

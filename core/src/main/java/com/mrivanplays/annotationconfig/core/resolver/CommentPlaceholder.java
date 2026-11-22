@@ -30,7 +30,7 @@ import org.jspecify.annotations.NullMarked;
  * Represents a placeholder for comments.
  *
  * @author Ivan Pekov
- * @since 3.0.4
+ * @since 3.1.0
  */
 @NullMarked
 public interface CommentPlaceholder extends Function<String, String> {

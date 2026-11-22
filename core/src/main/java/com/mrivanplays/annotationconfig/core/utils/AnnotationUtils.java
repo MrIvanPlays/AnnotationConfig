@@ -130,7 +130,7 @@ public final class AnnotationUtils {
    * @return comments, either an empty list or a list with comments
    * @deprecated use {@link #getComments(AnnotationAccessor)}
    */
-  @Deprecated(since = "3.0.4")
+  @Deprecated(since = "3.1.0")
   public static List<String> getComments(Field field) {
     Objects.requireNonNull(field, "field");
     return getComments(AnnotationAccessor.createFromField(field), false);
@@ -142,7 +142,7 @@ public final class AnnotationUtils {
    *
    * @param annotationAccessor the annotation accessor for which the comments to get
    * @return comments, either an empty list or list with comments
-   * @since 3.0.4
+   * @since 3.1.0
    */
   public static List<String> getComments(AnnotationAccessor annotationAccessor) {
     return getComments(annotationAccessor, false);
@@ -154,7 +154,7 @@ public final class AnnotationUtils {
    * @param annotationAccessor the annotation accessor for which the comments to get
    * @param applyPlaceholders whether to apply placeholders
    * @return comments, either an empty list or list with comments
-   * @since 3.0.4
+   * @since 3.1.0
    */
   public static List<String> getComments(
       AnnotationAccessor annotationAccessor, boolean applyPlaceholders) {

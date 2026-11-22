@@ -66,7 +66,7 @@ import org.yaml.snakeyaml.nodes.Tag;
  * no comments. Comments for keys inside list elements are not written.
  *
  * @author claude, Ivan Pekov
- * @since 3.0.4
+ * @since 3.1.0
  */
 public final class YamlHandler implements ValueReader, ValueWriter {
 

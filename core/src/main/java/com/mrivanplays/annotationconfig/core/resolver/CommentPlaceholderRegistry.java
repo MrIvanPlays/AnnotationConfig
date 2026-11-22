@@ -59,7 +59,7 @@ public enum CommentPlaceholderRegistry {
    * @param replacement replacement value
    * @deprecated use {@link #registerPlaceholder(CommentPlaceholder)}
    */
-  @Deprecated(since = "3.0.4")
+  @Deprecated(since = "3.1.0")
   public void registerPlaceholder(String toReplace, String replacement) {
     this.registerPlaceholder(CommentPlaceholder.simple(toReplace, replacement));
   }
@@ -68,7 +68,7 @@ public enum CommentPlaceholderRegistry {
    * Register a new {@link CommentPlaceholder comment placeholder}.
    *
    * @param placeholder placeholder to register
-   * @since 3.0.4
+   * @since 3.1.0
    */
   public void registerPlaceholder(CommentPlaceholder placeholder) {
     Objects.requireNonNull(placeholder, "placeholder");
@@ -79,7 +79,7 @@ public enum CommentPlaceholderRegistry {
    * Unregister a placeholder
    *
    * @param placeholder placeholder to unregister
-   * @since 3.0.4
+   * @since 3.1.0
    */
   public void unregisterPlaceholder(CommentPlaceholder placeholder) {
     Objects.requireNonNull(placeholder, "placeholder");
@@ -91,7 +91,7 @@ public enum CommentPlaceholderRegistry {
    *
    * @param placeholder placeholder to check
    * @return true if registered, false otherwise
-   * @since 3.0.4
+   * @since 3.1.0
    */
   public boolean hasPlaceholder(CommentPlaceholder placeholder) {
     Objects.requireNonNull(placeholder, "placeholder");
@@ -127,7 +127,7 @@ public enum CommentPlaceholderRegistry {
    *
    * @param annotation bulk representation of the {@link Comment comment} annotation
    * @return list of parsed comments
-   * @since 3.0.4
+   * @since 3.1.0
    */
   public List<String> applyPlaceholders(Comments annotation) {
     Objects.requireNonNull(annotation, "annotation");
@@ -147,7 +147,7 @@ public enum CommentPlaceholderRegistry {
    *
    * @param annotation the comment annotation
    * @return comment with parsed placeholders
-   * @since 3.0.4
+   * @since 3.1.0
    */
   public String applyPlaceholders(Comment annotation) {
     Objects.requireNonNull(annotation, "annotation");
@@ -159,7 +159,7 @@ public enum CommentPlaceholderRegistry {
    *
    * @param comment comment to apply placeholders to
    * @return comment with parsed placeholders
-   * @since 3.0.4
+   * @since 3.1.0
    */
   public String applyPlaceholders(String comment) {
     Objects.requireNonNull(comment, "comment");

@@ -141,7 +141,7 @@ public final class AdvancedEnumSerializer<E extends Enum<E>> implements FieldTyp
    *
    * @param data data object
    * @return enum constant deserialized, or null
-   * @since 3.0.4
+   * @since 3.1.0
    */
   @Nullable
   public E deserializeSimple(@Nullable DataObject data) {
@@ -161,7 +161,7 @@ public final class AdvancedEnumSerializer<E extends Enum<E>> implements FieldTyp
    *
    * @param input input to deserialize
    * @return enum constant deserialized, or null
-   * @since 3.0.4
+   * @since 3.1.0
    */
   @Nullable
   public E deserializeSimple(@Nullable String input) {
@@ -323,7 +323,7 @@ public final class AdvancedEnumSerializer<E extends Enum<E>> implements FieldTyp
    *
    * @param value value to serialize
    * @return {@link DataObject data object}
-   * @since 3.0.4
+   * @since 3.1.0
    */
   public DataObject serializeSimple(E value) {
     return new DataObject(value.name().toLowerCase(Locale.ROOT).replace("_", " "));

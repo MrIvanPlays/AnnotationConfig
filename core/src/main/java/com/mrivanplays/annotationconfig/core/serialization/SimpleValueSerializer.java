@@ -47,7 +47,7 @@ public final class SimpleValueSerializer {
    * See {@link FieldTypeSerializer#deserialize(DataObject, SerializationContext,
    * AnnotationAccessor)}
    *
-   * @since 3.0.4
+   * @since 3.1.0
    */
   public static <T> T deserialize(
       DataObject value,
@@ -73,7 +73,7 @@ public final class SimpleValueSerializer {
   /**
    * See {@link FieldTypeSerializer#serialize(Object, SerializationContext, AnnotationAccessor)}
    *
-   * @since 3.0.4
+   * @since 3.1.0
    */
   public static <T> DataObject serialize(
       T value,

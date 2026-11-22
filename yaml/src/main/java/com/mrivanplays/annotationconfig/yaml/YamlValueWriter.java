@@ -36,7 +36,7 @@ import org.jspecify.annotations.NonNull;
  * @since 2.1.0
  * @deprecated replaced by {@link YamlHandler}
  */
-@Deprecated(since = "3.0.4")
+@Deprecated(since = "3.1.0")
 public final class YamlValueWriter implements ValueWriter {
 
   @Override

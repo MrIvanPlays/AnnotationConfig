@@ -43,7 +43,7 @@ public interface Setting<T> {
    * @param type class type representation of the setting
    * @return new setting instance
    * @param <T> value type held
-   * @since 3.0.4
+   * @since 3.1.0
    */
   static <T> Setting<T> of(Class<T> type) {
     return of(null, type);

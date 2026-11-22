@@ -114,7 +114,7 @@ Maven:
   <!-- Types: toml, yaml, json -->
   <!-- If you want .conf/.properties, or custom implementation configuration, you can set the type to core -->
   <artifactId>annotationconfig-(type)</artifactId> <!-- Replace type -->
-  <version>3.0.4</version>
+  <version>3.1.0</version>
   <scope>compile</scope>
 </dependency>
 ```
@@ -127,7 +127,7 @@ repositories {
 }
 
 dependencies {
-    implementation("com.mrivanplays:annotationconfig-(type):3.0.4")
+    implementation("com.mrivanplays:annotationconfig-(type):3.1.0")
 }
 
 java {
