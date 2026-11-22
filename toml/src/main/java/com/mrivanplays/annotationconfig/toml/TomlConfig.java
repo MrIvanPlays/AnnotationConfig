@@ -29,6 +29,7 @@ import com.mrivanplays.annotationconfig.core.resolver.ValueWriter;
 import com.mrivanplays.annotationconfig.core.resolver.settings.ACDefaultSettings;
 import com.mrivanplays.annotationconfig.core.resolver.settings.Setting;
 import com.mrivanplays.annotationconfig.core.serialization.DataObject;
+import com.mrivanplays.annotationconfig.core.serialization.FieldTypeSerializer;
 import com.mrivanplays.annotationconfig.core.serialization.SerializerRegistry;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -36,6 +37,7 @@ import java.time.LocalTime;
 import java.time.OffsetDateTime;
 import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.function.Function;
 import org.jspecify.annotations.NullMarked;
 import org.jspecify.annotations.Nullable;
 
@@ -71,34 +73,13 @@ public final class TomlConfig {
   }
 
   // <editor-fold desc="Internal Implementation" defaultstate="collapsed">
-  private static final ValueWriter TOML_VALUE_WRITER = new TomlValueWriter(DEFAULT_TOML_MAPPER);
+  private static final ValueWriter TOML_VALUE_WRITER = new TomlValueWriter();
 
   private static void generateConfigResolver() {
-    SerializerRegistry registry = SerializerRegistry.INSTANCE;
-    if (!registry.hasSerializer(OffsetDateTime.class)) {
-      registry.registerSimpleSerializer(
-          OffsetDateTime.class,
-          data -> OffsetDateTime.parse(data.getAsString()),
-          value -> new DataObject(value.toString()));
-    }
-    if (!registry.hasSerializer(LocalDateTime.class)) {
-      registry.registerSimpleSerializer(
-          LocalDateTime.class,
-          data -> LocalDateTime.parse(data.getAsString()),
-          value -> new DataObject(value.toString()));
-    }
-    if (!registry.hasSerializer(LocalDate.class)) {
-      registry.registerSimpleSerializer(
-          LocalDate.class,
-          data -> LocalDate.parse(data.getAsString()),
-          value -> new DataObject(value.toString()));
-    }
-    if (!registry.hasSerializer(LocalTime.class)) {
-      registry.registerSimpleSerializer(
-          LocalTime.class,
-          data -> LocalTime.parse(data.getAsString()),
-          value -> new DataObject(value.toString()));
-    }
+    registerDateTimeSerializer(OffsetDateTime.class, OffsetDateTime::parse);
+    registerDateTimeSerializer(LocalDateTime.class, LocalDateTime::parse);
+    registerDateTimeSerializer(LocalDate.class, LocalDate::parse);
+    registerDateTimeSerializer(LocalTime.class, LocalTime::parse);
     configResolver =
         ConfigResolver.newBuilder()
             .withSetting(MAPPER_KEY, DEFAULT_TOML_MAPPER)
@@ -115,6 +96,34 @@ public final class TomlConfig {
                         .reader()
                         .readValue(reader, LinkedHashMap.class))
             .build();
+  }
+
+  /**
+   * Registers a serializer for a date or time type, unless one is registered already.
+   *
+   * <p>The registry is shared by all formats. In TOML, whose resolver carries {@link #MAPPER_KEY},
+   * the value is written as a native TOML date-time; every other format gets the ISO string, as
+   * before. Reading accepts both the native value (TOML) and a string.
+   */
+  private static <T> void registerDateTimeSerializer(Class<T> type, Function<String, T> parse) {
+    SerializerRegistry registry = SerializerRegistry.INSTANCE;
+    if (registry.hasSerializer(type)) {
+      return;
+    }
+    try {
+      registry.registerSerializer(
+          type,
+          FieldTypeSerializer.functional(
+              (data, _, _) -> {
+                Object raw = data.getAsObject();
+                return type.isInstance(raw) ? type.cast(raw) : parse.apply(data.getAsString());
+              },
+              (value, context, _) ->
+                  new DataObject(
+                      context.getSettings().has(MAPPER_KEY) ? value : value.toString())));
+    } catch (IllegalArgumentException alreadyRegistered) {
+      // another thread registered one in the meantime, which is fine
+    }
   }
   // </editor-fold>
 }

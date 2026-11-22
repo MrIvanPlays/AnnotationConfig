@@ -99,6 +99,15 @@ Numbers are now compared by their exact value, `BigInteger` and `BigDecimal` inc
 bound uses the decimal value it was written as, so `@Min(minFloat = 0.1f)` accepts `0.1`.
 Configs with values that only passed because of the truncation now fail to load.
 
+#### Empty strings are values
+
+An empty string in a config (`message=` in `.properties`, `message: ""` in YAML, `"message": ""` in
+JSON, `message = ''` in TOML) used to be read as no value: the field became `null`, or kept its
+default with the `USE_DEFAULT_VALUE` null read handler. It is now read as `""`, also inside lists,
+so an option can be configured to be empty.
+
+Empty values of other types, such as a number written as `count=`, are still read as no value.
+
 #### Unknown enum values are reported
 
 Loading an enum value that matches no constant now throws an `IllegalArgumentException` that names
@@ -202,6 +211,31 @@ comments attached to their keys, so SnakeYAML takes care of indentation, quoting
   ```
 
 - Comments of keys inside list elements are not written.
+
+### TOML writer
+
+TOML used to be written by passing each top-level option to Jackson's TOML generator, which wrote
+some values that are not valid TOML. `TomlValueWriter` now writes TOML 1.0 itself; Jackson is only
+used for reading. The layout is unchanged: options separated by an empty line, config objects as
+dotted keys (`server.ip = 'localhost'`), objects inside arrays as inline tables.
+
+- Infinity and NaN are written as `inf`, `-inf` and `nan` instead of `Infinity` and `NaN`, which
+  made the file unreadable.
+- Comments of options inside config objects are written above their dotted key; they used to be
+  dropped. Comments are looked up by the exact key, so an option no longer gets the comments of
+  another option whose name starts the same (`port` and `portal`), and every line of a comment
+  that contains line breaks starts with `#`.
+- `@Multiline` strings are written as multi-line basic strings (`"""`).
+- `OffsetDateTime`, `LocalDateTime`, `LocalDate` and `LocalTime` are written as TOML date-times
+  instead of strings, with seconds always present as TOML requires. Files with dates written as
+  strings still load. Other formats still write these types as strings.
+- Integers outside of 64 bits, which TOML does not allow, are written as strings. So are `long`
+  values with 19 digits, as Jackson's TOML parser reads them wrong (`9223372036854775807` is read
+  as `6854775807`); such values typed into a file by hand are still read wrong.
+- A `null` value fails with an error that names its key, as TOML has no null.
+- Files no longer end with an empty line.
+- `TomlValueWriter(TomlMapper)` is deprecated in favour of `TomlValueWriter()`, as the mapper is
+  not used for writing.
 
 ### `.properties` writer
 

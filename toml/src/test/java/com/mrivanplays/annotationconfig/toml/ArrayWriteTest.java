@@ -39,7 +39,7 @@ public class ArrayWriteTest {
     StringWriter writer = new StringWriter();
     TomlConfig.getConfigResolver().dump(config, writer);
 
-    String expected = "arr = [1.1, 2.2]\n\n";
+    String expected = "arr = [1.1, 2.2]\n";
 
     Assertions.assertEquals(expected, writer.toString().replaceAll("\\R", "\n"));
   }

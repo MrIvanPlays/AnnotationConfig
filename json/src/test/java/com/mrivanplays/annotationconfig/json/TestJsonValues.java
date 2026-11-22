@@ -146,6 +146,19 @@ public class TestJsonValues {
   }
 
   @Test
+  public void emptyStringsRoundTrip() {
+    Text config = new Text();
+    config.plain = "";
+    config.multiline = "";
+    String json = dump(config);
+    Assertions.assertTrue(json.contains("\"plain\": \"\""), json);
+
+    Text loaded = load(new Text(), json);
+    Assertions.assertEquals("", loaded.plain);
+    Assertions.assertEquals("", loaded.multiline);
+  }
+
+  @Test
   public void textLoads() {
     Text config =
         load(

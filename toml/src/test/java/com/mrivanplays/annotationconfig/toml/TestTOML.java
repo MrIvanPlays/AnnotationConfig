@@ -64,13 +64,12 @@ public class TestTOML {
             + "server.theport = 25565\n"
             + "\n"
             + "# OffsetDateTime\n"
-            + "dateTime = '2021-11-10T17:31:48+02:00'\n"
+            + "dateTime = 2021-11-10T17:31:48+02:00\n"
             + "\n"
             + "# This has been dumped with the default serializer\n"
             + "default-serializer.foo = 'foo string'\n"
             + "default-serializer.bar = 1\n"
-            + "default-serializer.baz = 0.555\n"
-            + "\n";
+            + "default-serializer.baz = 0.555\n";
     Assertions.assertEquals(expected, writer.toString().replaceAll("\\R", "\n"));
   }
 }

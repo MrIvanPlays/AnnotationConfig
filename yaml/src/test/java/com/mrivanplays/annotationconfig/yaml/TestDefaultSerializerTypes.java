@@ -60,6 +60,8 @@ public class TestDefaultSerializerTypes {
     public BigInteger bigInteger;
     public BigDecimal bigDecimal;
     public int whole;
+    public String text = "default";
+    public List<String> texts;
   }
 
   static class EnumSubject {
@@ -123,6 +125,14 @@ public class TestDefaultSerializerTypes {
       cause = cause.getCause();
     }
     Assertions.assertTrue(cause.getMessage().contains("Mode"), cause.getMessage());
+  }
+
+  @Test
+  public void emptyStringsAreKept() {
+    // an empty string used to be read as no value: null, or the default with USE_DEFAULT_VALUE
+    Subject subject = load("text: \"\"\ntexts: [\"\", \"a\"]");
+    Assertions.assertEquals("", subject.text);
+    Assertions.assertEquals(List.of("", "a"), subject.texts);
   }
 
   @Test

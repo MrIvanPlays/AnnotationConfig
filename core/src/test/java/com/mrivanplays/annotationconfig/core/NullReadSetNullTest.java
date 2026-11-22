@@ -37,9 +37,10 @@ class NullReadSetNullTest {
   @Test
   void testNullRead() {
     Subject subject = new Subject();
-    // SET_NULL is the default null read handler: present but empty values become null
+    // SET_NULL is the default null read handler: an empty number has no value and becomes null,
+    // while an empty string is a value of its own
     PropertyConfig.getConfigResolver().load(subject, new StringReader("foo=\n\nbar="));
     Assertions.assertNull(subject.foo);
-    Assertions.assertNull(subject.bar);
+    Assertions.assertEquals("", subject.bar);
   }
 }

@@ -703,7 +703,9 @@ final class DefaultSerializer implements FieldTypeSerializer<Object> {
     private static final Map<Class<?>, Function<Object, ?>> serializers = new HashMap<>();
 
     static {
-      registerSerializer(String.class, validateO(Function.identity()));
+      // not validateO: that reads "" as no value, which suits numbers but makes an empty string
+      // impossible to configure
+      registerSerializer(String.class, o -> o == null ? null : String.valueOf(o));
 
       Function<Object, Byte> byteSerializer = stripDot(Byte.class, Byte::parseByte);
       registerSerializer(byte.class, byteSerializer);
