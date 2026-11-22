@@ -28,21 +28,22 @@ import com.mrivanplays.annotationconfig.core.utils.AnnotationUtils;
 import java.lang.reflect.Array;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
+import java.lang.reflect.GenericArrayType;
 import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Method;
 import java.lang.reflect.Parameter;
 import java.lang.reflect.ParameterizedType;
+import java.lang.reflect.Type;
+import java.lang.reflect.TypeVariable;
+import java.lang.reflect.WildcardType;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Function;
 import org.jspecify.annotations.NonNull;
 
@@ -82,71 +83,49 @@ final class DefaultSerializer implements FieldTypeSerializer<Object> {
     }
     SerializerRegistry serializerRegistry = SerializerRegistry.INSTANCE;
     if (data.isSingleValue() && fieldType.isArray()) {
-      String typeName = fieldType.getTypeName();
-      typeName = typeName.substring(0, typeName.length() - 2);
-      if (dataRaw instanceof List) {
-        List<Object> read = (List<Object>) dataRaw;
-        if (read.isEmpty()) {
-          return Array.newInstance(fieldType.getComponentType(), 0);
-        }
-        // snakeyaml returns a list instead of an array for all types
-        Class<?> type = fieldType.getComponentType();
-        Object arr = Array.newInstance(type, read.size());
-        FieldTypeSerializer serializer = serializerRegistry.getSerializer(type).orElse(this);
-        SerializationContext serializationContext =
-            SerializationContext.of(
-                type, type, context.getAnnotatedConfig(), context.getSettings());
-        for (int i = 0; i < read.size(); i++) {
-          Object o = read.get(i);
-          if (isPrimitive(o, false) && isPrimitiveClass(type)) {
-            Array.set(arr, i, forcePrimitive(o, type));
-          } else {
-            Object deserialized =
-                serializer.deserialize(
-                    new DataObject(o, true), serializationContext, AnnotationAccessor.EMPTY);
-            Array.set(arr, i, deserialized);
-          }
-        }
+      Class<?> type = fieldType.getComponentType();
+      if (dataRaw.getClass().isArray() && isPrimitiveArray(fieldType)) {
+        return castArray(fieldType, dataRaw);
+      }
+      // snakeyaml (and others) return a list instead of an array for all types
+      List<?> read = asList(dataRaw);
+      Object arr = Array.newInstance(type, read.size());
+      if (read.isEmpty()) {
         return arr;
-      } else {
-        if (isPrimitiveArray(fieldType)) {
-          return castArray(fieldType, dataRaw);
-        }
-        // this is (technically) not possible to be reached by the default serializer, but it's
-        // better to have the belt than not to.
-        try {
-          Class<?> type = Class.forName(typeName);
-          List<Object> list = new LinkedList<>();
-          FieldTypeSerializer serializer = serializerRegistry.getSerializer(type).orElse(this);
-          SerializationContext serializationContext =
-              SerializationContext.of(
-                  type, type, context.getAnnotatedConfig(), context.getSettings());
-          for (Object o : (Object[]) dataRaw) {
-            Object deserialized =
-                serializer.deserialize(new DataObject(o, true), serializationContext, annotations);
-            list.add(deserialized);
-          }
-          return list.toArray();
-        } catch (ClassNotFoundException e) {
-          throw new RuntimeException("Couldn't get class of non primitive array", e);
+      }
+      FieldTypeSerializer serializer = serializerRegistry.getSerializer(type).orElse(this);
+      SerializationContext serializationContext =
+          SerializationContext.of(type, type, context.getAnnotatedConfig(), context.getSettings());
+      for (int i = 0; i < read.size(); i++) {
+        Object o = read.get(i);
+        if (o != null && isPrimitive(o, false) && isPrimitiveClass(type)) {
+          Array.set(arr, i, forcePrimitive(o, type));
+        } else {
+          Object deserialized =
+              serializer.deserialize(
+                  new DataObject(o, true), serializationContext, AnnotationAccessor.EMPTY);
+          Array.set(arr, i, deserialized);
         }
       }
+      return arr;
     }
     if (data.isSingleValue() && dataRaw instanceof List) {
       List<Object> read = (List<Object>) dataRaw;
       if (read.isEmpty()) {
-        return new LinkedList<>();
+        return new ArrayList<>();
       } else {
-        List<Object> ret = new LinkedList<>();
-        Class<?> neededType =
-            (Class<?>) ((ParameterizedType) context.getGenericType()).getActualTypeArguments()[0];
+        List<Object> ret = new ArrayList<>(read.size());
+        Class<?> neededType = listElementType(context);
         FieldTypeSerializer serializer = serializerRegistry.getSerializer(neededType).orElse(this);
         SerializationContext serializationContext =
             SerializationContext.of(
                 neededType, neededType, context.getAnnotatedConfig(), context.getSettings());
         for (Object o : read) {
-          if (isPrimitive(o, false) && isPrimitiveClass(neededType)) {
-            ret.add(o);
+          if (o == null) {
+            ret.add(null);
+          } else if (isPrimitive(o, false) && isPrimitiveClass(neededType)) {
+            // e.g. snakeyaml reads small numbers as Integer even for a List<Long>
+            ret.add(forcePrimitive(o, neededType));
           } else {
             ret.add(
                 serializer.deserialize(
@@ -158,8 +137,7 @@ final class DefaultSerializer implements FieldTypeSerializer<Object> {
     }
     // deserialize asked value list from a received value not a list as a singleton list
     if (data.isSingleValue() && fieldType.isAssignableFrom(List.class)) {
-      Class<?> listValueNeeded =
-          (Class<?>) ((ParameterizedType) context.getGenericType()).getActualTypeArguments()[0];
+      Class<?> listValueNeeded = listElementType(context);
       if (isPrimitiveClass(listValueNeeded)) {
         return Collections.singletonList(forcePrimitive(dataRaw, listValueNeeded));
       } else {
@@ -172,14 +150,7 @@ final class DefaultSerializer implements FieldTypeSerializer<Object> {
     Map<String, Object> dataMap = data.getAsMap();
     if (dataMap.isEmpty()) {
       if (fieldType.isEnum()) {
-        String dataString = data.getAsString();
-        try {
-          Method valueOfMethod = fieldType.getDeclaredMethod("valueOf", String.class);
-          valueOfMethod.setAccessible(true);
-          return valueOfMethod.invoke(null, dataString.toUpperCase(Locale.ROOT));
-        } catch (InvocationTargetException | NoSuchMethodException | IllegalAccessException e) {
-          // ignored
-        }
+        return deserializeEnum(fieldType, data.getAsString());
       }
       Object fieldTypeInstance = this.tryGetFieldTypeInstance(fieldType, context);
       Field[] fields = fieldTypeInstance.getClass().getDeclaredFields();
@@ -217,8 +188,7 @@ final class DefaultSerializer implements FieldTypeSerializer<Object> {
       }
       Class<?> neededInstanceAllocation = fieldType;
       if (fieldType.isAssignableFrom(List.class)) {
-        neededInstanceAllocation =
-            (Class<?>) ((ParameterizedType) context.getGenericType()).getActualTypeArguments()[0];
+        neededInstanceAllocation = listElementType(context);
       }
       if (neededInstanceAllocation.isRecord()) {
 
@@ -434,13 +404,12 @@ final class DefaultSerializer implements FieldTypeSerializer<Object> {
     }
     Class<?> fieldType = context.getClassType();
     if (fieldType.isEnum()) {
-      try {
-        Method nameMethod = value.getClass().getSuperclass().getDeclaredMethod("name");
-        nameMethod.setAccessible(true);
-        return new DataObject(((String) nameMethod.invoke(value)).toLowerCase(Locale.ROOT));
-      } catch (InvocationTargetException | NoSuchMethodException | IllegalAccessException e) {
-        return new DataObject(value.toString());
-      }
+      // name() rather than toString(): toString may be overridden, and constants with a body are
+      // subclasses of the enum, which broke the old reflective lookup of name()
+      return new DataObject(
+          value instanceof Enum<?> constant
+              ? constant.name().toLowerCase(Locale.ROOT)
+              : value.toString());
     }
     SerializerRegistry serializerRegistry = SerializerRegistry.INSTANCE;
     if (value instanceof List) {
@@ -448,9 +417,8 @@ final class DefaultSerializer implements FieldTypeSerializer<Object> {
       if (values.isEmpty()) {
         return new DataObject(values);
       } else {
-        List<Object> toSerialize = new LinkedList<>();
-        Class<?> neededType =
-            (Class<?>) ((ParameterizedType) context.getGenericType()).getActualTypeArguments()[0];
+        List<Object> toSerialize = new ArrayList<>(values.size());
+        Class<?> neededType = listElementType(context);
         FieldTypeSerializer serializer = serializerRegistry.getSerializer(neededType).orElse(this);
         SerializationContext serializationContext =
             SerializationContext.of(
@@ -459,8 +427,12 @@ final class DefaultSerializer implements FieldTypeSerializer<Object> {
           if (isPrimitive(val)) {
             if (val instanceof BigDecimal) {
               toSerialize.add(((BigDecimal) val).doubleValue());
-            } else if (val instanceof BigInteger) {
-              toSerialize.add(((BigInteger) val).intValueExact());
+            } else if (val instanceof BigInteger bigInteger) {
+              // intValueExact() threw for anything above Integer.MAX_VALUE
+              toSerialize.add(
+                  bigInteger.bitLength() < Long.SIZE
+                      ? (Object) bigInteger.longValue()
+                      : bigInteger.toString());
             } else {
               toSerialize.add(val);
             }
@@ -627,6 +599,70 @@ final class DefaultSerializer implements FieldTypeSerializer<Object> {
     return isPrimitiveClass(valClass) || (checkMap && value instanceof Map);
   }
 
+  private static Object deserializeEnum(Class<?> enumType, String value) {
+    Object[] constants = enumType.getEnumConstants();
+    for (Object constant : constants) {
+      // serialized lower case; case-insensitive so that non upper-case constants work as well
+      if (((Enum<?>) constant).name().equalsIgnoreCase(value)) {
+        return constant;
+      }
+    }
+    throw new IllegalArgumentException(
+        "Unknown value '"
+            + value
+            + "' for enum "
+            + enumType.getName()
+            + "; expected one of "
+            + Arrays.toString(constants));
+  }
+
+  /** Element class of a {@code List<X>} field; {@code Object} when the list is raw. */
+  private static Class<?> listElementType(SerializationContext<?> context) {
+    if (context.getGenericType() instanceof ParameterizedType parameterized) {
+      return rawClass(parameterized.getActualTypeArguments()[0]);
+    }
+    return Object.class;
+  }
+
+  // getActualTypeArguments() is not always a Class: List<List<String>>, List<? extends Foo>, ...
+  private static Class<?> rawClass(Type type) {
+    if (type instanceof Class<?> clazz) {
+      return clazz;
+    }
+    if (type instanceof ParameterizedType parameterized) {
+      return rawClass(parameterized.getRawType());
+    }
+    if (type instanceof WildcardType wildcard) {
+      return rawClass(wildcard.getUpperBounds()[0]);
+    }
+    if (type instanceof TypeVariable<?> variable) {
+      return rawClass(variable.getBounds()[0]);
+    }
+    if (type instanceof GenericArrayType array) {
+      return rawClass(array.getGenericComponentType()).arrayType();
+    }
+    return Object.class;
+  }
+
+  /** A list or array read from a config as a list; any other single value as a 1 element list. */
+  private static List<?> asList(Object source) {
+    if (source instanceof List<?> list) {
+      return list;
+    }
+    if (source instanceof Object[] array) {
+      return Arrays.asList(array);
+    }
+    if (source.getClass().isArray()) {
+      int length = Array.getLength(source);
+      List<Object> list = new ArrayList<>(length);
+      for (int i = 0; i < length; i++) {
+        list.add(Array.get(source, i));
+      }
+      return list;
+    }
+    return Collections.singletonList(source);
+  }
+
   private boolean isPrimitiveArray(Class<?> type) {
     return type.isArray() && PrimitiveSerializers.getMapper(type.getComponentType()) != null;
   }
@@ -663,21 +699,10 @@ final class DefaultSerializer implements FieldTypeSerializer<Object> {
 
   private static final class PrimitiveSerializers {
 
-    private static final Map<Class<?>, Function<Object, ?>> serializers = new ConcurrentHashMap<>();
-    private static boolean registered = false;
+    // only written during class initialisation, which the JVM makes thread safe
+    private static final Map<Class<?>, Function<Object, ?>> serializers = new HashMap<>();
 
-    // Registered when the class is initialised, which is thread safe and always happens before the
-    // first lookup. Otherwise getMapper (and so isPrimitiveArray and forcePrimitive) depends on
-    // someone having called registerSerializers() first. Calling it again later does nothing.
     static {
-      registerSerializers();
-    }
-
-    public static void registerSerializers() {
-      if (registered) {
-        return;
-      }
-
       registerSerializer(String.class, validateO(Function.identity()));
 
       Function<Object, Byte> byteSerializer = stripDot(Byte.class, Byte::parseByte);
@@ -704,7 +729,7 @@ final class DefaultSerializer implements FieldTypeSerializer<Object> {
       registerSerializer(Long.class, longSerializer);
       registerSerializer(long.class, longSerializer);
 
-      // changed: also accepts one-character strings, which is how text formats store chars. The
+      // text formats store chars as one character strings
       Function<Object, Character> charSerializer =
           o -> {
             if (o == null) {
@@ -727,21 +752,18 @@ final class DefaultSerializer implements FieldTypeSerializer<Object> {
       registerSerializer(boolean.class, boolSerializer);
       registerSerializer(Boolean.class, boolSerializer);
 
-      Function<Object, BigDecimal> bigDecimalSerializer =
-          validateO(o -> BigDecimal.valueOf(Double.parseDouble(o)));
-      registerSerializer(BigDecimal.class, bigDecimalSerializer);
-
-      Function<Object, BigInteger> bigIntegerSerializer =
-          validateO(o -> BigInteger.valueOf(Long.parseLong(o)));
-      registerSerializer(BigInteger.class, bigIntegerSerializer);
-
-      registered = true;
+      // parsed directly, going through double / long lost precision and overflowed past 2^63
+      registerSerializer(BigDecimal.class, validateO(BigDecimal.class, BigDecimal::new));
+      registerSerializer(BigInteger.class, stripDot(BigInteger.class, BigInteger::new));
     }
 
     private static <T> Function<Object, T> validateO(Function<String, T> cont) {
       return o -> {
+        if (o == null) {
+          return null; // String.valueOf(null) is "null", which would then be parsed
+        }
         String strVal = String.valueOf(o);
-        if (strVal == null || strVal.isEmpty()) {
+        if (strVal.isEmpty()) {
           return null;
         }
         return cont.apply(strVal);
