@@ -98,7 +98,7 @@ configResolver.loadOrDump(
     annotatedConfig, file, /* loader settings */);
 ```
 
-WHILE ON THAT NOTE: `ConfigResolver` is not meant to be implemented, only created using the designated builder. Implementing it means YOU are going to deal with the internal code which can break without a moment's notice. Oh, something doesn't work properly? It looks like YOU implemented it and YOU used the internals incorrectly, and it is entirely YOUR fault.
+WHILE ON THAT NOTE: `ConfigResolver` is not meant to be implemented, only created using the designated builder. Implementing it means YOU are going to depend on internal implementations which may change without a moment's notice. Oh, something doesn't work properly? It looks like YOU implemented it and YOU used the internals incorrectly, and it is entirely YOUR fault.
 
 AnnotationConfig internals serialize to a `Map<String, Object>`, and for comments a
 `Map<String, List<String>>` where the map key is the specified field name, or, if annotated with
@@ -138,4 +138,5 @@ java {
 # License
 
 (c) 2020-2026 Ivan Pekov and contributors
+
 AnnotationConfig is licensed under MIT, available to read [here](LICENSE)
