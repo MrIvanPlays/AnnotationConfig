@@ -26,6 +26,8 @@ import com.fasterxml.jackson.dataformat.toml.TomlMapper;
 import com.fasterxml.jackson.dataformat.toml.TomlReadFeature;
 import com.mrivanplays.annotationconfig.core.resolver.ConfigResolver;
 import com.mrivanplays.annotationconfig.core.resolver.ValueWriter;
+import com.mrivanplays.annotationconfig.core.resolver.key.DottedResolver;
+import com.mrivanplays.annotationconfig.core.resolver.key.KeyResolver;
 import com.mrivanplays.annotationconfig.core.resolver.settings.ACDefaultSettings;
 import com.mrivanplays.annotationconfig.core.resolver.settings.Setting;
 import com.mrivanplays.annotationconfig.core.serialization.DataObject;
@@ -75,6 +77,28 @@ public final class TomlConfig {
   // <editor-fold desc="Internal Implementation" defaultstate="collapsed">
   private static final ValueWriter TOML_VALUE_WRITER = new TomlValueWriter();
 
+  /**
+   * Dotted keys ({@code @Key("server.ip")}) are written as tables, as in YAML and JSON. Before
+   * 3.1.0 they were written as one quoted key ({@code 'server.ip' = ...}), so a key that is in the
+   * file as it is is read first; otherwise {@link DottedResolver} looks it up in the tables.
+   */
+  private static final KeyResolver TOML_KEY_RESOLVER =
+      new KeyResolver() {
+        @Override
+        public @Nullable Object unbox(String key, Map<String, Object> values) {
+          Object value = values.get(key);
+          if (value != null || !key.contains(".")) {
+            return value;
+          }
+          return DottedResolver.getInstance().unbox(key, values);
+        }
+
+        @Override
+        public void boxTo(String key, Object value, Map<String, Object> values) {
+          DottedResolver.getInstance().boxTo(key, value, values);
+        }
+      };
+
   private static void generateConfigResolver() {
     registerDateTimeSerializer(OffsetDateTime.class, OffsetDateTime::parse);
     registerDateTimeSerializer(LocalDateTime.class, LocalDateTime::parse);
@@ -84,6 +108,7 @@ public final class TomlConfig {
         ConfigResolver.newBuilder()
             .withSetting(MAPPER_KEY, DEFAULT_TOML_MAPPER)
             .withSetting(ACDefaultSettings.GENERATE_NEW_OPTIONS, false)
+            .withSetting(ACDefaultSettings.KEY_RESOLVER, TOML_KEY_RESOLVER)
             .withSetting(ACDefaultSettings.SHOULD_REVERSE_FIELDS, true)
             .withValueWriter(TOML_VALUE_WRITER)
             .withCommentPrefix("# ")

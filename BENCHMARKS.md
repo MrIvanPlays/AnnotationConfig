@@ -118,3 +118,22 @@ Measured in an earlier run, at commit `92f17a8`, with OpenJDK 25.0.4. The result
   allocation. On Windows their output is one character shorter per line: 238, 889 and 78,213 chars
   for TOML and 206 for `.properties`, against the 263, 918, 78,417 and 231 in the tables above.
 - **`.properties`** dumping escapes keys and values completely in 3.1.0, which `6207cbc` did not.
+- **TOML tables and dotted keys** (after `d78ce07`): config objects and maps are written as tables,
+  and dotted `@Key`s are nested with `DottedResolver` (TOML's key resolver first reads the key as
+  one quoted key, as 3.0.x wrote it). Measured against `d78ce07` with a re-created harness and
+  configs built to the descriptions above, so absolute numbers differ from the tables; two passes,
+  the large config four. Flat, nested and large dump and load are within noise (large dump +1%,
+  large load −4%, medians of four), with 2% less allocation and 1-9% less output for the nested
+  and large configs. A fourth config of 12 options, 11 of them dotted keys with two or three
+  parts, is slower:
+
+  | Benchmark | `d78ce07` | After | Change |
+  |---|---|---|---|
+  | Dump | 4.28 µs, 17.2 KB | 6.12 µs, 21.8 KB | +43% |
+  | Load | 4.29 µs, 7.2 KB | 5.86 µs, 12.3 KB | +37% |
+  | Parser | 2.87 µs, 3.4 KB | 3.37 µs, 6.4 KB | +17% |
+
+  The writer is not the cause: `d78ce07`'s writer given `DottedResolver` through `Settings`
+  dumps the same config in 6.23 µs (22.4 KB). The dump cost is `DottedResolver#boxTo` and the
+  merging of boxed keys in core, which YAML and JSON pay as well. Of the load, ~0.5 µs is Jackson
+  building nested tables instead of one flat table, the rest `DottedResolver#unbox`.

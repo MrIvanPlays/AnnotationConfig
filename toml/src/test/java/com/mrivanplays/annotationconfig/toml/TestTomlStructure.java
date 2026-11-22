@@ -38,8 +38,8 @@ import org.junit.jupiter.api.Test;
 
 /**
  * How config classes map to TOML: top-level options are separated by an empty line, config objects
- * and other objects become dotted keys, arrays and lists become arrays with inline tables for
- * objects. Every output is also parsed by a separate TOML parser.
+ * and other objects become tables after them, arrays and lists become arrays with inline tables
+ * for objects. Every output is also parsed by a separate TOML parser.
  */
 public class TestTomlStructure {
 
@@ -77,29 +77,88 @@ public class TestTomlStructure {
   }
 
   @Test
-  public void configObjectsAreDottedKeysWithTheirComments() {
+  public void configObjectsAreTablesWithTheirComments() {
+    // the tables come after the plain options: TOML puts every key after a header into that table
     String expected =
         """
         # Class comment
 
-        # Section comment
-        # ip comment
-        server.ip = 'localhost'
-        server.port = 25565
-        # players comment
-        server.limits.players = 20
-
-        # Server class comment
-        # ip comment
-        second.ip = 'localhost'
-        second.port = 25565
-        # players comment
-        second.limits.players = 20
-
         # Plain field comment
         name = 'Ivan'
+
+        # Section comment
+        [server]
+        # ip comment
+        ip = 'localhost'
+        port = 25565
+
+        [server.limits]
+        # players comment
+        players = 20
+
+        # Server class comment
+        [second]
+        # ip comment
+        ip = 'localhost'
+        port = 25565
+
+        [second.limits]
+        # players comment
+        players = 20
         """;
-    Assertions.assertEquals(expected, dump(new Sections()));
+    String toml = dump(new Sections());
+    Assertions.assertEquals(expected, toml);
+    Assertions.assertEquals("Ivan", parse(toml).get("name"));
+
+    Sections config = load(new Sections(), toml);
+    Assertions.assertEquals("Ivan", config.name);
+    Assertions.assertEquals("localhost", config.second.host);
+    Assertions.assertEquals(20, config.second.limits.players);
+  }
+
+  static class TablesOnly {
+
+    @Comment("outer comment")
+    public Map<String, Object> outer = Map.of("inner", Map.of("value", 1));
+
+    public Map<String, Object> plain = Map.of("inner", Map.of("deeper", Map.of("value", 2)));
+  }
+
+  @Test
+  public void tablesWithOnlyTablesGetAHeaderOnlyForTheirComment() {
+    // [plain] and [plain.inner] would be empty: [plain.inner.deeper] defines them already
+    String expected =
+        """
+        # outer comment
+        [outer]
+
+        [outer.inner]
+        value = 1
+
+        [plain.inner.deeper]
+        value = 2
+        """;
+    String toml = dump(new TablesOnly());
+    Assertions.assertEquals(expected, toml);
+    Assertions.assertEquals(
+        Map.of(
+            "outer", Map.of("inner", Map.of("value", 1)),
+            "plain", Map.of("inner", Map.of("deeper", Map.of("value", 2)))),
+        parse(toml));
+  }
+
+  static class QuotedTable {
+
+    @Key("has space")
+    public Map<String, Object> table = Map.of("dotted.key", Map.of("x", 1));
+  }
+
+  @Test
+  public void tableHeadersQuoteTheirKeys() {
+    String toml = dump(new QuotedTable());
+    Assertions.assertEquals("['has space'.'dotted.key']\nx = 1\n", toml);
+    Assertions.assertEquals(
+        Map.of("has space", Map.of("dotted.key", Map.of("x", 1))), parse(toml));
   }
 
   @Test
@@ -160,9 +219,6 @@ public class TestTomlStructure {
     @Key("has space")
     public int spaced = 2;
 
-    @Key("dotted.key")
-    public int dotted = 3;
-
     @Key("quo'te")
     public int quote = 4;
   }
@@ -175,20 +231,88 @@ public class TestTomlStructure {
 
         'has space' = 2
 
-        'dotted.key' = 3
-
         "quo'te" = 4
         """;
     String toml = dump(new Keys());
     Assertions.assertEquals(expected, toml);
-    // the dotted key is one key, not a table
-    Assertions.assertEquals(3, parse(toml).get("dotted.key"));
 
-    Keys config = load(new Keys(), "bare_key-1 = 5\n'has space' = 6\n'dotted.key' = 7\n\"quo'te\" = 8");
+    Keys config = load(new Keys(), "bare_key-1 = 5\n'has space' = 6\n\"quo'te\" = 8");
     Assertions.assertEquals(5, config.bare);
     Assertions.assertEquals(6, config.spaced);
-    Assertions.assertEquals(7, config.dotted);
     Assertions.assertEquals(8, config.quote);
+  }
+
+  static class DottedKeys {
+
+    public String name = "Ivan";
+
+    @Comment("ip comment")
+    @Key("server.ip")
+    public String ip = "localhost";
+
+    @ConfigObject public Limits server = new Limits();
+
+    @Key("other.port")
+    public int port = 25565;
+
+    @Key("limits.players.max")
+    public int max = 100;
+  }
+
+  @Test
+  public void dottedKeysAreTables() {
+    // server.ip joins the table of the config object with the same key
+    String expected =
+        """
+        name = 'Ivan'
+
+        [server]
+        # ip comment
+        ip = 'localhost'
+        # players comment
+        players = 20
+
+        [other]
+        port = 25565
+
+        [limits.players]
+        max = 100
+        """;
+    String toml = dump(new DottedKeys());
+    Assertions.assertEquals(expected, toml);
+
+    DottedKeys config = new DottedKeys();
+    config.ip = null;
+    config.port = 0;
+    config.max = 0;
+    load(config, toml);
+    Assertions.assertEquals("localhost", config.ip);
+    Assertions.assertEquals(25565, config.port);
+    Assertions.assertEquals(100, config.max);
+  }
+
+  @Test
+  public void dottedKeysLoadFromEveryForm() {
+    // a TOML dotted key is the same as a table
+    DottedKeys config = load(new DottedKeys(), "server.ip = 'a'\nother.port = 1");
+    Assertions.assertEquals("a", config.ip);
+    Assertions.assertEquals(1, config.port);
+  }
+
+  @Test
+  public void quotedDottedKeysFromOlderVersionsStillLoad() {
+    // before 3.1.0, @Key("server.ip") was written as one quoted key
+    DottedKeys config =
+        load(
+            new DottedKeys(),
+            """
+            'server.ip' = 'b'
+            'other.port' = 2
+            server.players = 30
+            """);
+    Assertions.assertEquals("b", config.ip);
+    Assertions.assertEquals(2, config.port);
+    Assertions.assertEquals(30, config.server.players);
   }
 
   // </editor-fold>
@@ -297,22 +421,34 @@ public class TestTomlStructure {
   }
 
   @Test
-  public void objectsAreDottedKeys() {
+  public void objectsAreTables() {
+    // values come before sub-tables, empty maps stay inline
     String expected =
         """
-        map.key = 'value'
-        map.nested.deep = true
-        map.empty = {}
-        map.list = [{}, {x = 1}]
+        [map]
+        key = 'value'
+        empty = {}
+        list = [{}, {x = 1}]
 
-        location.world-name = 'w'
-        location.x = 3
-        location.z = 1.5
+        [map.nested]
+        deep = true
 
-        data.foo = 2
-        data.bar = 'baz'
+        [location]
+        world-name = 'w'
+        x = 3
+        z = 1.5
+
+        [data]
+        foo = 2
+        bar = 'baz'
         """;
-    Assertions.assertEquals(expected, dump(new ObjectFields()));
+    String toml = dump(new ObjectFields());
+    Assertions.assertEquals(expected, toml);
+
+    ObjectFields config = load(new ObjectFields(), toml);
+    Assertions.assertEquals(ObjectFields.map(), config.map);
+    Assertions.assertEquals(new Location("w", 3, 1.5), config.location);
+    Assertions.assertEquals(2, config.data.get("foo").getAsInt());
   }
 
   @Test

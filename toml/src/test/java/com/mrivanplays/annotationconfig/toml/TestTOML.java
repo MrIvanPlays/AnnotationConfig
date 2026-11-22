@@ -59,17 +59,19 @@ public class TestTOML {
             + "# bar\n"
             + "bar = false\n"
             + "\n"
-            + "# Server\n"
-            + "server.ip = 'localhost'\n"
-            + "server.theport = 25565\n"
-            + "\n"
             + "# OffsetDateTime\n"
             + "dateTime = 2021-11-10T17:31:48+02:00\n"
             + "\n"
+            + "# Server\n"
+            + "[server]\n"
+            + "ip = 'localhost'\n"
+            + "theport = 25565\n"
+            + "\n"
             + "# This has been dumped with the default serializer\n"
-            + "default-serializer.foo = 'foo string'\n"
-            + "default-serializer.bar = 1\n"
-            + "default-serializer.baz = 0.555\n";
+            + "[default-serializer]\n"
+            + "foo = 'foo string'\n"
+            + "bar = 1\n"
+            + "baz = 0.555\n";
     Assertions.assertEquals(expected, writer.toString().replaceAll("\\R", "\n"));
   }
 }

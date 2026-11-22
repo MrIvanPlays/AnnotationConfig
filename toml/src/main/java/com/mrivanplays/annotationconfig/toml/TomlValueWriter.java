@@ -38,6 +38,7 @@ import java.time.LocalTime;
 import java.time.OffsetDateTime;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
@@ -51,8 +52,14 @@ import org.jspecify.annotations.Nullable;
  *
  * <ul>
  *   <li>Every top-level option is separated by an empty line, and its comments are written above
- *       it. Config objects and other objects are written as dotted keys ({@code server.ip = ...}),
- *       one line per value, each with its own comments.
+ *       it. Config objects and other objects are written as tables ({@code [server]}), with the
+ *       comments of the object above the header and one line per value below it, each with its
+ *       own comments. Objects inside them become sub-tables ({@code [server.limits]}). A table
+ *       with neither values nor comments of its own gets no header: {@code [a.b]} defines
+ *       {@code a} already.
+ *   <li>TOML ends a table only where the next one starts, so options that are not tables are
+ *       written first, and the tables after them, both in declaration order. Empty objects are
+ *       written as {@code {}}, in place.
  *   <li>Strings are written as literal strings ({@code 'text'}) when they contain nothing that
  *       needs escaping, as basic strings ({@code "te\"xt"}) otherwise, and {@code @Multiline}
  *       strings as multi-line basic strings ({@code """}).
@@ -95,61 +102,120 @@ public final class TomlValueWriter implements ValueWriter {
       Settings settings) {
     // one buffer for every line: values are appended to it instead of building strings per part
     StringBuilder line = new StringBuilder(256);
-    boolean first = true;
-    for (Map.Entry<String, Object> entry : values.entrySet()) {
-      // '\n' and not println(): the line separator of the OS would mix with the '\n' of the class
-      // comment
-      if (!first) {
-        writer.append('\n');
-      }
-      first = false;
-      String key = entry.getKey();
-      writeEntry(writer, line, key, formatKey(key), entry.getValue(), fieldComments);
-    }
+    writeTable(writer, line, null, null, values, fieldComments, false);
   }
 
   /**
-   * Writes one option, or one line per value of a section.
+   * Writes one table: its header, the values that are not tables, then each table inside it.
    *
-   * @param path the dotted key as the comments are stored under, also used in error messages
-   * @param tomlKey the same key, quoted where TOML requires it
+   * <p>The header is left out when the table has neither values nor comments of its own, as
+   * {@code [a.b]} defines {@code a} already; an {@code [a]} above it would be empty.
+   *
+   * <p>'\n' and not println() everywhere: the line separator of the OS would mix with the '\n' of
+   * the class comment.
+   *
+   * @param path the dotted key of the table as the comments are stored under, also used in error
+   *     messages; {@code null} for the top level, which has no header
+   * @param tomlKey the same key as written in the header, quoted where TOML requires it
+   * @param written whether anything was written before, so an empty line has to come first
+   * @return whether anything has been written now
    */
-  private static void writeEntry(
+  private static boolean writeTable(
       PrintWriter writer,
       StringBuilder line,
-      String path,
-      String tomlKey,
-      @Nullable Object value,
-      Map<String, List<String>> fieldComments) {
+      @Nullable String path,
+      @Nullable String tomlKey,
+      Map<?, ?> values,
+      Map<String, List<String>> fieldComments,
+      boolean written) {
+    boolean top = path == null;
     // comments are looked up by the exact dotted path, so "port" never gets the comments of
-    // "portal" and a value inside a section gets its own comments
-    if (!fieldComments.isEmpty()) {
-      List<String> comments = fieldComments.get(path);
-      if (comments != null) {
-        writeComments(writer, comments);
+    // "portal" and a value inside a table gets its own comments
+    List<String> comments = top ? null : comments(path, fieldComments);
+    // the header is written before the first value, or for the comments if there is no value
+    boolean header = top;
+    // the tables are collected so the values are only unwrapped once
+    List<Map.Entry<String, Map<?, ?>>> tables = null;
+    for (Map.Entry<?, ?> entry : values.entrySet()) {
+      String key = String.valueOf(entry.getKey());
+      Object value = unwrap(entry.getValue());
+      if (value instanceof Map<?, ?> map && !map.isEmpty()) {
+        if (tables == null) {
+          tables = new ArrayList<>();
+        }
+        tables.add(Map.entry(key, map));
+        continue;
       }
+      if (!header) {
+        //noinspection DataFlowIssue: only the top level has no key, and it has no header
+        writeHeader(writer, tomlKey, comments, written);
+        header = true;
+      } else if (top && written) {
+        // top-level options are separated by an empty line, the values of a table are not
+        writer.append('\n');
+      }
+      written = true;
+      String valuePath = top ? key : path + '.' + key;
+      List<String> valueComments = comments(valuePath, fieldComments);
+      if (valueComments != null) {
+        writeComments(writer, valueComments);
+      }
+      line.setLength(0);
+      appendKey(line, key);
+      line.append(" = ");
+      appendValue(line, value, valuePath);
+      writer.append(line);
+      writer.append('\n');
     }
+    if (!header && comments != null) {
+      //noinspection DataFlowIssue: only the top level has no key, and it has no comments
+      writeHeader(writer, tomlKey, comments, written);
+      written = true;
+    }
+    if (tables == null) {
+      return written;
+    }
+    for (Map.Entry<String, Map<?, ?>> table : tables) {
+      String key = table.getKey();
+      written =
+          writeTable(
+              writer,
+              line,
+              top ? key : path + '.' + key,
+              top ? formatKey(key) : tomlKey + '.' + formatKey(key),
+              table.getValue(),
+              fieldComments,
+              written);
+    }
+    return written;
+  }
+
+  private static void writeHeader(
+      PrintWriter writer, String tomlKey, @Nullable List<String> comments, boolean written) {
+    if (written) {
+      writer.append('\n');
+    }
+    if (comments != null) {
+      writeComments(writer, comments);
+    }
+    writer.append('[').append(tomlKey).append("]\n");
+  }
+
+  /** The comments of {@code path}, or {@code null}: fields without comments have an empty list. */
+  private static @Nullable List<String> comments(
+      String path, Map<String, List<String>> fieldComments) {
+    if (fieldComments.isEmpty()) {
+      return null;
+    }
+    List<String> comments = fieldComments.get(path);
+    return comments == null || comments.isEmpty() ? null : comments;
+  }
+
+  private static @Nullable Object unwrap(@Nullable Object value) {
     if (value instanceof DataObject data) {
-      value = data.isSingleValue() ? data.getAsObject() : data.getAsMap();
+      return data.isSingleValue() ? data.getAsObject() : data.getAsMap();
     }
-    if (value instanceof Map<?, ?> map && !map.isEmpty()) {
-      for (Map.Entry<?, ?> child : map.entrySet()) {
-        String key = String.valueOf(child.getKey());
-        writeEntry(
-            writer,
-            line,
-            path + '.' + key,
-            tomlKey + '.' + formatKey(key),
-            child.getValue(),
-            fieldComments);
-      }
-      return;
-    }
-    line.setLength(0);
-    line.append(tomlKey).append(" = ");
-    appendValue(line, value, path);
-    writer.append(line);
-    writer.append('\n');
+    return value;
   }
 
   private static void writeComments(PrintWriter writer, List<String> comments) {

@@ -12,9 +12,10 @@ Java 25, Maven multi-module build.
 - Decisions made on purpose, don't change them without asking:
   - An empty string in a config is read as `""`, not as no value; empty numbers are no value.
   - Static fields are skipped unless `ACDefaultSettings.FIND_STATIC_FIELDS` is set.
-  - TOML keeps `GENERATE_NEW_OPTIONS` off and writes dotted `@Key`s as one quoted key
-    (`'a.b' = 1`), so existing TOML files keep loading. YAML and JSON use `DottedResolver`, which
-    nests them.
+  - TOML keeps `GENERATE_NEW_OPTIONS` off. Dotted `@Key`s are nested in every format except
+    `.properties`: YAML and JSON use `DottedResolver`, TOML a key resolver in `TomlConfig` that
+    first reads the key as one quoted key (`'a.b' = 1`, how 3.0.x wrote it) so existing TOML files
+    keep loading, and otherwise uses `DottedResolver`.
   - `@Min` / `@Max` members default to the bound that never rejects (`MIN_VALUE` / `MAX_VALUE`,
     infinities), so `-1` is a usable bound.
 

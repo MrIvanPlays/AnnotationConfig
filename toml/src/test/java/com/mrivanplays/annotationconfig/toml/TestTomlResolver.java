@@ -109,8 +109,9 @@ public class TestTomlResolver {
         # added comment
         added = true
 
-        section.a = 1
-        section.b = 3
+        [section]
+        a = 1
+        b = 3
         """;
     String written = read(file);
     Assertions.assertEquals(expected, written);

@@ -159,6 +159,25 @@ but newly dumped files look slightly different:
   reading. It has to be created with `DumperOptions.setProcessComments(true)`, otherwise SnakeYAML
   drops all comments.
 
+#### TOML dotted keys are tables
+
+A dotted key (`@Key("server.ip")`) is now read and written as a nested table, as in YAML and JSON.
+It used to be one quoted key:
+
+```toml
+# 3.0.x
+'server.ip' = 'localhost'
+
+# 3.1.0
+[server]
+ip = 'localhost'
+```
+
+Files written by 3.0.x still load: a key that is in the file as it is, quoted, is read first.
+What changes is that a file holding the value as a table or an unquoted TOML dotted key
+(`server.ip = 'localhost'`), which used to be ignored, so the field kept its default, now sets the
+field. A dotted key and a config object with the same first part (`server`) share one table.
+
 #### `ReflectionUtils` will be removed
 
 AnnotationConfig no longer uses `ReflectionUtils` internally. It is deprecated for removal and will
@@ -265,13 +284,30 @@ comments attached to their keys, so SnakeYAML takes care of indentation, quoting
 
 TOML used to be written by passing each top-level option to Jackson's TOML generator, which wrote
 some values that are not valid TOML. `TomlValueWriter` now writes TOML 1.0 itself; Jackson is only
-used for reading. The layout is unchanged: options separated by an empty line, config objects as
-dotted keys (`server.ip = 'localhost'`), objects inside arrays as inline tables.
+used for reading. Options are still separated by an empty line and objects inside arrays are still
+written as inline tables.
 
+- Config objects, maps and other objects are written as tables instead of dotted keys:
+
+  ```toml
+  # Server comment
+  [server]
+  ip = 'localhost'
+  port = 25565
+
+  [server.limits]
+  players = 20
+  ```
+
+  As every key after a table header belongs to that table, the tables are written after the
+  other options, so options declared after a config object now come before it. A table that only
+  holds other tables and has no comment gets no header of its own (`[a.b]` defines `a`). Empty
+  objects are still written as `{}`. Files written with dotted keys load as before. Dotted `@Key`s are tables
+  too, see [TOML dotted keys are tables](#toml-dotted-keys-are-tables).
 - Infinity and NaN are written as `inf`, `-inf` and `nan` instead of `Infinity` and `NaN`, which
   made the file unreadable.
-- Comments of options inside config objects are written above their dotted key; they used to be
-  dropped. Comments are looked up by the exact key, so an option no longer gets the comments of
+- Comments of config objects are written above their table header, and comments of options
+  inside them above the option; they used to be dropped. Comments are looked up by the exact key, so an option no longer gets the comments of
   another option whose name starts the same (`port` and `portal`), and every line of a comment
   that contains line breaks starts with `#`.
 - `@Multiline` strings are written as multi-line basic strings (`"""`).
