@@ -96,14 +96,11 @@ public final class ConfigResolverImpl implements ConfigResolver {
     Objects.requireNonNull(annotatedConfig, "annotatedConfig");
     Objects.requireNonNull(file, "file");
     Objects.requireNonNull(passthrough, "settings");
-    if (file.exists()) {
-      file.delete();
-    }
     Settings passed = this.passSettings(passthrough);
     Set<AnnotationHolder> resolvedAnnotations =
         AnnotatedConfigResolver.resolveAnnotationHolders(annotatedConfig, passed);
     AnnotatedConfigResolver.dump(
-        annotatedConfig, resolvedAnnotations, file, passed, commentPrefix, valueWriter);
+        annotatedConfig, resolvedAnnotations, file.toPath(), passed, commentPrefix, valueWriter);
   }
 
   @Override
@@ -258,7 +255,7 @@ public final class ConfigResolverImpl implements ConfigResolver {
         AnnotatedConfigResolver.resolveAnnotationHolders(annotatedConfig, passed);
     if (!file.exists()) {
       AnnotatedConfigResolver.dump(
-          annotatedConfig, holders, file, passed, commentPrefix, valueWriter);
+          annotatedConfig, holders, file.toPath(), passed, commentPrefix, valueWriter);
       return;
     }
     handleFileLoad(annotatedConfig, holders, file, passed);
@@ -416,11 +413,9 @@ public final class ConfigResolverImpl implements ConfigResolver {
         holders,
         values,
         settings,
-        () -> {
-          file.delete();
-          AnnotatedConfigResolver.dump(
-              annotatedConfig, holders, file, settings, commentPrefix, valueWriter);
-        });
+        () ->
+            AnnotatedConfigResolver.dump(
+                annotatedConfig, holders, file.toPath(), settings, commentPrefix, valueWriter));
   }
 
   private void handlePathLoad(
@@ -437,15 +432,9 @@ public final class ConfigResolverImpl implements ConfigResolver {
         holders,
         values,
         settings,
-        () -> {
-          try {
-            Files.deleteIfExists(path);
-          } catch (IOException e) {
-            throw new RuntimeException(e);
-          }
-          AnnotatedConfigResolver.dump(
-              annotatedConfig, holders, path, settings, commentPrefix, valueWriter);
-        });
+        () ->
+            AnnotatedConfigResolver.dump(
+                annotatedConfig, holders, path, settings, commentPrefix, valueWriter));
   }
 
   private void finishLoad(

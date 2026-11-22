@@ -44,16 +44,17 @@ import com.mrivanplays.annotationconfig.core.serialization.SerializationContext;
 import com.mrivanplays.annotationconfig.core.serialization.SerializerRegistry;
 import com.mrivanplays.annotationconfig.core.utils.AnnotationUtils;
 import com.mrivanplays.annotationconfig.core.utils.MapUtils;
-import java.io.File;
-import java.io.FileWriter;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.io.Writer;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Field;
 import java.lang.reflect.Type;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.AtomicMoveNotSupportedException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -72,7 +73,7 @@ import org.jspecify.annotations.Nullable;
 /**
  * @hidden
  */
-@SuppressWarnings({"unchecked", "rawtypes", "ConstantValue", "OptionalGetWithoutIsPresent"})
+@SuppressWarnings({"unchecked", "rawtypes", "ConstantValue"})
 @NullMarked
 public final class AnnotatedConfigResolver {
 
@@ -147,35 +148,44 @@ public final class AnnotatedConfigResolver {
   public static void dump(
       Object annotatedConfig,
       Set<AnnotationHolder> holders,
-      File file,
-      Settings settings,
-      String commentChar,
-      ValueWriter valueWriter) {
-    try {
-      file.createNewFile();
-      try (PrintWriter writer = new PrintWriter(new FileWriter(file))) {
-        toWriter(annotatedConfig, writer, holders, commentChar, valueWriter, settings);
-      }
-    } catch (IOException e) {
-      throw new RuntimeException(e);
-    }
-  }
-
-  public static void dump(
-      Object annotatedConfig,
-      Set<AnnotationHolder> holders,
       Path path,
       Settings settings,
       String commentChar,
       ValueWriter valueWriter) {
+    Path absolutePath = path.toAbsolutePath();
+    Path parent = absolutePath.getParent();
+    Path tmp = null;
+
     try {
-      Files.deleteIfExists(path);
-      Files.createFile(path);
-      try (PrintWriter writer = new PrintWriter(Files.newBufferedWriter(path))) {
+      tmp = Files.createTempFile(parent, absolutePath.getFileName().toString() + ".", ".tmp");
+
+      try (PrintWriter writer =
+          new PrintWriter(Files.newBufferedWriter(tmp, StandardCharsets.UTF_8))) {
+
         toWriter(annotatedConfig, writer, holders, commentChar, valueWriter, settings);
+
+        writer.flush();
+        if (writer.checkError()) {
+          throw new IOException("Failed to write configuration");
+        }
+      }
+
+      try {
+        Files.move(
+            tmp, absolutePath, StandardCopyOption.ATOMIC_MOVE, StandardCopyOption.REPLACE_EXISTING);
+      } catch (AtomicMoveNotSupportedException e) {
+        Files.move(tmp, absolutePath, StandardCopyOption.REPLACE_EXISTING);
       }
     } catch (IOException e) {
-      throw new RuntimeException(e);
+      throw new RuntimeException("Failed to dump configuration to " + path, e);
+    } finally {
+      if (tmp != null) {
+        try {
+          Files.deleteIfExists(tmp);
+        } catch (IOException e) {
+          // best effort clean-up ignored
+        }
+      }
     }
   }
 
@@ -188,8 +198,12 @@ public final class AnnotatedConfigResolver {
       ValueWriter valueWriter) {
     try (PrintWriter writer = new PrintWriter(writerFeed)) {
       toWriter(annotatedConfig, writer, holders, commentChar, valueWriter, settings);
+
+      if (writer.checkError()) {
+        throw new IOException("Failed to write configuration");
+      }
     } catch (IOException e) {
-      throw new RuntimeException(e);
+      throw new RuntimeException("Failed to dump configuration to writer", e);
     }
   }
 
