@@ -33,20 +33,13 @@ import java.lang.annotation.Target;
  * multiline {@link String}. This annotation can only be applied on {@link java.lang.reflect.Field
  * Fields} with type {@link String}.
  *
- * <p>(YAML specific) Since 3.0.4, if the {@code String} is not java multiline one e.g.
- *
- * <pre>
- *   <code>
- *     private String foo =
- * """
- * Foo
- * Bar
- * """;
- *   </code>
- * </pre>
- *
- * the YAML serializer will dump it as a inline string, no matter whether the string contains '\n'
- * or not. And, double quotes in YAML are no longer supported to dump a multiline string with.
+ * <p>(YAML related): Since 3.0.4 the YAML module switched from home-grown writing of values to a
+ * writing backed by SnakeYAML e.g. AnnotationConfig does a bit preprocessing before calling
+ * SnakeYAML's dumper. This means that, if double quotes are used to dump multiline strings,
+ * SnakeYAML would dump them as {@code "foo \n bar \n baz"}. Whilst this preserves the behaviour
+ * that when the string is read is multiline, it won't be pretty syntax in the file. If you want
+ * pretty syntax change the marker char to either '|' or '>'. Current char is preserved for legacy
+ * purposes.
  *
  * @since 2.1.0
  * @author Ivan Pekov
@@ -57,10 +50,11 @@ import java.lang.annotation.Target;
 public @interface Multiline {
 
   /**
-   * The character to dump which indicates a multiline {@code String}. AnnotationConfig supports '>'
-   * and '|', but if a custom configuration type is used, it may support other characters.
+   * The character to dump which indicates a multiline {@code String}. AnnotationConfig supports
+   * double quotes, '>' and '|', but if a custom configuration type is used, it may support other
+   * characters.
    *
    * @return character indicating multiline string
    */
-  char value() default '|';
+  char value() default '"';
 }

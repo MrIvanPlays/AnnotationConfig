@@ -35,7 +35,7 @@ public class TestMultilineString {
     @Key("control-field")
     public int controlField = -1;
 
-    @Multiline
+    @Multiline('|')
     public String multiline =
 """
 Look at ma!

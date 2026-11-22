@@ -97,9 +97,6 @@ placeholders.
 The new json module adds a default `JsonConfig` implementation backed by Google's gson library. It
 does not support comments per the reason JSON does not support comments.
 
-### Changes to `@Multiline` and `MultilineString`
-Multiline strings now do not support double quotes, as SnakeYAML's dumper will inline such strings. Updated the default multiline char to be `|`.
-
 ### Misc changes
 
 There are a lot of miscellaneous and quality-of-code changes introduced.
