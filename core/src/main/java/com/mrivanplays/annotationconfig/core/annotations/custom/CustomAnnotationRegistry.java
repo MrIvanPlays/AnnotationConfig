@@ -32,6 +32,8 @@ import org.jspecify.annotations.NullMarked;
 /**
  * Represents a registry for custom annotations.
  *
+ * <p>The registry is safe to use from several threads: every method is atomic.
+ *
  * @author Ivan Pekov
  * @since 2.0.0
  */
@@ -55,11 +57,11 @@ public enum CustomAnnotationRegistry {
       Class<T> annotation, AnnotationValidator<T> validator) {
     Objects.requireNonNull(annotation, "annotation");
     Objects.requireNonNull(validator, "validator");
-    if (registry.containsKey(annotation)) {
+    // putIfAbsent: checking and registering in one step, so two threads can't both register
+    if (registry.putIfAbsent(annotation, validator) != null) {
       throw new IllegalArgumentException(
           "Custom annotation " + annotation.getName() + " already registered.");
     }
-    registry.put(annotation, validator);
   }
 
   /**
@@ -71,11 +73,10 @@ public enum CustomAnnotationRegistry {
    */
   public void unregister(Class<? extends Annotation> annotation) {
     Objects.requireNonNull(annotation, "annotation");
-    if (!registry.containsKey(annotation)) {
+    if (registry.remove(annotation) == null) {
       throw new IllegalArgumentException(
-          "Custom annotation " + annotation.getName() + " already not registered.");
+          "Custom annotation " + annotation.getName() + " is not registered.");
     }
-    registry.remove(annotation);
   }
 
   /**

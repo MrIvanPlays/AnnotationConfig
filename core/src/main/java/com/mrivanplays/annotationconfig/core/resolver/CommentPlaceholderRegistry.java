@@ -24,19 +24,22 @@ package com.mrivanplays.annotationconfig.core.resolver;
 
 import com.mrivanplays.annotationconfig.core.annotations.comment.Comment;
 import com.mrivanplays.annotationconfig.core.annotations.comment.Comments;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.LinkedList;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
-import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CopyOnWriteArrayList;
 import org.jspecify.annotations.NullMarked;
 
 /**
  * Represents a registry for placeholders for {@link
  * com.mrivanplays.annotationconfig.core.annotations.comment.Comment comments} content. These are
  * applied before the comments are pushed to the {@link ValueWriter}.
+ *
+ * <p>Placeholders are applied in the order they were registered, and there is at most one
+ * placeholder per replaced text: registering a placeholder that {@link
+ * CommentPlaceholder#matches(CommentPlaceholder) matches} a registered one replaces it.
+ *
+ * <p>The registry is safe to use from several threads.
  *
  * @since 3.0.1
  * @author Ivan Pekov
@@ -45,8 +48,10 @@ import org.jspecify.annotations.NullMarked;
 public enum CommentPlaceholderRegistry {
   INSTANCE;
 
-  private final Set<CommentPlaceholder> placeholderMap =
-      Collections.newSetFromMap(new ConcurrentHashMap<>());
+  // Applying placeholders is frequent and changing them rare, so the list is copy-on-write:
+  // applying iterates a snapshot without locking. Changes lock on the list, so that finding an
+  // entry and changing it is one step.
+  private final List<CommentPlaceholder> placeholders = new CopyOnWriteArrayList<>();
 
   /**
    * Register a placeholder. <br>
@@ -65,14 +70,24 @@ public enum CommentPlaceholderRegistry {
   }
 
   /**
-   * Register a new {@link CommentPlaceholder comment placeholder}.
+   * Register a new {@link CommentPlaceholder comment placeholder}. If a registered placeholder
+   * {@link CommentPlaceholder#matches(CommentPlaceholder) matches} it, that placeholder is replaced
+   * and the new one takes its place in the order placeholders are applied in.
    *
    * @param placeholder placeholder to register
    * @since 3.1.0
    */
   public void registerPlaceholder(CommentPlaceholder placeholder) {
     Objects.requireNonNull(placeholder, "placeholder");
-    this.placeholderMap.add(placeholder);
+    synchronized (this.placeholders) {
+      for (int i = 0; i < this.placeholders.size(); i++) {
+        if (this.placeholders.get(i).matches(placeholder)) {
+          this.placeholders.set(i, placeholder);
+          return;
+        }
+      }
+      this.placeholders.add(placeholder);
+    }
   }
 
   /**
@@ -83,7 +98,9 @@ public enum CommentPlaceholderRegistry {
    */
   public void unregisterPlaceholder(CommentPlaceholder placeholder) {
     Objects.requireNonNull(placeholder, "placeholder");
-    this.placeholderMap.removeIf(p -> p.matches(placeholder));
+    synchronized (this.placeholders) {
+      this.placeholders.removeIf(registered -> registered.matches(placeholder));
+    }
   }
 
   /**
@@ -95,26 +112,25 @@ public enum CommentPlaceholderRegistry {
    */
   public boolean hasPlaceholder(CommentPlaceholder placeholder) {
     Objects.requireNonNull(placeholder, "placeholder");
-    return this.placeholderMap.contains(placeholder)
-        || this.placeholderMap.stream().anyMatch(p -> p.matches(placeholder));
+    for (CommentPlaceholder registered : this.placeholders) {
+      if (registered.equals(placeholder) || registered.matches(placeholder)) {
+        return true;
+      }
+    }
+    return false;
   }
 
   /**
-   * Returns a mutable {@link LinkedList} copy of the inputted {@code comments} with all the
-   * registered placeholders applied.
+   * Returns a new mutable list with the inputted {@code comments}, with all the registered
+   * placeholders applied.
    *
    * @param comments comments to apply placeholders to
    * @return comments with applied placeholders
    */
   public List<String> applyPlaceholders(List<String> comments) {
     Objects.requireNonNull(comments, "comments");
-    if (comments.isEmpty()) {
-      return comments;
-    }
-    if (this.placeholderMap.isEmpty()) {
-      return comments;
-    }
-    List<String> ret = new LinkedList<>();
+    // always a copy, also when there is nothing to replace, so the input is never handed back
+    List<String> ret = new ArrayList<>(comments.size());
     for (String comment : comments) {
       ret.add(this.applyPlaceholders(comment));
     }
@@ -123,7 +139,7 @@ public enum CommentPlaceholderRegistry {
 
   /**
    * Applies (if there are any) placeholders to the specified {@link Comments comments} and maps to
-   * a {@link List<String>} comment values.
+   * a new mutable {@link List} of the comment values.
    *
    * @param annotation bulk representation of the {@link Comment comment} annotation
    * @return list of parsed comments
@@ -131,10 +147,7 @@ public enum CommentPlaceholderRegistry {
    */
   public List<String> applyPlaceholders(Comments annotation) {
     Objects.requireNonNull(annotation, "annotation");
-    if (this.placeholderMap.isEmpty()) {
-      return Arrays.stream(annotation.value()).map(Comment::value).toList();
-    }
-    List<String> ret = new LinkedList<>();
+    List<String> ret = new ArrayList<>(annotation.value().length);
     for (Comment comment : annotation.value()) {
       ret.add(this.applyPlaceholders(comment.value()));
     }
@@ -155,7 +168,8 @@ public enum CommentPlaceholderRegistry {
   }
 
   /**
-   * Applies (if there are any) placeholders to the specified comment.
+   * Applies (if there are any) placeholders to the specified comment, in the order they were
+   * registered.
    *
    * @param comment comment to apply placeholders to
    * @return comment with parsed placeholders
@@ -163,11 +177,8 @@ public enum CommentPlaceholderRegistry {
    */
   public String applyPlaceholders(String comment) {
     Objects.requireNonNull(comment, "comment");
-    if (this.placeholderMap.isEmpty()) {
-      return comment;
-    }
     String ret = comment;
-    for (CommentPlaceholder placeholder : this.placeholderMap) {
+    for (CommentPlaceholder placeholder : this.placeholders) {
       ret = placeholder.apply(ret);
     }
     return ret;

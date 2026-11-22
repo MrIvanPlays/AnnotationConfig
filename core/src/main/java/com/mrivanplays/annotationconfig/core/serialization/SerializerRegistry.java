@@ -33,6 +33,8 @@ import org.jspecify.annotations.NullMarked;
 /**
  * Represents a registry of all the serializers.
  *
+ * <p>The registry is safe to use from several threads: every method is atomic.
+ *
  * @since 2.0.0
  * @author Ivan Pekov
  */
@@ -41,11 +43,8 @@ import org.jspecify.annotations.NullMarked;
 public enum SerializerRegistry {
   INSTANCE;
 
-  private final Map<Type, FieldTypeSerializer<?>> serializers;
-
-  SerializerRegistry() {
-    this.serializers = new ConcurrentHashMap<>();
-  }
+  // a Class is a Type, so the Class and Type overloads share their entries
+  private final Map<Type, FieldTypeSerializer<?>> serializers = new ConcurrentHashMap<>();
 
   /**
    * Registers a new serializer.
@@ -57,13 +56,7 @@ public enum SerializerRegistry {
    */
   public <T> void registerSerializer(
       Class<T> serializedType, FieldTypeSerializer<T> typeSerializer) {
-    Objects.requireNonNull(serializedType, "serializedType");
-    Objects.requireNonNull(typeSerializer, "typeSerializer");
-    if (this.serializers.containsKey(serializedType)) {
-      throw new IllegalArgumentException(
-          "Serializer for " + serializedType.getName() + " already registered");
-    }
-    this.serializers.put(serializedType, typeSerializer);
+    this.registerSerializer((Type) serializedType, typeSerializer);
   }
 
   /**
@@ -76,11 +69,11 @@ public enum SerializerRegistry {
   public void registerSerializer(Type serializedType, FieldTypeSerializer<?> typeSerializer) {
     Objects.requireNonNull(serializedType, "serializedType");
     Objects.requireNonNull(typeSerializer, "typeSerializer");
-    if (this.serializers.containsKey(serializedType)) {
+    // putIfAbsent: checking and registering in one step, so two threads can't both register
+    if (this.serializers.putIfAbsent(serializedType, typeSerializer) != null) {
       throw new IllegalArgumentException(
           "Serializer for " + serializedType.getTypeName() + " already registered");
     }
-    this.serializers.put(serializedType, typeSerializer);
   }
 
   /**
@@ -91,6 +84,7 @@ public enum SerializerRegistry {
    * @param deserialize deserialization method of the serializedType
    * @param serialize serialization method of the serializedType
    * @param <T> generic
+   * @throws IllegalArgumentException if a serializer for this type has been already registered
    */
   public <T> void registerSimpleSerializer(
       Class<T> serializedType,
@@ -99,11 +93,7 @@ public enum SerializerRegistry {
     Objects.requireNonNull(serializedType, "serializedType");
     Objects.requireNonNull(deserialize, "deserialize");
     Objects.requireNonNull(serialize, "serialize");
-    if (this.serializers.containsKey(serializedType)) {
-      throw new IllegalArgumentException(
-          "Serializer for " + serializedType.getName() + " already registered");
-    }
-    this.serializers.put(
+    this.registerSerializer(
         serializedType,
         FieldTypeSerializer.<T>functional(
             (data, _, _) -> deserialize.apply(data), (value, _, _) -> serialize.apply(value)));
@@ -124,22 +114,18 @@ public enum SerializerRegistry {
       Class<T> serializedType, Function<T, DataObject> serialize) {
     Objects.requireNonNull(serializedType, "serializedType");
     Objects.requireNonNull(serialize, "serialize");
-    if (this.serializers.containsKey(serializedType)) {
-      FieldTypeSerializer<T> serializer =
-          (FieldTypeSerializer<T>) this.serializers.remove(serializedType);
-      this.serializers.put(
-          serializedType,
-          FieldTypeSerializer.functional(
-              serializer.deserializeAsFunction(), (value, _, _) -> serialize.apply(value)));
-      return;
-    }
-    this.serializers.put(
+    // compute replaces the entry in one step: there is no moment without a serializer, and
+    // concurrent calls for the same type are applied one after the other
+    this.serializers.compute(
         serializedType,
-        FieldTypeSerializer.<T>functional(
-            (data, context, annotations) ->
-                SimpleValueSerializer.deserialize(
-                    data, serializedType, context.getAnnotatedConfig(), annotations),
-            (value, _, _) -> serialize.apply(value)));
+        (_, existing) ->
+            FieldTypeSerializer.<T>functional(
+                existing != null
+                    ? ((FieldTypeSerializer<T>) existing).deserializeAsFunction()
+                    : (data, context, annotations) ->
+                        SimpleValueSerializer.deserialize(
+                            data, serializedType, context.getAnnotatedConfig(), annotations),
+                (value, _, _) -> serialize.apply(value)));
   }
 
   /**
@@ -157,22 +143,16 @@ public enum SerializerRegistry {
       Class<T> serializedType, Function<DataObject, T> deserialize) {
     Objects.requireNonNull(serializedType, "serializedType");
     Objects.requireNonNull(deserialize, "deserialize");
-    if (this.serializers.containsKey(serializedType)) {
-      FieldTypeSerializer<T> serializer =
-          (FieldTypeSerializer<T>) this.serializers.remove(serializedType);
-      this.serializers.put(
-          serializedType,
-          FieldTypeSerializer.functional(
-              (data, _, _) -> deserialize.apply(data), serializer.serializeAsFunction()));
-      return;
-    }
-    this.serializers.put(
+    this.serializers.compute(
         serializedType,
-        FieldTypeSerializer.<T>functional(
-            (data, _, _) -> deserialize.apply(data),
-            (value, context, annotations) ->
-                SimpleValueSerializer.serialize(
-                    value, serializedType, context.getAnnotatedConfig(), annotations)));
+        (_, existing) ->
+            FieldTypeSerializer.<T>functional(
+                (data, _, _) -> deserialize.apply(data),
+                existing != null
+                    ? ((FieldTypeSerializer<T>) existing).serializeAsFunction()
+                    : (value, context, annotations) ->
+                        SimpleValueSerializer.serialize(
+                            value, serializedType, context.getAnnotatedConfig(), annotations)));
   }
 
   /**
@@ -182,14 +162,7 @@ public enum SerializerRegistry {
    * @throws IllegalArgumentException if there isn't a serializer for the type specified
    */
   public void unregisterSerializer(Class<?> serializedType) {
-    Objects.requireNonNull(serializedType, "serializedType");
-    if (!this.serializers.containsKey(serializedType)) {
-      throw new IllegalArgumentException(
-          "Cannot unregister "
-              + serializedType.getName()
-              + " because a serializer hasn't been registered.");
-    }
-    this.serializers.remove(serializedType);
+    this.unregisterSerializer((Type) serializedType);
   }
 
   /**
@@ -200,13 +173,12 @@ public enum SerializerRegistry {
    */
   public void unregisterSerializer(Type serializedType) {
     Objects.requireNonNull(serializedType, "serializedType");
-    if (!this.serializers.containsKey(serializedType)) {
+    if (this.serializers.remove(serializedType) == null) {
       throw new IllegalArgumentException(
           "Cannot unregister "
               + serializedType.getTypeName()
               + " because a serializer hasn't been registered.");
     }
-    this.serializers.remove(serializedType);
   }
 
   /**
@@ -216,8 +188,7 @@ public enum SerializerRegistry {
    * @return a boolean value
    */
   public boolean hasSerializer(Class<?> serializedType) {
-    Objects.requireNonNull(serializedType, "serializedType");
-    return this.serializers.containsKey(serializedType);
+    return this.hasSerializer((Type) serializedType);
   }
 
   /**
@@ -239,8 +210,7 @@ public enum SerializerRegistry {
    * @return an optional with value or an empty optional
    */
   public Optional<FieldTypeSerializer<?>> getSerializer(Class<?> serializedType) {
-    Objects.requireNonNull(serializedType, "serializedType");
-    return Optional.ofNullable(serializers.get(serializedType));
+    return this.getSerializer((Type) serializedType);
   }
 
   /**
@@ -252,7 +222,7 @@ public enum SerializerRegistry {
    */
   public Optional<FieldTypeSerializer<?>> getSerializer(Type serializedType) {
     Objects.requireNonNull(serializedType, "serializedType");
-    return Optional.ofNullable(serializers.get(serializedType));
+    return Optional.ofNullable(this.serializers.get(serializedType));
   }
 
   /**

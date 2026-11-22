@@ -273,6 +273,23 @@ CommentPlaceholderRegistry.INSTANCE.registerPlaceholder(
     CommentPlaceholder.simple("%foo%", "epic replacement"));
 ```
 
+- Placeholders are applied in the order they were registered. They used to be applied in hash
+  order, so the result of placeholders that produce other placeholders was unpredictable.
+- Registering a placeholder for text that already has one replaces the registered placeholder,
+  which keeps its position. Both used to be kept, and either replacement could win.
+- `applyPlaceholders(List)` always returns a new mutable list. With nothing to replace it used to
+  return the list it was given.
+
+### Registry fixes
+
+- `SerializerRegistry`, `CustomAnnotationRegistry` and `CommentPlaceholderRegistry` are safe to use
+  from several threads. Registering checked for an existing entry and added the new one in two
+  steps, so two threads registering the same type could both succeed.
+- `registerSimpleValueSerializer` and `registerSimpleValueDeserializer` replace the entry in one
+  step, so there is no moment in which the type has no serializer.
+- Unregistering an annotation without a validator fails with "... is not registered" instead of
+  "... already not registered".
+
 ### Changes in `AnnotationUtils`
 
 `AnnotationUtils` now exposes the formerly internal way of handling comments.
