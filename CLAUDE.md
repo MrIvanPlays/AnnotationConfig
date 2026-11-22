@@ -3,6 +3,21 @@
 AnnotationConfig: a Java library that maps annotated Java objects to config files and back.
 Java 25, Maven multi-module build.
 
+## Project state
+
+- The version is `3.1.0-SNAPSHOT` and not released yet. The last release is 3.0.3 (on Maven
+  Central, but without a git tag; the newest tag is `3.0.2`). Breaking changes are allowed in
+  3.1.0, but every user-visible one goes into the 3.1.0 section of `CHANGELOG.md`, under
+  "Breaking changes" when it can change what existing configs do.
+- Decisions made on purpose, don't change them without asking:
+  - An empty string in a config is read as `""`, not as no value; empty numbers are no value.
+  - Static fields are skipped unless `ACDefaultSettings.FIND_STATIC_FIELDS` is set.
+  - TOML keeps `GENERATE_NEW_OPTIONS` off and writes dotted `@Key`s as one quoted key
+    (`'a.b' = 1`), so existing TOML files keep loading. YAML and JSON use `DottedResolver`, which
+    nests them.
+  - `@Min` / `@Max` members default to the bound that never rejects (`MIN_VALUE` / `MAX_VALUE`,
+    infinities), so `-1` is a usable bound.
+
 ## Modules
 
 - `core`: annotations (`@Key`, `@Comment`, `@ConfigObject`, `@Min`, `@Max`, ...), the resolver,
@@ -40,6 +55,19 @@ Java 25, Maven multi-module build.
 - Checkstyle (Google style, `checkstyle.xml`) runs during `process-classes` on main and test
   sources. Violations are reported as warnings and do not fail the build, so look for them in
   the build output.
+- Building an older commit for comparison: `git archive <commit> | tar -x -C <dir>` and
+  `mvn -o package -Dmaven.test.skip=true` there. `package` leaves `~/.m2` alone, and `git archive`
+  leaves the repository untouched.
+
+## Benchmarks
+
+- `BENCHMARKS.md` holds measured dump and load times. The harness is not in the repository (JMH is
+  not available offline): a standalone class compiled against the module jars, one JVM per
+  benchmark, 3 s warm-up, 10 measured rounds, median per operation, allocation per thread. It
+  dumps and loads three configs (flat, nested, large) per format, plus the format's parser alone.
+- When a change can affect a writer's or reader's speed, measure it the same way against the
+  previous commit before calling it an improvement, and update `BENCHMARKS.md` with the new numbers.
+  Differences below ~10% are noise.
 
 ## Conventions
 
@@ -48,7 +76,9 @@ Java 25, Maven multi-module build.
   `file <path>` (it should say "with CRLF line terminators"). Perl also halves backslashes in
   replacement text, so make edits that contain backslashes with an editor, not a regex.
 - Commit messages follow Conventional Commits (`feat(core):`, `fix(core):`, ...); mark breaking
-  changes with `!` and a `BREAKING CHANGE:` footer.
+  changes with `!` and a `BREAKING CHANGE:` footer. Commits that only change documentation end
+  their subject with `[ci skip]`.
+- Commit only when asked, and as one commit unless asked otherwise. Don't push.
 - `CHANGELOG.md` has one section per version; user-visible and breaking changes go there.
 - Public API: `annotations`, `resolver`, `serialization`, `settings` and `utils` in `core`, plus the
   format entry points (`YamlConfig`, `JsonConfig`, ...). The `core.internal` package and classes
@@ -68,3 +98,6 @@ Java 25, Maven multi-module build.
 - Surefire only runs classes named `Test*`, `*Test`, `*Tests` or `*TestCase`; other names are
   silently skipped.
 - Use `@TempDir` for files, never the working directory.
+- Writer tests compare the exact output (Java text blocks, line endings normalized with
+  `replaceAll("\\R", "\n")`) and also read it back. A test for a fixed bug should fail on the old
+  code: check that by running it against the previous commit's version of the class.
