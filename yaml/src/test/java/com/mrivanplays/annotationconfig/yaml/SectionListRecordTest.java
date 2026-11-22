@@ -29,8 +29,11 @@ import com.mrivanplays.annotationconfig.core.serialization.SerializerRegistry;
 import com.mrivanplays.annotationconfig.core.utils.TypeToken;
 import java.io.StringReader;
 import java.io.StringWriter;
+import java.lang.reflect.Type;
+import java.util.List;
 import java.util.Map;
 import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
@@ -79,17 +82,24 @@ public class SectionListRecordTest {
             .build();
   }
 
+  private static final List<Type> LIST_TYPES =
+      List.of(
+          new TypeToken<SectionObjectList<TestObj>>() {}.getType(),
+          new TypeToken<SectionObjectList<TestObj2>>() {}.getType(),
+          new TypeToken<SectionObjectList<TestObj3>>() {}.getType());
+
   @BeforeAll
-  static void registerSerializer() {
-    SerializerRegistry.INSTANCE.registerSerializer(
-        new TypeToken<SectionObjectList<TestObj>>() {}.getType(),
-        new SectionObjectListSerializer<>());
-    SerializerRegistry.INSTANCE.registerSerializer(
-        new TypeToken<SectionObjectList<TestObj2>>() {}.getType(),
-        new SectionObjectListSerializer<>());
-    SerializerRegistry.INSTANCE.registerSerializer(
-        new TypeToken<SectionObjectList<TestObj3>>() {}.getType(),
-        new SectionObjectListSerializer<>());
+  static void registerSerializers() {
+    for (Type type : LIST_TYPES) {
+      SerializerRegistry.INSTANCE.registerSerializer(type, new SectionObjectListSerializer<>());
+    }
+  }
+
+  @AfterAll
+  static void unregisterSerializers() {
+    for (Type type : LIST_TYPES) {
+      SerializerRegistry.INSTANCE.unregisterSerializer(type);
+    }
   }
 
   @Test

@@ -29,7 +29,9 @@ import java.io.StringReader;
 import java.io.StringWriter;
 import java.lang.reflect.Type;
 import java.util.Map;
+import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
 class SectionObjectListTest {
@@ -64,19 +66,25 @@ class SectionObjectListTest {
             .build();
   }
 
+  private static final Type LIST_TYPE =
+      new TypeToken<SectionObjectList<SerializedObject>>() {}.getType();
   private static final ConfigResolver resolver = YamlConfig.getConfigResolver();
-  private static final SerializerRegistry serializerRegistry = SerializerRegistry.INSTANCE;
+
+  @BeforeAll
+  static void registerSerializer() {
+    SerializerRegistry.INSTANCE.registerSerializer(
+        LIST_TYPE, new SectionObjectListSerializer<SerializedObject>());
+  }
+
+  @AfterAll
+  static void unregisterSerializer() {
+    SerializerRegistry.INSTANCE.unregisterSerializer(LIST_TYPE);
+  }
 
   @Test
   void testDump() {
-    Subject subject = new Subject();
-    Type sectionObjectListType = new TypeToken<SectionObjectList<SerializedObject>>() {}.getType();
-    if (!serializerRegistry.hasSerializer(sectionObjectListType)) {
-      serializerRegistry.registerSerializer(
-          sectionObjectListType, new SectionObjectListSerializer<SerializedObject>());
-    }
     StringWriter writer = new StringWriter();
-
+    resolver.dump(new Subject(), writer);
     String expected =
         "list:\n"
             + "  foo:\n"
@@ -85,20 +93,12 @@ class SectionObjectListTest {
             + "  bar:\n"
             + "    foo: 2\n"
             + "    baz: \"ipsum\"\n";
-
-    resolver.dump(subject, writer);
-
     Assertions.assertEquals(expected, writer.toString().replaceAll("\\R", "\n"));
   }
 
   @Test
   void testLoad() {
     Subject subject = new Subject();
-    Type sectionObjectListType = new TypeToken<SectionObjectList<SerializedObject>>() {}.getType();
-    if (!serializerRegistry.hasSerializer(sectionObjectListType)) {
-      serializerRegistry.registerSerializer(
-          sectionObjectListType, new SectionObjectListSerializer<SerializedObject>());
-    }
     String input =
         "list:\n"
             + "  baz:\n"
@@ -106,13 +106,10 @@ class SectionObjectListTest {
             + "    baz: \"dolor\"\n"
             + "  foo:\n"
             + "    foo: 69\n"
-            + "    baz: \"sit\"\n"
-            + "\n";
-
+            + "    baz: \"sit\"\n";
     resolver.load(subject, new StringReader(input));
 
     Map<String, SerializedObject> serialized = subject.list.getAsMap();
-
     Assertions.assertEquals(3, serialized.get("baz").getFoo());
     Assertions.assertEquals("dolor", serialized.get("baz").getBaz());
     Assertions.assertEquals(69, serialized.get("foo").getFoo());

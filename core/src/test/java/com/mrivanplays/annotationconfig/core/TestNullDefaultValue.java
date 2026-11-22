@@ -35,9 +35,10 @@ public class TestNullDefaultValue {
 
   @Test
   void testDump() {
-    Assertions.assertThrowsExactly(
-        IllegalArgumentException.class,
-        () -> PropertyConfig.getConfigResolver().dump(new Subj(), new StringWriter()),
-        "No default value for field 'foo'");
+    IllegalArgumentException e =
+        Assertions.assertThrowsExactly(
+            IllegalArgumentException.class,
+            () -> PropertyConfig.getConfigResolver().dump(new Subj(), new StringWriter()));
+    Assertions.assertEquals("No default value for field 'foo'", e.getMessage());
   }
 }

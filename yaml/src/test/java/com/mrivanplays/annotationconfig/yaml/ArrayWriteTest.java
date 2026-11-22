@@ -94,7 +94,7 @@ public class ArrayWriteTest {
     Assertions.assertEquals(2, config.myObjectArr.length);
     Assertions.assertEquals(3, config.myObjectArr[0].foo);
     Assertions.assertEquals(2, config.bigDec.length);
-    Assertions.assertEquals(4444.5555, config.bigDec[1].doubleValue());
+    Assertions.assertEquals(new BigDecimal("4444.5555"), config.bigDec[1]);
   }
 
   @Test

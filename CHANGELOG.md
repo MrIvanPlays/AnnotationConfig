@@ -161,6 +161,16 @@ warning when it finds them.
 The new `json` module adds a `JsonConfig` implementation backed by Google's Gson library. It does
 not support comments, as JSON has none.
 
+- Config objects, records, maps and other objects are written as JSON objects, arrays and lists as
+  JSON arrays.
+- Dotted keys (`@Key("server.ip")`) are written and read as nested objects, as in YAML.
+- Numbers are read exactly, also beyond the precision of a `double`. Values of fields typed `Object`
+  (e.g. inside a `Map<String, Object>` or `DataObject`) are read as `BigDecimal`.
+- Strings are written as they are, without HTML escaping (`=` is not written as `=`).
+- `@Multiline` strings are written as normal strings, since JSON has no multiline syntax.
+- A `Gson` instance can be passed through `JsonConfig.GSON_INSTANCE`. It is used for reading and
+  writing, and should use `ToNumberPolicy.BIG_DECIMAL` to read numbers exactly.
+
 #### `FIND_STATIC_FIELDS` setting
 
 `ACDefaultSettings.FIND_STATIC_FIELDS` (default `false`) controls whether static fields are config
@@ -222,6 +232,8 @@ reads back exactly:
   `double`, which lost precision and failed past 2^63.
 - `List<BigInteger>` values larger than `Integer.MAX_VALUE` no longer throw when written; they are
   written as a `long`, or as a string when they do not fit in one.
+- Whole numbers that arrive with an exponent are read as their value. A double such as
+  `2000000000.0` has the text form `2.0E9`, which used to be read as `2`.
 - `char` fields accept one character strings, which is how text formats store them.
 - Enums are written with `Enum#name()`. Constants with a body used to fall back to `toString()`.
   Enum values are read case-insensitively.
@@ -240,6 +252,10 @@ reads back exactly:
 - Dumping to a file writes a temporary file first and moves it into place, so a failed dump no
   longer leaves a half written config behind.
 - Errors about duplicate keys and invalid `@Min` / `@Max` values name the key.
+- A config class with annotations but no `@Comment` no longer starts the file with a blank line.
+- `resolveMultiple` creates a missing directory and dumps the defaults into it, instead of
+  throwing an `IllegalArgumentException`. It also dumps the defaults when the directory only holds
+  files that are not configs, and returns the configs sorted by file name.
 
 ### Changes in `AnnotationAccessor`
 

@@ -28,7 +28,7 @@ import java.io.StringWriter;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
-public class ComplexTestComments {
+public class TestComplexComments {
 
   @Comment("Class comment")
   static class Subject {
@@ -59,11 +59,8 @@ public class ComplexTestComments {
 
   @Test
   public void testComplexComments() {
-    Subject config = new Subject();
     StringWriter writer = new StringWriter();
-
-    YamlConfig.getConfigResolver().dump(config, writer);
-
+    YamlConfig.getConfigResolver().dump(new Subject(), writer);
     String expected =
         "# Class comment\n"
             + "\n"
@@ -78,8 +75,7 @@ public class ComplexTestComments {
             + "  foo: \"cc\"\n"
             + "\n"
             + "# foo outside config object\n"
-            + "foo: \"aa\"\n\n";
-
+            + "foo: \"aa\"\n";
     Assertions.assertEquals(expected, writer.toString().replaceAll("\\R", "\n"));
   }
 }

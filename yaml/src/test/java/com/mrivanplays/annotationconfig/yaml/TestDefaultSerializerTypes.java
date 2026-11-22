@@ -59,6 +59,7 @@ public class TestDefaultSerializerTypes {
     public Mode special;
     public BigInteger bigInteger;
     public BigDecimal bigDecimal;
+    public int whole;
   }
 
   static class EnumSubject {
@@ -122,6 +123,12 @@ public class TestDefaultSerializerTypes {
       cause = cause.getCause();
     }
     Assertions.assertTrue(cause.getMessage().contains("Mode"), cause.getMessage());
+  }
+
+  @Test
+  public void wholeNumberWithExponentIsReadAsItsValue() {
+    // SnakeYAML reads this as a double, whose text form is "2.0E9"; it used to be read as 2
+    Assertions.assertEquals(2_000_000_000, load("whole: 2.0e9").whole);
   }
 
   @Test

@@ -26,16 +26,19 @@ import com.mrivanplays.annotationconfig.core.annotations.custom.AnnotationValida
 import com.mrivanplays.annotationconfig.core.annotations.custom.ValidationResponse;
 import com.mrivanplays.annotationconfig.core.resolver.settings.Settings;
 import java.lang.reflect.Field;
+import java.util.concurrent.atomic.AtomicInteger;
 import org.jspecify.annotations.NullMarked;
 
 @NullMarked
 public class DummyAnnotation2Handler implements AnnotationValidator<DummyAnnotation2> {
 
+  /** Counts how often the success callback ran, so tests can check that it does. */
+  static final AtomicInteger SUCCESS_CALLBACKS = new AtomicInteger();
+
   @Override
   public ValidationResponse validate(
       DummyAnnotation2 annotation, Object value, Settings settings, Field field) {
-    return ValidationResponse.success(
-        () -> System.out.println("If you are seeing this, then you're a little sneaky boi."));
+    return ValidationResponse.success(SUCCESS_CALLBACKS::incrementAndGet);
   }
 
   @Override

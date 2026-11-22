@@ -24,62 +24,58 @@ package com.mrivanplays.annotationconfig.yaml;
 
 import java.io.StringWriter;
 import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
+/** A map holding a list of maps, whose values are a list in one entry and a map in the other. */
 public class ListEntryMapWithMapValueMapTest {
 
   static class Subject {
 
-    private Map<String, List<Map<String, Object>>> values =
-        Collections.singletonMap("values", getValues());
+    private Map<String, List<Map<String, Object>>> values = Map.of("entries", entries());
 
-    public static List<Map<String, Object>> getValues() {
-      List<Map<String, Object>> ret = new ArrayList<>();
-      Map<String, Object> first = new HashMap<>();
+    // linked maps, so that the written order is the insertion order
+    private static List<Map<String, Object>> entries() {
+      Map<String, Object> first = new LinkedHashMap<>();
       first.put("foo", 1);
       first.put("bar", 2);
-      first.put("baz", Arrays.asList("baba", "yaga"));
-      ret.add(first);
+      first.put("baz", List.of("baba", "yaga"));
 
-      Map<String, Object> second = new HashMap<>();
-      second.put("foo", 3);
-      second.put("bar", 4);
-      Map<String, Object> bazMap = new HashMap<>();
+      Map<String, Object> bazMap = new LinkedHashMap<>();
       bazMap.put("baba", "yaga");
       bazMap.put("lorem", "ipsum");
+      Map<String, Object> second = new LinkedHashMap<>();
+      second.put("foo", 3);
+      second.put("bar", 4);
       second.put("baz", bazMap);
 
-      ret.add(second);
-      return ret;
+      List<Map<String, Object>> entries = new ArrayList<>();
+      entries.add(first);
+      entries.add(second);
+      return entries;
     }
   }
 
   @Test
   public void testDump() {
-    Subject config = new Subject();
     StringWriter writer = new StringWriter();
-    YamlConfig.getConfigResolver().dump(config, writer);
-
+    YamlConfig.getConfigResolver().dump(new Subject(), writer);
     String expected =
         "values:\n"
-            + "  values:\n"
-            + "    - bar: 2\n"
-            + "      foo: 1\n"
+            + "  entries:\n"
+            + "    - foo: 1\n"
+            + "      bar: 2\n"
             + "      baz:\n"
             + "        - \"baba\"\n"
             + "        - \"yaga\"\n"
-            + "    - bar: 4\n"
-            + "      foo: 3\n"
+            + "    - foo: 3\n"
+            + "      bar: 4\n"
             + "      baz:\n"
             + "        baba: \"yaga\"\n"
             + "        lorem: \"ipsum\"\n";
-
     Assertions.assertEquals(expected, writer.toString().replaceAll("\\R", "\n"));
   }
 }

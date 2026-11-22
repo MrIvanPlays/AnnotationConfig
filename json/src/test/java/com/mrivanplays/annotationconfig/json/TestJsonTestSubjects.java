@@ -24,108 +24,46 @@ package com.mrivanplays.annotationconfig.json;
 
 import java.io.StringReader;
 import java.io.StringWriter;
+import java.util.stream.Stream;
 import org.junit.jupiter.api.Assertions;
-import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 
+/** Writing and reading each number type; every subject has a single public field. */
 public class TestJsonTestSubjects {
 
-  @Test
-  void testByteWrite() {
+  static Stream<Arguments> writeCases() {
+    return Stream.of(
+        Arguments.of(new JsonTestSubjects.TByte(), "{\n  \"b\": 1\n}"),
+        Arguments.of(new JsonTestSubjects.TDouble(), "{\n  \"d\": 2.5\n}"),
+        Arguments.of(new JsonTestSubjects.TFloat(), "{\n  \"f\": 3.11\n}"),
+        Arguments.of(new JsonTestSubjects.TLong(), "{\n  \"l\": 22221111\n}"),
+        Arguments.of(new JsonTestSubjects.TShort(), "{\n  \"s\": 5\n}"));
+  }
+
+  static Stream<Arguments> readCases() {
+    return Stream.of(
+        Arguments.of(new JsonTestSubjects.TByte(), "{\n  \"b\": 125\n}", (byte) 125),
+        Arguments.of(new JsonTestSubjects.TDouble(), "{\n  \"d\": 3.3\n}", 3.3),
+        Arguments.of(new JsonTestSubjects.TFloat(), "{\n  \"f\": 5.51\n}", 5.51f),
+        Arguments.of(new JsonTestSubjects.TLong(), "{\n  \"l\": 2222112\n}", 2222112L),
+        Arguments.of(new JsonTestSubjects.TShort(), "{\n  \"s\": 6\n}", (short) 6));
+  }
+
+  @ParameterizedTest(name = "{0}")
+  @MethodSource("writeCases")
+  void testWrite(Object subject, String expected) {
     StringWriter dump = new StringWriter();
-    JsonTestSubjects.TByte bb = new JsonTestSubjects.TByte();
-    JsonConfig.getConfigResolver().dump(bb, dump);
-
-    String expected = "{\n  \"b\": 1\n}";
-
-    Assertions.assertEquals(expected, dump.toString());
+    JsonConfig.getConfigResolver().dump(subject, dump);
+    Assertions.assertEquals(expected, dump.toString().replaceAll("\\R", "\n"));
   }
 
-  @Test
-  void testByteRead() {
-    StringReader read = new StringReader("{\n  \"b\": 125\n}");
-    JsonTestSubjects.TByte bb = new JsonTestSubjects.TByte();
-    JsonConfig.getConfigResolver().load(bb, read);
-
-    Assertions.assertEquals(Byte.MAX_VALUE - 2, bb.b);
-  }
-
-  @Test
-  void testDoubleWrite() {
-    StringWriter dump = new StringWriter();
-    JsonTestSubjects.TDouble dd = new JsonTestSubjects.TDouble();
-    JsonConfig.getConfigResolver().dump(dd, dump);
-
-    String expected = "{\n  \"d\": 2.5\n}";
-
-    Assertions.assertEquals(expected, dump.toString());
-  }
-
-  @Test
-  void testDoubleRead() {
-    StringReader read = new StringReader("{\n  \"d\": 3.3\n}");
-    JsonTestSubjects.TDouble dd = new JsonTestSubjects.TDouble();
-    JsonConfig.getConfigResolver().load(dd, read);
-
-    Assertions.assertEquals(3.3, dd.d);
-  }
-
-  @Test
-  void testFloatWrite() {
-    StringWriter dump = new StringWriter();
-    JsonTestSubjects.TFloat ff = new JsonTestSubjects.TFloat();
-    JsonConfig.getConfigResolver().dump(ff, dump);
-
-    String expected = "{\n  \"f\": 3.11\n}";
-
-    Assertions.assertEquals(expected, dump.toString());
-  }
-
-  @Test
-  void testFloatRead() {
-    StringReader read = new StringReader("{\n  \"f\": 5.51\n}");
-    JsonTestSubjects.TFloat ff = new JsonTestSubjects.TFloat();
-    JsonConfig.getConfigResolver().load(ff, read);
-
-    Assertions.assertEquals(5.51f, ff.f);
-  }
-
-  @Test
-  void testLongWrite() {
-    StringWriter dump = new StringWriter();
-    JsonTestSubjects.TLong ll = new JsonTestSubjects.TLong();
-    JsonConfig.getConfigResolver().dump(ll, dump);
-
-    String expected = "{\n  \"l\": 22221111\n}";
-
-    Assertions.assertEquals(expected, dump.toString());
-  }
-
-  @Test
-  void testLongRead() {
-    StringReader read = new StringReader("{\n  \"l\": 2222112\n}");
-    JsonTestSubjects.TLong ll = new JsonTestSubjects.TLong();
-    JsonConfig.getConfigResolver().load(ll, read);
-
-    Assertions.assertEquals(2222112, ll.l);
-  }
-
-  @Test
-  void testShortWrite() {
-    StringWriter dump = new StringWriter();
-    JsonTestSubjects.TShort ss = new JsonTestSubjects.TShort();
-    JsonConfig.getConfigResolver().dump(ss, dump);
-
-    String expected = "{\n  \"s\": 5\n}";
-
-    Assertions.assertEquals(expected, dump.toString());
-  }
-
-  @Test
-  void testShortRead() {
-    StringReader read = new StringReader("{\n  \"s\": 6\n}");
-    JsonTestSubjects.TShort ss = new JsonTestSubjects.TShort();
-    JsonConfig.getConfigResolver().load(ss, read);
-
-    Assertions.assertEquals(6, ss.s);
+  @ParameterizedTest(name = "{0}")
+  @MethodSource("readCases")
+  void testRead(Object subject, String json, Object expected) throws Exception {
+    JsonConfig.getConfigResolver().load(subject, new StringReader(json));
+    // the boxed value has to match exactly, so its type is checked too
+    Assertions.assertEquals(expected, subject.getClass().getFields()[0].get(subject));
   }
 }

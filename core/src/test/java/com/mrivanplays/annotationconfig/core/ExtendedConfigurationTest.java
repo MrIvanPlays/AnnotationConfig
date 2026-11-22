@@ -24,10 +24,10 @@ package com.mrivanplays.annotationconfig.core;
 
 import com.mrivanplays.annotationconfig.core.annotations.comment.Comment;
 import com.mrivanplays.annotationconfig.core.resolver.settings.ACDefaultSettings;
+import com.mrivanplays.annotationconfig.core.resolver.settings.Settings;
 import java.io.StringReader;
 import java.io.StringWriter;
 import org.junit.jupiter.api.Assertions;
-import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
 public class ExtendedConfigurationTest {
@@ -39,22 +39,20 @@ public class ExtendedConfigurationTest {
   }
 
   static class ExtendedSubject extends Subject {
+
     String bar = "baz";
   }
 
-  @BeforeAll
-  static void updateSettings() {
-    PropertyConfig.getConfigResolver().settings().put(ACDefaultSettings.FIND_PARENT_FIELDS, true);
+  // passed per call: changing the shared resolver's settings would leak into other tests
+  private static Settings findParentFields() {
+    return new Settings().put(ACDefaultSettings.FIND_PARENT_FIELDS, true);
   }
 
   @Test
   void testDump() {
-    ExtendedSubject subject = new ExtendedSubject();
     StringWriter writer = new StringWriter();
-    PropertyConfig.getConfigResolver().dump(subject, writer);
-
+    PropertyConfig.getConfigResolver().dump(new ExtendedSubject(), writer, findParentFields());
     String expected = "# Test comment foo\n\nfoo=1\n\nbar=baz\n";
-
     Assertions.assertEquals(expected, writer.toString().replaceAll("\\R", "\n"));
   }
 
@@ -62,9 +60,15 @@ public class ExtendedConfigurationTest {
   void testParse() {
     ExtendedSubject subject = new ExtendedSubject();
     StringReader reader = new StringReader("foo=2\n\nbar=aaa\n");
-    PropertyConfig.getConfigResolver().load(subject, reader);
-
+    PropertyConfig.getConfigResolver().load(subject, reader, findParentFields());
     Assertions.assertEquals(2, subject.foo);
     Assertions.assertEquals("aaa", subject.bar);
+  }
+
+  @Test
+  void testParentFieldsAreIgnoredByDefault() {
+    StringWriter writer = new StringWriter();
+    PropertyConfig.getConfigResolver().dump(new ExtendedSubject(), writer);
+    Assertions.assertEquals("bar=baz\n", writer.toString().replaceAll("\\R", "\n"));
   }
 }

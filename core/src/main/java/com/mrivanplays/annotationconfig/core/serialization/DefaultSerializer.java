@@ -779,8 +779,11 @@ final class DefaultSerializer implements FieldTypeSerializer<Object> {
       return validateO(
           type,
           s -> {
-            // GSON passes every non-decimal number as <num>.0
-            // this makes sure that the correct values are passed to the finishing methods.
+            // a whole number can arrive in decimal form, e.g. "5.0" from a double, or with an
+            // exponent ("2.0E9"), which double uses from 10^7 on; cutting that at the '.' gave 2
+            if (s.indexOf('e') != -1 || s.indexOf('E') != -1) {
+              return finish.apply(new BigDecimal(s).toBigInteger().toString());
+            }
             int dot = s.indexOf('.');
             return finish.apply(dot == -1 ? s : s.substring(0, dot));
           });

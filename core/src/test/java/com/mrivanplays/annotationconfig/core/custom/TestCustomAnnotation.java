@@ -27,8 +27,10 @@ import com.mrivanplays.annotationconfig.core.annotations.custom.CustomAnnotation
 import com.mrivanplays.annotationconfig.core.resolver.ConfigResolver;
 import com.mrivanplays.annotationconfig.core.resolver.settings.ACDefaultSettings;
 import com.mrivanplays.annotationconfig.core.resolver.settings.Settings;
+import java.io.InputStream;
 import java.io.StringReader;
 import java.io.StringWriter;
+import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
@@ -38,43 +40,51 @@ public class TestCustomAnnotation {
   private final ConfigResolver resolver = PropertyConfig.getConfigResolver();
 
   @BeforeAll
-  public static void registerValidator() {
+  public static void registerValidators() {
     CustomAnnotationRegistry.INSTANCE.register(DummyAnnotation.class, new DummyAnnotationHandler());
     CustomAnnotationRegistry.INSTANCE.register(
         DummyAnnotation2.class, new DummyAnnotation2Handler());
   }
 
+  // the registry is global, other test classes must not see these validators
+  @AfterAll
+  public static void unregisterValidators() {
+    CustomAnnotationRegistry.INSTANCE.unregister(DummyAnnotation.class);
+    CustomAnnotationRegistry.INSTANCE.unregister(DummyAnnotation2.class);
+  }
+
+  private InputStream resource(String name) {
+    return getClass().getClassLoader().getResourceAsStream("custom/" + name);
+  }
+
   @Test
   public void testSuccessful() {
+    int callbacksBefore = DummyAnnotation2Handler.SUCCESS_CALLBACKS.get();
     DummyConfig config = new DummyConfig();
-    resolver.load(
-        config,
-        getClass().getClassLoader().getResourceAsStream("custom/custom-anno-def.properties"));
+    resolver.load(config, resource("custom-anno-def.properties"));
+
+    Assertions.assertEquals("Hello mama", config.getFoo());
+    Assertions.assertEquals("MrIvanPlays is cool", config.getBar());
+    Assertions.assertEquals(callbacksBefore + 1, DummyAnnotation2Handler.SUCCESS_CALLBACKS.get());
   }
 
   @Test
   public void testFail() {
-    DummyConfig config = new DummyConfig();
-    Assertions.assertThrows(
-        RuntimeException.class,
-        () ->
-            resolver.load(
-                config,
-                getClass()
-                    .getClassLoader()
-                    .getResourceAsStream("custom/custom-anno-fail.properties")));
+    // foo does not contain "Hello", so DummyAnnotationHandler rejects it with its error
+    RuntimeException e =
+        Assertions.assertThrows(
+            RuntimeException.class,
+            () -> resolver.load(new DummyConfig(), resource("custom-anno-fail.properties")));
+    Assertions.assertEquals("Dummy throwable", e.getCause().getMessage());
   }
 
   @Test
   public void testAlterOption() {
     Settings settings = ACDefaultSettings.getDefault().copy();
     settings.put(OptsConstant.DUMMY_DEFAULT, false);
-    DummyConfig config = new DummyConfig();
-    resolver.load(
-        config,
-        getClass().getClassLoader().getResourceAsStream("custom/custom-anno-def.properties"),
-        settings);
-    Assertions.assertTrue(settings.get(OptsConstant.DUMMY_DEFAULT).get());
+    resolver.load(new DummyConfig(), resource("custom-anno-def.properties"), settings);
+    // the validator of @DummyAnnotation flips the option
+    Assertions.assertTrue(settings.get(OptsConstant.DUMMY_DEFAULT).orElseThrow());
   }
 
   @Test
@@ -82,11 +92,8 @@ public class TestCustomAnnotation {
     DummyConfig config = new DummyConfig();
     StringWriter writer = new StringWriter();
     resolver.dump(config, writer);
-
-    String written = writer.toString();
-    // now we have to load because we need to verify that bar=Lorem ipsum dolor sit amet.
-    resolver.load(config, new StringReader(written));
-
+    // @DummyAnnotation2's writeValue replaces bar's value when writing
+    resolver.load(config, new StringReader(writer.toString()));
     Assertions.assertEquals("Lorem ipsum dolor sit amet.", config.getBar());
   }
 }

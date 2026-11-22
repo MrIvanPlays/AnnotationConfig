@@ -191,12 +191,14 @@ public final class AnnotatedConfigResolver {
         List<String> comments =
             AnnotationUtils.getComments(
                 AnnotationAccessor.createFromClass(holder.getClazz()), true);
+        // the blank line separates the comments from the values; without comments (e.g. JSON,
+        // which has none) it would be a stray leading line
         if (commentChar != null && !comments.isEmpty()) {
           for (String comment : comments) {
             writer.println(commentChar + comment);
           }
+          writer.append('\n');
         }
-        writer.append('\n');
         continue;
       }
       Field field = holder.getField();

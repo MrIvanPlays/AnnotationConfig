@@ -25,7 +25,6 @@ package com.mrivanplays.annotationconfig.core;
 import com.mrivanplays.annotationconfig.core.annotations.comment.Comment;
 import com.mrivanplays.annotationconfig.core.serialization.AnnotationAccessor;
 import com.mrivanplays.annotationconfig.core.utils.AnnotationUtils;
-import java.lang.reflect.Field;
 import java.util.List;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
@@ -42,22 +41,14 @@ public class GetCommentsTest {
     private String bb = "aa";
   }
 
+  private static List<String> commentsOf(String fieldName) throws NoSuchFieldException {
+    return AnnotationUtils.getComments(
+        AnnotationAccessor.createFromField(Subject.class.getDeclaredField(fieldName)));
+  }
+
   @Test
   void testGetComments() throws Exception {
-    Subject subj = new Subject();
-    Field aaField = subj.getClass().getDeclaredField("aa");
-    Field bbField = subj.getClass().getDeclaredField("bb");
-
-    List<String> aaComments =
-        AnnotationUtils.getComments(AnnotationAccessor.createFromField(aaField));
-    List<String> bbComments =
-        AnnotationUtils.getComments(AnnotationAccessor.createFromField(bbField));
-
-    Assertions.assertEquals(1, aaComments.size());
-    Assertions.assertEquals("This is a single comment", aaComments.getFirst());
-
-    Assertions.assertEquals(2, bbComments.size());
-    Assertions.assertEquals("And these are", bbComments.getFirst());
-    Assertions.assertEquals("Multiple comments", bbComments.get(1));
+    Assertions.assertEquals(List.of("This is a single comment"), commentsOf("aa"));
+    Assertions.assertEquals(List.of("And these are", "Multiple comments"), commentsOf("bb"));
   }
 }

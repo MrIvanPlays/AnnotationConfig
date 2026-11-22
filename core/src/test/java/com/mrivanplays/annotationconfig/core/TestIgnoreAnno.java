@@ -24,12 +24,10 @@ package com.mrivanplays.annotationconfig.core;
 
 import com.mrivanplays.annotationconfig.core.annotations.Ignore;
 import com.mrivanplays.annotationconfig.core.annotations.comment.Comment;
-import java.io.File;
-import java.io.FileReader;
 import java.io.IOException;
-import java.io.Reader;
+import java.io.StringReader;
+import java.io.StringWriter;
 import java.util.Properties;
-import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
@@ -44,27 +42,14 @@ public class TestIgnoreAnno {
     private String name = "Ivan";
   }
 
-  private static final File file = new File("ignore-anno.properties");
-
-  @AfterAll
-  public static void terminate() {
-    file.delete();
-  }
-
   @Test
-  public void testIgnoreWorks() {
-    IgnoreAnnoTestSubject config = new IgnoreAnnoTestSubject();
-    PropertyConfig.getConfigResolver().dump(config, file);
-
-    // now to make sure this works we have to read the file
+  public void testIgnoreWorks() throws IOException {
+    StringWriter writer = new StringWriter();
+    PropertyConfig.getConfigResolver().dump(new IgnoreAnnoTestSubject(), writer);
+    // read the output back with java.util.Properties, independently of AnnotationConfig
     Properties properties = new Properties();
-    try (Reader reader = new FileReader(file)) {
-      properties.load(reader);
-    } catch (IOException e) {
-      Assertions.fail(e);
-      return;
-    }
+    properties.load(new StringReader(writer.toString()));
     Assertions.assertFalse(properties.containsKey("b"));
-    Assertions.assertTrue(properties.containsKey("name"));
+    Assertions.assertEquals("Ivan", properties.getProperty("name"));
   }
 }

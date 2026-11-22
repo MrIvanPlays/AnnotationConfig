@@ -24,14 +24,12 @@ package com.mrivanplays.annotationconfig.core;
 
 import com.mrivanplays.annotationconfig.core.annotations.comment.Comment;
 import com.mrivanplays.annotationconfig.core.resolver.ConfigResolver;
-import java.io.File;
-import java.io.FileReader;
 import java.io.IOException;
-import java.io.Reader;
-import java.util.Properties;
-import org.junit.jupiter.api.AfterAll;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
 
 public class TestMissingOptions {
 
@@ -42,11 +40,10 @@ public class TestMissingOptions {
     private String foo = "foo";
   }
 
+  // a newer version of Subject1: the default of foo changed and the option bar was added
   @Comment("Comments should be kept even after regeneration!")
   private static final class Subject2 {
 
-    // emulate default value has changed from "foo" to "baz" and check if it will set the
-    // field to the value in the config, which is "foo" at the time of loading this class
     @Comment("Foo comment kept")
     private String foo = "baz";
 
@@ -54,46 +51,32 @@ public class TestMissingOptions {
     private String bar = "bar";
   }
 
-  private static final File file = new File("missing-opt.properties");
   private final ConfigResolver resolver = PropertyConfig.getConfigResolver();
 
-  @AfterAll
-  public static void terminate() {
-    file.delete();
+  private static String read(Path file) throws IOException {
+    return Files.readString(file).replaceAll("\\R", "\n");
   }
 
   @Test
-  public void testSubject1() {
-    Subject1 config = new Subject1();
-    resolver.dump(config, file);
+  public void missingOptionsAreAddedToTheFile(@TempDir Path dir) throws IOException {
+    Path file = dir.resolve("missing-opt.properties");
+    resolver.dump(new Subject1(), file);
+    Assertions.assertFalse(read(file).contains("bar"));
 
-    // have to load using properties to verify results
-    Properties properties = new Properties();
-    try (Reader reader = new FileReader(file)) {
-      properties.load(reader);
-    } catch (IOException e) {
-      Assertions.fail(e);
-      return;
-    }
-
-    Assertions.assertEquals("foo", properties.get("foo"));
-    Assertions.assertNull(properties.get("bar"));
-  }
-
-  @Test
-  public void testSubject2() {
     Subject2 config = new Subject2();
     resolver.load(config, file);
 
-    Properties properties = new Properties();
-    try (Reader reader = new FileReader(file)) {
-      properties.load(reader);
-    } catch (IOException e) {
-      Assertions.fail(e);
-      return;
-    }
-
-    Assertions.assertEquals("foo", properties.get("foo"));
-    Assertions.assertEquals("bar", properties.get("bar"));
+    // the value in the file wins over the changed default, the missing option gets its default
+    Assertions.assertEquals("foo", config.foo);
+    Assertions.assertEquals("bar", config.bar);
+    String expected =
+        "# Comments should be kept even after regeneration!\n"
+            + "\n"
+            + "# Bar comment kept\n"
+            + "bar=bar\n"
+            + "\n"
+            + "# Foo comment kept\n"
+            + "foo=foo\n";
+    Assertions.assertEquals(expected, read(file));
   }
 }

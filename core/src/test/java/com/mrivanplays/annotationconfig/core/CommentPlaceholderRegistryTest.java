@@ -26,10 +26,14 @@ import com.mrivanplays.annotationconfig.core.annotations.comment.Comment;
 import com.mrivanplays.annotationconfig.core.resolver.CommentPlaceholder;
 import com.mrivanplays.annotationconfig.core.resolver.CommentPlaceholderRegistry;
 import java.io.StringWriter;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
 public class CommentPlaceholderRegistryTest {
+
+  private static final CommentPlaceholder PLACEHOLDER = CommentPlaceholder.simple("%foo%", "bar");
+  private static final CommentPlaceholderRegistry REGISTRY = CommentPlaceholderRegistry.INSTANCE;
 
   static class Subject {
 
@@ -37,27 +41,29 @@ public class CommentPlaceholderRegistryTest {
     private String foo = "bar";
   }
 
+  // the registry is global, so no test may leave the placeholder registered
+  @AfterEach
+  void unregister() {
+    REGISTRY.unregisterPlaceholder(PLACEHOLDER);
+  }
+
+  private static String dump() {
+    StringWriter writer = new StringWriter();
+    PropertyConfig.getConfigResolver().dump(new Subject(), writer);
+    return writer.toString().replaceAll("\\R", "\n");
+  }
+
   @Test
   void testPlaceholder() {
-    CommentPlaceholderRegistry.INSTANCE.registerPlaceholder(
-        CommentPlaceholder.simple("%foo%", "bar"));
-    Subject subject = new Subject();
-    StringWriter writer = new StringWriter();
-    PropertyConfig.getConfigResolver().dump(subject, writer);
-    String expected = "# I get that bar\nfoo=bar\n";
-
-    Assertions.assertEquals(expected, writer.toString().replaceAll("\\R", "\n"));
+    REGISTRY.registerPlaceholder(PLACEHOLDER);
+    Assertions.assertEquals("# I get that bar\nfoo=bar\n", dump());
   }
 
   @Test
   void testUnregisterPlaceholder() {
-    CommentPlaceholderRegistry.INSTANCE.unregisterPlaceholder(
-        CommentPlaceholder.simple("%foo%", "bar"));
-    Subject subject = new Subject();
-    StringWriter writer = new StringWriter();
-    PropertyConfig.getConfigResolver().dump(subject, writer);
-    String expected = "# I get that %foo%\nfoo=bar\n";
-
-    Assertions.assertEquals(expected, writer.toString().replaceAll("\\R", "\n"));
+    REGISTRY.registerPlaceholder(PLACEHOLDER);
+    // an equal placeholder, not the registered instance, has to unregister it
+    REGISTRY.unregisterPlaceholder(CommentPlaceholder.simple("%foo%", "bar"));
+    Assertions.assertEquals("# I get that %foo%\nfoo=bar\n", dump());
   }
 }

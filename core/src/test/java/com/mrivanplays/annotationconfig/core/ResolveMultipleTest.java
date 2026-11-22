@@ -22,79 +22,92 @@
 
 package com.mrivanplays.annotationconfig.core;
 
+import com.mrivanplays.annotationconfig.core.resolver.ConfigResolver;
 import com.mrivanplays.annotationconfig.core.resolver.WritableObject;
 import java.io.IOException;
-import java.io.PrintWriter;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.AbstractMap;
-import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
-import java.util.stream.Stream;
-import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.Assertions;
-import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
 
 class ResolveMultipleTest {
 
   static class Subject {
 
     int foo = 2000;
-
-    Subject() {}
-
-    Subject(int foo) {
-      this.foo = foo;
-    }
   }
 
-  private static Path dir;
+  private final ConfigResolver resolver = PropertyConfig.getConfigResolver();
 
-  @BeforeAll
-  static void loadDifferentFiles() {
-    try {
-      dir = Files.createTempDirectory("resolveMultipleTest");
-      for (int i = 0; i < 3; i++) {
-        Path file = Files.createTempFile(dir, "test" + i, ".properties");
-        try (PrintWriter writer = new PrintWriter(Files.newBufferedWriter(file))) {
-          writer.println("foo=" + (1000 + i));
-        }
-      }
-    } catch (IOException e) {
-      throw new RuntimeException(e);
-    }
+  private Map<String, Subject> resolve(Path dir, Path defaultFile) {
+    return resolver.resolveMultiple(dir, Subject::new, WritableObject.createFromPath(defaultFile));
+  }
+
+  private static String read(Path file) throws IOException {
+    return Files.readString(file).replaceAll("\\R", "\n");
   }
 
   @Test
-  void testResolveMultiple() {
-    Map<String, Subject> loadedConfigs =
-        PropertyConfig.getConfigResolver()
-            .resolveMultiple(
-                dir,
-                Subject::new,
-                WritableObject.createFromPath(dir.resolve("default.properties")));
+  void loadsEveryConfigSortedByFileName(@TempDir Path dir) throws IOException {
+    for (int i = 2; i >= 0; i--) {
+      Files.writeString(dir.resolve("test" + i + ".properties"), "foo=" + (1000 + i));
+    }
 
-    int firstFoo =
-        loadedConfigs.entrySet().stream()
-            .filter(entry -> entry.getKey().startsWith("test0"))
-            .findFirst()
-            .orElse(new AbstractMap.SimpleEntry<>("foo", new Subject(69420)))
-            .getValue()
-            .foo;
-    Assertions.assertEquals(1000, firstFoo);
+    Map<String, Subject> loaded = resolve(dir, dir.resolve("default.properties"));
+
+    Assertions.assertEquals(
+        List.of("test0.properties", "test1.properties", "test2.properties"),
+        List.copyOf(loaded.keySet()));
+    Assertions.assertEquals(1000, loaded.get("test0.properties").foo);
+    Assertions.assertEquals(1001, loaded.get("test1.properties").foo);
+    Assertions.assertEquals(1002, loaded.get("test2.properties").foo);
+    Assertions.assertTrue(Files.notExists(dir.resolve("default.properties")));
   }
 
-  @AfterAll
-  static void terminate() {
-    try (Stream<Path> stream = Files.list(dir)) {
-      Iterator<Path> iterator = stream.iterator();
-      while (iterator.hasNext()) {
-        Files.delete(iterator.next());
-      }
-      Files.delete(dir);
-    } catch (IOException e) {
-      throw new RuntimeException(e);
-    }
+  @Test
+  void fileOverloadGivesTheSameResult(@TempDir Path dir) throws IOException {
+    Files.writeString(dir.resolve("a.properties"), "foo=1");
+    Map<String, Subject> loaded =
+        resolver.resolveMultiple(
+            dir.toFile(),
+            Subject::new,
+            WritableObject.createFromPath(dir.resolve("default.properties")));
+    Assertions.assertEquals(List.of("a.properties"), List.copyOf(loaded.keySet()));
+    Assertions.assertEquals(1, loaded.get("a.properties").foo);
+  }
+
+  @Test
+  void missingDirectoryIsCreatedAndTheDefaultsAreDumped(@TempDir Path dir) throws IOException {
+    Path configs = dir.resolve("configs");
+    Path defaultFile = configs.resolve("default.properties");
+
+    Map<String, Subject> loaded = resolve(configs, defaultFile);
+
+    Assertions.assertTrue(loaded.isEmpty());
+    Assertions.assertTrue(Files.isDirectory(configs));
+    Assertions.assertEquals("foo=2000\n", read(defaultFile));
+  }
+
+  @Test
+  void otherFilesAndDirectoriesAreIgnored(@TempDir Path dir) throws IOException {
+    Files.writeString(dir.resolve("README.txt"), "not a config");
+    Files.createDirectory(dir.resolve("nested.properties"));
+    Path defaultFile = dir.resolve("default.properties");
+
+    Map<String, Subject> loaded = resolve(dir, defaultFile);
+
+    // no configs found, so the defaults are dumped as for an empty directory
+    Assertions.assertTrue(loaded.isEmpty());
+    Assertions.assertEquals("foo=2000\n", read(defaultFile));
+  }
+
+  @Test
+  void fileInsteadOfDirectoryIsRejected(@TempDir Path dir) throws IOException {
+    Path file = Files.writeString(dir.resolve("file.properties"), "foo=1");
+    Assertions.assertThrows(
+        IllegalArgumentException.class, () -> resolve(file, dir.resolve("default.properties")));
   }
 }

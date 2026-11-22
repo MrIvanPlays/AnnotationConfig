@@ -433,7 +433,8 @@ public interface ConfigResolver {
    * Loads the configurations in the {@link File} {@code dir} specified, and if any do not exist,
    * the defaults (if specified) are dumped to the specified {@link WritableObject} {@code
    * dumpFile}. <br>
-   * <b>WARNING: The specified {@link File} {@code dir} has to be a directory!!!!!</b>
+   * <b>The specified {@link File} {@code dir} has to be a directory.</b> It is created if it
+   * does not exist.
    *
    * @param dir the directory to load configurations from
    * @param configToResolveTo a {@link Supplier} of the needed configuration objects
@@ -441,7 +442,7 @@ public interface ConfigResolver {
    * @return a map of the loaded configurations, key being the file name. If the map is empty then
    *     AnnotationConfig couldn't find any configurations in the folder, and you should fall back
    *     to the defaults.
-   * @throws IllegalArgumentException if the specified {@code dir} is not a directory!
+   * @throws IllegalArgumentException if the specified {@code dir} exists and is not a directory
    * @param <T> configuration type needed
    */
   <T> Map<String, T> resolveMultiple(
@@ -451,7 +452,8 @@ public interface ConfigResolver {
    * Loads the configurations in the {@link File} {@code dir} specified, and if any do not exist,
    * the defaults (if specified) are dumped to the specified {@link WritableObject} {@code
    * dumpFile}. <br>
-   * <b>WARNING: The specified {@link File} {@code dir} has to be a directory!!!!!</b>
+   * <b>The specified {@link File} {@code dir} has to be a directory.</b> It is created if it
+   * does not exist.
    *
    * <p>The provided settings must be <i>mutable</i> as AnnotationConfig will fill them with
    * defaults if they are missing.
@@ -463,7 +465,7 @@ public interface ConfigResolver {
    * @return a map of the loaded configurations, key being the file name. If the map is empty then
    *     AnnotationConfig couldn't find any configurations in the folder, and you should fall back
    *     to the defaults.
-   * @throws IllegalArgumentException if the specified {@code dir} is not a directory!
+   * @throws IllegalArgumentException if the specified {@code dir} exists and is not a directory
    * @throws IllegalArgumentException if the provided settings are immutable
    * @param <T> configuration type needed
    */
@@ -474,7 +476,8 @@ public interface ConfigResolver {
    * Loads the configurations in the {@link Path} {@code dir} specified, and if any do not exist,
    * the defaults (if specified) are dumped to the specified {@link WritableObject} {@code
    * dumpFile}. <br>
-   * <b>WARNING: The specified {@link Path} {@code dir} has to be a directory!!!!!</b>
+   * <b>The specified {@link Path} {@code dir} has to be a directory.</b> It is created if it
+   * does not exist.
    *
    * @param dir the directory to load configurations from
    * @param configToResolveTo a {@link Supplier} of the needed configuration objects
@@ -482,7 +485,7 @@ public interface ConfigResolver {
    * @return a map of the loaded configurations, key being the file name. If the map is empty then
    *     AnnotationConfig couldn't find any configurations in the folder, and you should fall back
    *     to the defaults.
-   * @throws IllegalArgumentException if the specified {@code dir} is not a directory!
+   * @throws IllegalArgumentException if the specified {@code dir} exists and is not a directory
    * @param <T> configuration type needed
    */
   <T> Map<String, T> resolveMultiple(
@@ -492,7 +495,8 @@ public interface ConfigResolver {
    * Loads the configurations in the {@link Path} {@code dir} specified, and if any do not exist,
    * the defaults (if specified) are dumped to the specified {@link WritableObject} {@code
    * dumpFile}. <br>
-   * <b>WARNING: The specified {@link Path} {@code dir} has to be a directory!!!!!</b>
+   * <b>The specified {@link Path} {@code dir} has to be a directory.</b> It is created if it
+   * does not exist.
    *
    * <p>The provided settings must be <i>mutable</i> as AnnotationConfig will fill them with
    * defaults if they are missing.
@@ -504,7 +508,7 @@ public interface ConfigResolver {
    * @return a map of the loaded configurations, key being the file name. If the map is empty then
    *     AnnotationConfig couldn't find any configurations in the folder, and you should fall back
    *     to the defaults.
-   * @throws IllegalArgumentException if the specified {@code dir} is not a directory!
+   * @throws IllegalArgumentException if the specified {@code dir} exists and is not a directory
    * @throws IllegalArgumentException if the provided settings are immutable
    * @param <T> configuration type needed
    */

@@ -35,7 +35,6 @@ class TestArray {
     char[] charArray = new char[] {'a', 'b', 'c'};
     boolean[] boolArray = new boolean[] {true, false, true};
     int[] intArray = new int[] {7, 8, 9, 10, 11, 12};
-
     BigInteger[] bigInteger = new BigInteger[] {BigInteger.valueOf(1), BigInteger.valueOf(2)};
     BigDecimal[] bigDecimal = new BigDecimal[] {BigDecimal.valueOf(1.2), BigDecimal.valueOf(3.4)};
     String[] stringArray = new String[] {"make", "america", "great", "again"};
@@ -47,21 +46,20 @@ class TestArray {
     PropertyConfig.getConfigResolver()
         .load(config, getClass().getClassLoader().getResourceAsStream("array-test.properties"));
 
-    Assertions.assertEquals(1, config.intArray[0]);
-    Assertions.assertEquals('d', config.charArray[0]);
-    Assertions.assertFalse(config.boolArray[0]);
-    Assertions.assertEquals(3, config.bigInteger[0].longValue());
-    Assertions.assertEquals(5.6, config.bigDecimal[0].doubleValue());
-    Assertions.assertEquals("europe", config.stringArray[0]);
+    Assertions.assertArrayEquals(new int[] {1, 2, 3, 4, 5, 6}, config.intArray);
+    Assertions.assertArrayEquals(new char[] {'d', 'e', 'f'}, config.charArray);
+    Assertions.assertArrayEquals(new boolean[] {false, true, false}, config.boolArray);
+    Assertions.assertArrayEquals(
+        new BigInteger[] {BigInteger.valueOf(3), BigInteger.valueOf(4)}, config.bigInteger);
+    Assertions.assertArrayEquals(
+        new BigDecimal[] {new BigDecimal("5.6"), new BigDecimal("7.8")}, config.bigDecimal);
+    Assertions.assertArrayEquals(new String[] {"europe", "is", "peaceful"}, config.stringArray);
   }
 
   @Test
   public void testWrite() {
-    Subject config = new Subject();
     StringWriter writer = new StringWriter();
-
-    PropertyConfig.getConfigResolver().dump(config, writer);
-
+    PropertyConfig.getConfigResolver().dump(new Subject(), writer);
     String expected =
         "stringArray=make, america, great, again\n"
             + "\n"
@@ -74,7 +72,6 @@ class TestArray {
             + "boolArray=true, false, true\n"
             + "\n"
             + "charArray=a, b, c\n";
-
     Assertions.assertEquals(expected, writer.toString().replaceAll("\\R", "\n"));
   }
 }

@@ -25,7 +25,10 @@ package com.mrivanplays.annotationconfig.yaml;
 import com.mrivanplays.annotationconfig.core.serialization.SerializerRegistry;
 import com.mrivanplays.annotationconfig.core.utils.TypeToken;
 import java.io.StringWriter;
+import java.lang.reflect.Type;
+import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
 public class TestEmptySectionObjectListSerialize {
@@ -53,14 +56,28 @@ public class TestEmptySectionObjectListSerialize {
     private int controlInteger = 1;
   }
 
-  @Test
-  void testDump() {
-    SerializerRegistry.INSTANCE.registerSerializer(
-        new TypeToken<SectionObjectList<SubjectValue>>() {}.getType(),
-        new SectionObjectListSerializer<>());
-    SubjectConfig subj = new SubjectConfig();
+  private static final Type LIST_TYPE =
+      new TypeToken<SectionObjectList<SubjectValue>>() {}.getType();
+
+  @BeforeAll
+  static void registerSerializer() {
+    SerializerRegistry.INSTANCE.registerSerializer(LIST_TYPE, new SectionObjectListSerializer<>());
+  }
+
+  @AfterAll
+  static void unregisterSerializer() {
+    SerializerRegistry.INSTANCE.unregisterSerializer(LIST_TYPE);
+  }
+
+  private static String dump(SubjectConfig config) {
     StringWriter writer = new StringWriter();
-    YamlConfig.getConfigResolver().dump(subj, writer);
+    YamlConfig.getConfigResolver().dump(config, writer);
+    return writer.toString().replaceAll("\\R", "\n");
+  }
+
+  @Test
+  void emptiedListIsLeftOut() {
+    SubjectConfig config = new SubjectConfig();
     String expected =
         "list:\n"
             + "  baz:\n"
@@ -68,11 +85,9 @@ public class TestEmptySectionObjectListSerialize {
             + "    bar: \"dolor sit amet\"\n"
             + "\n"
             + "controlInteger: 1\n";
+    Assertions.assertEquals(expected, dump(config));
 
-    Assertions.assertEquals(expected, writer.toString().replaceAll("\\R", "\n"));
-    writer = new StringWriter();
-    subj.list.update("baz", null);
-    YamlConfig.getConfigResolver().dump(subj, writer);
-    Assertions.assertEquals("controlInteger: 1\n", writer.toString().replaceAll("\\R", "\n"));
+    config.list.update("baz", null);
+    Assertions.assertEquals("controlInteger: 1\n", dump(config));
   }
 }

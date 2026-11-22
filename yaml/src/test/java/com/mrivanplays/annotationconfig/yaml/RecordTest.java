@@ -46,17 +46,28 @@ public class RecordTest {
     @ConfigObject public ConfigObj b = new ConfigObj("aa", "bb", "cc", "aaaa", 255, true, 2.5);
   }
 
-  // try non annotated
+  // the same record in a field that is not annotated with @ConfigObject
   static class Subj2 {
+
     public ConfigObj b = new ConfigObj("aa", "bb", "cc", "aaaa", 255, true, 2.5);
   }
+
+  private static final ConfigObj LOADED = new ConfigObj("cc", "ppp", "llll", "pong", 1, false, 6.9);
+
+  private static final String PAYLOAD =
+      "b:\n"
+          + "  name: \"cc\"\n"
+          + "  type: \"ppp\"\n"
+          + "  value: \"llll\"\n"
+          + "  foo: \"pong\"\n"
+          + "  bar: 1\n"
+          + "  perf: false\n"
+          + "  aa: 6.9\n";
 
   @Test
   void testDump() {
     StringWriter w = new StringWriter();
-    Subj s = new Subj();
-    YamlConfig.getConfigResolver().dump(s, w);
-
+    YamlConfig.getConfigResolver().dump(new Subj(), w);
     String expected =
         "b:\n"
             + "  name: \"aa\"\n"
@@ -66,87 +77,35 @@ public class RecordTest {
             + "  bar: 255\n"
             + "  perf: true\n"
             + "  aa: 2.5\n";
-
     Assertions.assertEquals(expected, w.toString().replaceAll("\\R", "\n"));
   }
 
   @Test
   void testLoad() {
-    String payload =
-        "b:\n"
-            + "  name: \"cc\"\n"
-            + "  type: \"ppp\"\n"
-            + "  value: \"llll\"\n"
-            + "  foo: \"pong\"\n"
-            + "  bar: 1\n"
-            + "  perf: false\n"
-            + "  aa: 6.9\n";
-
-    StringReader r = new StringReader(payload);
     Subj s = new Subj();
-    YamlConfig.getConfigResolver().load(s, r);
-
-    Assertions.assertEquals("cc", s.b.name);
-    Assertions.assertEquals("ppp", s.b.type);
-    Assertions.assertEquals("llll", s.b.value);
-    Assertions.assertEquals("pong", s.b.foo);
-    Assertions.assertEquals(1, s.b.bar);
-    Assertions.assertFalse(s.b.perf);
-    Assertions.assertEquals(6.9, s.b.aa);
-  }
-
-  @Test
-  void testNullRead() {
-    String payload =
-        "b:\n"
-            + "  name: \"cc\"\n"
-            + "  type: \"ppp\"\n"
-            + "  foo: \"pong\"\n"
-            + "  bar: 1\n"
-            + "  perf: false\n"
-            + "  aa: 6.9\n";
-
-    StringReader r = new StringReader(payload);
-    Subj s = new Subj();
-    YamlConfig.getConfigResolver()
-        .load(
-            s,
-            r,
-            ACDefaultSettings.getDefault()
-                .copy()
-                .put(ACDefaultSettings.NULL_READ_HANDLER, NullReadHandleOption.USE_DEFAULT_VALUE));
-
-    Assertions.assertEquals("cc", s.b.name);
-    Assertions.assertEquals("ppp", s.b.type);
-    Assertions.assertEquals("cc", s.b.value);
-    Assertions.assertEquals("pong", s.b.foo);
-    Assertions.assertEquals(1, s.b.bar);
-    Assertions.assertFalse(s.b.perf);
-    Assertions.assertEquals(6.9, s.b.aa);
+    YamlConfig.getConfigResolver().load(s, new StringReader(PAYLOAD));
+    Assertions.assertEquals(LOADED, s.b);
   }
 
   @Test
   void testLoadNonAnnotated() {
-    String payload =
-        "b:\n"
-            + "  name: \"cc\"\n"
-            + "  type: \"ppp\"\n"
-            + "  value: \"llll\"\n"
-            + "  foo: \"pong\"\n"
-            + "  bar: 1\n"
-            + "  perf: false\n"
-            + "  aa: 6.9\n";
-
-    StringReader r = new StringReader(payload);
     Subj2 s = new Subj2();
-    YamlConfig.getConfigResolver().load(s, r);
+    YamlConfig.getConfigResolver().load(s, new StringReader(PAYLOAD));
+    Assertions.assertEquals(LOADED, s.b);
+  }
 
-    Assertions.assertEquals("cc", s.b.name);
-    Assertions.assertEquals("ppp", s.b.type);
-    Assertions.assertEquals("llll", s.b.value);
-    Assertions.assertEquals("pong", s.b.foo);
-    Assertions.assertEquals(1, s.b.bar);
-    Assertions.assertFalse(s.b.perf);
-    Assertions.assertEquals(6.9, s.b.aa);
+  @Test
+  void testNullRead() {
+    // value is missing, so USE_DEFAULT_VALUE keeps the default component ("cc")
+    String payload = PAYLOAD.replace("  value: \"llll\"\n", "");
+    Subj s = new Subj();
+    YamlConfig.getConfigResolver()
+        .load(
+            s,
+            new StringReader(payload),
+            ACDefaultSettings.getDefault()
+                .copy()
+                .put(ACDefaultSettings.NULL_READ_HANDLER, NullReadHandleOption.USE_DEFAULT_VALUE));
+    Assertions.assertEquals(new ConfigObj("cc", "ppp", "cc", "pong", 1, false, 6.9), s.b);
   }
 }

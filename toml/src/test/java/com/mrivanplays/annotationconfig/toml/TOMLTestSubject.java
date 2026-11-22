@@ -59,7 +59,8 @@ public class TOMLTestSubject {
   }
 
   @Comment("OffsetDateTime")
-  private OffsetDateTime dateTime = OffsetDateTime.now();
+  // a fixed value, so that tests can compare the full output
+  private OffsetDateTime dateTime = OffsetDateTime.parse("2021-11-10T17:31:48+02:00");
 
   @Comment("This has been dumped with the default serializer")
   @Key("default-serializer")

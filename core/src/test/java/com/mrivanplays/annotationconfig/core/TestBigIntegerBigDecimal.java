@@ -38,14 +38,11 @@ public class TestBigIntegerBigDecimal {
 
   @Test
   public void testSerialize() {
-    Subject config = new Subject();
     StringWriter writer = new StringWriter();
-    PropertyConfig.getConfigResolver().dump(config, writer);
+    PropertyConfig.getConfigResolver().dump(new Subject(), writer);
 
     String expected = "integer=1111111111\n" + "\n" + "decimal=1111111111.22222222\n";
-
-    Assertions.assertEquals(
-        expected.replaceAll("\\R", "\n"), writer.toString().replaceAll("\\R", "\n"));
+    Assertions.assertEquals(expected, writer.toString().replaceAll("\\R", "\n"));
   }
 
   @Test
@@ -56,7 +53,8 @@ public class TestBigIntegerBigDecimal {
             config,
             getClass().getClassLoader().getResourceAsStream("big-int-big-dec-test.properties"));
 
-    Assertions.assertEquals(3.3333333332222223E9, config.decimal.doubleValue());
-    Assertions.assertEquals(3333333333L, config.integer.longValueExact());
+    // exact values: both are larger than an int, and the decimal has more digits than a double
+    Assertions.assertEquals(new BigDecimal("3333333333.22222222"), config.decimal);
+    Assertions.assertEquals(new BigInteger("3333333333"), config.integer);
   }
 }

@@ -34,8 +34,13 @@ import java.util.Arrays;
 import java.util.List;
 import org.jspecify.annotations.NullMarked;
 import org.junit.jupiter.api.Assertions;
-import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 
+/**
+ * A list of single field objects is written as a list of plain values, both with a registered
+ * serializer and with the default serializer.
+ */
 class TestListObjectOnlyObjectSerializer {
 
   static class Subject {
@@ -76,61 +81,45 @@ class TestListObjectOnlyObjectSerializer {
 
   private final ConfigResolver resolver = YamlConfig.getConfigResolver();
 
-  void registerSerializer() {
-    SerializerRegistry serializerRegistry = SerializerRegistry.INSTANCE;
-    if (!serializerRegistry.hasSerializer(TestObject.class)) {
-      serializerRegistry.registerSerializer(TestObject.class, new TestObject.Serializer());
+  /** Runs {@code test}, with the serializer registered only for its duration if requested. */
+  private static void run(boolean withSerializer, Runnable test) {
+    SerializerRegistry registry = SerializerRegistry.INSTANCE;
+    if (withSerializer) {
+      registry.registerSerializer(TestObject.class, new TestObject.Serializer());
+    }
+    try {
+      test.run();
+    } finally {
+      if (withSerializer) {
+        registry.unregisterSerializer(TestObject.class);
+      }
     }
   }
 
-  void unregisterSerializer() {
-    SerializerRegistry serializerRegistry = SerializerRegistry.INSTANCE;
-    if (serializerRegistry.hasSerializer(TestObject.class)) {
-      serializerRegistry.unregisterSerializer(TestObject.class);
-    }
+  @ParameterizedTest(name = "with serializer: {0}")
+  @ValueSource(booleans = {true, false})
+  void testDump(boolean withSerializer) {
+    run(
+        withSerializer,
+        () -> {
+          StringWriter writer = new StringWriter();
+          resolver.dump(new Subject(), writer);
+          Assertions.assertEquals(
+              "objects:\n  - \"foo\"\n  - \"bar\"\n", writer.toString().replaceAll("\\R", "\n"));
+        });
   }
 
-  @Test
-  void testDumpWithSerializer() {
-    this.registerSerializer();
-    this.testDump();
-  }
-
-  @Test
-  void testLoadWithSerializer() {
-    this.registerSerializer();
-    this.testLoad();
-  }
-
-  @Test
-  void testDumpWithoutSerializer() {
-    this.unregisterSerializer();
-    this.testDump();
-  }
-
-  @Test
-  void testLoadWithoutSerializer() {
-    this.unregisterSerializer();
-    this.testLoad();
-  }
-
-  void testDump() {
-    Subject config = new Subject();
-    StringWriter writer = new StringWriter();
-    resolver.dump(config, writer);
-
-    String expected = "objects:\n  - \"foo\"\n  - \"bar\"\n";
-
-    Assertions.assertEquals(expected, writer.toString().replaceAll("\\R", "\n"));
-  }
-
-  void testLoad() {
-    Subject config = new Subject();
-    StringReader reader = new StringReader("objects:\n  - \"baz\"\n  - \"aabb\"\n");
-    resolver.load(config, reader);
-
-    Assertions.assertEquals(2, config.objects.size());
-    Assertions.assertEquals("baz", config.objects.get(0).foo);
-    Assertions.assertEquals("aabb", config.objects.get(1).foo);
+  @ParameterizedTest(name = "with serializer: {0}")
+  @ValueSource(booleans = {true, false})
+  void testLoad(boolean withSerializer) {
+    run(
+        withSerializer,
+        () -> {
+          Subject config = new Subject();
+          resolver.load(config, new StringReader("objects:\n  - \"baz\"\n  - \"aabb\"\n"));
+          Assertions.assertEquals(2, config.objects.size());
+          Assertions.assertEquals("baz", config.objects.get(0).foo);
+          Assertions.assertEquals("aabb", config.objects.get(1).foo);
+        });
   }
 }

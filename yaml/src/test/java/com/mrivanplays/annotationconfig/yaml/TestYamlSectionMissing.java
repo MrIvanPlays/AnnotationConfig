@@ -25,10 +25,12 @@ package com.mrivanplays.annotationconfig.yaml;
 import com.mrivanplays.annotationconfig.core.annotations.ConfigObject;
 import com.mrivanplays.annotationconfig.core.annotations.comment.Comment;
 import com.mrivanplays.annotationconfig.core.resolver.ConfigResolver;
-import java.io.File;
-import org.junit.jupiter.api.AfterAll;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
 
 public class TestYamlSectionMissing {
 
@@ -43,12 +45,9 @@ public class TestYamlSectionMissing {
 
       private String foo = "foo";
     }
-
-    public TestSection sect() {
-      return test;
-    }
   }
 
+  // a newer version of Subject1: the default of foo changed and the option bar was added
   @Comment("Comments should also be kept!")
   private static final class Subject2 {
 
@@ -58,39 +57,31 @@ public class TestYamlSectionMissing {
 
     public static final class TestSection {
 
-      // check core/TestMissingOptions to see the reasoning of change of the default value
       private String foo = "baz";
-
       private String bar = "bar";
     }
-
-    public TestSection sect() {
-      return test;
-    }
   }
 
-  private static final File file = new File("missing-opt.yml");
   private final ConfigResolver resolver = YamlConfig.getConfigResolver();
 
-  @AfterAll
-  public static void terminate() {
-    file.delete();
-  }
-
   @Test
-  public void testSubject1() {
-    Subject1 config = new Subject1();
-    resolver.dump(config, file);
+  public void missingSectionOptionsAreAddedToTheFile(@TempDir Path dir) throws IOException {
+    Path file = dir.resolve("missing-opt.yml");
+    resolver.dump(new Subject1(), file);
 
-    Assertions.assertEquals("foo", config.sect().foo);
-  }
-
-  @Test
-  public void testSubject2() {
     Subject2 config = new Subject2();
     resolver.load(config, file);
 
-    Assertions.assertEquals("foo", config.sect().foo);
-    Assertions.assertEquals("bar", config.sect().bar);
+    // the value in the file wins over the changed default, the missing option gets its default
+    Assertions.assertEquals("foo", config.test.foo);
+    Assertions.assertEquals("bar", config.test.bar);
+    String expected =
+        "# Comments should also be kept!\n"
+            + "\n"
+            + "# This is test subject comment\n"
+            + "test:\n"
+            + "  foo: \"foo\"\n"
+            + "  bar: \"bar\"\n";
+    Assertions.assertEquals(expected, Files.readString(file).replaceAll("\\R", "\n"));
   }
 }

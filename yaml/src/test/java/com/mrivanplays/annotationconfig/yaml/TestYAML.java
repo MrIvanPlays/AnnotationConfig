@@ -23,50 +23,53 @@
 package com.mrivanplays.annotationconfig.yaml;
 
 import com.mrivanplays.annotationconfig.core.resolver.ConfigResolver;
-import java.io.File;
-import org.junit.jupiter.api.AfterAll;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.List;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
 
 public class TestYAML {
 
-  private static final File file = new File("non-existing.yml");
   private final ConfigResolver resolver = YamlConfig.getConfigResolver();
 
-  @AfterAll
-  public static void terminate() {
-    file.delete();
-  }
-
   @Test
-  public void testCreatingFile() {
+  public void dumpedFileLoadsBack(@TempDir Path dir) {
+    Path file = dir.resolve("config.yml");
+    resolver.dump(new YAMLTestSubject(), file);
+
     YAMLTestSubject config = new YAMLTestSubject();
-    try {
-      resolver.dump(config, file);
-      resolver.load(config, file);
-      Assertions.assertTrue(true);
-    } catch (Throwable e) {
-      Assertions.fail(e);
-    }
+    resolver.load(config, file);
+    Assertions.assertEquals("Ivan", config.getName());
+    Assertions.assertEquals("No console!", config.getMessages().getNoConsole());
+    Assertions.assertEquals(List.of("Hello", "bla bla"), config.getList());
+    Assertions.assertEquals(20, config.getLocationTwo().getX());
   }
 
   @Test
-  public void testNonExistingField() {
+  public void newOptionsAreAddedToAnOlderFile(@TempDir Path dir) throws IOException {
+    // YAMLSecondTestSubject is YAMLTestSubject with options added
+    Path file = dir.resolve("config.yml");
+    resolver.dump(new YAMLTestSubject(), file);
+
     YAMLSecondTestSubject config = new YAMLSecondTestSubject();
-    try {
-      resolver.dump(config, file);
-      resolver.load(config, file);
-      Assertions.assertTrue(true);
-    } catch (Throwable e) {
-      Assertions.fail(e);
-    }
+    resolver.load(config, file);
+
+    Assertions.assertEquals(1, config.getA());
+    Assertions.assertEquals("world_the_end", config.getLocationThree().getWorld());
+    String written = Files.readString(file).replaceAll("\\R", "\n");
+    Assertions.assertTrue(written.contains("# baz\na: 1\n"), written);
+    Assertions.assertTrue(written.contains("# Third location\nlocation-no-three:\n"), written);
+    Assertions.assertTrue(
+        written.contains("# This is some dummy section\nnew-section:\n  foo: \"foo\"\n"), written);
   }
 
   @Test
-  void testLoad() throws Exception {
+  void testLoad() {
     YAMLSecondTestSubject config = new YAMLSecondTestSubject();
     resolver.load(config, getClass().getClassLoader().getResourceAsStream("test.yml"));
-
     Assertions.assertEquals("foo", config.getLocationThree().getWorld());
     Assertions.assertEquals(1, config.getLocationThree().getX());
     Assertions.assertEquals(223, config.getLocationThree().getY());

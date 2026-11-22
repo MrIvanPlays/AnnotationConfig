@@ -38,7 +38,6 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Collections;
-import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -290,48 +289,7 @@ public final class ConfigResolverImpl implements ConfigResolver {
   public <T> Map<String, T> resolveMultiple(
       File dir, Supplier<T> configToResolveTo, WritableObject dumpFile, Settings settings) {
     Objects.requireNonNull(dir, "dir");
-    Objects.requireNonNull(configToResolveTo, "configToResolveTo");
-    Objects.requireNonNull(dumpFile, "dumpFile");
-    Objects.requireNonNull(settings, "settings");
-    if (!dir.isDirectory()) {
-      throw new IllegalArgumentException(dir + " is not a directory!");
-    }
-    if (!dir.exists()) {
-      dir.mkdirs();
-      T config = configToResolveTo.get();
-      dump(config, dumpFile.writer(), settings);
-      return Collections.emptyMap();
-    } else {
-      File[] files =
-          dir.listFiles((_, name) -> {
-            for (String extension : fileExtensions) {
-              if (name.endsWith(extension)) {
-                return true;
-              }
-            }
-            return false;
-          });
-      if (files == null || files.length == 0) {
-        T config = configToResolveTo.get();
-        dump(config, dumpFile.writer(), settings);
-        return Collections.emptyMap();
-      }
-      Settings passed = this.passSettings(settings);
-      Map<String, T> ret = new LinkedHashMap<>();
-      Set<AnnotationHolder> holders = null;
-      for (File file : files) {
-        if (file.isDirectory()) {
-          continue;
-        }
-        T config = configToResolveTo.get();
-        if (holders == null) {
-          holders = AnnotatedConfigResolver.resolveAnnotationHolders(config, passed);
-        }
-        handleFileLoad(config, holders, file, passed);
-        ret.put(file.getName(), config);
-      }
-      return ret;
-    }
+    return resolveMultiple(dir.toPath(), configToResolveTo, dumpFile, settings);
   }
 
   @Override
@@ -347,57 +305,47 @@ public final class ConfigResolverImpl implements ConfigResolver {
     Objects.requireNonNull(configToResolveTo, "configToResolveTo");
     Objects.requireNonNull(dumpFile, "dumpFile");
     Objects.requireNonNull(settings, "settings");
-    if (!Files.isDirectory(dir)) {
+    // a missing directory is created below; only an existing non-directory is an error
+    if (Files.exists(dir) && !Files.isDirectory(dir)) {
       throw new IllegalArgumentException(dir + " is not a directory!");
     }
-    if (Files.notExists(dir)) {
-      try {
-        Files.createDirectories(dir);
-        T config = configToResolveTo.get();
-        dump(config, dumpFile.writer(), settings);
-        return Collections.emptyMap();
-      } catch (IOException e) {
-        throw new RuntimeException(e);
-      }
-    } else {
-      Settings passed = this.passSettings(settings);
+    Settings passed = this.passSettings(settings);
+    List<Path> configFiles;
+    try {
+      Files.createDirectories(dir);
       try (Stream<Path> paths = Files.list(dir)) {
-        Iterator<Path> iterator = paths.iterator();
-        if (!iterator.hasNext()) {
-          T config = configToResolveTo.get();
-          dump(config, dumpFile.writer(), settings);
-          return Collections.emptyMap();
-        }
-        Set<AnnotationHolder> holders = null;
-        Map<String, T> ret = new LinkedHashMap<>();
-        while (iterator.hasNext()) {
-          Path path = iterator.next();
-          if (Files.isDirectory(path)) {
-            continue;
-          }
-          String fileName = path.toFile().getName();
-          boolean matches = false;
-          for (String extension : fileExtensions) {
-            if (fileName.endsWith(extension)) {
-              matches = true;
-              break;
-            }
-          }
-          if (!matches) {
-            continue;
-          }
-          T config = configToResolveTo.get();
-          if (holders == null) {
-            holders = AnnotatedConfigResolver.resolveAnnotationHolders(config, passed);
-          }
-          handlePathLoad(config, holders, path, passed);
-          ret.put(fileName, config);
-        }
-        return ret;
-      } catch (IOException e) {
-        throw new RuntimeException(e);
+        // sorted, so that the returned map has the same order on every file system
+        configFiles =
+            paths.filter(Files::isRegularFile).filter(this::hasConfigExtension).sorted().toList();
+      }
+    } catch (IOException e) {
+      throw new RuntimeException("Could not read the configurations in " + dir, e);
+    }
+    if (configFiles.isEmpty()) {
+      dump(configToResolveTo.get(), dumpFile.writer(), passed);
+      return Collections.emptyMap();
+    }
+    Set<AnnotationHolder> holders = null;
+    Map<String, T> ret = new LinkedHashMap<>();
+    for (Path path : configFiles) {
+      T config = configToResolveTo.get();
+      if (holders == null) {
+        holders = AnnotatedConfigResolver.resolveAnnotationHolders(config, passed);
+      }
+      handlePathLoad(config, holders, path, passed);
+      ret.put(path.getFileName().toString(), config);
+    }
+    return ret;
+  }
+
+  private boolean hasConfigExtension(Path path) {
+    String fileName = path.getFileName().toString();
+    for (String extension : fileExtensions) {
+      if (fileName.endsWith(extension)) {
+        return true;
       }
     }
+    return false;
   }
 
   private void handleFileLoad(
