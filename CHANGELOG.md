@@ -456,6 +456,7 @@ CommentPlaceholderRegistry.INSTANCE.registerPlaceholder(
 - An immutable `DataObject` created from a map reads the map when it is accessed instead of
   wrapping all of it up front, so the map should not be changed afterwards. Loading wrapped every
   value of the file this way, once for each level of nesting.
+- `DataObject#getAs` now properly checks the type value before casting. Previously, `getAs(Integer.class)` on a `Number` would work, but `getAs(Number.class)` on a `Integer` would throw.
 - There are many smaller quality-of-code changes.
 
 ## Version 3.0.3
