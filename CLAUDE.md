@@ -108,10 +108,10 @@ Java 25, Maven multi-module build.
 
 ## Conventions
 
-- Source files are committed with CRLF line endings; keep them CRLF. In Git Bash, `sed -i` strips
-  the CR from every line it rewrites. Use `perl -pi -e '...'` or an editor instead, and check with
-  `file <path>` (it should say "with CRLF line terminators"). Perl also halves backslashes in
-  replacement text, so make edits that contain backslashes with an editor, not a regex.
+- Every text file is stored and checked out with LF line endings: `.gitattributes` sets
+  `* text=auto eol=lf`, which overrides `core.autocrlf`. Git turns CRLF into LF when a file is
+  added, but write new files with LF anyway. Perl halves backslashes in replacement text, so make edits that
+  contain backslashes with an editor, not a regex.
 - Java sources are plain ASCII: write non-ASCII characters as `\uXXXX` escapes. Tools that write
   files can turn such escapes into the raw characters (in docs too), so check new files with
   `grep -nP '[^\x00-\x7F]'` and look at every `\u` escape after writing it.
