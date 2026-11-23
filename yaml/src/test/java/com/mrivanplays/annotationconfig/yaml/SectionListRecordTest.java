@@ -116,7 +116,7 @@ public class SectionListRecordTest {
             + "    key: \"lorem\"\n"
             + "    value: \"ipsum\"\n";
 
-    Assertions.assertEquals(expected, w.toString().replaceAll("\\R", "\n"));
+    Assertions.assertEquals(expected, w.toString());
   }
 
   @Test
@@ -181,7 +181,7 @@ public class SectionListRecordTest {
             + "    num: 34\n"
             + "    persist: false\n";
 
-    Assertions.assertEquals(expected, w.toString().replaceAll("\\R", "\n"));
+    Assertions.assertEquals(expected, w.toString());
   }
 
   @Test

@@ -71,7 +71,7 @@ public class TestSectionChildSections {
             + "    # Bar comment\n"
             + "    bar: \"aabb\"\n";
 
-    Assertions.assertEquals(expected, writer.toString().replaceAll("\\R", "\n"));
+    Assertions.assertEquals(expected, writer.toString());
   }
 
   @Test

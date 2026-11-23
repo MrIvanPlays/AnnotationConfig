@@ -65,7 +65,7 @@ public class TestYamlScalars {
   private static String dump(Settings settings) {
     StringWriter writer = new StringWriter();
     YamlConfig.getConfigResolver().dump(new Scalars(), writer, settings);
-    return writer.toString().replaceAll("\\R", "\n");
+    return writer.toString();
   }
 
   /** A configured instance with the default options, which goes through the representer. */

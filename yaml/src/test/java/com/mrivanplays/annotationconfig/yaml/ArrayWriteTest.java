@@ -80,7 +80,7 @@ public class ArrayWriteTest {
             + "  - foo: 2\n"
             + "    baz: false\n";
 
-    Assertions.assertEquals(expected, writer.toString().replaceAll("\\R", "\n"));
+    Assertions.assertEquals(expected, writer.toString());
   }
 
   @Test

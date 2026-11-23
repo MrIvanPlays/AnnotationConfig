@@ -42,6 +42,6 @@ public class TestEmptyListWriting {
 
     YamlConfig.getConfigResolver().dump(subject, writer);
 
-    Assertions.assertEquals("foo: []\n", writer.toString().replaceAll("\\R", "\n"));
+    Assertions.assertEquals("foo: []\n", writer.toString());
   }
 }

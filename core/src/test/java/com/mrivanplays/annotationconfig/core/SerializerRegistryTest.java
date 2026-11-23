@@ -81,7 +81,7 @@ public class SerializerRegistryTest {
   private static String dump() {
     StringWriter writer = new StringWriter();
     PropertyConfig.getConfigResolver().dump(new Subject(), writer);
-    return writer.toString().replaceAll("\\R", "\n");
+    return writer.toString();
   }
 
   private static Point load(String properties) {

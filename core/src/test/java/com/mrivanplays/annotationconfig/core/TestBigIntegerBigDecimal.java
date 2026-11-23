@@ -44,7 +44,7 @@ public class TestBigIntegerBigDecimal {
     PropertyConfig.getConfigResolver().dump(new Subject(), writer);
 
     String expected = "integer=1111111111\n" + "\n" + "decimal=1111111111.22222222\n";
-    Assertions.assertEquals(expected, writer.toString().replaceAll("\\R", "\n"));
+    Assertions.assertEquals(expected, writer.toString());
   }
 
   @Test

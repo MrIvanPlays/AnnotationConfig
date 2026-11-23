@@ -105,7 +105,7 @@ class TestListObjectOnlyObjectSerializer {
           StringWriter writer = new StringWriter();
           resolver.dump(new Subject(), writer);
           Assertions.assertEquals(
-              "objects:\n  - \"foo\"\n  - \"bar\"\n", writer.toString().replaceAll("\\R", "\n"));
+              "objects:\n  - \"foo\"\n  - \"bar\"\n", writer.toString());
         });
   }
 

@@ -72,7 +72,7 @@ I am a multiline string!
 
     String expected = "control-field: -1\n" + "\n" + "multiline: |\n" + expectedMultiline;
 
-    Assertions.assertEquals(expected, writer.toString().replaceAll("\\R", "\n"));
+    Assertions.assertEquals(expected, writer.toString());
   }
 
   @Test

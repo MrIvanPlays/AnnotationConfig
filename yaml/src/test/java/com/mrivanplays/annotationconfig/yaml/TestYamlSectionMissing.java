@@ -82,6 +82,6 @@ public class TestYamlSectionMissing {
             + "test:\n"
             + "  foo: \"foo\"\n"
             + "  bar: \"bar\"\n";
-    Assertions.assertEquals(expected, Files.readString(file).replaceAll("\\R", "\n"));
+    Assertions.assertEquals(expected, Files.readString(file));
   }
 }

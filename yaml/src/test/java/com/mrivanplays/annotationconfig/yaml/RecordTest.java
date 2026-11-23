@@ -77,7 +77,7 @@ public class RecordTest {
             + "  bar: 255\n"
             + "  perf: true\n"
             + "  aa: 2.5\n";
-    Assertions.assertEquals(expected, w.toString().replaceAll("\\R", "\n"));
+    Assertions.assertEquals(expected, w.toString());
   }
 
   @Test

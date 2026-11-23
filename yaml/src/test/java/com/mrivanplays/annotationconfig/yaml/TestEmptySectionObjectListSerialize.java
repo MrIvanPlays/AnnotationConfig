@@ -72,7 +72,7 @@ public class TestEmptySectionObjectListSerialize {
   private static String dump(SubjectConfig config) {
     StringWriter writer = new StringWriter();
     YamlConfig.getConfigResolver().dump(config, writer);
-    return writer.toString().replaceAll("\\R", "\n");
+    return writer.toString();
   }
 
   @Test

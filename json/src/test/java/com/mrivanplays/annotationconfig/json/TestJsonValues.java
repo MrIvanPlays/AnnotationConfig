@@ -41,7 +41,7 @@ public class TestJsonValues {
   private static String dump(Object config) {
     StringWriter writer = new StringWriter();
     RESOLVER.dump(config, writer);
-    return writer.toString().replaceAll("\\R", "\n");
+    return writer.toString();
   }
 
   private static <T> T load(T config, String json) {

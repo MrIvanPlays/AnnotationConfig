@@ -54,7 +54,7 @@ public class TestMissingOptions {
   private final ConfigResolver resolver = PropertyConfig.getConfigResolver();
 
   private static String read(Path file) throws IOException {
-    return Files.readString(file).replaceAll("\\R", "\n");
+    return Files.readString(file);
   }
 
   @Test

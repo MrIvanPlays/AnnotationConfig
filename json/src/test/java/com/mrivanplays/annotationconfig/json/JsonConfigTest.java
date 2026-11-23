@@ -52,7 +52,7 @@ public class JsonConfigTest {
     Subject subject = new Subject();
     JsonConfig.getConfigResolver().dump(subject, writer);
 
-    Assertions.assertEquals(expected, writer.toString().replaceAll("\\R", "\n"));
+    Assertions.assertEquals(expected, writer.toString());
   }
 
   @Test

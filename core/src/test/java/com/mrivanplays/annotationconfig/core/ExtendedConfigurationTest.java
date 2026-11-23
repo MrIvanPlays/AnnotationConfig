@@ -53,7 +53,7 @@ public class ExtendedConfigurationTest {
     StringWriter writer = new StringWriter();
     PropertyConfig.getConfigResolver().dump(new ExtendedSubject(), writer, findParentFields());
     String expected = "# Test comment foo\n\nfoo=1\n\nbar=baz\n";
-    Assertions.assertEquals(expected, writer.toString().replaceAll("\\R", "\n"));
+    Assertions.assertEquals(expected, writer.toString());
   }
 
   @Test
@@ -69,6 +69,6 @@ public class ExtendedConfigurationTest {
   void testParentFieldsAreIgnoredByDefault() {
     StringWriter writer = new StringWriter();
     PropertyConfig.getConfigResolver().dump(new ExtendedSubject(), writer);
-    Assertions.assertEquals("bar=baz\n", writer.toString().replaceAll("\\R", "\n"));
+    Assertions.assertEquals("bar=baz\n", writer.toString());
   }
 }

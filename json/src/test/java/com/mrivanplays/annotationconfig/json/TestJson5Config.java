@@ -54,7 +54,7 @@ public class TestJson5Config {
   private static String dump(ConfigResolver resolver, Object config) {
     StringWriter writer = new StringWriter();
     resolver.dump(config, writer);
-    return writer.toString().replaceAll("\\R", "\n");
+    return writer.toString();
   }
 
   @Comment("Server config")

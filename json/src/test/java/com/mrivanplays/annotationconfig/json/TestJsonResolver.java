@@ -43,7 +43,7 @@ public class TestJsonResolver {
   private static String dump(Object config, Settings settings) {
     StringWriter writer = new StringWriter();
     RESOLVER.dump(config, writer, settings);
-    return writer.toString().replaceAll("\\R", "\n");
+    return writer.toString();
   }
 
   // <editor-fold desc="Missing options">
@@ -98,7 +98,7 @@ public class TestJsonResolver {
             "b": 3
           }
         }""";
-    Assertions.assertEquals(expected, Files.readString(file).replaceAll("\\R", "\n"));
+    Assertions.assertEquals(expected, Files.readString(file));
   }
 
   // </editor-fold>

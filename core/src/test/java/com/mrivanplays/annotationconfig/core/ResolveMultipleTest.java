@@ -47,7 +47,7 @@ class ResolveMultipleTest {
   }
 
   private static String read(Path file) throws IOException {
-    return Files.readString(file).replaceAll("\\R", "\n");
+    return Files.readString(file);
   }
 
   @Test

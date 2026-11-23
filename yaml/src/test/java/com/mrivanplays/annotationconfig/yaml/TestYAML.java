@@ -59,7 +59,7 @@ public class TestYAML {
 
     Assertions.assertEquals(1, config.getA());
     Assertions.assertEquals("world_the_end", config.getLocationThree().getWorld());
-    String written = Files.readString(file).replaceAll("\\R", "\n");
+    String written = Files.readString(file);
     Assertions.assertTrue(written.contains("# baz\na: 1\n"), written);
     Assertions.assertTrue(written.contains("# Third location\nlocation-no-three:\n"), written);
     Assertions.assertTrue(

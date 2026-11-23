@@ -64,7 +64,7 @@ public class TestSectionWithKeyResolver {
             + "      # baz\n"
             + "      baz: -1\n";
 
-    Assertions.assertEquals(expected, writer.toString().replaceAll("\\R", "\n"));
+    Assertions.assertEquals(expected, writer.toString());
   }
 
   @Test

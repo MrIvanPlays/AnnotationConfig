@@ -44,7 +44,7 @@ final class TomlTesting {
   static String dump(Object config) {
     StringWriter writer = new StringWriter();
     RESOLVER.dump(config, writer);
-    String toml = writer.toString().replaceAll("\\R", "\n");
+    String toml = writer.toString();
     parse(toml);
     return toml;
   }

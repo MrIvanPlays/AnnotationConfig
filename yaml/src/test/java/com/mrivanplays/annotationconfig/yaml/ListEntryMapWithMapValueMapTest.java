@@ -76,6 +76,6 @@ public class ListEntryMapWithMapValueMapTest {
             + "      baz:\n"
             + "        baba: \"yaga\"\n"
             + "        lorem: \"ipsum\"\n";
-    Assertions.assertEquals(expected, writer.toString().replaceAll("\\R", "\n"));
+    Assertions.assertEquals(expected, writer.toString());
   }
 }

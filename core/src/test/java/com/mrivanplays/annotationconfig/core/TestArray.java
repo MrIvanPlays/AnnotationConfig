@@ -72,6 +72,6 @@ class TestArray {
             + "boolArray=true, false, true\n"
             + "\n"
             + "charArray=a, b, c\n";
-    Assertions.assertEquals(expected, writer.toString().replaceAll("\\R", "\n"));
+    Assertions.assertEquals(expected, writer.toString());
   }
 }

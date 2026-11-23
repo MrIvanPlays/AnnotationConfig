@@ -54,7 +54,7 @@ public class TestDataObjectSerialization {
 
     String expected = "data:\n" + "  foo: 2\n" + "  bar: \"baz\"\n" + "  baz: 69420\n";
 
-    Assertions.assertEquals(expected, writer.toString().replaceAll("\\R", "\n"));
+    Assertions.assertEquals(expected, writer.toString());
   }
 
   @Test

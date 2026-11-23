@@ -42,7 +42,7 @@ import org.junit.jupiter.api.io.TempDir;
 public class TestTomlResolver {
 
   private static String read(Path file) throws IOException {
-    return Files.readString(file).replaceAll("\\R", "\n");
+    return Files.readString(file);
   }
 
   // <editor-fold desc="Missing options">
@@ -167,7 +167,7 @@ public class TestTomlResolver {
   private static String dump(Object config, Settings settings) {
     StringWriter writer = new StringWriter();
     RESOLVER.dump(config, writer, settings);
-    return writer.toString().replaceAll("\\R", "\n");
+    return writer.toString();
   }
 
   @Test

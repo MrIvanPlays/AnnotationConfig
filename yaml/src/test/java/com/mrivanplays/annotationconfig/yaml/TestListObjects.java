@@ -67,7 +67,7 @@ public class TestListObjects {
             + "  - name: \"bar\"\n"
             + "    value: \"baz\"\n";
 
-    Assertions.assertEquals(expected, writer.toString().replaceAll("\\R", "\n"));
+    Assertions.assertEquals(expected, writer.toString());
   }
 
   @Test

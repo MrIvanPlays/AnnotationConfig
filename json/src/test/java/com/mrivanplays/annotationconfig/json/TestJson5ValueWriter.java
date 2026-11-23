@@ -53,7 +53,7 @@ public class TestJson5ValueWriter {
   private static String dump(Object config) {
     StringWriter writer = new StringWriter();
     RESOLVER.dump(config, writer);
-    return writer.toString().replaceAll("\\R", "\n");
+    return writer.toString();
   }
 
   private static <T> T load(T config, String json5) {
@@ -509,7 +509,7 @@ public class TestJson5ValueWriter {
           // added comment
           added: true
         }""";
-    Assertions.assertEquals(expected, Files.readString(file).replaceAll("\\R", "\n"));
+    Assertions.assertEquals(expected, Files.readString(file));
   }
 
   // </editor-fold>

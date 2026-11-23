@@ -57,6 +57,6 @@ public class TestDottedKeys {
             + "    test:\n"
             + "      # Mashallah\n"
             + "      mashallah: \"foo\"\n";
-    Assertions.assertEquals(expected, writer.toString().replaceAll("\\R", "\n"));
+    Assertions.assertEquals(expected, writer.toString());
   }
 }

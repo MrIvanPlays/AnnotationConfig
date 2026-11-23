@@ -72,6 +72,6 @@ public class TestTOML {
             + "foo = 'foo string'\n"
             + "bar = 1\n"
             + "baz = 0.555\n";
-    Assertions.assertEquals(expected, writer.toString().replaceAll("\\R", "\n"));
+    Assertions.assertEquals(expected, writer.toString());
   }
 }

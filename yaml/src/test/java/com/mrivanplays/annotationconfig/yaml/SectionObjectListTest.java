@@ -93,7 +93,7 @@ class SectionObjectListTest {
             + "  bar:\n"
             + "    foo: 2\n"
             + "    baz: \"ipsum\"\n";
-    Assertions.assertEquals(expected, writer.toString().replaceAll("\\R", "\n"));
+    Assertions.assertEquals(expected, writer.toString());
   }
 
   @Test

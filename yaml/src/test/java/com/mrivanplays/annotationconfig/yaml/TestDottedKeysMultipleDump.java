@@ -88,6 +88,6 @@ public class TestDottedKeysMultipleDump {
             + "# This is a control field\n"
             + "control-field: -1\n";
 
-    Assertions.assertEquals(expected, dumpTo.toString().replaceAll("\\R", "\n"));
+    Assertions.assertEquals(expected, dumpTo.toString());
   }
 }

@@ -56,7 +56,7 @@ public class TestJsonTestSubjects {
   void testWrite(Object subject, String expected) {
     StringWriter dump = new StringWriter();
     JsonConfig.getConfigResolver().dump(subject, dump);
-    Assertions.assertEquals(expected, dump.toString().replaceAll("\\R", "\n"));
+    Assertions.assertEquals(expected, dump.toString());
   }
 
   @ParameterizedTest(name = "{0}")

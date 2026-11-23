@@ -133,6 +133,6 @@ Java 25, Maven multi-module build.
 - Surefire only runs classes named `Test*`, `*Test`, `*Tests` or `*TestCase`; other names are
   silently skipped.
 - Use `@TempDir` for files, never the working directory.
-- Writer tests compare the exact output (Java text blocks, line endings normalized with
-  `replaceAll("\\R", "\n")`) and also read it back. A test for a fixed bug should fail on the old
+- Writer tests compare the exact output (Java text blocks, which always use `\n`) without
+  normalizing line endings, and also read it back. A test for a fixed bug should fail on the old
   code: check that by running it against the previous commit's version of the class.

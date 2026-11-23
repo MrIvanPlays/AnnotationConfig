@@ -57,6 +57,6 @@ public class TestProperties {
             + "# Bla bla 2nd comment\n"
             + "message=this is a message\n";
 
-    Assertions.assertEquals(expected, writer.toString().replaceAll("\\R", "\n"));
+    Assertions.assertEquals(expected, writer.toString());
   }
 }
