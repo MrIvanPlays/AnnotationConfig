@@ -190,6 +190,10 @@
             <extensions>true</extensions>
             <configuration>
               <publishingServerId>central</publishingServerId>
+              <!-- The bundle holds every module of the build; maven.deploy.skip doesn't apply -->
+              <excludeArtifacts>
+                <excludeArtifact>annotationconfig-examples</excludeArtifact>
+              </excludeArtifacts>
             </configuration>
           </plugin>
         </plugins>
