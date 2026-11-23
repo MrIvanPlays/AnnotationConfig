@@ -52,7 +52,6 @@ public final class FieldInfo {
   private final boolean configObject;
   private final boolean rawConfig;
   private final boolean isStatic;
-  private final boolean synthetic;
   @Nullable private final Min min;
   @Nullable private final Max max;
   @Nullable private final Multiline multiline;
@@ -71,7 +70,6 @@ public final class FieldInfo {
     this.configObject = AnnotationUtils.isConfigObject(field);
     this.rawConfig = AnnotationUtils.isRawConfigAccess(field);
     this.isStatic = Modifier.isStatic(field.getModifiers());
-    this.synthetic = field.isSynthetic();
     this.min = field.getDeclaredAnnotation(Min.class);
     this.max = field.getDeclaredAnnotation(Max.class);
     this.multiline = field.getDeclaredAnnotation(Multiline.class);
@@ -122,10 +120,6 @@ public final class FieldInfo {
 
   public boolean isStatic() {
     return this.isStatic;
-  }
-
-  public boolean synthetic() {
-    return this.synthetic;
   }
 
   /** Whether the field has {@code @Min} or {@code @Max}, so its value has to be validated. */

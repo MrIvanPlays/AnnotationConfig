@@ -58,9 +58,8 @@ public final class ClassInfo {
   private final List<String> comments;
   private final boolean hasDeclaredAnnotations;
   private final boolean hasAnnotations;
-  // the fields the default serializer reads and writes, without and with static fields
-  private final List<FieldInfo> dataFields;
-  private final List<FieldInfo> dataFieldsWithStatic;
+  // the fields without the static ones
+  private final List<FieldInfo> instanceFields;
   // one set per combination of the three settings resolveAnnotationHolders depends on
   private final AtomicReferenceArray<@Nullable Set<AnnotationHolder>> holders =
       new AtomicReferenceArray<>(8);
@@ -70,23 +69,21 @@ public final class ClassInfo {
     this.type = type;
     Field[] declared = type.getDeclaredFields();
     List<FieldInfo> fields = new ArrayList<>(declared.length);
-    List<FieldInfo> dataFields = new ArrayList<>(declared.length);
-    List<FieldInfo> dataFieldsWithStatic = new ArrayList<>(declared.length);
+    List<FieldInfo> instanceFields = new ArrayList<>(declared.length);
     for (Field field : declared) {
-      FieldInfo info = new FieldInfo(field);
-      fields.add(info);
-      // synthetic fields, such as the outer instance of an inner class, are no config data
-      if (info.synthetic()) {
+      // synthetic fields, such as the outer instance of an inner class ("this$0") or the flag of
+      // assert statements ("$assertionsDisabled"), are added by the compiler and no config data
+      if (field.isSynthetic()) {
         continue;
       }
-      dataFieldsWithStatic.add(info);
+      FieldInfo info = new FieldInfo(field);
+      fields.add(info);
       if (!info.isStatic()) {
-        dataFields.add(info);
+        instanceFields.add(info);
       }
     }
     this.fields = List.copyOf(fields);
-    this.dataFields = List.copyOf(dataFields);
-    this.dataFieldsWithStatic = List.copyOf(dataFieldsWithStatic);
+    this.instanceFields = List.copyOf(instanceFields);
     this.comments =
         List.copyOf(AnnotationUtils.getComments(AnnotationAccessor.createFromClass(type), false));
     this.hasDeclaredAnnotations = type.getDeclaredAnnotations().length > 0;
@@ -98,17 +95,17 @@ public final class ClassInfo {
     return CACHE.get(type);
   }
 
-  /** Every declared field, in declaration order. */
+  /** Every declared field that isn't synthetic, in declaration order. */
   public List<FieldInfo> fields() {
     return this.fields;
   }
 
   /**
-   * The fields the default serializer reads and writes: no synthetic fields, and static fields only
-   * with {@code FIND_STATIC_FIELDS}. Fields with {@code @Ignore} are included.
+   * The fields the default serializer reads and writes: static fields only with {@code
+   * FIND_STATIC_FIELDS}, and never synthetic ones. Fields with {@code @Ignore} are included.
    */
   public List<FieldInfo> dataFields(boolean findStaticFields) {
-    return findStaticFields ? this.dataFieldsWithStatic : this.dataFields;
+    return findStaticFields ? this.fields : this.instanceFields;
   }
 
   /** The class comments with the registered placeholders applied. */

@@ -385,6 +385,10 @@ reads back exactly:
 
 ### Config resolver fixes
 
+- Fields that the compiler adds (synthetic fields) are no longer options of a config class or a
+  `@ConfigObject` section either. A section that is a non-static inner class using its outer
+  instance had that instance written as a `this$0` section holding a copy of the config, and with
+  `FIND_STATIC_FIELDS` a class with an `assert` statement had a `$assertionsDisabled` option.
 - With `FIND_PARENT_FIELDS`, a `@ConfigObject` section whose class extends a commented class
   repeated its own comment instead of writing the parent's comment.
 - `FIND_PARENT_FIELDS` no longer throws a `NullPointerException` for local and anonymous classes.
