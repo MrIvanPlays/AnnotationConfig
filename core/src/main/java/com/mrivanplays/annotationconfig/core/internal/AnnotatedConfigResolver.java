@@ -33,19 +33,16 @@ import com.mrivanplays.annotationconfig.core.resolver.key.KeyResolver;
 import com.mrivanplays.annotationconfig.core.resolver.settings.ACDefaultSettings;
 import com.mrivanplays.annotationconfig.core.resolver.settings.NullReadHandleOption;
 import com.mrivanplays.annotationconfig.core.resolver.settings.Settings;
-import com.mrivanplays.annotationconfig.core.serialization.AnnotationAccessor;
 import com.mrivanplays.annotationconfig.core.serialization.DataObject;
 import com.mrivanplays.annotationconfig.core.serialization.FieldTypeSerializer;
 import com.mrivanplays.annotationconfig.core.serialization.SerializationContext;
 import com.mrivanplays.annotationconfig.core.serialization.SerializerRegistry;
-import com.mrivanplays.annotationconfig.core.utils.AnnotationUtils;
 import com.mrivanplays.annotationconfig.core.utils.MapUtils;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.io.Writer;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Field;
-import java.lang.reflect.Modifier;
 import java.lang.reflect.Type;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.AtomicMoveNotSupportedException;
@@ -53,7 +50,6 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -61,7 +57,6 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
-import java.util.TreeSet;
 import org.jspecify.annotations.NullMarked;
 import org.jspecify.annotations.Nullable;
 
@@ -72,46 +67,17 @@ import org.jspecify.annotations.Nullable;
 @NullMarked
 public final class AnnotatedConfigResolver {
 
+  /**
+   * The commented classes and the fields of {@code annotatedClass}'s class, in the order they are
+   * written. The set is cached per class and settings, and can't be modified.
+   */
   public static Set<AnnotationHolder> resolveAnnotationHolders(
       Object annotatedClass, Settings settings) {
     boolean findParentFields = settings.get(ACDefaultSettings.FIND_PARENT_FIELDS).orElseThrow();
     boolean reverseFields = settings.get(ACDefaultSettings.SHOULD_REVERSE_FIELDS).orElseThrow();
     boolean findStaticFields = settings.get(ACDefaultSettings.FIND_STATIC_FIELDS).orElseThrow();
-
-    Set<AnnotationHolder> ret = new TreeSet<>();
-    Class<?> theClass = annotatedClass.getClass();
-    if (theClass.getDeclaredAnnotations().length > 0) {
-      ret.add(new AnnotationHolder(theClass));
-    }
-    List<Field> fields = new ArrayList<>(Arrays.asList(theClass.getDeclaredFields()));
-    if (findParentFields) {
-      // compared by identity: getCanonicalName() is null for local and anonymous classes
-      for (Class<?> parent = theClass.getSuperclass();
-          parent != null && parent != Object.class;
-          parent = parent.getSuperclass()) {
-        if (parent.getAnnotations().length > 0) {
-          ret.add(new AnnotationHolder(parent));
-        }
-        Collections.addAll(fields, parent.getDeclaredFields());
-      }
-    }
-
-    if (reverseFields) {
-      Collections.reverse(fields);
-    }
-
-    int order = 1;
-    for (Field field : fields) {
-      if (AnnotationUtils.isIgnored(field) && !theClass.isRecord()) {
-        continue;
-      }
-      if (!findStaticFields && Modifier.isStatic(field.getModifiers())) {
-        continue;
-      }
-      ret.add(new AnnotationHolder(field, order));
-      order++;
-    }
-    return ret;
+    return ClassInfo.of(annotatedClass.getClass())
+        .holders(findParentFields, reverseFields, findStaticFields);
   }
 
   public static void dump(
@@ -184,66 +150,76 @@ public final class AnnotatedConfigResolver {
       ValueWriter valueWriter,
       Settings settings)
       throws IOException {
-    WriteData parentData = new WriteData();
-    Field rawConfigField = null;
+    WriteContext context =
+        new WriteContext(
+            settings,
+            settings.get(ACDefaultSettings.KEY_RESOLVER).orElseThrow(),
+            // a writer without comments gets none, so they aren't collected
+            valueWriter.writesComments() ? new LinkedHashMap<>() : null);
+    Map<String, Object> toWrite = new LinkedHashMap<>();
+    FieldInfo rawConfigField = null;
     for (AnnotationHolder holder : holders) {
       if (holder.isClass()) {
-        List<String> comments =
-            AnnotationUtils.getComments(
-                AnnotationAccessor.createFromClass(holder.getClazz()), true);
         // the blank line separates the comments from the values; without comments (e.g. JSON,
         // which has none) it would be a stray leading line
-        if (commentChar != null && !comments.isEmpty()) {
-          for (String comment : comments) {
-            writer.print(commentChar + comment);
+        if (commentChar != null) {
+          List<String> comments = ClassInfo.of(holder.getClazz()).comments();
+          if (!comments.isEmpty()) {
+            for (String comment : comments) {
+              writer.print(commentChar + comment);
+              writer.append('\n');
+            }
             writer.append('\n');
           }
-          writer.append('\n');
         }
         continue;
       }
-      Field field = holder.getField();
-      if (AnnotationUtils.isRawConfigAccess(field)) {
+      FieldInfo field = holder.getInfo();
+      if (field.rawConfig()) {
         rawConfigField = field;
         continue;
       }
       try {
-        mergeInto(parentData, getWriteData(annotatedConfig, holder, settings));
+        writeField(annotatedConfig, field, context, toWrite, "");
       } catch (IllegalAccessException e) {
         throw new IllegalArgumentException("A field became inaccessible", e);
       }
     }
     if (rawConfigField != null) {
-      rawConfigField.setAccessible(true);
-      if (!rawConfigField.getType().isAssignableFrom(DataObject.class)) {
+      Field field = rawConfigField.ensureAccessible();
+      if (!field.getType().isAssignableFrom(DataObject.class)) {
         throw new IllegalArgumentException("@RawConfig on a field which is not DataObject");
       }
       try {
-        rawConfigField.set(annotatedConfig, new DataObject(parentData.toWrite(), true));
+        field.set(annotatedConfig, new DataObject(toWrite, true));
       } catch (IllegalAccessException e) {
         throw new IllegalArgumentException(
             "Could not set a field's value ; field not accessible anymore", e);
       }
     }
-    valueWriter.write(parentData.toWrite(), parentData.fieldComments(), writer, settings);
+    Map<String, List<String>> fieldComments =
+        context.comments() == null ? Collections.emptyMap() : context.comments();
+    valueWriter.write(toWrite, fieldComments, writer, settings);
   }
 
-  private record WriteData(
-      List<String> classComments,
-      Map<String, Object> toWrite,
-      Map<String, List<String>> fieldComments) {
+  /**
+   * What stays the same while one config is dumped.
+   *
+   * @param comments where the comments of all options go, under their dotted path from the root;
+   *     {@code null} when the writer doesn't write comments
+   * @param boxed a map reused for every {@link KeyResolver#boxTo} call, instead of a new one per
+   *     option
+   */
+  private record WriteContext(
+      Settings settings,
+      KeyResolver keyResolver,
+      @Nullable Map<String, List<String>> comments,
+      Map<String, Object> boxed) {
 
-    WriteData() {
-      this(new ArrayList<>(), new LinkedHashMap<>(), new LinkedHashMap<>());
+    WriteContext(
+        Settings settings, KeyResolver keyResolver, @Nullable Map<String, List<String>> comments) {
+      this(settings, keyResolver, comments, new LinkedHashMap<>(4));
     }
-  }
-
-  /** Merges the values and field comments of {@code child} into {@code target}. */
-  private static void mergeInto(WriteData target, WriteData child) {
-    for (Map.Entry<String, Object> entry : child.toWrite().entrySet()) {
-      combineMapToData(target, entry.getKey(), entry.getValue());
-    }
-    target.fieldComments().putAll(child.fieldComments());
   }
 
   /** The written form of a serialized value: the value itself, a list, or a map for a section. */
@@ -251,25 +227,23 @@ public final class AnnotatedConfigResolver {
     return serialized.isSingleValue() ? serialized.getAsObject() : serialized.getAsMap();
   }
 
-  private static WriteData getWriteData(
-      Object annotatedConfig, AnnotationHolder holder, Settings settings)
+  /**
+   * Serializes {@code field} of {@code annotatedConfig} into {@code toWrite}, the values of the
+   * section it is in, and its comments into the context under {@code commentPath} + its key.
+   *
+   * @param commentPath the dotted path of the section followed by a dot, "" at the top level
+   */
+  private static void writeField(
+      Object annotatedConfig,
+      FieldInfo info,
+      WriteContext context,
+      Map<String, Object> toWrite,
+      String commentPath)
       throws IllegalAccessException {
-    WriteData ret = new WriteData();
-    if (holder.isClass()) {
-      // the holder's class, not annotatedConfig's: with FIND_PARENT_FIELDS a holder can be a
-      // parent class, whose comments were replaced by a duplicate of the child's
-      ret.classComments()
-          .addAll(
-              AnnotationUtils.getComments(
-                  AnnotationAccessor.createFromClass(holder.getClazz()), true));
-      return ret;
-    }
-    Field field = holder.getField();
-    field.setAccessible(true);
-    String keyName = AnnotationUtils.getKey(field);
-    List<String> comments =
-        AnnotationUtils.getComments(AnnotationAccessor.createFromField(field), true);
-    if (AnnotationUtils.isConfigObject(field)) {
+    Field field = info.ensureAccessible();
+    String keyName = info.key();
+    Map<String, List<String>> allComments = context.comments();
+    if (info.configObject()) {
       Object cfgObject = field.get(annotatedConfig);
       if (cfgObject == null) {
         throw new IllegalArgumentException(
@@ -279,23 +253,38 @@ public final class AnnotatedConfigResolver {
                 + annotatedConfig.getClass().getSimpleName()
                 + "'");
       }
-      WriteData combinedData = new WriteData();
-      for (AnnotationHolder childHolder : resolveAnnotationHolders(cfgObject, settings)) {
-        WriteData childData = getWriteData(cfgObject, childHolder, settings);
-        combinedData.classComments().addAll(childData.classComments());
-        mergeInto(combinedData, childData);
+      Map<String, Object> sectionValues = new LinkedHashMap<>();
+      // the comments of the section's classes, used when the field itself has none
+      List<String> classComments = null;
+      String sectionPath = allComments == null ? "" : commentPath + keyName + ".";
+      for (AnnotationHolder child : resolveAnnotationHolders(cfgObject, context.settings())) {
+        if (child.isClass()) {
+          // the holder's class, not cfgObject's: with FIND_PARENT_FIELDS a holder can be a
+          // parent class, whose comments were replaced by a duplicate of the child's
+          if (allComments != null) {
+            List<String> comments = ClassInfo.of(child.getClazz()).comments();
+            if (!comments.isEmpty()) {
+              if (classComments == null) {
+                classComments = new ArrayList<>(comments.size());
+              }
+              classComments.addAll(comments);
+            }
+          }
+          continue;
+        }
+        writeField(cfgObject, child.getInfo(), context, sectionValues, sectionPath);
       }
-      ret.toWrite().put(keyName, combinedData.toWrite());
-      for (Map.Entry<String, List<String>> fieldComment : combinedData.fieldComments().entrySet()) {
-        ret.fieldComments().put(keyName + "." + fieldComment.getKey(), fieldComment.getValue());
-      }
+      combineMapToData(toWrite, keyName, sectionValues);
 
-      if (!comments.isEmpty()) {
-        ret.fieldComments().put(keyName, comments);
-      } else if (!combinedData.classComments().isEmpty()) {
-        ret.fieldComments().put(keyName, combinedData.classComments());
+      if (allComments != null) {
+        List<String> comments = info.comments();
+        if (!comments.isEmpty()) {
+          allComments.put(commentPath + keyName, comments);
+        } else if (classComments != null) {
+          allComments.put(commentPath + keyName, classComments);
+        }
       }
-      return ret;
+      return;
     }
     Object defaultsToValueObject = field.get(annotatedConfig);
     if (defaultsToValueObject == null) {
@@ -304,7 +293,7 @@ public final class AnnotatedConfigResolver {
     SerializerRegistry serializerRegistry = SerializerRegistry.INSTANCE;
     FieldTypeSerializer serializer =
         serializerRegistry
-            .getSerializer(field.getGenericType())
+            .getSerializer(info.genericType())
             .orElse(serializerRegistry.getDefaultSerializer());
     DataObject serialized =
         serializer.serialize(
@@ -313,10 +302,10 @@ public final class AnnotatedConfigResolver {
                 field.getName(),
                 defaultsToValueObject,
                 field.getType(),
-                field.getGenericType(),
+                info.genericType(),
                 annotatedConfig,
-                settings),
-            AnnotationAccessor.createFromField(field));
+                context.settings()),
+            info.accessor());
     if (serialized == null) {
       throw new NullPointerException(
           "Expected DataObject, got null ; Field: "
@@ -325,11 +314,11 @@ public final class AnnotatedConfigResolver {
               + field.getType().getName());
     }
     if (serialized.isEmpty()) {
-      return ret;
+      return;
     }
     defaultsToValueObject = unwrap(serialized);
     // check for multiline string
-    Multiline multiline = field.getDeclaredAnnotation(Multiline.class);
+    Multiline multiline = info.multiline();
     if (multiline != null) {
       if (!(defaultsToValueObject instanceof String string)) {
         throw new IllegalArgumentException("@Multiline put on a value which is not a String!");
@@ -340,7 +329,7 @@ public final class AnnotatedConfigResolver {
     CustomAnnotationRegistry caRegistry = CustomAnnotationRegistry.INSTANCE;
     if (!caRegistry.isEmpty()) {
       Class<?> foundWriteAnnotation = null;
-      for (Annotation annotation : field.getDeclaredAnnotations()) {
+      for (Annotation annotation : info.annotations()) {
         Class<? extends Annotation> type = annotation.annotationType();
         if (AnnotationType.match(type).isPresent()) {
           continue;
@@ -365,10 +354,10 @@ public final class AnnotatedConfigResolver {
                         field.getName(),
                         defaultsToValueObject,
                         field.getType(),
-                        field.getGenericType(),
+                        info.genericType(),
                         annotatedConfig,
-                        settings),
-                    AnnotationAccessor.createFromField(field));
+                        context.settings()),
+                    info.accessor());
             if (newSerialized == null) {
               throw new NullPointerException(
                   "Expected DataObject, but got null ; Field: "
@@ -394,21 +383,21 @@ public final class AnnotatedConfigResolver {
       }
     }
     // manipulate the defaultsToValueObject once again before sending it to the writer
-    Map<String, Object> dummyValues = new LinkedHashMap<>();
-    KeyResolver keyResolver = settings.get(ACDefaultSettings.KEY_RESOLVER).orElseThrow();
-    keyResolver.boxTo(keyName, defaultsToValueObject, dummyValues);
-    if (dummyValues.size() != 1) {
+    Map<String, Object> boxed = context.boxed();
+    boxed.clear();
+    context.keyResolver().boxTo(keyName, defaultsToValueObject, boxed);
+    if (boxed.size() != 1) {
       throw new IllegalArgumentException("Invalid key resolver.");
     }
-    Map.Entry<String, Object> boxed = dummyValues.entrySet().iterator().next();
-    combineMapToData(ret, boxed.getKey(), boxed.getValue());
+    Map.Entry<String, Object> entry = boxed.entrySet().iterator().next();
+    combineMapToData(toWrite, entry.getKey(), entry.getValue());
 
-    ret.fieldComments().put(keyName, comments);
-    return ret;
+    if (allComments != null) {
+      allComments.put(commentPath + keyName, info.comments());
+    }
   }
 
-  private static void combineMapToData(WriteData combinedData, String key, Object value) {
-    Map<String, Object> toWrite = combinedData.toWrite();
+  private static void combineMapToData(Map<String, Object> toWrite, String key, Object value) {
     Object stored = toWrite.get(key);
     if (stored == null && !toWrite.containsKey(key)) {
       toWrite.put(key, value);
@@ -440,20 +429,20 @@ public final class AnnotatedConfigResolver {
       if (holder.isClass()) {
         continue;
       }
-      Field field = holder.getField();
-      field.setAccessible(true);
-      if (AnnotationUtils.isRawConfigAccess(field)) {
+      FieldInfo info = holder.getInfo();
+      Field field = info.ensureAccessible();
+      if (info.rawConfig()) {
         if (!field.getType().isAssignableFrom(DataObject.class)) {
           throw new IllegalArgumentException("@RawConfig on a field which is not DataObject");
         }
         setField(field, annotatedConfig, new DataObject(values, true));
         continue;
       }
-      String keyName = AnnotationUtils.getKey(field);
+      String keyName = info.key();
       Object value = keyResolver.unbox(keyName, values);
       boolean thisMissingOption = value == null;
       missingOptions |= thisMissingOption;
-      if (AnnotationUtils.isConfigObject(field)) {
+      if (info.configObject()) {
         Object section;
         try {
           section = field.get(annotatedConfig);
@@ -476,7 +465,7 @@ public final class AnnotatedConfigResolver {
         }
         if (field.getType().isRecord()) {
           // directly deserialize the value and set the field, do NOT try to set record fields
-          Type fieldType = field.getGenericType();
+          Type fieldType = info.genericType();
           FieldTypeSerializer serializer =
               serializerRegistry
                   .getSerializer(fieldType)
@@ -491,7 +480,7 @@ public final class AnnotatedConfigResolver {
                       fieldType,
                       annotatedConfig,
                       settings),
-                  AnnotationAccessor.createFromField(field));
+                  info.accessor());
           if (!skipNull(deserialized, thisMissingOption, nullReadHandler)) {
             setField(field, annotatedConfig, deserialized);
           }
@@ -505,10 +494,9 @@ public final class AnnotatedConfigResolver {
                 settings);
         continue;
       }
-      Type fieldType = field.getGenericType();
       FieldTypeSerializer<?> serializer =
           serializerRegistry
-              .getSerializer(fieldType)
+              .getSerializer(info.genericType())
               .orElse(serializerRegistry.getDefaultSerializer());
       Object deserialized;
       try {
@@ -516,20 +504,22 @@ public final class AnnotatedConfigResolver {
             serializer.deserialize(
                 new DataObject(value, true),
                 SerializationContext.fromField(field, annotatedConfig, settings),
-                AnnotationAccessor.createFromField(field));
+                info.accessor());
       } catch (IllegalAccessException e) {
         throw new IllegalArgumentException("Field became inaccessible", e);
       }
       if (skipNull(deserialized, thisMissingOption, nullReadHandler)) {
         continue;
       }
-      MinMaxValidator.validate(field, keyName, deserialized);
+      if (info.minOrMax()) {
+        MinMaxValidator.validate(field, keyName, deserialized);
+      }
       // check for custom annotations
       CustomAnnotationRegistry cARegistry = CustomAnnotationRegistry.INSTANCE;
       if (!cARegistry.isEmpty()) {
         Throwable error = null;
         boolean failed = false;
-        for (Annotation annotation : field.getAnnotations()) {
+        for (Annotation annotation : info.annotations()) {
           Class<? extends Annotation> type = annotation.annotationType();
           if (AnnotationType.match(type).isPresent()) {
             // do not handle any validation of our own annotations even if someone registered a

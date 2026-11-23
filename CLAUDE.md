@@ -25,6 +25,14 @@ Java 25, Maven multi-module build.
   serialization, settings and the `.properties` format (`PropertyConfig`)
 - `yaml`, `json`, `toml`: one module per format, each depending on `core`
 - `examples`: usage examples, compiled as part of the build
+- Reflection is read once per class: `core.internal.ClassInfo` (a `ClassValue`) holds each class's
+  `FieldInfo`s (key, annotations, generic type, raw comments) and the annotation holders per
+  combination of settings, and `AnnotatedConfigResolver` and `DefaultSerializer` use it. Comment
+  placeholders are applied on every dump, and serializers are looked up on every use, as both
+  registries can change at runtime.
+- An immutable `DataObject` made from a map wraps it lazily, and `DataObject#mapView()`
+  (package-private) gives `DefaultSerializer` the map without `getAsMap()`'s deep copy. Loading
+  used to wrap and copy each value once per level of nesting.
 
 ## Formats
 
@@ -55,11 +63,16 @@ Java 25, Maven multi-module build.
 - `PropertiesDumper` and `Json5ValueWriter` build the whole output in a `StringBuilder` and write
   it to the `PrintWriter` once, and JSON is written by one `Gson#toJson` call: many small writes
   through the `PrintWriter` (each takes its lock) measured ~35% slower. `YamlHandler` gives
-  SnakeYAML's emitter an unlocked `Writer` over a `StringBuilder` for the same reason.
-  `TomlValueWriter` is the exception: it builds each line in a `StringBuilder` but writes line by
-  line. Buffering centrally in `AnnotatedConfigResolver` instead was benchmarked and was slower (an
-  extra copy of the output, and SnakeYAML's writes still go through a `PrintWriter`), so each
-  writer buffers on its own.
+  SnakeYAML's emitter an unlocked `Writer` over a `StringBuilder` for the same reason, and
+  `TomlValueWriter` builds the whole file in one `StringBuilder` too. Buffering centrally in
+  `AnnotatedConfigResolver` instead was benchmarked and was slower (an extra copy of the output,
+  and SnakeYAML's writes still go through a `PrintWriter`), so each writer buffers on its own.
+- TOML, JSON5 and YAML split comments with `core.internal.LinesHelper` (a regex only when a
+  comment has a line break), and build the dotted paths of keys only in maps that hold a commented
+  key (`MapUtils#parentPaths`). YAML still looks up a key that holds a map by its plain key everywhere
+  (`TestYamlCommentPaths`). `.properties` splits only at `\r` and `\n`, in `PropertiesDumper`.
+- Map helpers go in `MapUtils` (public, in `utils`), not as private copies in the classes that
+  use them.
 - Every writer ends lines with `'\n'`, never `println()` or `System.lineSeparator()`, and so does
   the class comment written by `AnnotatedConfigResolver`. Mixing them gave files with CRLF and LF
   on Windows. `TestLineEndings` (core) and `TestYamlLineEndings`, `TestJsonLineEndings` and

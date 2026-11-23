@@ -22,6 +22,7 @@
 
 package com.mrivanplays.annotationconfig.core.serialization;
 
+import com.mrivanplays.annotationconfig.core.utils.MapUtils;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.util.Collections;
@@ -51,7 +52,13 @@ public final class DataObject {
     return new DataObjectBuilder();
   }
 
-  private Map<String, DataObject> serialize;
+  // the entries of a map; for an immutable data object created from a map, made from source on
+  // first use (see entries()). Volatile, as that can happen on any thread.
+  private volatile Map<String, DataObject> serialize;
+  // the map an immutable data object was created from. Only read: wrapping every value of a big
+  // map, then every value of its maps, was the main cost of loading a config, and most of it is
+  // only read once through getAsMap().
+  private final Map<?, ?> source;
   private final Object data;
 
   private final boolean immutable;
@@ -59,6 +66,7 @@ public final class DataObject {
   /** Constructs an empty data object */
   public DataObject() {
     this.serialize = null;
+    this.source = null;
     this.data = null;
     this.immutable = false;
   }
@@ -78,7 +86,9 @@ public final class DataObject {
    * converted, so it's values are accessible.
    *
    * <p>The {@code immutable} tag if set to {@code true} will make the data held in the created data
-   * object and in the created data object delegates immutable/unmodifiable.
+   * object and in the created data object delegates immutable/unmodifiable. An immutable data
+   * object reads a map it holds when it is first accessed, without copying it first, so the map
+   * should not be changed afterwards.
    *
    * @param data the data which is stored
    * @param immutable whether immutable
@@ -88,19 +98,23 @@ public final class DataObject {
     if (data == null) {
       this.data = null;
       this.serialize = null;
+      this.source = null;
       return;
     }
-    if (data instanceof Map) {
-      Map<Object, Object> map = (Map<Object, Object>) data;
-      this.serialize = new LinkedHashMap<>();
-      for (Map.Entry<Object, Object> entry : map.entrySet()) {
-        this.serialize.put(
-            String.valueOf(entry.getKey()), new DataObject(entry.getValue(), immutable));
-      }
+    if (data instanceof Map<?, ?> map) {
       this.data = null;
+      if (immutable) {
+        this.serialize = null;
+        this.source = map;
+      } else {
+        this.serialize = wrap(map, false);
+        this.source = null;
+      }
       return;
     }
     this.data = data;
+    this.serialize = null;
+    this.source = null;
   }
 
   /**
@@ -116,20 +130,43 @@ public final class DataObject {
    * Constructs a data object, which holds the specified map data.
    *
    * <p>The {@code immutable} tag if set to {@code true} will make the data held in the created data
-   * object and in the created data object delegates immutable/unmodifiable.
+   * object and in the created data object delegates immutable/unmodifiable. An immutable data
+   * object reads the map when it is first accessed, without copying it first, so the map should
+   * not be changed afterwards.
    *
    * @param data the data which is stored
    * @param immutable whether immutable
    */
   public DataObject(Map<String, Object> data, boolean immutable) {
     this.data = null;
-    this.serialize = new LinkedHashMap<>();
     this.immutable = immutable;
-    if (data != null) {
-      for (Map.Entry<String, Object> entry : data.entrySet()) {
-        this.serialize.put(entry.getKey(), new DataObject(entry.getValue(), immutable));
-      }
+    if (data != null && immutable) {
+      this.serialize = null;
+      this.source = data;
+    } else {
+      this.serialize = data == null ? new LinkedHashMap<>() : wrap(data, immutable);
+      this.source = null;
     }
+  }
+
+  /** Wraps every value of {@code map}; keys that are not strings are turned into their text. */
+  private static Map<String, DataObject> wrap(Map<?, ?> map, boolean immutable) {
+    return MapUtils.copyWithStringKeys(map, value -> new DataObject(value, immutable));
+  }
+
+  /**
+   * The entries of the map this data object holds, or {@code null} for a single value. An
+   * immutable data object wraps its map here, on first use: the values are wrapped lazily too, so
+   * this costs one map of this level, not a copy of everything below it.
+   */
+  private Map<String, DataObject> entries() {
+    Map<String, DataObject> entries = this.serialize;
+    if (entries == null && this.source != null) {
+      // two threads may both wrap the map; the results are equal, and either is kept
+      entries = wrap(this.source, true);
+      this.serialize = entries;
+    }
+    return entries;
   }
 
   /**
@@ -138,10 +175,11 @@ public final class DataObject {
    * @return boolean value
    */
   public boolean isEmpty() {
-    if (!isSingleValue()) {
-      return this.serialize.isEmpty();
+    if (isSingleValue()) {
+      return false;
     }
-    return false;
+    Map<String, DataObject> entries = this.serialize;
+    return entries != null ? entries.isEmpty() : this.source.isEmpty();
   }
 
   /**
@@ -150,7 +188,7 @@ public final class DataObject {
    * @return boolean value
    */
   public boolean isSingleValue() {
-    return this.serialize == null;
+    return this.serialize == null && this.source == null;
   }
 
   /**
@@ -170,10 +208,11 @@ public final class DataObject {
    */
   public boolean has(String key) {
     Objects.requireNonNull(key, "key");
-    if (this.serialize == null) {
+    Map<String, DataObject> entries = entries();
+    if (entries == null) {
       return false;
     }
-    return this.serialize.containsKey(key);
+    return entries.containsKey(key);
   }
 
   /**
@@ -185,10 +224,11 @@ public final class DataObject {
    */
   public DataObject get(String key) {
     Objects.requireNonNull(key, "key");
-    if (this.serialize == null) {
+    Map<String, DataObject> entries = entries();
+    if (entries == null) {
       return null;
     }
-    return this.serialize.get(key);
+    return entries.get(key);
   }
 
   /**
@@ -269,11 +309,16 @@ public final class DataObject {
    * @return data as base serialization map
    */
   public Map<String, Object> getAsMap() {
-    if (this.serialize == null) {
-      return Collections.emptyMap();
+    Map<String, DataObject> entries = this.serialize;
+    if (entries == null) {
+      if (this.source == null) {
+        return Collections.emptyMap();
+      }
+      // copied straight from the source, without wrapping it first
+      return MapUtils.deepCopyWithStringKeys(this.source);
     }
-    Map<String, Object> ret = new LinkedHashMap<>();
-    for (Map.Entry<String, DataObject> entry : this.serialize.entrySet()) {
+    Map<String, Object> ret = LinkedHashMap.newLinkedHashMap(entries.size());
+    for (Map.Entry<String, DataObject> entry : entries.entrySet()) {
       String key = entry.getKey();
       DataObject value = entry.getValue();
       if (value.isSingleValue()) {
@@ -284,6 +329,20 @@ public final class DataObject {
       }
     }
     return ret;
+  }
+
+  /**
+   * The entries of this data object for reading only, without the deep copy of {@link
+   * #getAsMap()}: the values that are maps are the maps themselves, not copies. An empty map for a
+   * single value. Callers must not modify the returned map or the maps in it.
+   */
+  Map<String, Object> mapView() {
+    if (this.serialize == null && this.source != null) {
+      // a key that isn't a string (e.g. a YAML key read as a number) is looked up by its text, as
+      // getAsMap() does
+      return MapUtils.withStringKeys(this.source);
+    }
+    return getAsMap();
   }
 
   /**
@@ -494,7 +553,7 @@ public final class DataObject {
     if (isSingleValue()) {
       return "DataObject{value=" + data + ", immutable=" + immutable + "}";
     } else {
-      return "DataObject{value=" + serialize + ", immutable=" + immutable + "}";
+      return "DataObject{value=" + entries() + ", immutable=" + immutable + "}";
     }
   }
 
@@ -514,13 +573,14 @@ public final class DataObject {
     } else if (other.isSingleValue()) {
       return false;
     } else {
-      return other.serialize.equals(this.serialize);
+      return other.entries().equals(this.entries());
     }
   }
 
   @Override
   public int hashCode() {
-    int result = serialize != null ? serialize.hashCode() : 0;
+    Map<String, DataObject> entries = entries();
+    int result = entries != null ? entries.hashCode() : 0;
     result = 31 * result + (data != null ? data.hashCode() : 0);
     return result;
   }

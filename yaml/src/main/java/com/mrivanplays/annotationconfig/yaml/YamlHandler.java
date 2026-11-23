@@ -22,10 +22,12 @@
 
 package com.mrivanplays.annotationconfig.yaml;
 
+import com.mrivanplays.annotationconfig.core.internal.LinesHelper;
 import com.mrivanplays.annotationconfig.core.resolver.MultilineString;
 import com.mrivanplays.annotationconfig.core.resolver.ValueReader;
 import com.mrivanplays.annotationconfig.core.resolver.ValueWriter;
 import com.mrivanplays.annotationconfig.core.resolver.settings.Settings;
+import com.mrivanplays.annotationconfig.core.utils.MapUtils;
 import java.io.PrintWriter;
 import java.io.Reader;
 import java.io.Writer;
@@ -39,8 +41,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Objects;
-import java.util.regex.Pattern;
+import java.util.Set;
 import org.jspecify.annotations.NonNull;
+import org.jspecify.annotations.Nullable;
 import org.yaml.snakeyaml.DumperOptions;
 import org.yaml.snakeyaml.DumperOptions.FlowStyle;
 import org.yaml.snakeyaml.DumperOptions.ScalarStyle;
@@ -72,8 +75,6 @@ import org.yaml.snakeyaml.nodes.Tag;
  * @since 3.1.0
  */
 public final class YamlHandler implements ValueReader, ValueWriter {
-
-  private static final Pattern LINE_BREAK = Pattern.compile("\\R");
 
   /** Used when no instance is configured. Created on first use, then reused for every write. */
   private Yaml defaultYaml;
@@ -110,8 +111,10 @@ public final class YamlHandler implements ValueReader, ValueWriter {
     synchronized (yaml) {
       // without comments there is nothing to look up, so no dotted paths are built
       String rootPath = fieldComments.isEmpty() ? null : "";
+      // options without comments have an empty list, which MapUtils#parentPaths skips
       MappingNode root =
-          new TreeBuilder(yaml, fieldComments, defaultInstance).mapping(values, rootPath, true);
+          new TreeBuilder(yaml, fieldComments, MapUtils.parentPaths(fieldComments), defaultInstance)
+              .mapping(values, rootPath, true);
       if (root.getValue().isEmpty()) {
         return;
       }
@@ -137,16 +140,24 @@ public final class YamlHandler implements ValueReader, ValueWriter {
   /**
    * Converts plain Java values into a SnakeYAML node tree. Created once per write call.
    *
+   * @param sections the dotted paths of the maps that hold a commented key, at any depth ({@code a}
+   *     and {@code a.b} for {@code a.b.c}): in other maps the dotted paths of the keys aren't
+   *     built, as nothing is found under them
    * @param fastScalars whether numbers and booleans may be built directly instead of through {@link
    *     Yaml#represent(Object)}, which is only correct for the default instance
    */
-  private record TreeBuilder(Yaml yaml, Map<String, List<String>> comments, boolean fastScalars) {
+  private record TreeBuilder(
+      Yaml yaml, Map<String, List<String>> comments, Set<String> sections, boolean fastScalars) {
 
     /**
      * @param path dotted path of this map ("" for the root), or null to write no comments below it
      * @param topLevel true for the root map: a blank line is added between its entries
      */
     MappingNode mapping(Map<?, ?> map, String path, boolean topLevel) {
+      // No commented key below this map: no dotted paths are built. A key that holds a map is
+      // still looked up by its plain key, which commentLines falls back to, so the path given to
+      // the maps below stays one that isn't in sections.
+      boolean pruned = path != null && !path.isEmpty() && !sections.contains(path);
       List<NodeTuple> tuples = new ArrayList<>(map.size());
       boolean first = true;
       for (Entry<?, ?> entry : map.entrySet()) {
@@ -154,8 +165,8 @@ public final class YamlHandler implements ValueReader, ValueWriter {
           continue; // YAML has no "absent" value, so null entries are skipped
         }
         String key = String.valueOf(entry.getKey());
-        String childPath = path == null ? null : path.isEmpty() ? key : path + "." + key;
-        Node value = node(entry.getValue(), childPath);
+        String childPath = path == null || pruned ? null : path.isEmpty() ? key : path + "." + key;
+        Node value = node(entry.getValue(), pruned ? path : childPath);
 
         // most keys have neither a blank line nor comments, so the list is only made when needed
         List<CommentLine> lines = null;
@@ -163,14 +174,17 @@ public final class YamlHandler implements ValueReader, ValueWriter {
           lines = new ArrayList<>();
           lines.add(new CommentLine(null, null, "", CommentType.BLANK_LINE));
         }
+        List<CommentLine> found = List.of();
         if (childPath != null) {
-          List<CommentLine> found = commentLines(childPath, key, value instanceof MappingNode);
-          if (!found.isEmpty()) {
-            if (lines == null) {
-              lines = new ArrayList<>(found.size());
-            }
-            lines.addAll(found);
+          found = commentLines(childPath, key, value instanceof MappingNode);
+        } else if (pruned && value instanceof MappingNode) {
+          found = commentLines(comments.get(key));
+        }
+        if (!found.isEmpty()) {
+          if (lines == null) {
+            lines = new ArrayList<>(found.size());
           }
+          lines.addAll(found);
         }
         ScalarNode keyNode = new ScalarNode(Tag.STR, key, null, null, ScalarStyle.PLAIN);
         if (lines != null) {
@@ -280,12 +294,16 @@ public final class YamlHandler implements ValueReader, ValueWriter {
       if ((found == null || found.isEmpty()) && isMap && !path.equals(key)) {
         found = comments.get(key);
       }
+      return commentLines(found);
+    }
+
+    private static List<CommentLine> commentLines(@Nullable List<String> found) {
       if (found == null || found.isEmpty()) {
         return List.of();
       }
-      List<CommentLine> lines = new ArrayList<>();
+      List<CommentLine> lines = new ArrayList<>(found.size());
       for (String comment : found) {
-        for (String line : LINE_BREAK.split(comment, -1)) { // one '#' per line
+        for (String line : LinesHelper.split(comment)) { // one '#' per line
           lines.add(
               new CommentLine(null, null, line.isEmpty() ? "" : " " + line, CommentType.BLOCK));
         }

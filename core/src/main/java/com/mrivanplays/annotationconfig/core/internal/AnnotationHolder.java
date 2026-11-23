@@ -26,22 +26,33 @@ import java.lang.reflect.Field;
 import org.jspecify.annotations.NonNull;
 
 /**
+ * A commented class or a field of a config, in the order they are written: the classes first, the
+ * class a config extends before the config's class (see {@code FIND_PARENT_FIELDS}), then the
+ * fields by descending {@link #getFieldOrder() field order}.
+ *
  * @hidden
  */
 public final class AnnotationHolder implements Comparable<AnnotationHolder> {
-  private Field field;
+  private FieldInfo info;
   private int fieldOrder;
   private final boolean isClass;
   private Class<?> clazz;
+  private int classOrder;
 
-  public AnnotationHolder(Class<?> clazz) {
+  /**
+   * @param classOrder how many classes up from the config's class {@code clazz} is, negated: 0 for
+   *     the config's class, -1 for the class it extends, and so on, so a class sorts before the
+   *     classes that extend it. The class holders of one set have different orders.
+   */
+  public AnnotationHolder(Class<?> clazz, int classOrder) {
     this.isClass = true;
     this.clazz = clazz;
+    this.classOrder = classOrder;
   }
 
-  public AnnotationHolder(Field field, int fieldOrder) {
+  public AnnotationHolder(FieldInfo info, int fieldOrder) {
     this.isClass = false;
-    this.field = field;
+    this.info = info;
     this.fieldOrder = fieldOrder;
   }
 
@@ -54,7 +65,11 @@ public final class AnnotationHolder implements Comparable<AnnotationHolder> {
   }
 
   public Field getField() {
-    return field;
+    return info.field();
+  }
+
+  public FieldInfo getInfo() {
+    return info;
   }
 
   public Class<?> getClazz() {
@@ -65,7 +80,7 @@ public final class AnnotationHolder implements Comparable<AnnotationHolder> {
   public String toString() {
     return "AnnotationHolder{"
         + "field="
-        + field
+        + (info == null ? null : info.field())
         + ", fieldOrder="
         + fieldOrder
         + ", isClass="
@@ -75,12 +90,17 @@ public final class AnnotationHolder implements Comparable<AnnotationHolder> {
 
   @Override
   public int compareTo(@NonNull AnnotationHolder o) {
+    if (isClass && o.isClass) {
+      // the class a config extends before the config's class
+      return Integer.compare(classOrder, o.classOrder);
+    }
     if (isClass) {
       return -1;
-    } else if (o.isClass()) {
-      return 1;
-    } else {
-      return Integer.compare(o.getFieldOrder(), fieldOrder);
     }
+    if (o.isClass) {
+      return 1;
+    }
+    // descending: with SHOULD_REVERSE_FIELDS this gives declaration order, without it the reverse
+    return Integer.compare(o.fieldOrder, fieldOrder);
   }
 }

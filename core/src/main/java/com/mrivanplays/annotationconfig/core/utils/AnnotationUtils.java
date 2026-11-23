@@ -34,7 +34,6 @@ import com.mrivanplays.annotationconfig.core.annotations.type.AnnotationType;
 import com.mrivanplays.annotationconfig.core.resolver.CommentPlaceholderRegistry;
 import com.mrivanplays.annotationconfig.core.serialization.AnnotationAccessor;
 import java.lang.reflect.Field;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
@@ -57,8 +56,9 @@ public final class AnnotationUtils {
    */
   public static String getKey(Field field) {
     Objects.requireNonNull(field, "field");
-    if (field.isAnnotationPresent(Key.class)) {
-      return field.getDeclaredAnnotation(Key.class).value();
+    Key anno = field.getDeclaredAnnotation(Key.class);
+    if (anno != null) {
+      return anno.value();
     }
     return field.getName();
   }
@@ -159,28 +159,27 @@ public final class AnnotationUtils {
   public static List<String> getComments(
       AnnotationAccessor annotationAccessor, boolean applyPlaceholders) {
     Objects.requireNonNull(annotationAccessor, "annotationAccessor");
-    if (!annotationAccessor.hasAnnotation(AnnotationType.COMMENT)
-        && !annotationAccessor.hasAnnotation(AnnotationType.COMMENTS)) {
-      return Collections.emptyList();
+    // one @Comment is held as itself, several as their @Comments container
+    if (annotationAccessor.hasAnnotation(AnnotationType.COMMENT)) {
+      Comment comment = annotationAccessor.getAnnotation(Comment.class).orElseThrow();
+      return List.of(
+          applyPlaceholders
+              ? CommentPlaceholderRegistry.INSTANCE.applyPlaceholders(comment)
+              : comment.value());
     }
-    // optional abomination
-    return annotationAccessor
-        .getAnnotation(Comment.class)
-        .map(comment ->
-            List.of(
-                applyPlaceholders
-                    ? CommentPlaceholderRegistry.INSTANCE.applyPlaceholders(comment)
-                    : comment.value()))
-        .orElseGet(() ->
-            annotationAccessor
-                .getAnnotation(Comments.class)
-                .map(comments -> {
-                  if (applyPlaceholders) {
-                    return CommentPlaceholderRegistry.INSTANCE.applyPlaceholders(comments);
-                  }
-                  return Arrays.stream(comments.value()).map(Comment::value).toList();
-                })
-                .orElse(Collections.emptyList()));
+    if (annotationAccessor.hasAnnotation(AnnotationType.COMMENTS)) {
+      Comments comments = annotationAccessor.getAnnotation(Comments.class).orElseThrow();
+      if (applyPlaceholders) {
+        return CommentPlaceholderRegistry.INSTANCE.applyPlaceholders(comments);
+      }
+      Comment[] values = comments.value();
+      String[] lines = new String[values.length];
+      for (int i = 0; i < values.length; i++) {
+        lines[i] = values[i].value();
+      }
+      return List.of(lines);
+    }
+    return Collections.emptyList();
   }
 
   private AnnotationUtils() {

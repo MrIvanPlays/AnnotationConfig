@@ -22,15 +22,15 @@
 
 package com.mrivanplays.annotationconfig.core.serialization;
 
+import com.mrivanplays.annotationconfig.core.internal.ClassInfo;
+import com.mrivanplays.annotationconfig.core.internal.FieldInfo;
 import com.mrivanplays.annotationconfig.core.resolver.settings.ACDefaultSettings;
 import com.mrivanplays.annotationconfig.core.resolver.settings.NullReadHandleOption;
-import com.mrivanplays.annotationconfig.core.utils.AnnotationUtils;
 import java.lang.reflect.Array;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
 import java.lang.reflect.GenericArrayType;
 import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Parameter;
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
 import java.lang.reflect.TypeVariable;
@@ -44,8 +44,11 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Function;
 import org.jspecify.annotations.NonNull;
+import org.jspecify.annotations.Nullable;
 
 /**
  * @hidden
@@ -147,14 +150,16 @@ final class DefaultSerializer implements FieldTypeSerializer<Object> {
                 + " to deserialize!");
       }
     }
-    Map<String, Object> dataMap = data.getAsMap();
+    // read only: the maps in it are the read maps themselves, not copies
+    Map<String, Object> dataMap = data.mapView();
     if (dataMap.isEmpty()) {
       if (fieldType.isEnum()) {
         return deserializeEnum(fieldType, data.getAsString());
       }
       Object fieldTypeInstance = this.tryGetFieldTypeInstance(fieldType, context);
-      Field[] fields = fieldTypeInstance.getClass().getDeclaredFields();
-      if (fields.length != 1) {
+      List<FieldInfo> fields =
+          ClassInfo.of(fieldTypeInstance.getClass()).dataFields(findStaticFields(context));
+      if (fields.size() != 1) {
         throw new IllegalArgumentException(
             "Can't deserialize a "
                 + data
@@ -164,27 +169,28 @@ final class DefaultSerializer implements FieldTypeSerializer<Object> {
                 + fieldType.getName()
                 + " does not have exactly 1 field");
       }
-      Field desField = fields[0];
-      desField.setAccessible(true);
-      if (AnnotationUtils.isIgnored(desField)) {
+      FieldInfo info = fields.getFirst();
+      Field desField = info.ensureAccessible();
+      if (info.ignored()) {
         throw new IllegalArgumentException("Can't deserialize a " + data + " to empty class!");
       }
       FieldTypeSerializer serializer =
-          serializerRegistry.getSerializer(desField.getGenericType()).orElse(this);
+          serializerRegistry.getSerializer(info.genericType()).orElse(this);
       try {
         desField.set(
             fieldTypeInstance,
             serializer.deserialize(
                 data,
                 SerializationContext.fromField(desField, fieldTypeInstance, context.getSettings()),
-                AnnotationAccessor.createFromField(desField)));
+                info.accessor()));
       } catch (IllegalAccessException e) {
         throw new IllegalArgumentException("A field became inaccessible");
       }
       return fieldTypeInstance;
     } else {
       if (fieldType.isAssignableFrom(Map.class)) {
-        return dataMap;
+        // the field gets its own copy, as it did before dataMap was a view
+        return data.getAsMap();
       }
       Class<?> neededInstanceAllocation = fieldType;
       if (fieldType.isAssignableFrom(List.class)) {
@@ -199,37 +205,21 @@ final class DefaultSerializer implements FieldTypeSerializer<Object> {
          * IF IT WORKS, DO NOT, FOR ANY CIRCUMSTANCE WHATSOEVER, TOUCH
          */
 
-        List<Field> recordFields = Arrays.asList(neededInstanceAllocation.getDeclaredFields());
+        // the constructor, its parameter names and the components are looked up once per record
+        // class; the components are the record's fields that are neither static nor synthetic
+        ClassInfo.RecordInfo record = ClassInfo.of(neededInstanceAllocation).record();
         // try to not set with fields and directly use a ctor
-        Constructor<?> ctor;
-        if (neededInstanceAllocation.getDeclaredConstructors().length == 1) {
-          ctor = neededInstanceAllocation.getDeclaredConstructors()[0];
-        } else {
-          // try to find the one which matches with the fields
-          try {
-            ctor =
-                neededInstanceAllocation.getDeclaredConstructor(
-                    recordFields.stream().map(Field::getType).toArray(Class[]::new));
-          } catch (NoSuchMethodException e) {
-            throw new RuntimeException(
-                "could not find record ctor of '" + neededInstanceAllocation.getName() + "'", e);
-          }
-        }
-        if (!ctor.trySetAccessible()) {
+        Constructor<?> ctor = record.constructor();
+        if (!record.accessible()) {
           throw new RuntimeException(
               "ctor of record is not accessible '" + neededInstanceAllocation.getName() + "'");
         }
         Map<String, Object> deserialized = new HashMap<>();
-        for (Field f : recordFields) {
-          f.setAccessible(true); // dirty workaround!?
-          Object val = dataMap.get(AnnotationUtils.getKey(f));
-          if ((AnnotationUtils.isIgnored(f) || AnnotationUtils.isRawConfigAccess(f))
-              && System.getProperty(
-                      neededInstanceAllocation.getCanonicalName() + "annotationConfigNagged")
-                  == null) {
-            System.setProperty(
-                neededInstanceAllocation.getCanonicalName() + "annotationConfigNagged", "true");
-
+        for (FieldInfo component : record.components()) {
+          Field f = component.ensureAccessible();
+          Object val = dataMap.get(component.key());
+          if ((component.ignored() || component.rawConfig())
+              && NAGGED_RECORDS.add(neededInstanceAllocation)) {
             System.err.println(
                 "[AnnotationConfig] Warning: unsupported annotation on record ( NAG AUTHORS OF ) "
                     + neededInstanceAllocation.getCanonicalName());
@@ -256,26 +246,24 @@ final class DefaultSerializer implements FieldTypeSerializer<Object> {
                 }
               } else {
                 if (context.getAnnotatedConfig() != null && context.getName().isPresent()) {
-                  try {
-                    Field parentField =
-                        context
-                            .getAnnotatedConfig()
-                            .getClass()
-                            .getDeclaredField(context.getName().get());
-                    parentField.setAccessible(true);
-                    Object defValue = parentField.get(context.getAnnotatedConfig());
-                    if (defValue != null) {
-                      deserialized.put(f.getName(), f.get(defValue));
-                    } else {
-                      // at least we _tried_ though
+                  // also a field the config's class inherits; no such field: nothing is put
+                  Field parentField =
+                      tryFindField(context.getAnnotatedConfig(), context.getName().get());
+                  if (parentField != null) {
+                    try {
+                      parentField.setAccessible(true);
+                      Object defValue = parentField.get(context.getAnnotatedConfig());
+                      if (defValue != null) {
+                        deserialized.put(f.getName(), f.get(defValue));
+                      } else {
+                        // at least we _tried_ though
+                        deserialized.put(f.getName(), null);
+                      }
+                    } catch (IllegalAccessException e) {
                       deserialized.put(f.getName(), null);
+                      new RuntimeException("Field became inaccessible, will be set to null", e)
+                          .printStackTrace();
                     }
-                  } catch (NoSuchFieldException e) {
-                    // ignored
-                  } catch (IllegalAccessException e) {
-                    deserialized.put(f.getName(), null);
-                    new RuntimeException("Field became inaccessible, will be set to null", e)
-                        .printStackTrace();
                   }
                 } else {
                   // again, set null (unfortunately)
@@ -286,26 +274,27 @@ final class DefaultSerializer implements FieldTypeSerializer<Object> {
             continue;
           }
           FieldTypeSerializer serializer =
-              serializerRegistry.getSerializer(f.getType()).orElse(this);
+              serializerRegistry.getSerializer(component.genericType()).orElse(this);
           try {
             deserialized.put(
                 f.getName(),
                 serializer.deserialize(
                     new DataObject(val, true),
                     SerializationContext.fromField(f, null, context.getSettings()),
-                    AnnotationAccessor.createFromField(f)));
+                    component.accessor()));
           } catch (IllegalAccessException e) {
             throw new IllegalArgumentException("A field became inaccessible", e);
           }
         }
         try {
-          List<Object> ctorValues = new ArrayList<>();
           // sort values by the order they occur
-          for (Parameter parameter : ctor.getParameters()) {
-            ctorValues.add(deserialized.get(parameter.getName()));
+          String[] parameterNames = record.parameterNames();
+          Object[] ctorValues = new Object[parameterNames.length];
+          for (int i = 0; i < parameterNames.length; i++) {
+            ctorValues[i] = deserialized.get(parameterNames[i]);
           }
 
-          return ctor.newInstance(ctorValues.toArray());
+          return ctor.newInstance(ctorValues);
         } catch (InvocationTargetException e) {
           throw new RuntimeException("ctor invoke threw exception", e);
         } catch (InstantiationException e) {
@@ -315,17 +304,18 @@ final class DefaultSerializer implements FieldTypeSerializer<Object> {
         }
       } else {
         Object fieldTypeInstance = this.tryGetFieldTypeInstance(fieldType, context);
-        for (Field desField : fieldTypeInstance.getClass().getDeclaredFields()) {
-          desField.setAccessible(true);
-          if (AnnotationUtils.isIgnored(desField)) {
+        for (FieldInfo info :
+            ClassInfo.of(fieldTypeInstance.getClass()).dataFields(findStaticFields(context))) {
+          if (info.ignored()) {
             continue;
           }
-          Object val = dataMap.get(AnnotationUtils.getKey(desField));
+          Object val = dataMap.get(info.key());
           if (val == null) {
             continue;
           }
+          Field desField = info.ensureAccessible();
           FieldTypeSerializer serializer =
-              serializerRegistry.getSerializer(desField.getGenericType()).orElse(this);
+              serializerRegistry.getSerializer(info.genericType()).orElse(this);
           try {
             desField.set(
                 fieldTypeInstance,
@@ -333,7 +323,7 @@ final class DefaultSerializer implements FieldTypeSerializer<Object> {
                     new DataObject(val, true),
                     SerializationContext.fromField(
                         desField, fieldTypeInstance, context.getSettings()),
-                    AnnotationAccessor.createFromField(desField)));
+                    info.accessor()));
           } catch (IllegalAccessException e) {
             throw new IllegalArgumentException("A field became inaccessible", e);
           }
@@ -351,22 +341,48 @@ final class DefaultSerializer implements FieldTypeSerializer<Object> {
     } else {
       try {
         if (context.getAnnotatedConfig() != null && context.getName().isPresent()) {
-          Field orig =
-              context.getAnnotatedConfig().getClass().getDeclaredField(context.getName().get());
+          Field orig = tryFindField(context.getAnnotatedConfig(), context.getName().get());
+          if (orig == null) {
+            return this.createFieldTypeInstance(fieldType);
+          }
           orig.setAccessible(true);
           fieldTypeInstance = orig.get(context.getAnnotatedConfig());
           if (fieldTypeInstance == null) {
-            fieldTypeInstance = this.createFieldTypeInstance(fieldType);
+            return this.createFieldTypeInstance(fieldType);
           }
         } else {
           fieldTypeInstance = this.createFieldTypeInstance(fieldType);
         }
-      } catch (NoSuchFieldException | IllegalAccessException e) {
+      } catch (IllegalAccessException e) {
         fieldTypeInstance = this.createFieldTypeInstance(fieldType);
       }
     }
     return fieldTypeInstance;
   }
+
+  /**
+   * The field {@code fieldName} of {@code annotatedConfig}'s class or of a class it extends, as
+   * {@code FIND_PARENT_FIELDS} finds fields; {@code null} if there is none.
+   */
+  private static @Nullable Field tryFindField(Object annotatedConfig, String fieldName) {
+    for (Class<?> type = annotatedConfig.getClass();
+        type != null && type != Object.class;
+        type = type.getSuperclass()) {
+      for (FieldInfo info : ClassInfo.of(type).fields()) {
+        if (info.name().equals(fieldName)) {
+          return info.field();
+        }
+      }
+    }
+    return null;
+  }
+
+  private static boolean findStaticFields(SerializationContext<?> context) {
+    return context.getSettings().get(ACDefaultSettings.FIND_STATIC_FIELDS).orElse(false);
+  }
+
+  // records whose unsupported annotations have been reported, so it happens once per record
+  private static final Set<Class<?>> NAGGED_RECORDS = ConcurrentHashMap.newKeySet();
 
   private Object createFieldTypeInstance(Class<?> fieldType) {
     Object fieldTypeInstance;
@@ -453,14 +469,17 @@ final class DefaultSerializer implements FieldTypeSerializer<Object> {
       }
       return new DataObject(list);
     }
-    Field[] fields = value.getClass().getDeclaredFields();
-    if (fields.length == 0) {
+    // static fields only with FIND_STATIC_FIELDS, and never synthetic ones: a class with one field
+    // and a constant is written as that one field's value, as a class with only the field is
+    List<FieldInfo> fields =
+        ClassInfo.of(value.getClass()).dataFields(findStaticFields(context));
+    if (fields.isEmpty()) {
       throw new IllegalArgumentException("Can't serialize object with no fields.");
     }
-    if (fields.length == 1) {
-      Field desField = fields[0];
-      desField.setAccessible(true);
-      if (AnnotationUtils.isIgnored(desField)) {
+    if (fields.size() == 1) {
+      FieldInfo info = fields.getFirst();
+      Field desField = info.ensureAccessible();
+      if (info.ignored()) {
         throw new IllegalArgumentException("Can't serialize object with no fields.");
       }
       try {
@@ -469,35 +488,35 @@ final class DefaultSerializer implements FieldTypeSerializer<Object> {
           throw new IllegalArgumentException("Can't serialize object with no fields.");
         }
         FieldTypeSerializer serializer =
-            serializerRegistry.getSerializer(desField.getGenericType()).orElse(this);
+            serializerRegistry.getSerializer(info.genericType()).orElse(this);
         return serializer.serialize(
             def,
             SerializationContext.of(
                 desField.getName(),
                 def,
                 desField.getType(),
-                desField.getGenericType(),
+                info.genericType(),
                 context.getAnnotatedConfig(),
                 context.getSettings()),
-            AnnotationAccessor.createFromField(desField));
+            info.accessor());
       } catch (IllegalAccessException e) {
         throw new IllegalArgumentException("Field became inaccessible.", e);
       }
     }
     DataObject object = new DataObject();
-    for (Field desField : fields) {
-      desField.setAccessible(true);
-      if (AnnotationUtils.isIgnored(desField)) {
+    for (FieldInfo info : fields) {
+      if (info.ignored()) {
         continue;
       }
-      String key = AnnotationUtils.getKey(desField);
+      Field desField = info.ensureAccessible();
+      String key = info.key();
       try {
         Object def = desField.get(value);
         if (def == null) {
           continue;
         }
         FieldTypeSerializer serializer =
-            serializerRegistry.getSerializer(desField.getGenericType()).orElse(this);
+            serializerRegistry.getSerializer(info.genericType()).orElse(this);
         DataObject serialized =
             serializer.serialize(
                 def,
@@ -505,10 +524,10 @@ final class DefaultSerializer implements FieldTypeSerializer<Object> {
                     desField.getName(),
                     def,
                     desField.getType(),
-                    desField.getGenericType(),
+                    info.genericType(),
                     context.getAnnotatedConfig(),
                     context.getSettings()),
-                AnnotationAccessor.createFromField(desField));
+                info.accessor());
         if (serialized == null) {
           throw new NullPointerException(
               "Expected DataObject, but got null ; Field: "

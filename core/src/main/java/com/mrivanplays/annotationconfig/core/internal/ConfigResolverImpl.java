@@ -218,15 +218,15 @@ public final class ConfigResolverImpl implements ConfigResolver {
     Objects.requireNonNull(annotatedConfig, "annotatedConfig");
     Objects.requireNonNull(reader, "reader");
     Objects.requireNonNull(settings, "settings");
+    Settings passed = this.passSettings(settings);
     Map<String, Object> values;
     try {
       try (reader) {
-        values = valueReader.read(reader, settings);
+        values = valueReader.read(reader, passed);
       }
     } catch (IOException e) {
       throw new RuntimeException(e);
     }
-    Settings passed = this.passSettings(settings);
     AnnotatedConfigResolver.setFields(
         annotatedConfig,
         values,

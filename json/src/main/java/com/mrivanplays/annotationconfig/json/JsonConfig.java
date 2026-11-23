@@ -33,6 +33,7 @@ import com.mrivanplays.annotationconfig.core.resolver.key.DottedResolver;
 import com.mrivanplays.annotationconfig.core.resolver.settings.ACDefaultSettings;
 import com.mrivanplays.annotationconfig.core.resolver.settings.Setting;
 import com.mrivanplays.annotationconfig.core.resolver.settings.Settings;
+import java.io.PrintWriter;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.LinkedHashMap;
@@ -134,8 +135,21 @@ public final class JsonConfig {
   }
 
   private static ValueWriter standardValueWriter() {
-    return (values, _, writer, settings) ->
+    return new ValueWriter() {
+      @Override
+      public void write(
+          Map<String, Object> values,
+          Map<String, List<String>> fieldComments,
+          PrintWriter writer,
+          Settings settings) {
         writer.print(settings.get(GSON_INSTANCE).orElse(GSON).toJson(unwrapMultiline(values)));
+      }
+
+      @Override
+      public boolean writesComments() {
+        return false; // JSON has no comments, so they aren't collected
+      }
+    };
   }
 
   /**

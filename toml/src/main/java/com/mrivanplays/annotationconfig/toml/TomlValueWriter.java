@@ -23,10 +23,12 @@
 package com.mrivanplays.annotationconfig.toml;
 
 import com.fasterxml.jackson.dataformat.toml.TomlMapper;
+import com.mrivanplays.annotationconfig.core.internal.LinesHelper;
 import com.mrivanplays.annotationconfig.core.resolver.MultilineString;
 import com.mrivanplays.annotationconfig.core.resolver.ValueWriter;
 import com.mrivanplays.annotationconfig.core.resolver.settings.Settings;
 import com.mrivanplays.annotationconfig.core.serialization.DataObject;
+import com.mrivanplays.annotationconfig.core.utils.MapUtils;
 import java.io.PrintWriter;
 import java.lang.reflect.Array;
 import java.math.BigDecimal;
@@ -43,7 +45,7 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.regex.Pattern;
+import java.util.Set;
 import org.jspecify.annotations.NullMarked;
 import org.jspecify.annotations.Nullable;
 
@@ -78,8 +80,6 @@ public final class TomlValueWriter implements ValueWriter {
 
   private static final char[] HEX = "0123456789ABCDEF".toCharArray();
 
-  private static final Pattern LINE_BREAK = Pattern.compile("\\R");
-
   public TomlValueWriter() {}
 
   /**
@@ -100,9 +100,36 @@ public final class TomlValueWriter implements ValueWriter {
       Map<String, List<String>> fieldComments,
       PrintWriter writer,
       Settings settings) {
-    // one buffer for every line: values are appended to it instead of building strings per part
-    StringBuilder line = new StringBuilder(256);
-    writeTable(writer, line, null, null, values, fieldComments, false);
+    // The file is built first and written once, as the other writers do: many small writes through
+    // the PrintWriter each take its lock. A value that can't be written fails before anything is.
+    StringBuilder out = new StringBuilder(256);
+    writeTable(out, null, null, values, new Comments(fieldComments), false);
+    writer.append(out);
+  }
+
+  /**
+   * The comments to write.
+   *
+   * @param byPath the comments of each option, under its dotted path
+   * @param sections the dotted paths of the tables that hold a commented option, at any depth:
+   *     {@code a} and {@code a.b} for {@code a.b.c}. In other tables the values' paths aren't
+   *     built, as nothing is looked up under them.
+   */
+  private record Comments(Map<String, List<String>> byPath, Set<String> sections) {
+
+    Comments(Map<String, List<String>> byPath) {
+      // options without comments have an empty list, which MapUtils#parentPaths skips
+      this(byPath, MapUtils.parentPaths(byPath));
+    }
+
+    /** The comments of {@code path}, or {@code null}: options without comments have none. */
+    @Nullable List<String> get(String path) {
+      if (this.byPath.isEmpty()) {
+        return null;
+      }
+      List<String> comments = this.byPath.get(path);
+      return comments == null || comments.isEmpty() ? null : comments;
+    }
   }
 
   /**
@@ -121,17 +148,18 @@ public final class TomlValueWriter implements ValueWriter {
    * @return whether anything has been written now
    */
   private static boolean writeTable(
-      PrintWriter writer,
-      StringBuilder line,
+      StringBuilder out,
       @Nullable String path,
       @Nullable String tomlKey,
       Map<?, ?> values,
-      Map<String, List<String>> fieldComments,
+      Comments allComments,
       boolean written) {
     boolean top = path == null;
     // comments are looked up by the exact dotted path, so "port" never gets the comments of
     // "portal" and a value inside a table gets its own comments
-    List<String> comments = top ? null : comments(path, fieldComments);
+    List<String> comments = top ? null : allComments.get(path);
+    // only a table with commented values builds the paths of its values to look them up
+    boolean valueComments = top || allComments.sections().contains(path);
     // the header is written before the first value, or for the comments if there is no value
     boolean header = top;
     // the tables are collected so the values are only unwrapped once
@@ -148,28 +176,27 @@ public final class TomlValueWriter implements ValueWriter {
       }
       if (!header) {
         //noinspection DataFlowIssue: only the top level has no key, and it has no header
-        writeHeader(writer, tomlKey, comments, written);
+        writeHeader(out, tomlKey, comments, written);
         header = true;
       } else if (top && written) {
         // top-level options are separated by an empty line, the values of a table are not
-        writer.append('\n');
+        out.append('\n');
       }
       written = true;
-      String valuePath = top ? key : path + '.' + key;
-      List<String> valueComments = comments(valuePath, fieldComments);
-      if (valueComments != null) {
-        writeComments(writer, valueComments);
+      if (valueComments) {
+        List<String> lines = allComments.get(top ? key : path + '.' + key);
+        if (lines != null) {
+          writeComments(out, lines);
+        }
       }
-      line.setLength(0);
-      appendKey(line, key);
-      line.append(" = ");
-      appendValue(line, value, valuePath);
-      writer.append(line);
-      writer.append('\n');
+      appendKey(out, key);
+      out.append(" = ");
+      appendValue(out, value, path, key);
+      out.append('\n');
     }
     if (!header && comments != null) {
       //noinspection DataFlowIssue: only the top level has no key, and it has no comments
-      writeHeader(writer, tomlKey, comments, written);
+      writeHeader(out, tomlKey, comments, written);
       written = true;
     }
     if (tables == null) {
@@ -179,36 +206,25 @@ public final class TomlValueWriter implements ValueWriter {
       String key = table.getKey();
       written =
           writeTable(
-              writer,
-              line,
+              out,
               top ? key : path + '.' + key,
               top ? formatKey(key) : tomlKey + '.' + formatKey(key),
               table.getValue(),
-              fieldComments,
+              allComments,
               written);
     }
     return written;
   }
 
   private static void writeHeader(
-      PrintWriter writer, String tomlKey, @Nullable List<String> comments, boolean written) {
+      StringBuilder out, String tomlKey, @Nullable List<String> comments, boolean written) {
     if (written) {
-      writer.append('\n');
+      out.append('\n');
     }
     if (comments != null) {
-      writeComments(writer, comments);
+      writeComments(out, comments);
     }
-    writer.append('[').append(tomlKey).append("]\n");
-  }
-
-  /** The comments of {@code path}, or {@code null}: fields without comments have an empty list. */
-  private static @Nullable List<String> comments(
-      String path, Map<String, List<String>> fieldComments) {
-    if (fieldComments.isEmpty()) {
-      return null;
-    }
-    List<String> comments = fieldComments.get(path);
-    return comments == null || comments.isEmpty() ? null : comments;
+    out.append('[').append(tomlKey).append("]\n");
   }
 
   private static @Nullable Object unwrap(@Nullable Object value) {
@@ -218,12 +234,17 @@ public final class TomlValueWriter implements ValueWriter {
     return value;
   }
 
-  private static void writeComments(PrintWriter writer, List<String> comments) {
+  private static void writeComments(StringBuilder out, List<String> comments) {
     for (String comment : comments) {
-      for (String part : LINE_BREAK.split(comment, -1)) {
-        writer.append(part.isEmpty() ? "#" : "# " + part).append('\n');
+      for (String line : LinesHelper.split(comment)) {
+        out.append(line.isEmpty() ? "#" : "# ").append(line).append('\n');
       }
     }
+  }
+
+  /** The dotted path of {@code key} in {@code table} ({@code null} at the top level). */
+  private static String path(@Nullable String table, String key) {
+    return table == null ? key : table + '.' + key;
   }
 
   // <editor-fold desc="Values">
@@ -231,13 +252,15 @@ public final class TomlValueWriter implements ValueWriter {
   /**
    * Appends {@code value} in TOML syntax.
    *
-   * @param path the option the value belongs to, only used in error messages
+   * @param table the table of the option the value belongs to ({@code null} at the top level) and
+   * @param key its key: only used in error messages, so the dotted path is only built for one
    */
-  private static void appendValue(StringBuilder out, @Nullable Object value, String path) {
+  private static void appendValue(
+      StringBuilder out, @Nullable Object value, @Nullable String table, String key) {
     switch (value) {
-      case null -> throw noNull(path);
+      case null -> throw noNull(path(table, key));
       case DataObject data ->
-          appendValue(out, data.isSingleValue() ? data.getAsObject() : data.getAsMap(), path);
+          appendValue(out, data.isSingleValue() ? data.getAsObject() : data.getAsMap(), table, key);
       case MultilineString multiline -> appendMultilineString(out, multiline.getString());
       case String string -> appendString(out, string);
       case Character character -> appendString(out, String.valueOf(character.charValue()));
@@ -265,34 +288,36 @@ public final class TomlValueWriter implements ValueWriter {
       case LocalDateTime dateTime -> DateTimeFormatter.ISO_LOCAL_DATE_TIME.formatTo(dateTime, out);
       case LocalDate date -> DateTimeFormatter.ISO_LOCAL_DATE.formatTo(date, out);
       case LocalTime time -> DateTimeFormatter.ISO_LOCAL_TIME.formatTo(time, out);
-      case Map<?, ?> map -> appendInlineTable(out, map, path);
-      case Collection<?> collection -> appendCollection(out, collection, path);
-      default -> appendArray(out, value, path);
+      case Map<?, ?> map -> appendInlineTable(out, map, table, key);
+      case Collection<?> collection -> appendCollection(out, collection, table, key);
+      default -> appendArray(out, value, table, key);
     }
   }
 
-  private static void appendInlineTable(StringBuilder out, Map<?, ?> table, String path) {
+  private static void appendInlineTable(
+      StringBuilder out, Map<?, ?> inline, @Nullable String table, String key) {
     out.append('{');
     boolean first = true;
-    for (Map.Entry<?, ?> entry : table.entrySet()) {
+    for (Map.Entry<?, ?> entry : inline.entrySet()) {
       if (!first) {
         out.append(", ");
       }
       first = false;
-      String key = String.valueOf(entry.getKey());
+      String entryKey = String.valueOf(entry.getKey());
       Object value = entry.getValue();
       if (value == null) {
         // the path is only built for the error
-        throw noNull(path + '.' + key);
+        throw noNull(path(table, key) + '.' + entryKey);
       }
-      appendKey(out, key);
+      appendKey(out, entryKey);
       out.append(" = ");
-      appendValue(out, value, path);
+      appendValue(out, value, table, key);
     }
     out.append('}');
   }
 
-  private static void appendCollection(StringBuilder out, Collection<?> elements, String path) {
+  private static void appendCollection(
+      StringBuilder out, Collection<?> elements, @Nullable String table, String key) {
     out.append('[');
     boolean first = true;
     for (Object element : elements) {
@@ -300,12 +325,13 @@ public final class TomlValueWriter implements ValueWriter {
         out.append(", ");
       }
       first = false;
-      appendValue(out, element, path);
+      appendValue(out, element, table, key);
     }
     out.append(']');
   }
 
-  private static void appendArray(StringBuilder out, Object array, String path) {
+  private static void appendArray(
+      StringBuilder out, Object array, @Nullable String table, String key) {
     // the common primitive arrays are written without boxing every element
     switch (array) {
       case int[] numbers -> {
@@ -342,7 +368,7 @@ public final class TomlValueWriter implements ValueWriter {
         if (!array.getClass().isArray()) {
           throw new IllegalArgumentException(
               "'"
-                  + path
+                  + path(table, key)
                   + "': cannot write a value of type "
                   + array.getClass().getName()
                   + " as TOML");
@@ -353,7 +379,7 @@ public final class TomlValueWriter implements ValueWriter {
           if (i > 0) {
             out.append(", ");
           }
-          appendValue(out, Array.get(array, i), path);
+          appendValue(out, Array.get(array, i), table, key);
         }
         out.append(']');
       }

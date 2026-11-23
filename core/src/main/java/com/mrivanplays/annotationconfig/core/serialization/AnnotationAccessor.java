@@ -82,7 +82,6 @@ public sealed interface AnnotationAccessor permits AnnotationAccessorImpl {
    * @return true if holds, false otherwise
    * @since 3.1.0
    */
-  @SuppressWarnings("BooleanMethodIsAlwaysInverted")
   default boolean hasAnnotation(AnnotationType annotationType) {
     return this.hasAnnotation(annotationType.getRawType());
   }

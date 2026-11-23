@@ -67,6 +67,12 @@ ConfigResolver resolver = YamlConfig.getConfigResolver();
 resolver.settings().put(ACDefaultSettings.FIND_STATIC_FIELDS, true);
 ```
 
+The same goes for the fields of custom data types inside a config, so their constants are no longer
+written. A data type with one field and a constant is written as that field's value, as one with
+only the field is: `port: 25565` instead of `port: {value: 25565}`. Files with the old form still
+load. A data type whose only field is static can't be written or read without the setting; it used
+to set the static field.
+
 #### New `@Min` and `@Max` defaults
 
 Every member of `@Min` and `@Max` used to default to `-1`, and `-1` meant "not set". That made `-1`
@@ -197,8 +203,15 @@ public class MyConfig {
 }
 ```
 
-`@Ignore` and `@RawConfig` are not supported on record components. AnnotationConfig prints a
-warning when it finds them.
+- A record is created with its canonical constructor. Its components are its fields that are not
+  static.
+- Components are read with the serializer registered for their generic type, e.g.
+  `SectionObjectList<Item>`, as other fields are.
+- A component that is missing from the file is `null` with the default `SET_NULL` null read
+  handler, so a missing primitive component fails to load. With `USE_DEFAULT_VALUE` it keeps its
+  value from the record the field held, also for a field the config's class inherits.
+- `@Ignore` and `@RawConfig` are not supported on record components. AnnotationConfig prints a
+  warning the first time it finds them on a record.
 
 #### `FIND_STATIC_FIELDS` setting
 
@@ -316,7 +329,8 @@ written as inline tables.
 - Integers outside of 64 bits, which TOML does not allow, are written as strings.
 - Jackson is updated to 2.23.0, whose TOML parser reads integers with 19 digits correctly; 2.22
   dropped their first 9 digits (`9223372036854775807` was read as `6854775807`).
-- A `null` value fails with an error that names its key, as TOML has no null.
+- A `null` value fails with an error that names its key, as TOML has no null. The file is built
+  before it is written, so a value that can't be written fails before anything is written.
 - Files no longer end with an empty line.
 - `TomlValueWriter(TomlMapper)` is deprecated in favour of `TomlValueWriter()`, as the mapper is
   not used for writing.
@@ -357,6 +371,10 @@ reads back exactly:
   Enum values are read case-insensitively.
 - Primitive values that already have the right type are no longer converted through a `String`,
   and type checks are cached per class.
+- A field that the config's class inherits (see `FIND_PARENT_FIELDS`) is found when its current
+  value is looked up, so the object in it is reused instead of replaced by a new one. This only
+  happened for fields of the class itself.
+- Synthetic fields, such as the outer instance of an inner class, are not written or read.
 
 ### Config resolver fixes
 
@@ -378,6 +396,10 @@ reads back exactly:
 - `resolveMultiple` creates a missing directory and dumps the defaults into it, instead of
   throwing an `IllegalArgumentException`. It also dumps the defaults when the directory only holds
   files that are not configs, and returns the configs sorted by file name.
+- Dotted keys that share more than three parts are all written. Of `@Key("a.b.c.d.x")` and
+  `@Key("a.b.c.d.y")` only the last was written, without an error: `MapUtils#populateFirst`, which
+  merges the values of dotted keys, only merged maps two levels deep. It now merges at any depth
+  and keeps the first map's value when the two maps hold different values under a key.
 - `getConfigResolver()` of `PropertyConfig`, `YamlConfig` and `TomlConfig` returns one instance
   even when it is first called from several threads at once. They created the resolver on first
   use without synchronization, so concurrent first calls could each get their own instance.
@@ -422,7 +444,19 @@ CommentPlaceholderRegistry.INSTANCE.registerPlaceholder(
 
 ### Misc changes
 
-There are many smaller quality-of-code changes.
+- What AnnotationConfig reads from a class (its fields, keys, annotations and comments) is read
+  once per class instead of on every dump and load. Comment placeholders are still applied on
+  every dump.
+- `ValueWriter#writesComments()` (default `true`) tells AnnotationConfig whether a writer uses
+  comments. When it returns `false`, comments are not collected and the writer gets none.
+- `MapUtils` has new helpers: `copyWithStringKeys` and `deepCopyWithStringKeys` copy a map with
+  its keys as text, `withStringKeys` does so only when a key is not a string, and `parentPaths`
+  returns the dotted paths of the parents of a map's keys. `MapUtils#getLastCommonMap` is
+  deprecated, as AnnotationConfig doesn't use it anymore.
+- An immutable `DataObject` created from a map reads the map when it is accessed instead of
+  wrapping all of it up front, so the map should not be changed afterwards. Loading wrapped every
+  value of the file this way, once for each level of nesting.
+- There are many smaller quality-of-code changes.
 
 ## Version 3.0.3
 

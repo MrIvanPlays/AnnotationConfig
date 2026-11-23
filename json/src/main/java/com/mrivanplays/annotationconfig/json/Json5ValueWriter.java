@@ -22,17 +22,19 @@
 
 package com.mrivanplays.annotationconfig.json;
 
+import com.mrivanplays.annotationconfig.core.internal.LinesHelper;
 import com.mrivanplays.annotationconfig.core.resolver.MultilineString;
 import com.mrivanplays.annotationconfig.core.resolver.ValueWriter;
 import com.mrivanplays.annotationconfig.core.resolver.settings.Settings;
 import com.mrivanplays.annotationconfig.core.serialization.DataObject;
+import com.mrivanplays.annotationconfig.core.utils.MapUtils;
 import java.io.PrintWriter;
 import java.lang.reflect.Array;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
-import java.util.regex.Pattern;
+import java.util.Set;
 import org.jspecify.annotations.NullMarked;
 import org.jspecify.annotations.Nullable;
 
@@ -64,7 +66,6 @@ import org.jspecify.annotations.Nullable;
 @NullMarked
 public final class Json5ValueWriter implements ValueWriter {
 
-  private static final Pattern LINE_BREAK = Pattern.compile("\\R");
   private static final char[] HEX = "0123456789abcdef".toCharArray();
   private static final String INDENT = "  ";
 
@@ -75,9 +76,25 @@ public final class Json5ValueWriter implements ValueWriter {
       PrintWriter writer,
       Settings settings) {
     StringBuilder out = new StringBuilder(256);
+    Comments comments = new Comments(fieldComments);
     // without comments there is nothing to look up, so no dotted paths are built
-    appendObject(out, values, 0, fieldComments.isEmpty() ? null : "", fieldComments);
+    appendObject(out, values, 0, comments.byPath().isEmpty() ? null : "", comments);
     writer.append(out);
+  }
+
+  /**
+   * The comments to write.
+   *
+   * @param byPath the comments of each option, under its dotted path
+   * @param sections the dotted paths of the objects that hold a commented option, at any depth:
+   *     {@code a} and {@code a.b} for {@code a.b.c}. Inside other objects no paths are built.
+   */
+  private record Comments(Map<String, List<String>> byPath, Set<String> sections) {
+
+    Comments(Map<String, List<String>> byPath) {
+      // options without comments have an empty list, which MapUtils#parentPaths skips
+      this(byPath, MapUtils.parentPaths(byPath));
+    }
   }
 
   /**
@@ -85,11 +102,10 @@ public final class Json5ValueWriter implements ValueWriter {
    *     keys are stored, or null to write no comments
    */
   private static void appendObject(
-      StringBuilder out,
-      Map<?, ?> object,
-      int depth,
-      @Nullable String path,
-      Map<String, List<String>> fieldComments) {
+      StringBuilder out, Map<?, ?> object, int depth, @Nullable String path, Comments comments) {
+    if (path != null && !path.isEmpty() && !comments.sections().contains(path)) {
+      path = null; // nothing below is commented
+    }
     boolean first = true;
     for (Map.Entry<?, ?> entry : object.entrySet()) {
       Object value = unwrap(entry.getValue());
@@ -101,15 +117,15 @@ public final class Json5ValueWriter implements ValueWriter {
       String key = String.valueOf(entry.getKey());
       String childPath = path == null ? null : path.isEmpty() ? key : path + '.' + key;
       if (childPath != null) {
-        List<String> comments = fieldComments.get(childPath);
-        if (comments != null) {
-          appendComments(out, comments, depth + 1);
+        List<String> lines = comments.byPath().get(childPath);
+        if (lines != null) {
+          appendComments(out, lines, depth + 1);
         }
       }
       indent(out, depth + 1);
       appendKey(out, key);
       out.append(": ");
-      appendValue(out, value, depth + 1, childPath, fieldComments);
+      appendValue(out, value, depth + 1, childPath, comments);
     }
     if (first) {
       out.append("{}");
@@ -121,7 +137,7 @@ public final class Json5ValueWriter implements ValueWriter {
   }
 
   private static void appendArray(
-      StringBuilder out, Collection<?> elements, int depth, Map<String, List<String>> comments) {
+      StringBuilder out, Collection<?> elements, int depth, Comments comments) {
     if (elements.isEmpty()) {
       out.append("[]");
       return;
@@ -147,7 +163,7 @@ public final class Json5ValueWriter implements ValueWriter {
       @Nullable Object value,
       int depth,
       @Nullable String path,
-      Map<String, List<String>> comments) {
+      Comments comments) {
     switch (value) {
       case null -> out.append("null");
       case MultilineString multiline -> appendString(out, multiline.getString());
@@ -186,7 +202,7 @@ public final class Json5ValueWriter implements ValueWriter {
 
   private static void appendComments(StringBuilder out, List<String> comments, int depth) {
     for (String comment : comments) {
-      for (String line : LINE_BREAK.split(comment, -1)) {
+      for (String line : LinesHelper.split(comment)) {
         indent(out, depth);
         out.append(line.isEmpty() ? "//" : "// ").append(line).append('\n');
       }

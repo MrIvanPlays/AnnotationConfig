@@ -59,4 +59,16 @@ public interface ValueWriter {
       PrintWriter writer,
       Settings settings)
       throws IOException;
+
+  /**
+   * Returns whether this writer writes the comments of options. When it doesn't, AnnotationConfig
+   * doesn't collect them and {@link #write(Map, Map, PrintWriter, Settings) write} gets an empty
+   * {@code fieldComments} map. A format without comments, such as JSON, saves the work.
+   *
+   * @return whether {@code fieldComments} is used; {@code true} unless overridden
+   * @since 3.1.0
+   */
+  default boolean writesComments() {
+    return true;
+  }
 }

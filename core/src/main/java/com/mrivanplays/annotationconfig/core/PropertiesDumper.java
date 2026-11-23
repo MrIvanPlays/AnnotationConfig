@@ -86,9 +86,18 @@ final class PropertiesDumper {
   }
 
   private static void appendComment(StringBuilder out, String comment) {
-    for (String line : LINE_BREAK.split(comment, -1)) {
-      out.append(line.isEmpty() ? "#" : "# ").append(line).append(EOL);
+    // nearly every comment is one line, which needs no regex and no array
+    if (comment.indexOf('\n') < 0 && comment.indexOf('\r') < 0) {
+      appendCommentLine(out, comment);
+      return;
     }
+    for (String line : LINE_BREAK.split(comment, -1)) {
+      appendCommentLine(out, line);
+    }
+  }
+
+  private static void appendCommentLine(StringBuilder out, String line) {
+    out.append(line.isEmpty() ? "#" : "# ").append(line).append(EOL);
   }
 
   private static void appendValue(

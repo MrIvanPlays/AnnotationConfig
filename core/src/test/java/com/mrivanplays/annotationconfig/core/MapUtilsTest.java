@@ -51,4 +51,40 @@ public class MapUtilsTest {
     Assertions.assertEquals(Map.of("foo", Map.of("baz", Map.of("bar", "aa", "eee", "rrr"))), first);
     Assertions.assertEquals(Map.of("foo", Map.of("baz", Map.of("eee", "rrr"))), second);
   }
+
+  /** {@code {keys[0]: {keys[1]: ... {keys[n-1]: value}}}}, built from mutable maps. */
+  private static Map<String, Object> chain(Object value, String... keys) {
+    Object current = value;
+    for (int i = keys.length - 1; i >= 0; i--) {
+      Map<String, Object> map = new HashMap<>();
+      map.put(keys[i], current);
+      current = map;
+    }
+    @SuppressWarnings("unchecked")
+    Map<String, Object> root = (Map<String, Object>) current;
+    return root;
+  }
+
+  @Test
+  public void populateFirstMergesAtAnyDepth() {
+    Map<String, Object> first = chain(1, "a", "b", "c", "d", "x");
+    MapUtils.populateFirst(first, chain(2, "a", "b", "c", "d", "y"));
+    // the deeper map of the second replaced the first's before
+    Assertions.assertEquals(
+        Map.of("a", Map.of("b", Map.of("c", Map.of("d", Map.of("x", 1, "y", 2))))), first);
+  }
+
+  @Test
+  public void populateFirstKeepsTheValuesOfTheFirstMap() {
+    Map<String, Object> first = chain(1, "a", "x");
+    first.put("only", "first");
+    Map<String, Object> second = chain(2, "a", "x");
+    second.put("only", Map.of("in", "second"));
+    second.put("new", 3);
+
+    MapUtils.populateFirst(first, second);
+
+    Assertions.assertEquals(
+        Map.of("a", Map.of("x", 1), "only", "first", "new", 3), first);
+  }
 }
