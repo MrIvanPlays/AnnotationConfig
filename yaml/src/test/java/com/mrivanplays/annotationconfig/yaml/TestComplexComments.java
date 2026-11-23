@@ -28,37 +28,10 @@ import java.io.StringWriter;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
-public class TestComplexComments {
-
-  @Comment("Class comment")
-  static class Subject {
-
-    @Comment("sectionOne comment")
-    @ConfigObject
-    public Section1 sectionOne = new Section1();
-
-    public static class Section1 {
-
-      @Comment("foo inside sectionOne")
-      public String foo = "bb";
-    }
-
-    @Comment("sectionTwo comment")
-    @ConfigObject
-    public Section2 sectionTwo = new Section2();
-
-    public static class Section2 {
-
-      @Comment("foo inside sectionTwo")
-      public String foo = "cc";
-    }
-
-    @Comment("foo outside config object")
-    public String foo = "aa";
-  }
+class TestComplexComments {
 
   @Test
-  public void testComplexComments() {
+  void testComplexComments() {
     StringWriter writer = new StringWriter();
     YamlConfig.getConfigResolver().dump(new Subject(), writer);
     String expected =
@@ -77,5 +50,32 @@ public class TestComplexComments {
             + "# foo outside config object\n"
             + "foo: \"aa\"\n";
     Assertions.assertEquals(expected, writer.toString());
+  }
+
+  @Comment("Class comment")
+  static class Subject {
+
+    @Comment("sectionOne comment")
+    @ConfigObject
+    public Section1 sectionOne = new Section1();
+
+    @Comment("sectionTwo comment")
+    @ConfigObject
+    public Section2 sectionTwo = new Section2();
+
+    @Comment("foo outside config object")
+    public String foo = "aa";
+
+    public static class Section1 {
+
+      @Comment("foo inside sectionOne")
+      public String foo = "bb";
+    }
+
+    public static class Section2 {
+
+      @Comment("foo inside sectionTwo")
+      public String foo = "cc";
+    }
   }
 }

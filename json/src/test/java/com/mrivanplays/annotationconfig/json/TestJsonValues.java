@@ -34,7 +34,7 @@ import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
 /** Reading and writing values of the different supported types as JSON. */
-public class TestJsonValues {
+class TestJsonValues {
 
   private static final ConfigResolver RESOLVER = JsonConfig.getConfigResolver();
 
@@ -51,18 +51,8 @@ public class TestJsonValues {
 
   // <editor-fold desc="Numbers">
 
-  static class Numbers {
-
-    public int integer = 0;
-    public long longValue = 0;
-    public short shortValue = 0;
-    public BigInteger bigInteger = BigInteger.ZERO;
-    public BigDecimal bigDecimal = BigDecimal.ZERO;
-    public List<Long> longs = List.of();
-  }
-
   @Test
-  public void largeWholeNumbersAreReadExactly() {
+  void largeWholeNumbersAreReadExactly() {
     // Gson reads every number as a double, whose text form uses an exponent from 10^7 on
     Numbers config =
         load(
@@ -82,7 +72,7 @@ public class TestJsonValues {
   }
 
   @Test
-  public void numbersBeyondDoublePrecisionAreReadExactly() {
+  void numbersBeyondDoublePrecisionAreReadExactly() {
     Numbers config =
         load(
             new Numbers(),
@@ -99,7 +89,7 @@ public class TestJsonValues {
   }
 
   @Test
-  public void numbersAreWrittenAsJsonNumbers() {
+  void numbersAreWrittenAsJsonNumbers() {
     Numbers config = new Numbers();
     config.integer = 2_000_000_000;
     config.longValue = Long.MAX_VALUE;
@@ -123,14 +113,8 @@ public class TestJsonValues {
     Assertions.assertEquals(expected, dump(config));
   }
 
-  static class Floating {
-
-    public double decimal = 0;
-    public float single = 0;
-  }
-
   @Test
-  public void decimalsAreReadAsParsingTheirTextWould() {
+  void decimalsAreReadAsParsingTheirTextWould() {
     // Gson reads decimals as BigDecimal, which is converted with doubleValue() / floatValue()
     // instead of through its text; both must give the same value, also when rounding
     String[] texts = {
@@ -152,16 +136,8 @@ public class TestJsonValues {
     }
   }
 
-  static class UntypedNumbers {
-
-    public Map<String, Object> map = Map.of();
-    public List<Object> objects = List.of();
-    public List<BigDecimal> decimals = List.of();
-    public List<BigInteger> integers = List.of();
-  }
-
   @Test
-  public void numbersInMapsAndListsRoundTripExactly() {
+  void numbersInMapsAndListsRoundTripExactly() {
     // numbers in maps were read as doubles (1 came back as 1.0), and numbers in lists were written
     // as doubles, or as strings beyond the long range
     String json =
@@ -194,21 +170,8 @@ public class TestJsonValues {
     Assertions.assertEquals(json, dump(config));
   }
 
-  // </editor-fold>
-
-  // <editor-fold desc="Strings and characters">
-
-  static class Text {
-
-    public String plain = "a=b & c<d> 'e'";
-    public char character = 'x';
-
-    @Multiline('|')
-    public String multiline = "first line\nsecond line\n";
-  }
-
   @Test
-  public void textIsWrittenAsPlainJsonStrings() {
+  void textIsWrittenAsPlainJsonStrings() {
     // no HTML escaping (= as =), and @Multiline has no special form in JSON
     String expected =
         """
@@ -222,7 +185,7 @@ public class TestJsonValues {
   }
 
   @Test
-  public void emptyStringsRoundTrip() {
+  void emptyStringsRoundTrip() {
     Text config = new Text();
     config.plain = "";
     config.multiline = "";
@@ -235,7 +198,7 @@ public class TestJsonValues {
   }
 
   @Test
-  public void textLoads() {
+  void textLoads() {
     Text config =
         load(
             new Text(),
@@ -249,27 +212,10 @@ public class TestJsonValues {
 
   // </editor-fold>
 
-  // <editor-fold desc="Enums">
-
-  enum Mode {
-    fastMode,
-    SPECIAL {
-      @Override
-      public String toString() {
-        return "something else";
-      }
-    }
-  }
-
-  static class Enums {
-
-    public Mode mode = Mode.fastMode;
-    public Mode special = Mode.SPECIAL;
-    public List<Mode> modes = List.of(Mode.SPECIAL, Mode.fastMode);
-  }
+  // <editor-fold desc="Strings and characters">
 
   @Test
-  public void enumsAreWrittenByLowerCaseName() {
+  void enumsAreWrittenByLowerCaseName() {
     String expected =
         """
         {
@@ -285,7 +231,7 @@ public class TestJsonValues {
   }
 
   @Test
-  public void enumsAreReadCaseInsensitively() {
+  void enumsAreReadCaseInsensitively() {
     Enums config =
         load(
             new Enums(),
@@ -298,7 +244,7 @@ public class TestJsonValues {
   }
 
   @Test
-  public void unknownEnumValueIsRejected() {
+  void unknownEnumValueIsRejected() {
     Throwable error =
         Assertions.assertThrows(
             RuntimeException.class, () -> load(new Enums(), "{\"mode\": \"nope\"}"));
@@ -308,18 +254,8 @@ public class TestJsonValues {
     Assertions.assertTrue(error.getMessage().contains("Mode"), error.getMessage());
   }
 
-  // </editor-fold>
-
-  // <editor-fold desc="Generic lists">
-
-  static class GenericLists {
-
-    public List<List<String>> nested = List.of();
-    public List<? extends Number> wildcard = List.of();
-  }
-
   @Test
-  public void nestedAndWildcardListsRoundTrip() {
+  void nestedAndWildcardListsRoundTrip() {
     GenericLists config =
         load(new GenericLists(), "{\"nested\": [[\"a\", \"b\"], [\"c\"]], \"wildcard\": [1.5]}");
     Assertions.assertEquals(List.of(List.of("a", "b"), List.of("c")), config.nested);
@@ -343,6 +279,70 @@ public class TestJsonValues {
         }\
         """,
         dump(config));
+  }
+
+  // </editor-fold>
+
+  // <editor-fold desc="Enums">
+
+  enum Mode {
+    fastMode,
+    SPECIAL {
+      @Override
+      public String toString() {
+        return "something else";
+      }
+    }
+  }
+
+  static class Numbers {
+
+    public int integer = 0;
+    public long longValue = 0;
+    public short shortValue = 0;
+    public BigInteger bigInteger = BigInteger.ZERO;
+    public BigDecimal bigDecimal = BigDecimal.ZERO;
+    public List<Long> longs = List.of();
+  }
+
+  static class Floating {
+
+    public double decimal = 0;
+    public float single = 0;
+  }
+
+  static class UntypedNumbers {
+
+    public Map<String, Object> map = Map.of();
+    public List<Object> objects = List.of();
+    public List<BigDecimal> decimals = List.of();
+    public List<BigInteger> integers = List.of();
+  }
+
+  static class Text {
+
+    public String plain = "a=b & c<d> 'e'";
+    public char character = 'x';
+
+    @Multiline('|')
+    public String multiline = "first line\nsecond line\n";
+  }
+
+  // </editor-fold>
+
+  // <editor-fold desc="Generic lists">
+
+  static class Enums {
+
+    public Mode mode = Mode.fastMode;
+    public Mode special = Mode.SPECIAL;
+    public List<Mode> modes = List.of(Mode.SPECIAL, Mode.fastMode);
+  }
+
+  static class GenericLists {
+
+    public List<List<String>> nested = List.of();
+    public List<? extends Number> wildcard = List.of();
   }
 
   // </editor-fold>

@@ -38,26 +38,30 @@ import org.jspecify.annotations.Nullable;
  * String key = "foo.bar.baz"; // say this is your key
  * Object val = // ...
  *
- * Map<String, Object> bazMap = new HashMap<>();
+ * Map<String, Object> bazMap = new LinkedHashMap<>();
  * bazMap.put("baz", val);
- * Map<String, Object> barMap = new HashMap<>();
+ * Map<String, Object> barMap = new LinkedHashMap<>();
  * barMap.put("bar", bazMap);
  *
  * values.put("foo", barMap);
  * }</pre>
  *
- * of course by using clever tricks.
+ * <p>Maps that already exist for the first parts of a key are reused, so keys that share their
+ * first parts end up in one map.
  *
- * <p>This key resolver also handles non-dotted keys (e.g. keys with no ".") with the same handling
- * as that {@link KeyResolver#DEFAULT} applies.
+ * <p>This key resolver also handles non-dotted keys (i.e. keys with no ".") the same way {@link
+ * KeyResolver#DEFAULT} does.
  *
- * <p>This is a singleton class ; obtain instance using {@link #getInstance()}.
+ * <p>This is a singleton class; obtain the instance using {@link #getInstance()}.
  *
  * @author Ivan Pekov
  * @since 2.0.1
  */
 @NullMarked
+@SuppressWarnings("unchecked")
 public final class DottedResolver implements KeyResolver {
+
+  private DottedResolver() {}
 
   /**
    * Returns the instance of the {@link DottedResolver}
@@ -68,14 +72,7 @@ public final class DottedResolver implements KeyResolver {
     return Holder.INSTANCE;
   }
 
-  // <editor-fold desc="Holder">
-  private static final class Holder {
-    static final DottedResolver INSTANCE = new DottedResolver();
-  }
-
   // </editor-fold>
-
-  private DottedResolver() {}
 
   /** {@inheritDoc} */
   @Override
@@ -100,7 +97,12 @@ public final class DottedResolver implements KeyResolver {
 
       if (!(next instanceof Map)) {
         throw new IllegalArgumentException(
-            "Invalid unbox ; either key is invalid or the values map ; " + key + " ; " + values);
+            "Can't read the key '"
+                + key
+                + "': '"
+                + part
+                + "' is a value, not a section ; values: "
+                + values);
       }
 
       currentMap = (Map<String, Object>) next;
@@ -133,7 +135,8 @@ public final class DottedResolver implements KeyResolver {
       } else if (next instanceof Map) {
         currentMap = (Map<String, Object>) next;
       } else {
-        throw new IllegalArgumentException("Illegal dotted key syntax.");
+        throw new IllegalArgumentException(
+            "Can't write the key '" + key + "': '" + part + "' is a value, not a section");
       }
 
       start = end + 1;
@@ -142,9 +145,14 @@ public final class DottedResolver implements KeyResolver {
     String lastPart = key.substring(start);
 
     if (currentMap.containsKey(lastPart)) {
-      throw new IllegalArgumentException("Illegal key to box '" + key + "'");
+      throw new IllegalArgumentException("Duplicate key '" + key + "'");
     }
 
     currentMap.put(lastPart, value);
+  }
+
+  // <editor-fold desc="Holder">
+  private static final class Holder {
+    static final DottedResolver INSTANCE = new DottedResolver();
   }
 }

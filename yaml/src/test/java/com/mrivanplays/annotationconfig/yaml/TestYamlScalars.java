@@ -37,7 +37,42 @@ import org.yaml.snakeyaml.Yaml;
  * Numbers and booleans are built by hand for the default Yaml instance instead of through
  * SnakeYAML's representer. The output has to be the same as the representer's.
  */
-public class TestYamlScalars {
+class TestYamlScalars {
+
+  private static String dump(Settings settings) {
+    StringWriter writer = new StringWriter();
+    YamlConfig.getConfigResolver().dump(new Scalars(), writer, settings);
+    return writer.toString();
+  }
+
+  /** A configured instance with the default options, which goes through the representer. */
+  private static Yaml representerInstance() {
+    DumperOptions options = new DumperOptions();
+    options.setProcessComments(true);
+    options.setDefaultFlowStyle(FlowStyle.BLOCK);
+    options.setIndent(2);
+    options.setIndicatorIndent(2);
+    options.setIndentWithIndicator(true);
+    options.setSplitLines(false);
+    return new Yaml(options);
+  }
+
+  @Test
+  void scalarsMatchSnakeYamlsRepresenter() {
+    String fast = dump(new Settings());
+    String represented = dump(new Settings().put(YamlConfig.YAML_INSTANCE, representerInstance()));
+    Assertions.assertEquals(represented, fast);
+  }
+
+  @Test
+  void specialFloatValues() {
+    String yaml = dump(new Settings());
+    Assertions.assertTrue(yaml.contains("notANumber: .NaN\n"), yaml);
+    Assertions.assertTrue(yaml.contains("positiveInfinity: .inf\n"), yaml);
+    Assertions.assertTrue(yaml.contains("negativeInfinity: -.inf\n"), yaml);
+    Assertions.assertTrue(yaml.contains("bigDecimal: 0.12345678901234567890\n"), yaml);
+    Assertions.assertTrue(yaml.contains("numbers: [1, -2, 3]\n"), yaml);
+  }
 
   static class Scalars {
 
@@ -60,40 +95,5 @@ public class TestYamlScalars {
     public int[] numbers = {1, -2, 3};
     public List<Double> doubles = List.of(0.5, Double.NaN);
     public List<Boolean> booleans = List.of(true, false);
-  }
-
-  private static String dump(Settings settings) {
-    StringWriter writer = new StringWriter();
-    YamlConfig.getConfigResolver().dump(new Scalars(), writer, settings);
-    return writer.toString();
-  }
-
-  /** A configured instance with the default options, which goes through the representer. */
-  private static Yaml representerInstance() {
-    DumperOptions options = new DumperOptions();
-    options.setProcessComments(true);
-    options.setDefaultFlowStyle(FlowStyle.BLOCK);
-    options.setIndent(2);
-    options.setIndicatorIndent(2);
-    options.setIndentWithIndicator(true);
-    options.setSplitLines(false);
-    return new Yaml(options);
-  }
-
-  @Test
-  public void scalarsMatchSnakeYamlsRepresenter() {
-    String fast = dump(new Settings());
-    String represented = dump(new Settings().put(YamlConfig.YAML_INSTANCE, representerInstance()));
-    Assertions.assertEquals(represented, fast);
-  }
-
-  @Test
-  public void specialFloatValues() {
-    String yaml = dump(new Settings());
-    Assertions.assertTrue(yaml.contains("notANumber: .NaN\n"), yaml);
-    Assertions.assertTrue(yaml.contains("positiveInfinity: .inf\n"), yaml);
-    Assertions.assertTrue(yaml.contains("negativeInfinity: -.inf\n"), yaml);
-    Assertions.assertTrue(yaml.contains("bigDecimal: 0.12345678901234567890\n"), yaml);
-    Assertions.assertTrue(yaml.contains("numbers: [1, -2, 3]\n"), yaml);
   }
 }

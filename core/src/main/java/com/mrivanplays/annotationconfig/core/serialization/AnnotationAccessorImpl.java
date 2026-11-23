@@ -27,7 +27,6 @@ import java.lang.reflect.Field;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.function.Function;
-import java.util.function.Predicate;
 import org.jspecify.annotations.NullMarked;
 import org.jspecify.annotations.Nullable;
 
@@ -38,39 +37,33 @@ import org.jspecify.annotations.Nullable;
 @NullMarked
 final class AnnotationAccessorImpl implements AnnotationAccessor {
 
-  static AnnotationAccessorImpl EMPTY = new AnnotationAccessorImpl();
+  static final AnnotationAccessorImpl EMPTY = new AnnotationAccessorImpl(_ -> null);
 
-  private final Predicate<Class<? extends Annotation>> hasAnnotationPredicate;
-  @Nullable private Function<Class<? extends Annotation>, ? extends Annotation> getAnnotationFunc;
+  // both methods look at the declared annotations only, so they always agree
+  private final Function<Class<? extends Annotation>, @Nullable Annotation> getAnnotationFunc;
 
-  private AnnotationAccessorImpl() {
-    this.hasAnnotationPredicate = _ -> false;
+  private AnnotationAccessorImpl(
+      Function<Class<? extends Annotation>, @Nullable Annotation> getAnnotationFunc) {
+    this.getAnnotationFunc = getAnnotationFunc;
   }
 
   AnnotationAccessorImpl(Field field) {
-    Objects.requireNonNull(field, "field");
-    this.hasAnnotationPredicate = field::isAnnotationPresent;
-    this.getAnnotationFunc = field::getDeclaredAnnotation;
+    this(Objects.requireNonNull(field, "field")::getDeclaredAnnotation);
   }
 
   AnnotationAccessorImpl(Class<?> clazz) {
-    Objects.requireNonNull(clazz, "clazz");
-    this.hasAnnotationPredicate = clazz::isAnnotationPresent;
-    this.getAnnotationFunc = clazz::getDeclaredAnnotation;
+    this(Objects.requireNonNull(clazz, "clazz")::getDeclaredAnnotation);
   }
 
   @Override
   public boolean hasAnnotation(Class<? extends Annotation> annotationClass) {
-    return hasAnnotationPredicate.test(annotationClass);
+    Objects.requireNonNull(annotationClass, "annotationClass");
+    return this.getAnnotationFunc.apply(annotationClass) != null;
   }
 
   @Override
   public <T extends Annotation> Optional<T> getAnnotation(Class<T> annotationClass) {
     Objects.requireNonNull(annotationClass, "annotationClass");
-    if (this.hasAnnotation(annotationClass)) {
-      //noinspection SingleStatementInBlock,OptionalOfNullableMisuse,DataFlowIssue
-      return Optional.ofNullable((T) getAnnotationFunc.apply(annotationClass));
-    }
-    return Optional.empty();
+    return Optional.ofNullable((T) this.getAnnotationFunc.apply(annotationClass));
   }
 }

@@ -30,18 +30,7 @@ import java.io.StringWriter;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
-public class ExtendedConfigurationTest {
-
-  @Comment("Test comment foo")
-  static class Subject {
-
-    int foo = 1;
-  }
-
-  static class ExtendedSubject extends Subject {
-
-    String bar = "baz";
-  }
+class TestExtendedConfiguration {
 
   // passed per call: changing the shared resolver's settings would leak into other tests
   private static Settings findParentFields() {
@@ -70,5 +59,16 @@ public class ExtendedConfigurationTest {
     StringWriter writer = new StringWriter();
     PropertyConfig.getConfigResolver().dump(new ExtendedSubject(), writer);
     Assertions.assertEquals("bar=baz\n", writer.toString());
+  }
+
+  @Comment("Test comment foo")
+  static class Subject {
+
+    int foo = 1;
+  }
+
+  static class ExtendedSubject extends Subject {
+
+    String bar = "baz";
   }
 }

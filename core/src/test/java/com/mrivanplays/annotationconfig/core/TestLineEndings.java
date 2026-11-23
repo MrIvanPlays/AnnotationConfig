@@ -31,7 +31,15 @@ import org.junit.jupiter.api.Test;
  * Configs are written with '\n' on every OS. The class comment used the OS line separator and the
  * values did not, so files written on Windows mixed CRLF and LF.
  */
-public class TestLineEndings {
+class TestLineEndings {
+
+  @Test
+  void propertiesUseLineFeeds() {
+    StringWriter writer = new StringWriter();
+    PropertyConfig.getConfigResolver().dump(new Subject(), writer);
+    // not normalized: the line endings are what is tested
+    Assertions.assertEquals("# Class comment\n\nb=2\n\n# field comment\na=1\n", writer.toString());
+  }
 
   @Comment("Class comment")
   static class Subject {
@@ -40,13 +48,5 @@ public class TestLineEndings {
     public int a = 1;
 
     public int b = 2;
-  }
-
-  @Test
-  public void propertiesUseLineFeeds() {
-    StringWriter writer = new StringWriter();
-    PropertyConfig.getConfigResolver().dump(new Subject(), writer);
-    // not normalized: the line endings are what is tested
-    Assertions.assertEquals("# Class comment\n\nb=2\n\n# field comment\na=1\n", writer.toString());
   }
 }

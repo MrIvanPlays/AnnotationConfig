@@ -31,7 +31,18 @@ import java.util.Properties;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
-public class TestIgnoreAnno {
+class TestIgnoreAnno {
+
+  @Test
+  void testIgnoreWorks() throws IOException {
+    StringWriter writer = new StringWriter();
+    PropertyConfig.getConfigResolver().dump(new IgnoreAnnoTestSubject(), writer);
+    // read the output back with java.util.Properties, independently of AnnotationConfig
+    Properties properties = new Properties();
+    properties.load(new StringReader(writer.toString()));
+    Assertions.assertFalse(properties.containsKey("b"));
+    Assertions.assertEquals("Ivan", properties.getProperty("name"));
+  }
 
   @Comment("This is on the top")
   static class IgnoreAnnoTestSubject {
@@ -40,16 +51,5 @@ public class TestIgnoreAnno {
 
     @Comment("Hello my name is Ivan")
     private String name = "Ivan";
-  }
-
-  @Test
-  public void testIgnoreWorks() throws IOException {
-    StringWriter writer = new StringWriter();
-    PropertyConfig.getConfigResolver().dump(new IgnoreAnnoTestSubject(), writer);
-    // read the output back with java.util.Properties, independently of AnnotationConfig
-    Properties properties = new Properties();
-    properties.load(new StringReader(writer.toString()));
-    Assertions.assertFalse(properties.containsKey("b"));
-    Assertions.assertEquals("Ivan", properties.getProperty("name"));
   }
 }

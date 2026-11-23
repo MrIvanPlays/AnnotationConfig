@@ -32,7 +32,97 @@ import java.util.Map;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
-public class TestDefaultSerializerTypes {
+class TestDefaultSerializerTypes {
+
+  private static final ConfigResolver RESOLVER = YamlConfig.getConfigResolver();
+
+  private static Subject load(String yaml) {
+    Subject subject = new Subject();
+    RESOLVER.load(subject, new StringReader(yaml));
+    return subject;
+  }
+
+  @Test
+  void listElementsAreConvertedToTheDeclaredType() {
+    Subject subject = load("longs: [1, 2]");
+    // snakeyaml reads these as Integer; they used to end up in the List<Long> unconverted
+    Assertions.assertEquals(List.of(1L, 2L), subject.longs);
+    Assertions.assertEquals(Long.class, ((Object) subject.longs.get(0)).getClass());
+  }
+
+  @Test
+  void parameterizedAndWildcardListElements() {
+    Subject subject = load("nested: [[a, b], [c]]\nwildcard: [1, 2.5]");
+    Assertions.assertEquals(List.of(List.of("a", "b"), List.of("c")), subject.nested);
+    Assertions.assertEquals(2, subject.wildcard.size());
+  }
+
+  @Test
+  void objectArrayHasTheDeclaredComponentType() {
+    Subject subject = load("items:\n  - name: a\n    amount: 1\n  - name: b\n    amount: 2");
+    Assertions.assertEquals(Item[].class, subject.items.getClass());
+    Assertions.assertEquals("b", subject.items[1].name);
+    Assertions.assertEquals(2, subject.items[1].amount);
+  }
+
+  @Test
+  void enumsRoundTripByName() {
+    StringWriter writer = new StringWriter();
+    RESOLVER.dump(new EnumSubject(), writer);
+    String dumped = writer.toString();
+    // name(), not the overridden toString()
+    Assertions.assertTrue(dumped.contains("special: \"special\""), dumped);
+
+    EnumSubject loaded = new EnumSubject();
+    loaded.mode = null;
+    loaded.special = null;
+    RESOLVER.load(loaded, new StringReader(dumped));
+    Assertions.assertEquals(Mode.fastMode, loaded.mode);
+    Assertions.assertEquals(Mode.SPECIAL, loaded.special);
+  }
+
+  @Test
+  void unknownEnumValueNamesTheEnum() {
+    Exception e = Assertions.assertThrows(Exception.class, () -> load("mode: nope"));
+    Throwable cause = e;
+    while (cause.getCause() != null && !(cause instanceof IllegalArgumentException)) {
+      cause = cause.getCause();
+    }
+    Assertions.assertTrue(cause.getMessage().contains("Mode"), cause.getMessage());
+  }
+
+  @Test
+  void emptyStringsAreKept() {
+    // an empty string used to be read as no value: null, or the default with USE_DEFAULT_VALUE
+    Subject subject = load("text: \"\"\ntexts: [\"\", \"a\"]");
+    Assertions.assertEquals("", subject.text);
+    Assertions.assertEquals(List.of("", "a"), subject.texts);
+  }
+
+  @Test
+  void wholeNumberWithExponentIsReadAsItsValue() {
+    // SnakeYAML reads this as a double, whose text form is "2.0E9"; it used to be read as 2
+    Assertions.assertEquals(2_000_000_000, load("whole: 2.0e9").whole);
+  }
+
+  @Test
+  void bigNumbersKeepFullPrecision() {
+    Subject subject =
+        load("bigInteger: 123456789012345678901234567890\nbigDecimal: '0.12345678901234567890'");
+    Assertions.assertEquals(new BigInteger("123456789012345678901234567890"), subject.bigInteger);
+    Assertions.assertEquals(new BigDecimal("0.12345678901234567890"), subject.bigDecimal);
+  }
+
+  @Test
+  void bigIntegersInMapsAreRead() {
+    // values in maps were turned into ints, which threw beyond the int range
+    UntypedMap config = new UntypedMap();
+    RESOLVER.load(
+        config, new StringReader("values:\n  big: 123456789012345678901234567890\n  small: 1\n"));
+    Assertions.assertEquals(
+        new BigInteger("123456789012345678901234567890"), config.values.get("big"));
+    Assertions.assertEquals(1, config.values.get("small"));
+  }
 
   enum Mode {
     fastMode,
@@ -71,98 +161,8 @@ public class TestDefaultSerializerTypes {
     public Mode special = Mode.SPECIAL;
   }
 
-  private static final ConfigResolver RESOLVER = YamlConfig.getConfigResolver();
-
-  private static Subject load(String yaml) {
-    Subject subject = new Subject();
-    RESOLVER.load(subject, new StringReader(yaml));
-    return subject;
-  }
-
-  @Test
-  public void listElementsAreConvertedToTheDeclaredType() {
-    Subject subject = load("longs: [1, 2]");
-    // snakeyaml reads these as Integer; they used to end up in the List<Long> unconverted
-    Assertions.assertEquals(List.of(1L, 2L), subject.longs);
-    Assertions.assertEquals(Long.class, ((Object) subject.longs.get(0)).getClass());
-  }
-
-  @Test
-  public void parameterizedAndWildcardListElements() {
-    Subject subject = load("nested: [[a, b], [c]]\nwildcard: [1, 2.5]");
-    Assertions.assertEquals(List.of(List.of("a", "b"), List.of("c")), subject.nested);
-    Assertions.assertEquals(2, subject.wildcard.size());
-  }
-
-  @Test
-  public void objectArrayHasTheDeclaredComponentType() {
-    Subject subject = load("items:\n  - name: a\n    amount: 1\n  - name: b\n    amount: 2");
-    Assertions.assertEquals(Item[].class, subject.items.getClass());
-    Assertions.assertEquals("b", subject.items[1].name);
-    Assertions.assertEquals(2, subject.items[1].amount);
-  }
-
-  @Test
-  public void enumsRoundTripByName() {
-    StringWriter writer = new StringWriter();
-    RESOLVER.dump(new EnumSubject(), writer);
-    String dumped = writer.toString();
-    // name(), not the overridden toString()
-    Assertions.assertTrue(dumped.contains("special: \"special\""), dumped);
-
-    EnumSubject loaded = new EnumSubject();
-    loaded.mode = null;
-    loaded.special = null;
-    RESOLVER.load(loaded, new StringReader(dumped));
-    Assertions.assertEquals(Mode.fastMode, loaded.mode);
-    Assertions.assertEquals(Mode.SPECIAL, loaded.special);
-  }
-
-  @Test
-  public void unknownEnumValueNamesTheEnum() {
-    Exception e = Assertions.assertThrows(Exception.class, () -> load("mode: nope"));
-    Throwable cause = e;
-    while (cause.getCause() != null && !(cause instanceof IllegalArgumentException)) {
-      cause = cause.getCause();
-    }
-    Assertions.assertTrue(cause.getMessage().contains("Mode"), cause.getMessage());
-  }
-
-  @Test
-  public void emptyStringsAreKept() {
-    // an empty string used to be read as no value: null, or the default with USE_DEFAULT_VALUE
-    Subject subject = load("text: \"\"\ntexts: [\"\", \"a\"]");
-    Assertions.assertEquals("", subject.text);
-    Assertions.assertEquals(List.of("", "a"), subject.texts);
-  }
-
-  @Test
-  public void wholeNumberWithExponentIsReadAsItsValue() {
-    // SnakeYAML reads this as a double, whose text form is "2.0E9"; it used to be read as 2
-    Assertions.assertEquals(2_000_000_000, load("whole: 2.0e9").whole);
-  }
-
-  @Test
-  public void bigNumbersKeepFullPrecision() {
-    Subject subject =
-        load("bigInteger: 123456789012345678901234567890\nbigDecimal: '0.12345678901234567890'");
-    Assertions.assertEquals(new BigInteger("123456789012345678901234567890"), subject.bigInteger);
-    Assertions.assertEquals(new BigDecimal("0.12345678901234567890"), subject.bigDecimal);
-  }
-
   static class UntypedMap {
 
     public Map<String, Object> values = Map.of();
-  }
-
-  @Test
-  public void bigIntegersInMapsAreRead() {
-    // values in maps were turned into ints, which threw beyond the int range
-    UntypedMap config = new UntypedMap();
-    RESOLVER.load(
-        config, new StringReader("values:\n  big: 123456789012345678901234567890\n  small: 1\n"));
-    Assertions.assertEquals(
-        new BigInteger("123456789012345678901234567890"), config.values.get("big"));
-    Assertions.assertEquals(1, config.values.get("small"));
   }
 }

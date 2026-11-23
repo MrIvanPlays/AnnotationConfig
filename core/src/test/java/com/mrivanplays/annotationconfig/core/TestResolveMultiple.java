@@ -33,21 +33,16 @@ import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
-class ResolveMultipleTest {
-
-  static class Subject {
-
-    int foo = 2000;
-  }
+class TestResolveMultiple {
 
   private final ConfigResolver resolver = PropertyConfig.getConfigResolver();
 
-  private Map<String, Subject> resolve(Path dir, Path defaultFile) {
-    return resolver.resolveMultiple(dir, Subject::new, WritableObject.createFromPath(defaultFile));
-  }
-
   private static String read(Path file) throws IOException {
     return Files.readString(file);
+  }
+
+  private Map<String, Subject> resolve(Path dir, Path defaultFile) {
+    return resolver.resolveMultiple(dir, Subject::new, WritableObject.createFromPath(defaultFile));
   }
 
   @Test
@@ -109,5 +104,10 @@ class ResolveMultipleTest {
     Path file = Files.writeString(dir.resolve("file.properties"), "foo=1");
     Assertions.assertThrows(
         IllegalArgumentException.class, () -> resolve(file, dir.resolve("default.properties")));
+  }
+
+  static class Subject {
+
+    int foo = 2000;
   }
 }

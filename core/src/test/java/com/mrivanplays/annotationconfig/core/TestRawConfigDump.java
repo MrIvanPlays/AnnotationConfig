@@ -28,23 +28,22 @@ import java.io.StringWriter;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
-public class TestRawConfigDump {
-
-  static class Subject {
-
-    private String foo = "aabb";
-    private int bar = 1;
-
-    @RawConfig public DataObject raw;
-  }
+class TestRawConfigDump {
 
   @Test
-  public void testRawConfigDump() {
+  void testRawConfigDump() {
     Subject config = new Subject();
     PropertyConfig.getConfigResolver().dump(config, new StringWriter());
 
     Assertions.assertNotNull(config.raw);
     Assertions.assertEquals("aabb", config.raw.get("foo").getAsString());
     Assertions.assertEquals(1, config.raw.get("bar").getAsInt());
+  }
+
+  static class Subject {
+
+    @RawConfig public DataObject raw;
+    private String foo = "aabb";
+    private int bar = 1;
   }
 }

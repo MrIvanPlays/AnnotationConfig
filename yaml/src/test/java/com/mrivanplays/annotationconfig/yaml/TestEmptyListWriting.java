@@ -28,20 +28,20 @@ import java.util.List;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
-public class TestEmptyListWriting {
-
-  static class Subject {
-
-    private List<String> foo = Collections.emptyList();
-  }
+class TestEmptyListWriting {
 
   @Test
-  public void testEmptyListDump() {
+  void testEmptyListDump() {
     Subject subject = new Subject();
     StringWriter writer = new StringWriter();
 
     YamlConfig.getConfigResolver().dump(subject, writer);
 
     Assertions.assertEquals("foo: []\n", writer.toString());
+  }
+
+  static class Subject {
+
+    private List<String> foo = Collections.emptyList();
   }
 }

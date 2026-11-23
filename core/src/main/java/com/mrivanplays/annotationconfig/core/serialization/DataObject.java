@@ -25,13 +25,13 @@ package com.mrivanplays.annotationconfig.core.serialization;
 import com.mrivanplays.annotationconfig.core.utils.MapUtils;
 import java.math.BigDecimal;
 import java.math.BigInteger;
-import java.util.Collections;
+import java.util.ArrayList;
 import java.util.LinkedHashMap;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import org.jspecify.annotations.NullUnmarked;
+import org.jspecify.annotations.NullMarked;
+import org.jspecify.annotations.Nullable;
 
 /**
  * A class, which stores read from config values or serialized values in a developer friendly way.
@@ -39,29 +39,19 @@ import org.jspecify.annotations.NullUnmarked;
  * @since 2.0.0
  * @author Ivan Pekov
  */
-@SuppressWarnings({"unchecked", "unused"})
-@NullUnmarked
+@SuppressWarnings("unchecked")
+@NullMarked
 public final class DataObject {
 
-  /**
-   * Creates a new {@link DataObjectBuilder}.
-   *
-   * @return new builder
-   */
-  public static DataObjectBuilder builder() {
-    return new DataObjectBuilder();
-  }
-
-  // the entries of a map; for an immutable data object created from a map, made from source on
-  // first use (see entries()). Volatile, as that can happen on any thread.
-  private volatile Map<String, DataObject> serialize;
   // the map an immutable data object was created from. Only read: wrapping every value of a big
   // map, then every value of its maps, was the main cost of loading a config, and most of it is
   // only read once through getAsMap().
-  private final Map<?, ?> source;
-  private final Object data;
-
+  private final @Nullable Map<?, ?> source;
+  private final @Nullable Object data;
   private final boolean immutable;
+  // the entries of a map; for an immutable data object created from a map, made from source on
+  // first use (see entries()). Volatile, as that can happen on any thread.
+  private volatile @Nullable Map<String, DataObject> serialize;
 
   /** Constructs an empty data object */
   public DataObject() {
@@ -73,27 +63,26 @@ public final class DataObject {
 
   /**
    * Constructs a data object, which holds the specified data. If the data is of map type, it gets
-   * converted, so it's values are accessible
+   * converted, so its values are accessible.
    *
    * @param data the data which is stored
    */
-  public DataObject(Object data) {
+  public DataObject(@Nullable Object data) {
     this(data, false);
   }
 
   /**
    * Constructs a data object, which holds the specified data. If the data is of map type, it gets
-   * converted, so it's values are accessible.
+   * converted, so its values are accessible.
    *
-   * <p>The {@code immutable} tag if set to {@code true} will make the data held in the created data
-   * object and in the created data object delegates immutable/unmodifiable. An immutable data
-   * object reads a map it holds when it is first accessed, without copying it first, so the map
-   * should not be changed afterwards.
+   * <p>If {@code immutable} is {@code true}, the created data object and the data objects it holds
+   * can't be modified. An immutable data object reads a map it holds when it is first accessed,
+   * without copying it first, so the map should not be changed afterwards.
    *
    * @param data the data which is stored
    * @param immutable whether immutable
    */
-  public DataObject(Object data, boolean immutable) {
+  public DataObject(@Nullable Object data, boolean immutable) {
     this.immutable = immutable;
     if (data == null) {
       this.data = null;
@@ -122,22 +111,21 @@ public final class DataObject {
    *
    * @param data the data which is stored
    */
-  public DataObject(Map<String, Object> data) {
+  public DataObject(@Nullable Map<String, Object> data) {
     this(data, false);
   }
 
   /**
    * Constructs a data object, which holds the specified map data.
    *
-   * <p>The {@code immutable} tag if set to {@code true} will make the data held in the created data
-   * object and in the created data object delegates immutable/unmodifiable. An immutable data
-   * object reads the map when it is first accessed, without copying it first, so the map should not
-   * be changed afterwards.
+   * <p>If {@code immutable} is {@code true}, the created data object and the data objects it holds
+   * can't be modified. An immutable data object reads the map when it is first accessed, without
+   * copying it first, so the map should not be changed afterwards.
    *
    * @param data the data which is stored
    * @param immutable whether immutable
    */
-  public DataObject(Map<String, Object> data, boolean immutable) {
+  public DataObject(@Nullable Map<String, Object> data, boolean immutable) {
     this.data = null;
     this.immutable = immutable;
     if (data != null && immutable) {
@@ -147,6 +135,15 @@ public final class DataObject {
       this.serialize = data == null ? new LinkedHashMap<>() : wrap(data, immutable);
       this.source = null;
     }
+  }
+
+  /**
+   * Creates a new {@link DataObjectBuilder}.
+   *
+   * @return new builder
+   */
+  public static DataObjectBuilder builder() {
+    return new DataObjectBuilder();
   }
 
   /** Wraps every value of {@code map}; keys that are not strings are turned into their text. */
@@ -159,7 +156,7 @@ public final class DataObject {
    * data object wraps its map here, on first use: the values are wrapped lazily too, so this costs
    * one map of this level, not a copy of everything below it.
    */
-  private Map<String, DataObject> entries() {
+  private @Nullable Map<String, DataObject> entries() {
     Map<String, DataObject> entries = this.serialize;
     if (entries == null && this.source != null) {
       // two threads may both wrap the map; the results are equal, and either is kept
@@ -179,7 +176,11 @@ public final class DataObject {
       return false;
     }
     Map<String, DataObject> entries = this.serialize;
-    return entries != null ? entries.isEmpty() : this.source.isEmpty();
+    if (entries != null) {
+      return entries.isEmpty();
+    }
+    Map<?, ?> source = this.source;
+    return source == null || source.isEmpty();
   }
 
   /**
@@ -222,7 +223,7 @@ public final class DataObject {
    * @param key the key for which you want the data
    * @return data object or null
    */
-  public DataObject get(String key) {
+  public @Nullable DataObject get(String key) {
     Objects.requireNonNull(key, "key");
     Map<String, DataObject> entries = entries();
     if (entries == null) {
@@ -240,9 +241,7 @@ public final class DataObject {
   public void put(String key, String value) {
     Objects.requireNonNull(key, "key");
     Objects.requireNonNull(value, "value");
-    checkImmutable("put");
-    checkNonNullData("put");
-    this.serialize.put(key, new DataObject(value));
+    mutableEntries("put").put(key, new DataObject(value));
   }
 
   /**
@@ -253,9 +252,7 @@ public final class DataObject {
    */
   public void put(String key, boolean value) {
     Objects.requireNonNull(key, "key");
-    checkImmutable("put");
-    checkNonNullData("put");
-    this.serialize.put(key, new DataObject(value));
+    mutableEntries("put").put(key, new DataObject(value));
   }
 
   /**
@@ -267,9 +264,7 @@ public final class DataObject {
   public void put(String key, Number value) {
     Objects.requireNonNull(key, "key");
     Objects.requireNonNull(value, "value");
-    checkImmutable("put");
-    checkNonNullData("put");
-    this.serialize.put(key, new DataObject(value));
+    mutableEntries("put").put(key, new DataObject(value));
   }
 
   /**
@@ -278,11 +273,9 @@ public final class DataObject {
    * @param key the key you want the value of removed
    * @return the value removed or null if no value was present
    */
-  public DataObject remove(String key) {
+  public @Nullable DataObject remove(String key) {
     Objects.requireNonNull(key, "key");
-    checkImmutable("remove");
-    checkNonNullData("remove");
-    return this.serialize.remove(key);
+    return mutableEntries("remove").remove(key);
   }
 
   /**
@@ -294,9 +287,7 @@ public final class DataObject {
   public void putAll(String key, DataObject object) {
     Objects.requireNonNull(key, "key");
     Objects.requireNonNull(object, "object");
-    checkImmutable("putAll");
-    checkNonNullData("putAll");
-    this.serialize.put(key, object);
+    mutableEntries("putAll").put(key, object);
   }
 
   /**
@@ -311,11 +302,12 @@ public final class DataObject {
   public Map<String, Object> getAsMap() {
     Map<String, DataObject> entries = this.serialize;
     if (entries == null) {
-      if (this.source == null) {
-        return Collections.emptyMap();
+      Map<?, ?> source = this.source;
+      if (source == null) {
+        return new LinkedHashMap<>();
       }
       // copied straight from the source, without wrapping it first
-      return MapUtils.deepCopyWithStringKeys(this.source);
+      return MapUtils.deepCopyWithStringKeys(source);
     }
     Map<String, Object> ret = LinkedHashMap.newLinkedHashMap(entries.size());
     for (Map.Entry<String, DataObject> entry : entries.entrySet()) {
@@ -337,10 +329,11 @@ public final class DataObject {
    * Callers must not modify the returned map or the maps in it.
    */
   Map<String, Object> mapView() {
-    if (this.serialize == null && this.source != null) {
+    Map<?, ?> source = this.source;
+    if (this.serialize == null && source != null) {
       // a key that isn't a string (e.g. a YAML key read as a number) is looked up by its text, as
       // getAsMap() does
-      return MapUtils.withStringKeys(this.source);
+      return MapUtils.withStringKeys(source);
     }
     return getAsMap();
   }
@@ -350,29 +343,27 @@ public final class DataObject {
    *
    * @return held object
    */
-  public Object getAsObject() {
+  public @Nullable Object getAsObject() {
     return data;
   }
 
   /**
-   * Returns the held value by this data objects. If it holds a map, the returned value is null.
+   * Returns the held value by this data object. If it holds a map, the returned value is null.
    *
    * @param serializeBigIntegerAndBigDecimal whether to serialize the value to a primitive if it is
    *     a {@link BigInteger} or {@link BigDecimal}
    * @return held object
    */
-  public Object getAsObject(boolean serializeBigIntegerAndBigDecimal) {
+  public @Nullable Object getAsObject(boolean serializeBigIntegerAndBigDecimal) {
     if (serializeBigIntegerAndBigDecimal) {
-      if (data instanceof BigInteger) {
-        return ((BigInteger) data).intValueExact();
-      } else if (data instanceof BigDecimal) {
-        return ((BigDecimal) data).doubleValue();
-      } else {
-        return data;
+      if (data instanceof BigInteger integer) {
+        return integer.intValueExact();
       }
-    } else {
-      return data;
+      if (data instanceof BigDecimal decimal) {
+        return decimal.doubleValue();
+      }
     }
+    return data;
   }
 
   /**
@@ -384,16 +375,16 @@ public final class DataObject {
    * @return transformed type or null if data is null
    * @throws IllegalArgumentException if the held data's type is not the specified type
    */
-  public <T> T getAs(Class<T> type) {
-    if (data != null) {
-      if (type.isAssignableFrom(data.getClass())) {
-        return type.cast(data);
-      } else {
-        throw new IllegalArgumentException(
-            "Cannot assign " + data.getClass().getName() + " data type to " + type.getName());
-      }
+  public <T> @Nullable T getAs(Class<T> type) {
+    Object data = this.data;
+    if (data == null) {
+      return null;
     }
-    return null;
+    if (!type.isInstance(data)) {
+      throw new IllegalArgumentException(
+          "Cannot assign " + data.getClass().getName() + " data type to " + type.getName());
+    }
+    return type.cast(data);
   }
 
   /**
@@ -407,7 +398,7 @@ public final class DataObject {
   }
 
   /**
-   * Returns the held value by this data object as a {@link Integer}
+   * Returns the held value by this data object as an {@code int}
    *
    * @return held int
    * @see #getAsObject()
@@ -437,13 +428,22 @@ public final class DataObject {
   }
 
   /**
-   * Returns the held value by this data object as a {@link Character}
+   * Returns the held value by this data object as a {@code char}: a {@link Character} as it is, and
+   * a one character string, which is how text formats store characters, as its character.
    *
    * @return held char
+   * @throws IllegalArgumentException if the held value is neither
    * @see #getAsObject()
    */
   public char getAsChar() {
-    return (char) data;
+    if (data instanceof Character character) {
+      return character;
+    }
+    String text = getAsString();
+    if (text.length() != 1) {
+      throw new IllegalArgumentException("Expected a single character, got: " + text);
+    }
+    return text.charAt(0);
   }
 
   /**
@@ -493,10 +493,10 @@ public final class DataObject {
    * @see #getAsObject()
    */
   public BigDecimal getAsBigDecimal() {
-    if (getAsObject() instanceof BigDecimal) {
-      return (BigDecimal) getAsObject();
+    if (data instanceof BigDecimal decimal) {
+      return decimal;
     }
-    return BigDecimal.valueOf(getAsDouble());
+    return new BigDecimal(getAsString());
   }
 
   /**
@@ -506,42 +506,39 @@ public final class DataObject {
    * @see #getAsObject()
    */
   public BigInteger getAsBigInteger() {
-    if (getAsObject() instanceof BigInteger) {
-      return (BigInteger) getAsObject();
+    if (data instanceof BigInteger integer) {
+      return integer;
     }
-    return BigInteger.valueOf(getAsLong());
+    return new BigInteger(getAsString());
   }
 
   /**
-   * Returns the held value by this data object as a {@link List} of {@link Object} . If the held
+   * Returns the held value by this data object as a {@link List} of {@link Object}. If the held
    * value isn't a list, this method will return null.
    *
    * @return list or null
    */
-  public List<Object> getAsList() {
-    if (!(data instanceof List)) {
-      return null;
-    }
-    return (List<Object>) data;
+  public @Nullable List<@Nullable Object> getAsList() {
+    return data instanceof List<?> list ? (List<@Nullable Object>) list : null;
   }
 
   /**
    * Returns the held value by this data object as a {@link List} of the specified class type. If
-   * the held value isn't a list, this method will return null. Any values which aren't assignable
-   * to the specified value class are skipped.
+   * the held value isn't a list, this method will return null. Any values which aren't instances of
+   * the specified value class, {@code null} included, are skipped.
    *
    * @param valueClass the value class you want the list entries to be cast to
    * @param <T> type needed
    * @return list or null
    */
-  public <T> List<T> getList(Class<T> valueClass) {
-    List<Object> base = getAsList();
+  public <T> @Nullable List<T> getList(Class<T> valueClass) {
+    List<@Nullable Object> base = getAsList();
     if (base == null) {
       return null;
     }
-    List<T> ret = new LinkedList<>();
+    List<T> ret = new ArrayList<>(base.size());
     for (Object val : base) {
-      if (val.getClass().isAssignableFrom(valueClass)) {
+      if (valueClass.isInstance(val)) {
         ret.add(valueClass.cast(val));
       }
     }
@@ -558,23 +555,17 @@ public final class DataObject {
   }
 
   @Override
-  public boolean equals(Object o) {
-    if (o == null || getClass() != o.getClass()) {
-      return false;
-    }
-    DataObject other = (DataObject) o;
-    if (this == other) {
+  public boolean equals(@Nullable Object o) {
+    if (this == o) {
       return true;
     }
-    if (other.isSingleValue() && this.isSingleValue()) {
-      return Objects.equals(other.data, this.data);
-    } else if (!other.isSingleValue() && this.isSingleValue()) {
+    if (!(o instanceof DataObject other) || other.isSingleValue() != this.isSingleValue()) {
       return false;
-    } else if (other.isSingleValue()) {
-      return false;
-    } else {
-      return other.entries().equals(this.entries());
     }
+    if (this.isSingleValue()) {
+      return Objects.equals(other.data, this.data);
+    }
+    return Objects.equals(other.entries(), this.entries());
   }
 
   @Override
@@ -585,19 +576,25 @@ public final class DataObject {
     return result;
   }
 
-  private void checkNonNullData(String action) {
+  /**
+   * The entries to change, created for an empty data object.
+   *
+   * @throws UnsupportedOperationException if this data object is immutable
+   * @throws IllegalArgumentException if it holds a single value
+   */
+  private Map<String, DataObject> mutableEntries(String action) {
+    if (immutable) {
+      throw new UnsupportedOperationException("Cannot " + action + " in an immutable DataObject");
+    }
     if (this.data != null) {
       throw new IllegalArgumentException(
           "Cannot " + action + " in a DataObject which is single value");
     }
-    if (this.serialize == null) {
-      this.serialize = new LinkedHashMap<>();
+    Map<String, DataObject> entries = this.serialize;
+    if (entries == null) {
+      entries = new LinkedHashMap<>();
+      this.serialize = entries;
     }
-  }
-
-  private void checkImmutable(String action) {
-    if (immutable) {
-      throw new UnsupportedOperationException("Cannot " + action + " in a immutable DataObject");
-    }
+    return entries;
   }
 }

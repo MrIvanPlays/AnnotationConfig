@@ -28,15 +28,10 @@ import java.util.List;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
-public class TestListPropertyDeserialization {
-
-  static class Subject {
-
-    public List<String> foo;
-  }
+class TestListPropertyDeserialization {
 
   @Test
-  public void testListProperty() {
+  void testListProperty() {
     ConfigResolver resolver = YamlConfig.getConfigResolver();
     Subject subject = new Subject();
 
@@ -46,5 +41,10 @@ public class TestListPropertyDeserialization {
     Assertions.assertNotNull(subject.foo);
     Assertions.assertEquals(1, subject.foo.size());
     Assertions.assertEquals("aabb", subject.foo.get(0));
+  }
+
+  static class Subject {
+
+    public List<String> foo;
   }
 }

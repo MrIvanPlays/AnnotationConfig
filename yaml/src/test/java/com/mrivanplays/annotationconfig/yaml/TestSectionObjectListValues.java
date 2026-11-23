@@ -20,35 +20,36 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.mrivanplays.annotationconfig.core;
+package com.mrivanplays.annotationconfig.yaml;
 
-import com.mrivanplays.annotationconfig.core.annotations.comment.Comment;
-import com.mrivanplays.annotationconfig.core.serialization.AnnotationAccessor;
-import com.mrivanplays.annotationconfig.core.utils.AnnotationUtils;
-import java.util.List;
-import org.junit.jupiter.api.Assertions;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+
+import java.util.Map;
 import org.junit.jupiter.api.Test;
 
-public class GetCommentsTest {
+class TestSectionObjectListValues {
 
-  static class Subject {
+  @Test
+  void iteratorEntriesCantChangeTheList() {
+    SectionObjectList<String> list =
+        SectionObjectList.newBuilderForType(String.class).defaultValue("a", "x").build();
+    Map.Entry<String, String> entry = list.iterator().next();
 
-    @Comment("This is a single comment")
-    private String aa = "bb";
-
-    @Comment("And these are")
-    @Comment("Multiple comments")
-    private String bb = "aa";
-  }
-
-  private static List<String> commentsOf(String fieldName) throws NoSuchFieldException {
-    return AnnotationUtils.getComments(
-        AnnotationAccessor.createFromField(Subject.class.getDeclaredField(fieldName)));
+    assertThrows(UnsupportedOperationException.class, () -> entry.setValue("y"));
+    assertEquals("x", list.get("a"));
   }
 
   @Test
-  void testGetComments() throws Exception {
-    Assertions.assertEquals(List.of("This is a single comment"), commentsOf("aa"));
-    Assertions.assertEquals(List.of("And these are", "Multiple comments"), commentsOf("bb"));
+  void listsOfOneBuilderDontShareValues() {
+    SectionObjectList.SectionObjectListBuilder<String> builder =
+        SectionObjectList.newBuilderForType(String.class).defaultValue("a", "x");
+    SectionObjectList<String> first = builder.build();
+    SectionObjectList<String> second = builder.build();
+    first.update("a", null);
+
+    assertFalse(first.contains("a"));
+    assertEquals("x", second.get("a"));
   }
 }

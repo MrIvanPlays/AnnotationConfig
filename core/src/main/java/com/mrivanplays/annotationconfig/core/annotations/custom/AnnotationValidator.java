@@ -44,13 +44,14 @@ public interface AnnotationValidator<T extends Annotation> {
    * annotation with which the inputted {@link Field} {@code field} was annotated.
    *
    * @param annotation the annotation this validator validates
-   * @param value the value AnnotationConfig received
+   * @param value the value AnnotationConfig received; {@code null} when it is read as null and the
+   *     null read handler is {@code SET_NULL}
    * @param settings the settings for the config resolver
    * @param field the annotated field
    * @return validation response
    * @see ValidationResponse
    */
-  ValidationResponse validate(T annotation, Object value, Settings settings, Field field);
+  ValidationResponse validate(T annotation, @Nullable Object value, Settings settings, Field field);
 
   /**
    * AnnotationConfig calls this method whenever it finds the custom annotation this validator is

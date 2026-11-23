@@ -22,6 +22,7 @@
 
 package com.mrivanplays.annotationconfig.core.annotations.custom;
 
+import java.util.Objects;
 import org.jspecify.annotations.NullMarked;
 import org.jspecify.annotations.Nullable;
 
@@ -33,6 +34,18 @@ import org.jspecify.annotations.Nullable;
  */
 @NullMarked
 public interface ValidationResponse {
+
+  /** A successful validation response. */
+  ValidationResponse SUCCESS = new ValidationResponse() {};
+
+  /** A failure validation response, which cancels setting the field silently. */
+  ValidationResponse SILENT_FAIL =
+      new ValidationResponse() {
+        @Override
+        public boolean shouldFailSilently() {
+          return true;
+        }
+      };
 
   /**
    * Returns validation response given the boolean value.
@@ -79,6 +92,7 @@ public interface ValidationResponse {
    * @return successful validation response
    */
   static ValidationResponse success(Runnable runnable) {
+    Objects.requireNonNull(runnable, "runnable");
     return new ValidationResponse() {
       @Override
       public Runnable onSuccess() {
@@ -86,18 +100,6 @@ public interface ValidationResponse {
       }
     };
   }
-
-  /** Returns successful validation response. */
-  ValidationResponse SUCCESS = new ValidationResponse() {};
-
-  /** Returns a failure validation response, which is going to cancel field set silently. */
-  ValidationResponse SILENT_FAIL =
-      new ValidationResponse() {
-        @Override
-        public boolean shouldFailSilently() {
-          return true;
-        }
-      };
 
   /**
    * Returns successful validation response.
@@ -116,6 +118,7 @@ public interface ValidationResponse {
    * @return failure validation response
    */
   static ValidationResponse fail(Throwable error) {
+    Objects.requireNonNull(error, "error");
     return new ValidationResponse() {
       @Override
       public Throwable throwError() {

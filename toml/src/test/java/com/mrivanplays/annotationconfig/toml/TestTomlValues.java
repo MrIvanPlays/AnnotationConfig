@@ -45,25 +45,12 @@ import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
 /** Writing and reading values of the different types as TOML 1.0. */
-public class TestTomlValues {
+class TestTomlValues {
 
   // <editor-fold desc="Strings">
 
-  static class Strings {
-
-    public String plain = "Hello world";
-    public String backslash = "C:\\path\\to";
-    public String apostrophe = "it's";
-    public String quotes = "say \"hi\"";
-    public String newline = "line1\nline2";
-    public String tab = "a\tb";
-    public String control = "bell\u0007";
-    public String unicode = "caf\u00e9 \u2603";
-    public char character = 'x';
-  }
-
   @Test
-  public void stringsAreLiteralUnlessTheyNeedEscaping() {
+  void stringsAreLiteralUnlessTheyNeedEscaping() {
     // literal strings can't hold ' or control characters other than tab: those are basic strings
     String expected =
         """
@@ -89,7 +76,7 @@ public class TestTomlValues {
   }
 
   @Test
-  public void stringsRoundTrip() {
+  void stringsRoundTrip() {
     Strings config = new Strings();
     config.plain = "\"both' kinds\\";
     config.character = '\'';
@@ -106,7 +93,7 @@ public class TestTomlValues {
   }
 
   @Test
-  public void emptyStringsRoundTrip() {
+  void emptyStringsRoundTrip() {
     Strings config = new Strings();
     config.plain = "";
     MultilineStrings multiline = new MultilineStrings();
@@ -118,15 +105,8 @@ public class TestTomlValues {
     Assertions.assertEquals("", roundTrip(multiline, new MultilineStrings()).text);
   }
 
-  static class MultilineStrings {
-
-    @Multiline public String text = "first line\nsecond line\n";
-
-    @Multiline public String tricky = "\"\"\" quotes \\ backslash\r\nend\"";
-  }
-
   @Test
-  public void multilineStringsAreMultiLineBasicStrings() {
+  void multilineStringsAreMultiLineBasicStrings() {
     String expected =
         "text = \"\"\"\n"
             + "first line\n"
@@ -145,27 +125,8 @@ public class TestTomlValues {
     Assertions.assertEquals("\"\"\" quotes \\ backslash\r\nend\"", loaded.tricky);
   }
 
-  // </editor-fold>
-
-  // <editor-fold desc="Numbers">
-
-  static class Numbers {
-
-    public int integer = -42;
-    public long longValue = 1234567890123L;
-    public double decimal = 2.5;
-    public float single = 3.11f;
-    public double big = 1e300;
-    public double positiveInfinity = Double.POSITIVE_INFINITY;
-    public double negativeInfinity = Double.NEGATIVE_INFINITY;
-    public double notANumber = Double.NaN;
-    public float floatInfinity = Float.POSITIVE_INFINITY;
-    public BigDecimal exact = new BigDecimal("0.12345678901234567890");
-    public BigInteger fitting = BigInteger.valueOf(42);
-  }
-
   @Test
-  public void numbersUseTomlSyntax() {
+  void numbersUseTomlSyntax() {
     String expected =
         """
         integer = -42
@@ -194,7 +155,7 @@ public class TestTomlValues {
   }
 
   @Test
-  public void numbersRoundTrip() {
+  void numbersRoundTrip() {
     Numbers loaded = roundTrip(new Numbers(), new Numbers());
     Assertions.assertEquals(-42, loaded.integer);
     Assertions.assertEquals(1234567890123L, loaded.longValue);
@@ -209,15 +170,12 @@ public class TestTomlValues {
     Assertions.assertEquals(BigInteger.valueOf(42), loaded.fitting);
   }
 
-  static class OutOfRange {
+  // </editor-fold>
 
-    public long max = Long.MAX_VALUE;
-    public long min = Long.MIN_VALUE;
-    public BigInteger huge = new BigInteger("123456789012345678901234567890");
-  }
+  // <editor-fold desc="Numbers">
 
   @Test
-  public void integersBeyond64BitsAreStrings() {
+  void integersBeyond64BitsAreStrings() {
     // TOML integers are 64 bit: the limits of long are integers, anything larger is a string
     String toml = dump(new OutOfRange());
     Assertions.assertEquals(
@@ -241,7 +199,7 @@ public class TestTomlValues {
   }
 
   @Test
-  public void nineteenDigitIntegersAreReadExactly() {
+  void nineteenDigitIntegersAreReadExactly() {
     // Jackson's TOML parser before 2.23 dropped the first 9 digits of these
     OutOfRange loaded =
         load(new OutOfRange(), "max = 9223372036854775807\nmin = -1000000000000000000");
@@ -249,21 +207,8 @@ public class TestTomlValues {
     Assertions.assertEquals(-1_000_000_000_000_000_000L, loaded.min);
   }
 
-  // </editor-fold>
-
-  // <editor-fold desc="Date and time">
-
-  static class Dates {
-
-    public OffsetDateTime offsetDateTime = OffsetDateTime.parse("2021-11-10T17:31:00+02:00");
-    public LocalDateTime localDateTime = LocalDateTime.parse("2021-11-10T17:31:48.5");
-    public LocalDate localDate = LocalDate.parse("2021-11-10");
-    public LocalTime localTime = LocalTime.parse("17:31");
-    public List<LocalDate> dates = List.of(LocalDate.parse("2000-01-01"));
-  }
-
   @Test
-  public void datesAreTomlDateTimes() {
+  void datesAreTomlDateTimes() {
     // seconds are always written: TOML requires them, though toString() leaves out ":00"
     String expected =
         """
@@ -283,7 +228,7 @@ public class TestTomlValues {
   }
 
   @Test
-  public void datesRoundTrip() {
+  void datesRoundTrip() {
     Dates loaded = roundTrip(new Dates(), new Dates());
     Assertions.assertEquals(
         OffsetDateTime.parse("2021-11-10T17:31:00+02:00"), loaded.offsetDateTime);
@@ -294,7 +239,7 @@ public class TestTomlValues {
   }
 
   @Test
-  public void datesWrittenAsStringsStillLoad() {
+  void datesWrittenAsStringsStillLoad() {
     // files written before dates were written natively
     Dates loaded =
         load(
@@ -313,7 +258,7 @@ public class TestTomlValues {
 
   @Test
   @SuppressWarnings("unchecked")
-  public void otherFormatsStillGetDatesAsStrings() {
+  void otherFormatsStillGetDatesAsStrings() {
     // the serializers are shared by all formats; only the TOML resolver has MAPPER_KEY
     TomlConfig.getConfigResolver(); // registers the date serializers
     FieldTypeSerializer<OffsetDateTime> serializer =
@@ -334,22 +279,10 @@ public class TestTomlValues {
 
   // </editor-fold>
 
-  // <editor-fold desc="Booleans and enums">
-
-  enum Mode {
-    FAST,
-    SLOW
-  }
-
-  static class Misc {
-
-    public boolean enabled = true;
-    public Mode mode = Mode.FAST;
-    public List<Mode> modes = List.of(Mode.SLOW, Mode.FAST);
-  }
+  // <editor-fold desc="Date and time">
 
   @Test
-  public void booleansAndEnums() {
+  void booleansAndEnums() {
     String expected =
         """
         enabled = true
@@ -364,6 +297,73 @@ public class TestTomlValues {
     Assertions.assertFalse(loaded.enabled);
     Assertions.assertEquals(Mode.SLOW, loaded.mode);
     Assertions.assertEquals(List.of(Mode.FAST), loaded.modes);
+  }
+
+  enum Mode {
+    FAST,
+    SLOW
+  }
+
+  static class Strings {
+
+    public String plain = "Hello world";
+    public String backslash = "C:\\path\\to";
+    public String apostrophe = "it's";
+    public String quotes = "say \"hi\"";
+    public String newline = "line1\nline2";
+    public String tab = "a\tb";
+    public String control = "bell\u0007";
+    public String unicode = "caf\u00e9 \u2603";
+    public char character = 'x';
+  }
+
+  static class MultilineStrings {
+
+    @Multiline public String text = "first line\nsecond line\n";
+
+    @Multiline public String tricky = "\"\"\" quotes \\ backslash\r\nend\"";
+  }
+
+  static class Numbers {
+
+    public int integer = -42;
+    public long longValue = 1234567890123L;
+    public double decimal = 2.5;
+    public float single = 3.11f;
+    public double big = 1e300;
+    public double positiveInfinity = Double.POSITIVE_INFINITY;
+    public double negativeInfinity = Double.NEGATIVE_INFINITY;
+    public double notANumber = Double.NaN;
+    public float floatInfinity = Float.POSITIVE_INFINITY;
+    public BigDecimal exact = new BigDecimal("0.12345678901234567890");
+    public BigInteger fitting = BigInteger.valueOf(42);
+  }
+
+  // </editor-fold>
+
+  // <editor-fold desc="Booleans and enums">
+
+  static class OutOfRange {
+
+    public long max = Long.MAX_VALUE;
+    public long min = Long.MIN_VALUE;
+    public BigInteger huge = new BigInteger("123456789012345678901234567890");
+  }
+
+  static class Dates {
+
+    public OffsetDateTime offsetDateTime = OffsetDateTime.parse("2021-11-10T17:31:00+02:00");
+    public LocalDateTime localDateTime = LocalDateTime.parse("2021-11-10T17:31:48.5");
+    public LocalDate localDate = LocalDate.parse("2021-11-10");
+    public LocalTime localTime = LocalTime.parse("17:31");
+    public List<LocalDate> dates = List.of(LocalDate.parse("2000-01-01"));
+  }
+
+  static class Misc {
+
+    public boolean enabled = true;
+    public Mode mode = Mode.FAST;
+    public List<Mode> modes = List.of(Mode.SLOW, Mode.FAST);
   }
 
   // </editor-fold>

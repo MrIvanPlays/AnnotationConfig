@@ -53,7 +53,8 @@ public final class FieldInfo {
   private final boolean rawConfig;
   private final boolean isStatic;
   private final boolean synthetic;
-  private final boolean minOrMax;
+  @Nullable private final Min min;
+  @Nullable private final Max max;
   @Nullable private final Multiline multiline;
   private final Annotation[] annotations;
   private final AnnotationAccessor accessor;
@@ -71,13 +72,20 @@ public final class FieldInfo {
     this.rawConfig = AnnotationUtils.isRawConfigAccess(field);
     this.isStatic = Modifier.isStatic(field.getModifiers());
     this.synthetic = field.isSynthetic();
-    this.minOrMax = field.isAnnotationPresent(Min.class) || field.isAnnotationPresent(Max.class);
+    this.min = field.getDeclaredAnnotation(Min.class);
+    this.max = field.getDeclaredAnnotation(Max.class);
     this.multiline = field.getDeclaredAnnotation(Multiline.class);
     this.annotations = field.getDeclaredAnnotations();
     this.accessor = AnnotationAccessor.createFromField(field);
     this.comments = List.copyOf(AnnotationUtils.getComments(this.accessor, false));
     // an inaccessible field fails with the reason in ensureAccessible(), when it is used
     this.accessible = field.trySetAccessible();
+  }
+
+  static List<String> applyPlaceholders(List<String> comments) {
+    return comments.isEmpty() || !CommentPlaceholderRegistry.INSTANCE.hasPlaceholders()
+        ? comments
+        : CommentPlaceholderRegistry.INSTANCE.applyPlaceholders(comments);
   }
 
   public Field field() {
@@ -122,7 +130,15 @@ public final class FieldInfo {
 
   /** Whether the field has {@code @Min} or {@code @Max}, so its value has to be validated. */
   public boolean minOrMax() {
-    return this.minOrMax;
+    return this.min != null || this.max != null;
+  }
+
+  public @Nullable Min min() {
+    return this.min;
+  }
+
+  public @Nullable Max max() {
+    return this.max;
   }
 
   public @Nullable Multiline multiline() {
@@ -150,11 +166,5 @@ public final class FieldInfo {
       this.accessible = true;
     }
     return this.field;
-  }
-
-  static List<String> applyPlaceholders(List<String> comments) {
-    return comments.isEmpty() || !CommentPlaceholderRegistry.INSTANCE.hasPlaceholders()
-        ? comments
-        : CommentPlaceholderRegistry.INSTANCE.applyPlaceholders(comments);
   }
 }

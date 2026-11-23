@@ -29,17 +29,12 @@ import java.io.StringReader;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
-public class TestPrimitiveNullRead {
+class TestPrimitiveNullRead {
 
   static Settings settings =
       ACDefaultSettings.getDefault()
           .copy()
           .put(ACDefaultSettings.NULL_READ_HANDLER, NullReadHandleOption.SET_NULL);
-
-  static class Subj {
-
-    private int a = 1;
-  }
 
   @Test
   void testNullRead() {
@@ -49,5 +44,10 @@ public class TestPrimitiveNullRead {
     Assertions.assertThrows(
         IllegalArgumentException.class,
         () -> PropertyConfig.getConfigResolver().load(s, r, settings));
+  }
+
+  static class Subj {
+
+    private int a = 1;
   }
 }

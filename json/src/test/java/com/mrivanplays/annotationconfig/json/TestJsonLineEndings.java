@@ -32,16 +32,7 @@ import org.junit.jupiter.api.Test;
  * JSON and JSON5 are written with '\n' on every OS. The class comment of JSON5 used the OS line
  * separator, so files written on Windows mixed CRLF and LF.
  */
-public class TestJsonLineEndings {
-
-  @Comment("Class comment")
-  static class Subject {
-
-    @Comment("field comment")
-    public int a = 1;
-
-    public int b = 2;
-  }
+class TestJsonLineEndings {
 
   // not normalized: the line endings are what is tested
   private static String dump(ConfigResolver resolver) {
@@ -51,14 +42,23 @@ public class TestJsonLineEndings {
   }
 
   @Test
-  public void jsonUsesLineFeeds() {
+  void jsonUsesLineFeeds() {
     Assertions.assertEquals("{\n  \"a\": 1,\n  \"b\": 2\n}", dump(JsonConfig.getConfigResolver()));
   }
 
   @Test
-  public void json5UsesLineFeeds() {
+  void json5UsesLineFeeds() {
     Assertions.assertEquals(
         "// Class comment\n\n{\n  // field comment\n  a: 1,\n  b: 2\n}",
-        dump(JsonConfig.getJSON5ConfigResolver()));
+        dump(JsonConfig.getJson5ConfigResolver()));
+  }
+
+  @Comment("Class comment")
+  static class Subject {
+
+    @Comment("field comment")
+    public int a = 1;
+
+    public int b = 2;
   }
 }

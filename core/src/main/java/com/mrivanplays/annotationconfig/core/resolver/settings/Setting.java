@@ -34,7 +34,6 @@ import org.jspecify.annotations.Nullable;
  * @author Ivan Pekov
  */
 @NullMarked
-@SuppressWarnings("rawtypes")
 public interface Setting<T> {
 
   /**
@@ -59,10 +58,11 @@ public interface Setting<T> {
    */
   static <T> Setting<T> of(@Nullable String key, Class<T> type) {
     Objects.requireNonNull(type, "type");
+    String settingKey = key == null ? type.getName() : key;
     return new Setting<>() {
       @Override
       public String key() {
-        return key == null ? type.getName() : key;
+        return settingKey;
       }
 
       @Override
@@ -70,25 +70,31 @@ public interface Setting<T> {
         return type;
       }
 
+      // the same key and type: Settings stores values by the exact key
       @Override
       public boolean equals(@Nullable Object o) {
         if (this == o) {
           return true;
         }
-        if (o == null || getClass() != o.getClass()) {
-          return false;
-        }
-        Setting setting = (Setting) o;
-        if (!setting.key().equalsIgnoreCase(key)) {
-          return false;
-        }
-        return type.isAssignableFrom(setting.type());
+        return o instanceof Setting<?> setting
+            && settingKey.equals(setting.key())
+            && type.equals(setting.type());
+      }
+
+      @Override
+      public int hashCode() {
+        return 31 * settingKey.hashCode() + type.hashCode();
+      }
+
+      @Override
+      public String toString() {
+        return "Setting{key=" + settingKey + ", type=" + type.getName() + '}';
       }
     };
   }
 
   /**
-   * Returns the key with which this setting will be associated with.
+   * Returns the key with which this setting is associated.
    *
    * @return setting key
    */
@@ -109,4 +115,13 @@ public interface Setting<T> {
    */
   @Override
   boolean equals(@Nullable Object o);
+
+  /**
+   * Returns a hash code consistent with {@link #equals(Object)}.
+   *
+   * @return hash code
+   * @since 3.1.0
+   */
+  @Override
+  int hashCode();
 }

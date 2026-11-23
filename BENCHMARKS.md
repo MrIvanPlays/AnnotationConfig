@@ -1,6 +1,6 @@
 # Benchmarks
 
-Dump and load times of AnnotationConfig 3.1.0 (the commit after `ff56b96`, which reads the
+Dump and load times of AnnotationConfig 3.1.0 (commit `6951903`, which reads the
 reflection of a class once and no longer wraps and copies loaded values once per level of
 nesting), and a comparison with commit `6207cbc` (3.0.4-SNAPSHOT, right after the 3.0.3 release).
 Lower is better.

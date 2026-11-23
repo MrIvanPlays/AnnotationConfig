@@ -24,7 +24,7 @@ public class MyCoolConfig {
 
 ```
 
-and, generates the following config (YAML):
+and generates the following config (YAML):
 
 ```yaml
 # Hello
@@ -38,17 +38,16 @@ messages:
   third: "Then I have breakfast and go to school by bus."
 ```
 
-By default the supported configuration file formats are "properties", [JSON](https://www.json.org/)
-using [gson](https://github.com/google/gson), [JSON5](https://spec.json5.org) (JSON with comments)
-in the same module; [TOML](https://toml.io/), read
+By default the supported configuration file formats are "properties"; [JSON](https://www.json.org/)
+using [gson](https://github.com/google/gson), and [JSON5](https://spec.json5.org) (JSON with
+comments) in the same module; [TOML](https://toml.io/), read
 with [Jackson data formats](https://github.com/FasterXML/jackson-dataformats-text) and written by
-AnnotationConfig itself, and last but not least - [YAML](https://yaml.org/)
-utilising [snakeyaml](https://github.com/snakeyaml/snakeyaml) with some custom backend logic for
-dumping, backed by snakeyaml.
+AnnotationConfig itself; and last but not least [YAML](https://yaml.org/), read and written
+with [snakeyaml](https://github.com/snakeyaml/snakeyaml).
 
 # Prerequisites
 
-Versions >=3.0.3 require Java 25, ~~internet access and maven central~~
+Versions >=3.0.3 require Java 25.
 
 # Examples
 
@@ -67,13 +66,15 @@ in the changelog.
 configuration file format. Each module that AnnotationConfig ships by default has a standardised
 class named `[Configuration type]Config` which consists of `getConfigResolver()` and (if applicable)
 custom settings.
-The only exception to that rule is `JsonConfig`, as it contains two parsers for different JSON spec (good ol' JSON and JSON5).
+The only exception to that rule is `JsonConfig`, as it has two resolvers for two JSON specs (good
+ol' JSON and JSON5).
 
 YAML example:
 
 ```java
-YamlConfig.getConfigResolver().
-      loadOrDump(annotatedConfig, file, /*opt:loader settings*/);
+YamlConfig.getConfigResolver().loadOrDump(annotatedConfig, file);
+// or, with settings of your own:
+YamlConfig.getConfigResolver().loadOrDump(annotatedConfig, file, settings);
 ```
 
 Due to this abstraction layer existing, every feature AnnotationConfig adds can be and is 99%
@@ -88,7 +89,7 @@ ConfigResolver configResolver =
     ConfigResolver.newBuilder()
         .withValueWriter(/* value writer */)
         .withSetting(/* setting */, /* value */)
-        .withCommentPrefix("# ") // if the config format supports
+        .withCommentPrefix("# ") // if the config format supports comments
         .withFileExtension(".myextension")
         .withFileExtension(".myotherextension")
         .withValueReader(/* value reader */)
@@ -97,15 +98,13 @@ ConfigResolver configResolver =
 // ...
 
 // make use of that resolver
-configResolver.loadOrDump(
-    annotatedConfig, file, /* loader settings */);
+configResolver.loadOrDump(annotatedConfig, file);
 ```
 
 WHILE ON THAT NOTE: `ConfigResolver` is not meant to be implemented, only created using the designated builder. Implementing it means YOU are going to depend on internal implementations which may change without a moment's notice. Oh, something doesn't work properly? It looks like YOU implemented it and YOU used the internals incorrectly, and it is entirely YOUR fault.
 
 AnnotationConfig internals serialize to a `Map<String, Object>`, and for comments a
-`Map<String, List<String>>` where the map key is the specified field name, or, if annotated with
-`@Key`, the value from that annotation.
+`Map<String, List<String>>` keyed by the dotted path of each option (`server.port`).
 
 # Installation
 
@@ -115,7 +114,7 @@ Maven:
 <dependency>
   <groupId>com.mrivanplays</groupId>
   <!-- Types: toml, yaml, json -->
-  <!-- If you want .conf/.properties, or custom implementation configuration, you can set the type to core -->
+  <!-- For .properties (or .conf) files, or a format of your own, set the type to core -->
   <artifactId>annotationconfig-(type)</artifactId> <!-- Replace type -->
   <version>3.1.0</version>
   <scope>compile</scope>

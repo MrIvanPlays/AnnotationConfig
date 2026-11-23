@@ -44,15 +44,45 @@ import java.lang.annotation.Target;
 @Target(ElementType.FIELD)
 public @interface Max {
 
+  /**
+   * The maximum {@code int} value, or the maximum length of a string.
+   *
+   * @return the bound
+   */
   int maxInt() default Integer.MAX_VALUE;
 
+  /**
+   * The maximum {@code double} value.
+   *
+   * @return the bound
+   */
   double maxDouble() default Double.POSITIVE_INFINITY;
 
+  /**
+   * The maximum {@code byte} value.
+   *
+   * @return the bound
+   */
   byte maxByte() default Byte.MAX_VALUE;
 
+  /**
+   * The maximum {@code float} value.
+   *
+   * @return the bound
+   */
   float maxFloat() default Float.POSITIVE_INFINITY;
 
+  /**
+   * The maximum {@code short} value.
+   *
+   * @return the bound
+   */
   short maxShort() default Short.MAX_VALUE;
 
+  /**
+   * The maximum {@code long} value.
+   *
+   * @return the bound
+   */
   long maxLong() default Long.MAX_VALUE;
 }

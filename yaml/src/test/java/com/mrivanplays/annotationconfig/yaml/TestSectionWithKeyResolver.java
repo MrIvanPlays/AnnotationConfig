@@ -28,25 +28,10 @@ import java.io.StringWriter;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
-public class TestSectionWithKeyResolver {
-
-  static class Subject {
-
-    @Comment("Foo comment")
-    @Key("commands.subcommands.help.foo")
-    private String foo = "bar";
-
-    @Comment("Bar comment")
-    @Key("commands.subcommands.this.bar")
-    private String bar = "aaa";
-
-    @Comment("baz")
-    @Key("commands.subcommands.this.baz")
-    private int baz = -1;
-  }
+class TestSectionWithKeyResolver {
 
   @Test
-  public void testDump() {
+  void testDump() {
     Subject config = new Subject();
     StringWriter writer = new StringWriter();
 
@@ -68,7 +53,7 @@ public class TestSectionWithKeyResolver {
   }
 
   @Test
-  public void testLoad() {
+  void testLoad() {
     Subject config = new Subject();
     YamlConfig.getConfigResolver()
         .load(
@@ -78,5 +63,20 @@ public class TestSectionWithKeyResolver {
     Assertions.assertEquals("pepega", config.foo);
     Assertions.assertEquals("baz", config.bar);
     Assertions.assertEquals(69420, config.baz);
+  }
+
+  static class Subject {
+
+    @Comment("Foo comment")
+    @Key("commands.subcommands.help.foo")
+    private String foo = "bar";
+
+    @Comment("Bar comment")
+    @Key("commands.subcommands.this.bar")
+    private String bar = "aaa";
+
+    @Comment("baz")
+    @Key("commands.subcommands.this.baz")
+    private int baz = -1;
   }
 }

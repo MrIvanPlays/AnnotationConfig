@@ -23,7 +23,6 @@
 package com.mrivanplays.annotationconfig.core.resolver;
 
 import java.io.File;
-import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.io.OutputStreamWriter;
@@ -53,18 +52,7 @@ public interface WritableObject {
    */
   static WritableObject createFromFile(File file) {
     Objects.requireNonNull(file, "file");
-    return () -> {
-      try {
-        if (!file.exists()) {
-          //noinspection ResultOfMethodCallIgnored
-          file.createNewFile();
-        }
-        return new PrintWriter(
-            new OutputStreamWriter(new FileOutputStream(file), StandardCharsets.UTF_8));
-      } catch (IOException e) {
-        throw new RuntimeException(e);
-      }
-    };
+    return createFromPath(file.toPath());
   }
 
   /**
@@ -77,12 +65,10 @@ public interface WritableObject {
     Objects.requireNonNull(path, "path");
     return () -> {
       try {
-        if (Files.notExists(path)) {
-          Files.createFile(path);
-        }
-        return new PrintWriter(Files.newBufferedWriter(path));
+        // creates the file, or replaces what it holds
+        return new PrintWriter(Files.newBufferedWriter(path, StandardCharsets.UTF_8));
       } catch (IOException e) {
-        throw new RuntimeException(e);
+        throw new RuntimeException("Could not open " + path + " for writing", e);
       }
     };
   }
@@ -95,7 +81,7 @@ public interface WritableObject {
    */
   static WritableObject createFromWriter(Writer writer) {
     Objects.requireNonNull(writer, "writer");
-    return () -> writer instanceof PrintWriter ? (PrintWriter) writer : new PrintWriter(writer);
+    return () -> writer instanceof PrintWriter printWriter ? printWriter : new PrintWriter(writer);
   }
 
   /**

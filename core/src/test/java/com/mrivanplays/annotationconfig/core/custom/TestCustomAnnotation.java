@@ -35,7 +35,7 @@ import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
-public class TestCustomAnnotation {
+class TestCustomAnnotation {
 
   private final ConfigResolver resolver = PropertyConfig.getConfigResolver();
 
@@ -58,7 +58,7 @@ public class TestCustomAnnotation {
   }
 
   @Test
-  public void testSuccessful() {
+  void testSuccessful() {
     int callbacksBefore = DummyAnnotation2Handler.SUCCESS_CALLBACKS.get();
     DummyConfig config = new DummyConfig();
     resolver.load(config, resource("custom-anno-def.properties"));
@@ -69,7 +69,7 @@ public class TestCustomAnnotation {
   }
 
   @Test
-  public void testFail() {
+  void testFail() {
     // foo does not contain "Hello", so DummyAnnotationHandler rejects it with its error
     RuntimeException e =
         Assertions.assertThrows(
@@ -79,7 +79,7 @@ public class TestCustomAnnotation {
   }
 
   @Test
-  public void testAlterOption() {
+  void testAlterOption() {
     Settings settings = ACDefaultSettings.getDefault().copy();
     settings.put(OptsConstant.DUMMY_DEFAULT, false);
     resolver.load(new DummyConfig(), resource("custom-anno-def.properties"), settings);
@@ -88,7 +88,7 @@ public class TestCustomAnnotation {
   }
 
   @Test
-  public void testDump() {
+  void testDump() {
     DummyConfig config = new DummyConfig();
     StringWriter writer = new StringWriter();
     resolver.dump(config, writer);

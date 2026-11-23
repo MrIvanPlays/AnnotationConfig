@@ -38,8 +38,7 @@ import org.jspecify.annotations.Nullable;
  *
  * <pre>{@code
  * Object value = // ...
- * if (value instanceof MultilineString) {
- *   MultilineString multiline = (MultilineString) value;
+ * if (value instanceof MultilineString multiline) {
  *   String toWrite = multiline.getString();
  *   char c = multiline.getMarkerChar();
  *
@@ -56,11 +55,17 @@ import org.jspecify.annotations.Nullable;
 public final class MultilineString {
 
   private final String value;
-  private final char c;
+  private final char markerChar;
 
-  public MultilineString(String value, char c) {
+  /**
+   * Creates a new multiline string.
+   *
+   * @param value the string
+   * @param markerChar the marker character, see {@link #getMarkerChar()}
+   */
+  public MultilineString(String value, char markerChar) {
     this.value = Objects.requireNonNull(value, "value");
-    this.c = c;
+    this.markerChar = markerChar;
   }
 
   /**
@@ -73,25 +78,25 @@ public final class MultilineString {
   }
 
   /**
-   * Returns the {@link Character} marker.
+   * Returns the marker character.
    *
    * <p>A marker character could be the "pipe" or '|', could be the double quote or whatever {@code
-   * char} the configuration type this is going to be dumped to is supported.
+   * char} the configuration type this is going to be dumped to supports.
    *
    * <p>In YAML's scenario, the '|' or the '>' characters are used before the multiline string is
    * specified, which makes them "marker" characters e.g.
    *
    * <pre>
    * foo: |
-   *   Lorem ipsum\n
+   *   Lorem ipsum
    *   dolor sit amet
    * </pre>
    *
    * Or
    *
    * <pre>
-   * foo: >
-   *   Lorem ipsum\n
+   * foo: &gt;
+   *   Lorem ipsum
    *   dolor sit amet
    * </pre>
    *
@@ -101,7 +106,7 @@ public final class MultilineString {
    * @return marker character
    */
   public char getMarkerChar() {
-    return c;
+    return markerChar;
   }
 
   @Override
@@ -114,22 +119,16 @@ public final class MultilineString {
     }
 
     MultilineString that = (MultilineString) o;
-
-    if (c != that.getMarkerChar()) {
-      return false;
-    }
-    return value.equals(that.getString());
+    return markerChar == that.markerChar && value.equals(that.value);
   }
 
   @Override
   public int hashCode() {
-    int result = value.hashCode();
-    result = 31 * result + (int) c;
-    return result;
+    return 31 * value.hashCode() + markerChar;
   }
 
   @Override
   public String toString() {
-    return "MultilineString{string='" + value + '\'' + ", markerChar=" + c + '}';
+    return "MultilineString{string='" + value + '\'' + ", markerChar=" + markerChar + '}';
   }
 }

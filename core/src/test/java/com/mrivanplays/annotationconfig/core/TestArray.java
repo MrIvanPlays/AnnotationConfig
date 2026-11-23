@@ -30,18 +30,8 @@ import org.junit.jupiter.api.Test;
 
 class TestArray {
 
-  static class Subject {
-
-    char[] charArray = new char[] {'a', 'b', 'c'};
-    boolean[] boolArray = new boolean[] {true, false, true};
-    int[] intArray = new int[] {7, 8, 9, 10, 11, 12};
-    BigInteger[] bigInteger = new BigInteger[] {BigInteger.valueOf(1), BigInteger.valueOf(2)};
-    BigDecimal[] bigDecimal = new BigDecimal[] {BigDecimal.valueOf(1.2), BigDecimal.valueOf(3.4)};
-    String[] stringArray = new String[] {"make", "america", "great", "again"};
-  }
-
   @Test
-  public void testRead() {
+  void testRead() {
     Subject config = new Subject();
     PropertyConfig.getConfigResolver()
         .load(config, getClass().getClassLoader().getResourceAsStream("array-test.properties"));
@@ -57,7 +47,7 @@ class TestArray {
   }
 
   @Test
-  public void testWrite() {
+  void testWrite() {
     StringWriter writer = new StringWriter();
     PropertyConfig.getConfigResolver().dump(new Subject(), writer);
     String expected =
@@ -73,5 +63,15 @@ class TestArray {
             + "\n"
             + "charArray=a, b, c\n";
     Assertions.assertEquals(expected, writer.toString());
+  }
+
+  static class Subject {
+
+    char[] charArray = new char[] {'a', 'b', 'c'};
+    boolean[] boolArray = new boolean[] {true, false, true};
+    int[] intArray = new int[] {7, 8, 9, 10, 11, 12};
+    BigInteger[] bigInteger = new BigInteger[] {BigInteger.valueOf(1), BigInteger.valueOf(2)};
+    BigDecimal[] bigDecimal = new BigDecimal[] {BigDecimal.valueOf(1.2), BigDecimal.valueOf(3.4)};
+    String[] stringArray = new String[] {"make", "america", "great", "again"};
   }
 }

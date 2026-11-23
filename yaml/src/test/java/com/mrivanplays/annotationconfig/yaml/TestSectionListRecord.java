@@ -37,50 +37,7 @@ import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
-public class SectionListRecordTest {
-
-  record TestObj(String key, String value) {}
-
-  record TestObj2(String key, int value) {
-
-    TestObj2(String key) {
-      this(key, -1);
-    }
-  }
-
-  record TestObj3(@Key("super-cool-key") String key, int num, boolean persist) {
-
-    TestObj3(String key) {
-      this(key, -1, false);
-    }
-  }
-
-  static class Subj {
-
-    public SectionObjectList<TestObj> list =
-        SectionObjectList.newBuilderForType(TestObj.class)
-            .defaultValue("foo", new TestObj("bar", "baz"))
-            .defaultValue("bar", new TestObj("lorem", "ipsum"))
-            .build();
-  }
-
-  static class Subj2 {
-
-    public SectionObjectList<TestObj2> list =
-        SectionObjectList.newBuilderForType(TestObj2.class)
-            .defaultValue("ipsum", new TestObj2("dolor", 1))
-            .defaultValue("sit", new TestObj2("amet", 2))
-            .build();
-  }
-
-  static class Subj3 {
-
-    public SectionObjectList<TestObj3> list =
-        SectionObjectList.newBuilderForType(TestObj3.class)
-            .defaultValue("pump", new TestObj3("JAVA", 25, true))
-            .defaultValue("llll", new TestObj3("wh", 34, false))
-            .build();
-  }
+class TestSectionListRecord {
 
   private static final List<Type> LIST_TYPES =
       List.of(
@@ -237,5 +194,48 @@ public class SectionListRecordTest {
     Assertions.assertNotNull(s.list.get("pump").key());
     Assertions.assertEquals(-5, s.list.get("pump").num());
     Assertions.assertFalse(s.list.get("pump").persist());
+  }
+
+  record TestObj(String key, String value) {}
+
+  record TestObj2(String key, int value) {
+
+    TestObj2(String key) {
+      this(key, -1);
+    }
+  }
+
+  record TestObj3(@Key("super-cool-key") String key, int num, boolean persist) {
+
+    TestObj3(String key) {
+      this(key, -1, false);
+    }
+  }
+
+  static class Subj {
+
+    public SectionObjectList<TestObj> list =
+        SectionObjectList.newBuilderForType(TestObj.class)
+            .defaultValue("foo", new TestObj("bar", "baz"))
+            .defaultValue("bar", new TestObj("lorem", "ipsum"))
+            .build();
+  }
+
+  static class Subj2 {
+
+    public SectionObjectList<TestObj2> list =
+        SectionObjectList.newBuilderForType(TestObj2.class)
+            .defaultValue("ipsum", new TestObj2("dolor", 1))
+            .defaultValue("sit", new TestObj2("amet", 2))
+            .build();
+  }
+
+  static class Subj3 {
+
+    public SectionObjectList<TestObj3> list =
+        SectionObjectList.newBuilderForType(TestObj3.class)
+            .defaultValue("pump", new TestObj3("JAVA", 25, true))
+            .defaultValue("llll", new TestObj3("wh", 34, false))
+            .build();
   }
 }

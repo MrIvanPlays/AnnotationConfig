@@ -43,42 +43,6 @@ import org.junit.jupiter.params.provider.ValueSource;
  */
 class TestListObjectOnlyObjectSerializer {
 
-  static class Subject {
-
-    List<TestObject> objects = Arrays.asList(new TestObject("foo"), new TestObject("bar"));
-  }
-
-  static class TestObject {
-
-    @NullMarked
-    static class Serializer implements FieldTypeSerializer<TestObject> {
-
-      @Override
-      public TestObject deserialize(
-          DataObject data,
-          SerializationContext<TestObject> context,
-          AnnotationAccessor annotations) {
-        return new TestObject(data.getAsString());
-      }
-
-      @Override
-      public DataObject serialize(
-          TestObject value,
-          SerializationContext<TestObject> context,
-          AnnotationAccessor annotations) {
-        return new DataObject(value.foo);
-      }
-    }
-
-    String foo;
-
-    public TestObject() {}
-
-    TestObject(String foo) {
-      this.foo = foo;
-    }
-  }
-
   private final ConfigResolver resolver = YamlConfig.getConfigResolver();
 
   /** Runs {@code test}, with the serializer registered only for its duration if requested. */
@@ -120,5 +84,41 @@ class TestListObjectOnlyObjectSerializer {
           Assertions.assertEquals("baz", config.objects.get(0).foo);
           Assertions.assertEquals("aabb", config.objects.get(1).foo);
         });
+  }
+
+  static class Subject {
+
+    List<TestObject> objects = Arrays.asList(new TestObject("foo"), new TestObject("bar"));
+  }
+
+  static class TestObject {
+
+    String foo;
+
+    public TestObject() {}
+
+    TestObject(String foo) {
+      this.foo = foo;
+    }
+
+    @NullMarked
+    static class Serializer implements FieldTypeSerializer<TestObject> {
+
+      @Override
+      public TestObject deserialize(
+          DataObject data,
+          SerializationContext<TestObject> context,
+          AnnotationAccessor annotations) {
+        return new TestObject(data.getAsString());
+      }
+
+      @Override
+      public DataObject serialize(
+          TestObject value,
+          SerializationContext<TestObject> context,
+          AnnotationAccessor annotations) {
+        return new DataObject(value.foo);
+      }
+    }
   }
 }

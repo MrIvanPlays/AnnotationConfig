@@ -29,6 +29,7 @@ import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Function;
 import org.jspecify.annotations.NullMarked;
+import org.jspecify.annotations.Nullable;
 
 /**
  * Represents a registry of all the serializers.
@@ -38,7 +39,7 @@ import org.jspecify.annotations.NullMarked;
  * @since 2.0.0
  * @author Ivan Pekov
  */
-@SuppressWarnings({"unchecked", "unused"})
+@SuppressWarnings("unchecked")
 @NullMarked
 public enum SerializerRegistry {
   INSTANCE;
@@ -46,12 +47,25 @@ public enum SerializerRegistry {
   // a Class is a Type, so the Class and Type overloads share their entries
   private final Map<Type, FieldTypeSerializer<?>> serializers = new ConcurrentHashMap<>();
 
+  private static <T> @Nullable T defaultDeserialize(
+      DataObject data, SerializationContext<T> context, AnnotationAccessor annotations) {
+    return (T)
+        DefaultSerializer.INSTANCE.deserialize(
+            data, (SerializationContext<Object>) context, annotations);
+  }
+
+  private static <T> DataObject defaultSerialize(
+      T value, SerializationContext<T> context, AnnotationAccessor annotations) {
+    return DefaultSerializer.INSTANCE.serialize(
+        value, (SerializationContext<Object>) context, annotations);
+  }
+
   /**
    * Registers a new serializer.
    *
    * @param serializedType the field type that should be serialized
    * @param typeSerializer the serializer of the serializedType
-   * @param <T> generic
+   * @param <T> the serialized type
    * @throws IllegalArgumentException if a serializer for this type has been already registered
    */
   public <T> void registerSerializer(
@@ -78,12 +92,12 @@ public enum SerializerRegistry {
 
   /**
    * Register a new {@link FieldTypeSerializer} which can resolve data without a {@link
-   * SerializationContext} and a {@link AnnotationAccessor}
+   * SerializationContext} and an {@link AnnotationAccessor}
    *
    * @param serializedType the field type that should be serialized
    * @param deserialize deserialization method of the serializedType
    * @param serialize serialization method of the serializedType
-   * @param <T> generic
+   * @param <T> the serialized type
    * @throws IllegalArgumentException if a serializer for this type has been already registered
    */
   public <T> void registerSimpleSerializer(
@@ -99,16 +113,20 @@ public enum SerializerRegistry {
             (data, _, _) -> deserialize.apply(data), (value, _, _) -> serialize.apply(value)));
   }
 
+  // The default serializer with the caller's context, so the settings, the generic type and the
+  // default value are kept, and a value without an annotated config (e.g. a record component)
+  // works as well.
+
   /**
    * Registers a new {@link FieldTypeSerializer} with only a serialize method which can resolve
-   * without a {@link SerializationContext} and a {@link AnnotationAccessor} .<br>
-   * How is the deserialize method handled? If there is a registered serializer for ths {@code
+   * without a {@link SerializationContext} and an {@link AnnotationAccessor}.<br>
+   * How is the deserialize method handled? If there is a registered serializer for this {@code
    * serializedType}, then the method will forward deserialize calls to it, otherwise deserialize
    * calls are forwarded to the default serializer.
    *
    * @param serializedType the field type that should be serialized
    * @param serialize serialization method of the serializedType
-   * @param <T> generic
+   * @param <T> the serialized type
    */
   public <T> void registerSimpleValueSerializer(
       Class<T> serializedType, Function<T, DataObject> serialize) {
@@ -122,22 +140,20 @@ public enum SerializerRegistry {
             FieldTypeSerializer.<T>functional(
                 existing != null
                     ? ((FieldTypeSerializer<T>) existing).deserializeAsFunction()
-                    : (data, context, annotations) ->
-                        SimpleValueSerializer.deserialize(
-                            data, serializedType, context.getAnnotatedConfig(), annotations),
+                    : SerializerRegistry::defaultDeserialize,
                 (value, _, _) -> serialize.apply(value)));
   }
 
   /**
    * Registers a new {@link FieldTypeSerializer} with only a deserialize method which can resolve
-   * without a {@link SerializationContext} and a {@link AnnotationAccessor}.<br>
+   * without a {@link SerializationContext} and an {@link AnnotationAccessor}.<br>
    * How is the serialize method handled? If there is a registered serializer for this {@code
    * serializedType}, then the method will forward serialize calls to it, otherwise serialize calls
    * are forwarded to the default serializer.
    *
    * @param serializedType the field type that should be deserialized
    * @param deserialize deserialization method of the serialized type
-   * @param <T> generic
+   * @param <T> the serialized type
    */
   public <T> void registerSimpleValueDeserializer(
       Class<T> serializedType, Function<DataObject, T> deserialize) {
@@ -150,9 +166,7 @@ public enum SerializerRegistry {
                 (data, _, _) -> deserialize.apply(data),
                 existing != null
                     ? ((FieldTypeSerializer<T>) existing).serializeAsFunction()
-                    : (value, context, annotations) ->
-                        SimpleValueSerializer.serialize(
-                            value, serializedType, context.getAnnotatedConfig(), annotations)));
+                    : SerializerRegistry::defaultSerialize));
   }
 
   /**

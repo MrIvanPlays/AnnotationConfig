@@ -31,25 +31,7 @@ import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
-public class TestMissingOptions {
-
-  @Comment("Comments should be kept even after regeneration!")
-  private static final class Subject1 {
-
-    @Comment("Foo comment kept")
-    private String foo = "foo";
-  }
-
-  // a newer version of Subject1: the default of foo changed and the option bar was added
-  @Comment("Comments should be kept even after regeneration!")
-  private static final class Subject2 {
-
-    @Comment("Foo comment kept")
-    private String foo = "baz";
-
-    @Comment("Bar comment kept")
-    private String bar = "bar";
-  }
+class TestMissingOptions {
 
   private final ConfigResolver resolver = PropertyConfig.getConfigResolver();
 
@@ -58,7 +40,7 @@ public class TestMissingOptions {
   }
 
   @Test
-  public void missingOptionsAreAddedToTheFile(@TempDir Path dir) throws IOException {
+  void missingOptionsAreAddedToTheFile(@TempDir Path dir) throws IOException {
     Path file = dir.resolve("missing-opt.properties");
     resolver.dump(new Subject1(), file);
     Assertions.assertFalse(read(file).contains("bar"));
@@ -78,5 +60,23 @@ public class TestMissingOptions {
             + "# Foo comment kept\n"
             + "foo=foo\n";
     Assertions.assertEquals(expected, read(file));
+  }
+
+  @Comment("Comments should be kept even after regeneration!")
+  private static final class Subject1 {
+
+    @Comment("Foo comment kept")
+    private String foo = "foo";
+  }
+
+  // a newer version of Subject1: the default of foo changed and the option bar was added
+  @Comment("Comments should be kept even after regeneration!")
+  private static final class Subject2 {
+
+    @Comment("Foo comment kept")
+    private String foo = "baz";
+
+    @Comment("Bar comment kept")
+    private String bar = "bar";
   }
 }

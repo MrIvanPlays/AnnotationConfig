@@ -67,6 +67,12 @@ import org.jspecify.annotations.Nullable;
 @NullMarked
 public final class AnnotatedConfigResolver {
 
+  private static final String INACCESSIBLE = "A field became inaccessible";
+
+  private AnnotatedConfigResolver() {
+    throw new IllegalStateException("Instantiation of utility-type class");
+  }
+
   /**
    * The commented classes and the fields of {@code annotatedClass}'s class, in the order they are
    * written. The set is cached per class and settings, and can't be modified.
@@ -85,7 +91,7 @@ public final class AnnotatedConfigResolver {
       Set<AnnotationHolder> holders,
       Path path,
       Settings settings,
-      String commentChar,
+      @Nullable String commentChar,
       ValueWriter valueWriter) {
     Path absolutePath = path.toAbsolutePath();
     Path parent = absolutePath.getParent();
@@ -99,7 +105,7 @@ public final class AnnotatedConfigResolver {
 
         toWriter(annotatedConfig, writer, holders, commentChar, valueWriter, settings);
 
-        writer.flush();
+        // checkError() flushes first
         if (writer.checkError()) {
           throw new IOException("Failed to write configuration");
         }
@@ -129,7 +135,7 @@ public final class AnnotatedConfigResolver {
       Set<AnnotationHolder> holders,
       Writer writerFeed,
       Settings settings,
-      String commentChar,
+      @Nullable String commentChar,
       ValueWriter valueWriter) {
     try (PrintWriter writer = new PrintWriter(writerFeed)) {
       toWriter(annotatedConfig, writer, holders, commentChar, valueWriter, settings);
@@ -146,7 +152,7 @@ public final class AnnotatedConfigResolver {
       Object annotatedConfig,
       PrintWriter writer,
       Set<AnnotationHolder> holders,
-      String commentChar,
+      @Nullable String commentChar,
       ValueWriter valueWriter,
       Settings settings)
       throws IOException {
@@ -182,49 +188,48 @@ public final class AnnotatedConfigResolver {
       try {
         writeField(annotatedConfig, field, context, toWrite, "");
       } catch (IllegalAccessException e) {
-        throw new IllegalArgumentException("A field became inaccessible", e);
+        throw new IllegalArgumentException(INACCESSIBLE, e);
       }
     }
     if (rawConfigField != null) {
-      Field field = rawConfigField.ensureAccessible();
-      if (!field.getType().isAssignableFrom(DataObject.class)) {
-        throw new IllegalArgumentException("@RawConfig on a field which is not DataObject");
-      }
-      try {
-        field.set(annotatedConfig, new DataObject(toWrite, true));
-      } catch (IllegalAccessException e) {
-        throw new IllegalArgumentException(
-            "Could not set a field's value ; field not accessible anymore", e);
-      }
+      setRawConfig(rawConfigField, annotatedConfig, toWrite);
     }
     Map<String, List<String>> fieldComments =
         context.comments() == null ? Collections.emptyMap() : context.comments();
     valueWriter.write(toWrite, fieldComments, writer, settings);
   }
 
-  /**
-   * What stays the same while one config is dumped.
-   *
-   * @param comments where the comments of all options go, under their dotted path from the root;
-   *     {@code null} when the writer doesn't write comments
-   * @param boxed a map reused for every {@link KeyResolver#boxTo} call, instead of a new one per
-   *     option
-   */
-  private record WriteContext(
-      Settings settings,
-      KeyResolver keyResolver,
-      @Nullable Map<String, List<String>> comments,
-      Map<String, Object> boxed) {
-
-    WriteContext(
-        Settings settings, KeyResolver keyResolver, @Nullable Map<String, List<String>> comments) {
-      this(settings, keyResolver, comments, new LinkedHashMap<>(4));
-    }
+  /** The written form of a serialized value: the value itself, a list, or a map for a section. */
+  private static @Nullable Object unwrap(DataObject serialized) {
+    return serialized.isSingleValue() ? serialized.getAsObject() : serialized.getAsMap();
   }
 
-  /** The written form of a serialized value: the value itself, a list, or a map for a section. */
-  private static Object unwrap(DataObject serialized) {
-    return serialized.isSingleValue() ? serialized.getAsObject() : serialized.getAsMap();
+  /** The registered serializer of {@code type}, or the default serializer. */
+  private static FieldTypeSerializer serializerFor(Type type) {
+    SerializerRegistry registry = SerializerRegistry.INSTANCE;
+    return registry.getSerializer(type).orElse(registry.getDefaultSerializer());
+  }
+
+  private static DataObject requireSerialized(
+      @Nullable DataObject serialized, Field field, Class<?> type) {
+    if (serialized == null) {
+      throw new NullPointerException(
+          "Expected DataObject, but got null ; Field: "
+              + field.getName()
+              + " ; Field type: "
+              + type.getName());
+    }
+    return serialized;
+  }
+
+  /** Puts the read or written values into a {@code @RawConfig} field. */
+  private static void setRawConfig(
+      FieldInfo info, Object annotatedConfig, Map<String, Object> values) {
+    Field field = info.ensureAccessible();
+    if (!field.getType().isAssignableFrom(DataObject.class)) {
+      throw new IllegalArgumentException("@RawConfig on a field which is not DataObject");
+    }
+    setField(field, annotatedConfig, new DataObject(values, true));
   }
 
   /**
@@ -290,29 +295,21 @@ public final class AnnotatedConfigResolver {
     if (defaultsToValueObject == null) {
       throw new IllegalArgumentException("No default value for field '" + field.getName() + "'");
     }
-    SerializerRegistry serializerRegistry = SerializerRegistry.INSTANCE;
-    FieldTypeSerializer serializer =
-        serializerRegistry
-            .getSerializer(info.genericType())
-            .orElse(serializerRegistry.getDefaultSerializer());
     DataObject serialized =
-        serializer.serialize(
-            defaultsToValueObject,
-            SerializationContext.of(
-                field.getName(),
-                defaultsToValueObject,
-                field.getType(),
-                info.genericType(),
-                annotatedConfig,
-                context.settings()),
-            info.accessor());
-    if (serialized == null) {
-      throw new NullPointerException(
-          "Expected DataObject, got null ; Field: "
-              + field.getName()
-              + " ; Field type: "
-              + field.getType().getName());
-    }
+        requireSerialized(
+            serializerFor(info.genericType())
+                .serialize(
+                    defaultsToValueObject,
+                    SerializationContext.of(
+                        field.getName(),
+                        defaultsToValueObject,
+                        field.getType(),
+                        info.genericType(),
+                        annotatedConfig,
+                        context.settings()),
+                    info.accessor()),
+            field,
+            field.getType());
     if (serialized.isEmpty()) {
       return;
     }
@@ -328,7 +325,7 @@ public final class AnnotatedConfigResolver {
     // check for custom annotations writeValue implementations
     CustomAnnotationRegistry caRegistry = CustomAnnotationRegistry.INSTANCE;
     if (!caRegistry.isEmpty()) {
-      Class<?> foundWriteAnnotation = null;
+      Class<? extends Annotation> foundWriteAnnotation = null;
       for (Annotation annotation : info.annotations()) {
         Class<? extends Annotation> type = annotation.annotationType();
         if (AnnotationType.match(type).isPresent()) {
@@ -343,28 +340,22 @@ public final class AnnotatedConfigResolver {
             continue;
           }
           if (foundWriteAnnotation == null) {
-            FieldTypeSerializer newSerializer =
-                serializerRegistry
-                    .getSerializer(val.getClass())
-                    .orElse(serializerRegistry.getDefaultSerializer());
+            // the context describes val, which is what is serialized now
             DataObject newSerialized =
-                newSerializer.serialize(
-                    val,
-                    SerializationContext.of(
-                        field.getName(),
-                        defaultsToValueObject,
-                        field.getType(),
-                        info.genericType(),
-                        annotatedConfig,
-                        context.settings()),
-                    info.accessor());
-            if (newSerialized == null) {
-              throw new NullPointerException(
-                  "Expected DataObject, but got null ; Field: "
-                      + field.getName()
-                      + " ; Field type: "
-                      + val.getClass().getName());
-            }
+                requireSerialized(
+                    serializerFor(val.getClass())
+                        .serialize(
+                            val,
+                            SerializationContext.of(
+                                field.getName(),
+                                val,
+                                val.getClass(),
+                                val.getClass(),
+                                annotatedConfig,
+                                context.settings()),
+                            info.accessor()),
+                    field,
+                    val.getClass());
             if (newSerialized.isEmpty()) {
               continue;
             }
@@ -424,20 +415,16 @@ public final class AnnotatedConfigResolver {
     NullReadHandleOption nullReadHandler =
         settings.get(ACDefaultSettings.NULL_READ_HANDLER).orElseThrow();
     boolean missingOptions = false;
-    SerializerRegistry serializerRegistry = SerializerRegistry.INSTANCE;
     for (AnnotationHolder holder : holders) {
       if (holder.isClass()) {
         continue;
       }
       FieldInfo info = holder.getInfo();
-      Field field = info.ensureAccessible();
       if (info.rawConfig()) {
-        if (!field.getType().isAssignableFrom(DataObject.class)) {
-          throw new IllegalArgumentException("@RawConfig on a field which is not DataObject");
-        }
-        setField(field, annotatedConfig, new DataObject(values, true));
+        setRawConfig(info, annotatedConfig, values);
         continue;
       }
+      Field field = info.ensureAccessible();
       String keyName = info.key();
       Object value = keyResolver.unbox(keyName, values);
       boolean thisMissingOption = value == null;
@@ -466,21 +453,18 @@ public final class AnnotatedConfigResolver {
         if (field.getType().isRecord()) {
           // directly deserialize the value and set the field, do NOT try to set record fields
           Type fieldType = info.genericType();
-          FieldTypeSerializer serializer =
-              serializerRegistry
-                  .getSerializer(fieldType)
-                  .orElse(serializerRegistry.getDefaultSerializer());
           Object deserialized =
-              serializer.deserialize(
-                  new DataObject(value, true),
-                  SerializationContext.of(
-                      field.getName(),
-                      section,
-                      field.getType(),
-                      fieldType,
-                      annotatedConfig,
-                      settings),
-                  info.accessor());
+              serializerFor(fieldType)
+                  .deserialize(
+                      new DataObject(value, true),
+                      SerializationContext.of(
+                          field.getName(),
+                          section,
+                          field.getType(),
+                          fieldType,
+                          annotatedConfig,
+                          settings),
+                      info.accessor());
           if (!skipNull(deserialized, thisMissingOption, nullReadHandler)) {
             setField(field, annotatedConfig, deserialized);
           }
@@ -494,29 +478,26 @@ public final class AnnotatedConfigResolver {
                 settings);
         continue;
       }
-      FieldTypeSerializer<?> serializer =
-          serializerRegistry
-              .getSerializer(info.genericType())
-              .orElse(serializerRegistry.getDefaultSerializer());
       Object deserialized;
       try {
         deserialized =
-            serializer.deserialize(
-                new DataObject(value, true),
-                SerializationContext.fromField(field, annotatedConfig, settings),
-                info.accessor());
+            serializerFor(info.genericType())
+                .deserialize(
+                    new DataObject(value, true),
+                    SerializationContext.fromField(field, annotatedConfig, settings),
+                    info.accessor());
       } catch (IllegalAccessException e) {
-        throw new IllegalArgumentException("Field became inaccessible", e);
+        throw new IllegalArgumentException(INACCESSIBLE, e);
       }
       if (skipNull(deserialized, thisMissingOption, nullReadHandler)) {
         continue;
       }
       if (info.minOrMax()) {
-        MinMaxValidator.validate(field, keyName, deserialized);
+        MinMaxValidator.validate(info, keyName, deserialized);
       }
       // check for custom annotations
-      CustomAnnotationRegistry cARegistry = CustomAnnotationRegistry.INSTANCE;
-      if (!cARegistry.isEmpty()) {
+      CustomAnnotationRegistry caRegistry = CustomAnnotationRegistry.INSTANCE;
+      if (!caRegistry.isEmpty()) {
         Throwable error = null;
         boolean failed = false;
         for (Annotation annotation : info.annotations()) {
@@ -527,7 +508,7 @@ public final class AnnotatedConfigResolver {
             continue;
           }
           Optional<AnnotationValidator<? extends Annotation>> validatorOpt =
-              cARegistry.getValidator(type);
+              caRegistry.getValidator(type);
           if (validatorOpt.isPresent()) {
             AnnotationValidator validator = validatorOpt.get();
             ValidationResponse validatorResponse =
@@ -537,7 +518,7 @@ public final class AnnotatedConfigResolver {
               break;
             }
             if (validatorResponse.shouldFailSilently()) {
-              failed = validatorResponse.shouldFailSilently();
+              failed = true;
               break;
             }
             Runnable onSuccess = validatorResponse.onSuccess();
@@ -573,12 +554,27 @@ public final class AnnotatedConfigResolver {
     try {
       field.set(target, value);
     } catch (IllegalAccessException e) {
-      throw new IllegalArgumentException(
-          "Could not set a field's value ; field not accessible anymore", e);
+      throw new IllegalArgumentException(INACCESSIBLE, e);
     }
   }
 
-  private AnnotatedConfigResolver() {
-    throw new IllegalArgumentException("Initialisation of utility-type class.");
+  /**
+   * What stays the same while one config is dumped.
+   *
+   * @param comments where the comments of all options go, under their dotted path from the root;
+   *     {@code null} when the writer doesn't write comments
+   * @param boxed a map reused for every {@link KeyResolver#boxTo} call, instead of a new one per
+   *     option
+   */
+  private record WriteContext(
+      Settings settings,
+      KeyResolver keyResolver,
+      @Nullable Map<String, List<String>> comments,
+      Map<String, Object> boxed) {
+
+    WriteContext(
+        Settings settings, KeyResolver keyResolver, @Nullable Map<String, List<String>> comments) {
+      this(settings, keyResolver, comments, new LinkedHashMap<>(4));
+    }
   }
 }

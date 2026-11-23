@@ -109,8 +109,8 @@ Configs with values that only passed because of the truncation now fail to load.
 
 An empty string in a config (`message=` in `.properties`, `message: ""` in YAML, `message = ''` in
 TOML) used to be read as no value: the field became `null`, or kept its default with the
-`USE_DEFAULT_VALUE` null read handler. It is now read as `""`, also inside lists,
-so an option can be configured to be empty.
+`USE_DEFAULT_VALUE` null read handler. It is now read as `""`, also inside lists, so an option can
+be configured to be empty.
 
 Empty values of other types, such as a number written as `count=`, are still read as no value.
 
@@ -118,6 +118,17 @@ Empty values of other types, such as a number written as `count=`, are still rea
 
 Loading an enum value that matches no constant now throws an `IllegalArgumentException` that names
 the enum and lists its constants. It used to fail later with an unrelated error.
+
+#### `AdvancedEnumSerializer` matches each word once
+
+`AdvancedEnumSerializer` accepts the words of a constant in any order. A word of the input used to
+match every word of the constant that equals it, so repeated words could stand in for missing ones:
+`deny deny true` was read as `DENY_ALL_TRUE`. Every word of a constant is now matched once, so such
+a value matches no constant and is read as `null`: the field becomes `null` with the default
+`SET_NULL` null read handler, or keeps its default with `USE_DEFAULT_VALUE`.
+
+Repeated separators are now ignored, so `accept  all  true` and `true__deny all`, which used to
+match nothing, are read as `ACCEPT_ALL_TRUE` and `DENY_ALL_TRUE`.
 
 #### Numbers in maps keep their type
 
@@ -183,11 +194,6 @@ What changes is that a file holding the value as a table or an unquoted TOML dot
 (`server.ip = 'localhost'`), which used to be ignored, so the field kept its default, now sets the
 field. A dotted key and a config object with the same first part (`server`) share one table.
 
-#### `ReflectionUtils` will be removed
-
-AnnotationConfig no longer uses `ReflectionUtils` internally. It is deprecated for removal and will
-be removed in a future release.
-
 ### New features
 
 #### Support for records
@@ -237,7 +243,7 @@ resolver writes no comments, as JSON has none; the [JSON5 resolver](#json5-suppo
 
 The `json` module also supports [JSON5](https://spec.json5.org) (spec 1.0.0), a superset of JSON
 that adds comments, unquoted keys, single-quoted strings and more.
-`JsonConfig.getJSON5ConfigResolver()` returns a resolver for `.json5` files. It writes with the new
+`JsonConfig.getJson5ConfigResolver()` returns a resolver for `.json5` files. It writes with the new
 `Json5ValueWriter` and reads with Gson in lenient mode, like the JSON resolver, so existing `.json`
 files load with it too. `JsonConfig.GSON_INSTANCE` is used for reading.
 
@@ -314,14 +320,14 @@ written as inline tables.
   As every key after a table header belongs to that table, the tables are written after the
   other options, so options declared after a config object now come before it. A table that only
   holds other tables and has no comment gets no header of its own (`[a.b]` defines `a`). Empty
-  objects are still written as `{}`. Files written with dotted keys load as before. Dotted `@Key`s are tables
-  too, see [TOML dotted keys are tables](#toml-dotted-keys-are-tables).
+  objects are still written as `{}`. Files written with dotted keys load as before. Dotted `@Key`s
+  are tables too, see [TOML dotted keys are tables](#toml-dotted-keys-are-tables).
 - Infinity and NaN are written as `inf`, `-inf` and `nan` instead of `Infinity` and `NaN`, which
   made the file unreadable.
 - Comments of config objects are written above their table header, and comments of options
-  inside them above the option; they used to be dropped. Comments are looked up by the exact key, so an option no longer gets the comments of
-  another option whose name starts the same (`port` and `portal`), and every line of a comment
-  that contains line breaks starts with `#`.
+  inside them above the option; they used to be dropped. Comments are looked up by the exact key,
+  so an option no longer gets the comments of another option whose name starts the same (`port`
+  and `portal`), and every line of a comment that contains line breaks starts with `#`.
 - `@Multiline` strings are written as multi-line basic strings (`"""`).
 - `OffsetDateTime`, `LocalDateTime`, `LocalDate` and `LocalTime` are written as TOML date-times
   instead of strings, with seconds always present as TOML requires. Files with dates written as
@@ -349,6 +355,7 @@ reads back exactly:
   error that names the key.
 - When reading, empty trailing elements of comma separated values are kept (`a,b,` is read as
   three elements).
+- `PropertyConfig`'s resolver also treats `.conf` files as configs, e.g. in `resolveMultiple`.
 
 ### Default serializer fixes
 
@@ -403,6 +410,14 @@ reads back exactly:
 - `getConfigResolver()` of `PropertyConfig`, `YamlConfig` and `TomlConfig` returns one instance
   even when it is first called from several threads at once. They created the resolver on first
   use without synchronization, so concurrent first calls could each get their own instance.
+- The `File` overloads of `dump`, `load` and `loadOrDump` behave as the `Path` ones: dumping to a
+  directory throws an `IllegalArgumentException`, and loading from a directory does nothing.
+- The `InputStream` and `OutputStream` overloads of `load` and `dump` read and write UTF-8, as the
+  `File` and `Path` overloads do. They used the default charset of the JVM.
+- `ConfigResolver.Builder#copy()` and the copy constructor copy the settings and file extensions.
+  The copy shared them, so setting a value on the copy changed the original builder too.
+- When a custom annotation's `writeValue` returns a value of another type, the
+  `SerializationContext` passed to its serializer describes that value instead of the field.
 
 ### Changes in `AnnotationAccessor`
 
@@ -434,6 +449,11 @@ CommentPlaceholderRegistry.INSTANCE.registerPlaceholder(
   steps, so two threads registering the same type could both succeed.
 - `registerSimpleValueSerializer` and `registerSimpleValueDeserializer` replace the entry in one
   step, so there is no moment in which the type has no serializer.
+- The default serializer that `registerSimpleValueSerializer` and
+  `registerSimpleValueDeserializer` fall back to gets the context of the value, with its settings,
+  generic type and default value. It used to get a new context without them, and failed with a
+  `NullPointerException` for values without an annotated config, such as record components.
+- `SimpleValueSerializer` accepts a `null` annotated config.
 - Unregistering an annotation without a validator fails with "... is not registered" instead of
   "... already not registered".
 
@@ -456,7 +476,29 @@ CommentPlaceholderRegistry.INSTANCE.registerPlaceholder(
 - An immutable `DataObject` created from a map reads the map when it is accessed instead of
   wrapping all of it up front, so the map should not be changed afterwards. Loading wrapped every
   value of the file this way, once for each level of nesting.
-- `DataObject#getAs` now properly checks the type value before casting. Previously, `getAs(Integer.class)` on a `Number` would work, but `getAs(Number.class)` on a `Integer` would throw.
+- `DataObject#getAs` now properly checks the type value before casting. Previously,
+  `getAs(Integer.class)` on a `Number` would work, but `getAs(Number.class)` on an `Integer`
+  would throw. `DataObject#getList` had the same check backwards and skipped every element that
+  was a subclass of the requested type; it now also skips `null` elements instead of throwing.
+- `DataObject#getAsChar` reads a one character string, which is how text formats store
+  characters. It used to throw a `ClassCastException` for anything but a `Character`.
+- `DataObject#getAsBigDecimal` and `getAsBigInteger` parse the value's text exactly. They went
+  through `double` and `long`, which lost precision and overflowed.
+- `DataObject#getAsMap` returns a new mutable map for a data object that holds a single value, as
+  it does otherwise. It returned an immutable empty map.
+- `DataObjectBuilder#copy()` and its copy constructor copy the data object. The copy shared it, so
+  adding to the copy changed the original.
+- `Setting` has a `hashCode` that agrees with `equals`, and two settings are equal when their keys
+  and types are. A setting created without a key was not equal to an identical one.
+- `SectionObjectList#iterator()` entries can't be changed with `setValue`, and every
+  `SectionObjectListBuilder#build()` returns a list with its own values.
+  `SectionObjectListBuilder#defaultValue` rejects `null`.
+
+- `AnnotationAccessor#hasAnnotation` and `getAnnotation` both look at the declared annotations
+  only. For a class, `hasAnnotation` also found inherited annotations that `getAnnotation` did not
+  return.
+- `ReflectionUtils` is no longer used internally. It is deprecated for removal and will be removed
+  in a future release.
 - There are many smaller quality-of-code changes.
 
 ## Version 3.0.3

@@ -95,9 +95,10 @@ public final class Settings {
    *
    * @param setting setting to modify
    * @param value value to put/replace
+   * @param <T> value type
    * @return this settings instance for chaining
    * @throws IllegalArgumentException when the setting key is occupied by another value data type
-   * @param <T> value type
+   * @throws UnsupportedOperationException if this settings instance is immutable
    */
   public <T> Settings put(Setting<T> setting, T value) {
     if (immutable) {
@@ -130,6 +131,7 @@ public final class Settings {
    *
    * @param settings settings to combine with
    * @return this instance for chaining
+   * @throws UnsupportedOperationException if this settings instance is immutable
    */
   public Settings combine(Settings settings) {
     if (immutable) {
@@ -149,7 +151,7 @@ public final class Settings {
    * @since 3.1.0
    */
   public Settings copyWithOverrides(Settings other) {
-    Objects.requireNonNull(other, "settings");
+    Objects.requireNonNull(other, "other");
 
     Map<String, Object> combined = new ConcurrentHashMap<>(this.values);
     combined.putAll(other.values);
@@ -161,17 +163,18 @@ public final class Settings {
    * Get the stored value in these settings of the specified {@link Setting}, if any.
    *
    * @param setting the setting needed to get
+   * @param <T> value type
    * @return empty optional or optional fulfilled with value
    * @throws IllegalArgumentException if the submitted setting's type mismatches the setting type
    *     held.
-   * @param <T> value type
    */
   public <T> Optional<T> get(Setting<T> setting) {
     Objects.requireNonNull(setting, "setting");
-    if (!this.values.containsKey(setting.key())) {
+    // one lookup: the map is concurrent, so a value could be removed between two
+    Object val = this.values.get(setting.key());
+    if (val == null) {
       return Optional.empty();
     }
-    Object val = this.values.get(setting.key());
     if (!setting.type().isAssignableFrom(val.getClass())) {
       throw new IllegalArgumentException(
           "tried to access '"

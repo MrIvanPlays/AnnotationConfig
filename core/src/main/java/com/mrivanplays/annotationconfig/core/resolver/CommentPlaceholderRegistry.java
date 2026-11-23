@@ -31,9 +31,8 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import org.jspecify.annotations.NullMarked;
 
 /**
- * Represents a registry for placeholders for {@link
- * com.mrivanplays.annotationconfig.core.annotations.comment.Comment comments} content. These are
- * applied before the comments are pushed to the {@link ValueWriter}.
+ * Represents a registry for placeholders for {@link Comment comments} content. These are applied
+ * before the comments are pushed to the {@link ValueWriter}.
  *
  * <p>Placeholders are applied in the order they were registered, and there is at most one
  * placeholder per replaced text: registering a placeholder that {@link
@@ -91,7 +90,7 @@ public enum CommentPlaceholderRegistry {
   }
 
   /**
-   * Unregister a placeholder
+   * Unregister a placeholder.
    *
    * @param placeholder placeholder to unregister
    * @since 3.1.0
@@ -121,7 +120,7 @@ public enum CommentPlaceholderRegistry {
   }
 
   /**
-   * Check whether this placeholder registry has any placeholders to apply
+   * Check whether this placeholder registry has any placeholders to apply.
    *
    * @return false if empty, true otherwise
    * @since 3.1.0

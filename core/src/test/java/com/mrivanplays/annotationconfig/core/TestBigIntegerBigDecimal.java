@@ -30,16 +30,10 @@ import java.util.Map;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
-public class TestBigIntegerBigDecimal {
-
-  static class Subject {
-
-    private BigDecimal decimal = new BigDecimal("1111111111.22222222");
-    private BigInteger integer = new BigInteger("1111111111");
-  }
+class TestBigIntegerBigDecimal {
 
   @Test
-  public void testSerialize() {
+  void testSerialize() {
     StringWriter writer = new StringWriter();
     PropertyConfig.getConfigResolver().dump(new Subject(), writer);
 
@@ -48,7 +42,7 @@ public class TestBigIntegerBigDecimal {
   }
 
   @Test
-  public void testDeserialize() {
+  void testDeserialize() {
     Subject config = new Subject();
     PropertyConfig.getConfigResolver()
         .load(
@@ -61,7 +55,7 @@ public class TestBigIntegerBigDecimal {
   }
 
   @Test
-  public void dataObjectMapKeepsBigNumbers() {
+  void dataObjectMapKeepsBigNumbers() {
     // getAsMap() turned a BigDecimal into a double and a BigInteger into an int, which threw
     // beyond the int range
     BigDecimal decimal = new BigDecimal("0.12345678901234567890");
@@ -70,5 +64,11 @@ public class TestBigIntegerBigDecimal {
     Map<String, Object> map = new DataObject(values).getAsMap();
     Assertions.assertEquals(decimal, map.get("decimal"));
     Assertions.assertEquals(integer, map.get("integer"));
+  }
+
+  static class Subject {
+
+    private BigDecimal decimal = new BigDecimal("1111111111.22222222");
+    private BigInteger integer = new BigInteger("1111111111");
   }
 }

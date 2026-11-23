@@ -24,7 +24,6 @@ package com.mrivanplays.annotationconfig.core.internal;
 
 import com.mrivanplays.annotationconfig.core.annotations.Max;
 import com.mrivanplays.annotationconfig.core.annotations.Min;
-import java.lang.reflect.Field;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import org.jspecify.annotations.NullMarked;
@@ -39,19 +38,22 @@ import org.jspecify.annotations.Nullable;
 @NullMarked
 final class MinMaxValidator {
 
+  private MinMaxValidator() {
+    throw new IllegalStateException("Instantiation of utility-type class");
+  }
+
   /**
    * Validates {@code value}, the deserialized value of {@code field} read from {@code key}.
    *
    * @throws IllegalArgumentException if the value is out of bounds, or an annotation is invalid
    */
-  static void validate(Field field, String key, @Nullable Object value) {
-    Min min = field.getDeclaredAnnotation(Min.class);
-    Max max = field.getDeclaredAnnotation(Max.class);
+  static void validate(FieldInfo field, String key, @Nullable Object value) {
+    Min min = field.min();
+    Max max = field.max();
     if ((min == null && max == null) || value == null) {
       // a value read as null has nothing to compare; it used to be reported as a misplaced @Min
       return;
     }
-    String where = field.getGenericType().getTypeName() + " " + key;
     Number compared;
     String subject;
     if (value instanceof Number number) {
@@ -62,16 +64,16 @@ final class MinMaxValidator {
       subject = "String's length";
     } else {
       throw new IllegalArgumentException(
-          where
+          where(field, key)
               + " ; @"
               + (min != null ? "Min" : "Max")
               + " annotation placed on invalid field type");
     }
     if (min != null) {
-      Number bound = minBound(where, min);
+      Number bound = minBound(field, key, min);
       if (compare(compared, bound) < 0) {
         throw new IllegalArgumentException(
-            where
+            where(field, key)
                 + " ; deserialized "
                 + subject
                 + " is under the minimum allowed ("
@@ -81,10 +83,10 @@ final class MinMaxValidator {
       }
     }
     if (max != null) {
-      Number bound = maxBound(where, max);
+      Number bound = maxBound(field, key, max);
       if (compare(compared, bound) > 0) {
         throw new IllegalArgumentException(
-            where
+            where(field, key)
                 + " ; deserialized "
                 + subject
                 + " is above the maximum allowed ("
@@ -95,11 +97,17 @@ final class MinMaxValidator {
     }
   }
 
-  // a member left at its default (the type's lowest value for @Min, highest for @Max) is not set
+  // A member left at its default (the type's lowest value for @Min, highest for @Max) is not set.
 
-  private static Number minBound(String where, Min min) {
+  /** The start of every error message, only built when one is thrown. */
+  private static String where(FieldInfo field, String key) {
+    return field.genericType().getTypeName() + " " + key;
+  }
+
+  private static Number minBound(FieldInfo field, String key, Min min) {
     return singleBound(
-        where,
+        field,
+        key,
         "@Min",
         "@Min(minInt = 1)",
         min.minByte() != Byte.MIN_VALUE ? min.minByte() : null,
@@ -110,9 +118,10 @@ final class MinMaxValidator {
         min.minDouble() != Double.NEGATIVE_INFINITY ? min.minDouble() : null);
   }
 
-  private static Number maxBound(String where, Max max) {
+  private static Number maxBound(FieldInfo field, String key, Max max) {
     return singleBound(
-        where,
+        field,
+        key,
         "@Max",
         "@Max(maxInt = 3)",
         max.maxByte() != Byte.MAX_VALUE ? max.maxByte() : null,
@@ -124,7 +133,7 @@ final class MinMaxValidator {
   }
 
   private static Number singleBound(
-      String where, String annotation, String example, @Nullable Number... members) {
+      FieldInfo field, String key, String annotation, String example, @Nullable Number... members) {
     Number bound = null;
     for (Number member : members) {
       if (member == null) {
@@ -132,7 +141,7 @@ final class MinMaxValidator {
       }
       if (bound != null) {
         throw new IllegalArgumentException(
-            where
+            where(field, key)
                 + " ; invalid "
                 + annotation
                 + " specified - it should set only one annotation member");
@@ -141,12 +150,12 @@ final class MinMaxValidator {
     }
     if (bound == null) {
       throw new IllegalArgumentException(
-          where
+          where(field, key)
               + " ; invalid "
               + annotation
-              + " specified - it should set an annotation member ( e.g. "
+              + " specified - it should set an annotation member (e.g. "
               + example
-              + " )");
+              + ")");
     }
     return bound;
   }
@@ -192,9 +201,5 @@ final class MinMaxValidator {
     } catch (NumberFormatException e) {
       return BigDecimal.valueOf(number.doubleValue());
     }
-  }
-
-  private MinMaxValidator() {
-    throw new IllegalStateException("Instantiation of utility-type class");
   }
 }

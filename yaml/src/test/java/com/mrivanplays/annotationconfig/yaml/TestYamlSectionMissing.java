@@ -32,7 +32,30 @@ import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
-public class TestYamlSectionMissing {
+class TestYamlSectionMissing {
+
+  private final ConfigResolver resolver = YamlConfig.getConfigResolver();
+
+  @Test
+  void missingSectionOptionsAreAddedToTheFile(@TempDir Path dir) throws IOException {
+    Path file = dir.resolve("missing-opt.yml");
+    resolver.dump(new Subject1(), file);
+
+    Subject2 config = new Subject2();
+    resolver.load(config, file);
+
+    // the value in the file wins over the changed default, the missing option gets its default
+    Assertions.assertEquals("foo", config.test.foo);
+    Assertions.assertEquals("bar", config.test.bar);
+    String expected =
+        "# Comments should also be kept!\n"
+            + "\n"
+            + "# This is test subject comment\n"
+            + "test:\n"
+            + "  foo: \"foo\"\n"
+            + "  bar: \"bar\"\n";
+    Assertions.assertEquals(expected, Files.readString(file));
+  }
 
   @Comment("Comments should also be kept!")
   private static final class Subject1 {
@@ -60,28 +83,5 @@ public class TestYamlSectionMissing {
       private String foo = "baz";
       private String bar = "bar";
     }
-  }
-
-  private final ConfigResolver resolver = YamlConfig.getConfigResolver();
-
-  @Test
-  public void missingSectionOptionsAreAddedToTheFile(@TempDir Path dir) throws IOException {
-    Path file = dir.resolve("missing-opt.yml");
-    resolver.dump(new Subject1(), file);
-
-    Subject2 config = new Subject2();
-    resolver.load(config, file);
-
-    // the value in the file wins over the changed default, the missing option gets its default
-    Assertions.assertEquals("foo", config.test.foo);
-    Assertions.assertEquals("bar", config.test.bar);
-    String expected =
-        "# Comments should also be kept!\n"
-            + "\n"
-            + "# This is test subject comment\n"
-            + "test:\n"
-            + "  foo: \"foo\"\n"
-            + "  bar: \"bar\"\n";
-    Assertions.assertEquals(expected, Files.readString(file));
   }
 }

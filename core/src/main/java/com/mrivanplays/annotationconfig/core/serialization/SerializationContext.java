@@ -32,9 +32,9 @@ import org.jspecify.annotations.NullMarked;
 import org.jspecify.annotations.Nullable;
 
 /**
- * Represents a serialization context. This holds information about the {@link Field} that's being
- * (de)serialized, but since AnnotationConfig can not always get a {@link Field} instance, this
- * context class will hold information.
+ * Represents a serialization context: what is known about the value that's being (de)serialized.
+ * AnnotationConfig can not always get the {@link Field} the value belongs to, so this context holds
+ * the information instead.
  *
  * @param <T> generic type of information that's being (de)serialized
  * @author Ivan Pekov
@@ -42,6 +42,28 @@ import org.jspecify.annotations.Nullable;
  */
 @NullMarked
 public final class SerializationContext<T> {
+
+  @Nullable private final String name;
+  @Nullable private final T def;
+  private final Class<?> classType;
+  private final Type genericType;
+  @Nullable private final Object annotatedConfig;
+  private final Settings settings;
+
+  private SerializationContext(
+      @Nullable String name,
+      @Nullable T def,
+      Class<?> classType,
+      Type genericType,
+      @Nullable Object annotatedConfig,
+      @Nullable Settings settings) {
+    this.name = name;
+    this.def = def;
+    this.classType = Objects.requireNonNull(classType, "classType");
+    this.genericType = Objects.requireNonNull(genericType, "genericType");
+    this.annotatedConfig = annotatedConfig;
+    this.settings = Objects.requireNonNullElse(settings, ACDefaultSettings.getDefault());
+  }
 
   /**
    * Creates a new {@link SerializationContext} from a {@link Field}
@@ -86,7 +108,7 @@ public final class SerializationContext<T> {
    *
    * @param classType class type
    * @param genericType generic class type
-   * @param annotatedConfig annotatedConfig
+   * @param annotatedConfig the annotated config, if any
    * @param <T> type
    * @return new serialization context
    */
@@ -100,7 +122,7 @@ public final class SerializationContext<T> {
    *
    * @param classType class type
    * @param genericType generic class type
-   * @param annotatedConfig annotatedConfig
+   * @param annotatedConfig the annotated config, if any
    * @param settings used settings
    * @param <T> type
    * @return new serialization context
@@ -120,7 +142,7 @@ public final class SerializationContext<T> {
    * @param def default value. can be null
    * @param classType class type
    * @param genericType generic class type
-   * @param annotatedConfig annotatedConfig
+   * @param annotatedConfig the annotated config, if any
    * @param <T> type
    * @return new serialization context
    */
@@ -135,7 +157,7 @@ public final class SerializationContext<T> {
    * @param def default value. can be null
    * @param classType class type
    * @param genericType generic class type
-   * @param annotatedConfig annotatedConfig
+   * @param annotatedConfig the annotated config, if any
    * @param settings used settings
    * @param <T> type
    * @return new serialization context
@@ -157,7 +179,7 @@ public final class SerializationContext<T> {
    * @param def default value. can be null
    * @param classType class type
    * @param genericType generic class type
-   * @param annotatedConfig annotatedConfig
+   * @param annotatedConfig the annotated config, if any
    * @param <T> type
    * @return new serialization context
    */
@@ -177,7 +199,7 @@ public final class SerializationContext<T> {
    * @param def default value. can be null
    * @param classType class type
    * @param genericType generic class type
-   * @param annotatedConfig annotatedConfig
+   * @param annotatedConfig the annotated config, if any
    * @param settings used settings
    * @param <T> type
    * @return new serialization context
@@ -193,28 +215,6 @@ public final class SerializationContext<T> {
     return new SerializationContext<>(name, def, classType, genericType, annotatedConfig, settings);
   }
 
-  @Nullable private final String name;
-  @Nullable private final T def;
-  private final Class<?> classType;
-  private final Type genericType;
-  @Nullable private final Object annotatedConfig;
-  private final Settings settings;
-
-  private SerializationContext(
-      @Nullable String name,
-      @Nullable T def,
-      Class<?> classType,
-      Type genericType,
-      @Nullable Object annotatedConfig,
-      @Nullable Settings settings) {
-    this.name = name;
-    this.def = def;
-    this.classType = Objects.requireNonNull(classType, "classType");
-    this.genericType = Objects.requireNonNull(genericType, "genericType");
-    this.annotatedConfig = annotatedConfig;
-    this.settings = Objects.requireNonNullElse(settings, ACDefaultSettings.getDefault());
-  }
-
   /**
    * Returns an {@link Optional} which may or may not be fulfilled with a name. In most of the
    * cases, this is a field name.
@@ -226,8 +226,8 @@ public final class SerializationContext<T> {
   }
 
   /**
-   * Returns an {@link Optional} which may or may not be fulfilled with a default value. In most of
-   * the cases, this is fulfilled.
+   * Returns an {@link Optional} which may or may not be fulfilled with a default value, usually the
+   * current value of the field.
    *
    * @return default value or empty optional
    */
@@ -254,8 +254,8 @@ public final class SerializationContext<T> {
   }
 
   /**
-   * Returns the annotated config this context originated from. Will always return <code>null</code>
-   * if this context originated from a record-type class.
+   * Returns the annotated config this context originated from. Will always return {@code null} if
+   * this context originated from a record-type class.
    *
    * @return annotated config
    */

@@ -34,6 +34,7 @@ import java.io.OutputStream;
 import java.io.OutputStreamWriter;
 import java.io.Reader;
 import java.io.Writer;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
@@ -71,14 +72,11 @@ public interface ConfigResolver {
   Settings settings();
 
   /**
-   * Dumps the specified {@code annotatedConfig} to the specified {@link File} {@code file}. If, at
-   * the time of calling this method, the file exists, it will get deleted ( default implementation
-   * ).
+   * Dumps the specified {@code annotatedConfig} to the specified {@link File} {@code file}. An
+   * existing file is replaced.
    *
-   * <p>If you are going to call {@link #load(Object, File, Settings)} after calling this method,
-   * consider using {@link #loadOrDump(Object, File, Settings)} rather than calling dump and load
-   * one after each other. This way you save CPU time by not making the library find annotations
-   * twice.
+   * <p>To write the defaults only when the file doesn't exist yet and load it otherwise, use {@link
+   * #loadOrDump(Object, File)}.
    *
    * @param annotatedConfig the annotated config you want to dump
    * @param file the file you want to dump the annotated config to
@@ -87,13 +85,10 @@ public interface ConfigResolver {
 
   /**
    * Dumps the specified {@code annotatedConfig} to the specified {@link File file}, using the
-   * specified {@link Settings settings}. If, at the time of calling this method, the file exists,
-   * it will get deleted ( default implementation ).
+   * specified {@link Settings settings}. An existing file is replaced.
    *
-   * <p>If you are going to call {@link #load(Object, File, Settings)} after calling this method,
-   * consider using {@link #loadOrDump(Object, File, Settings)} rather than calling dump and load
-   * one after each other. This way you save CPU time by not making the library find annotations
-   * twice.
+   * <p>To write the defaults only when the file doesn't exist yet and load it otherwise, use {@link
+   * #loadOrDump(Object, File, Settings)}.
    *
    * <p>The provided settings must be <i>mutable</i> as AnnotationConfig will fill them with
    * defaults if they are missing.
@@ -107,14 +102,11 @@ public interface ConfigResolver {
   void dump(Object annotatedConfig, File file, Settings settings);
 
   /**
-   * Dumps the specified {@code annotatedConfig} to the specified {@link Path} {@code path}. If, at
-   * the time of calling this method, the file exists, it will get deleted ( default implementation
-   * ).
+   * Dumps the specified {@code annotatedConfig} to the specified {@link Path} {@code path}. An
+   * existing file is replaced.
    *
-   * <p>If you are going to call {@link #load(Object, Path, Settings)} after calling this method,
-   * consider using {@link #loadOrDump(Object, Path, Settings)} rather than calling dump and load
-   * one after each other. This way you save CPU time by not making the library find annotations
-   * twice.
+   * <p>To write the defaults only when the file doesn't exist yet and load it otherwise, use {@link
+   * #loadOrDump(Object, Path)}.
    *
    * @param annotatedConfig the annotated config you want to dump
    * @param path the file path you want to dump the annotation config to
@@ -123,13 +115,10 @@ public interface ConfigResolver {
 
   /**
    * Dumps the specified {@code annotatedConfig} to the specified {@link Path path}, using the
-   * specified {@link Settings settings}. If, at the time of calling this method, the file exists,
-   * it will get deleted ( default implementation ).
+   * specified {@link Settings settings}. An existing file is replaced.
    *
-   * <p>If you are going to call {@link #load(Object, Path, Settings)} after calling this method,
-   * consider using {@link #loadOrDump(Object, Path, Settings)} rather than calling dump and load
-   * one after each other. This way you save CPU time by not making the library find annotations
-   * twice.
+   * <p>To write the defaults only when the file doesn't exist yet and load it otherwise, use {@link
+   * #loadOrDump(Object, Path, Settings)}.
    *
    * <p>The provided settings must be <i>mutable</i> as AnnotationConfig will fill them with
    * defaults if they are missing.
@@ -143,18 +132,19 @@ public interface ConfigResolver {
   void dump(Object annotatedConfig, Path path, Settings settings);
 
   /**
-   * Dumps the specified {@code annotatedConfig} to the specified {@link OutputStream} {@code os}.
+   * Dumps the specified {@code annotatedConfig} to the specified {@link OutputStream} {@code os},
+   * written as UTF-8.
    *
    * @param annotatedConfig the annotated config you want to dump
    * @param os the output stream to dump the annotated config to
    */
   default void dump(Object annotatedConfig, OutputStream os) {
-    dump(annotatedConfig, new OutputStreamWriter(os));
+    dump(annotatedConfig, new OutputStreamWriter(os, StandardCharsets.UTF_8));
   }
 
   /**
-   * Dumps the specified {@code annotatedConfig} to the specified {@link OutputStream output stream}
-   * using the specified {@link Settings settings}.
+   * Dumps the specified {@code annotatedConfig} to the specified {@link OutputStream output
+   * stream}, written as UTF-8, using the specified {@link Settings settings}.
    *
    * <p>The provided settings must be <i>mutable</i> as AnnotationConfig will fill them with
    * defaults if they are missing.
@@ -166,7 +156,7 @@ public interface ConfigResolver {
    * @since 3.1.0
    */
   default void dump(Object annotatedConfig, OutputStream os, Settings settings) {
-    this.dump(annotatedConfig, new OutputStreamWriter(os), settings);
+    this.dump(annotatedConfig, new OutputStreamWriter(os, StandardCharsets.UTF_8), settings);
   }
 
   /**
@@ -182,7 +172,7 @@ public interface ConfigResolver {
   }
 
   /**
-   * Dumps rhe specified {@code annotatedConfig} to the specified {@link WritableObject writable
+   * Dumps the specified {@code annotatedConfig} to the specified {@link WritableObject writable
    * object} using the specified {@link Settings settings}.
    *
    * <p>The provided settings must be <i>mutable</i> as AnnotationConfig will fill them with
@@ -226,9 +216,8 @@ public interface ConfigResolver {
    * the default {@link Settings} from the builder of this config resolver, or {@link
    * ACDefaultSettings#getDefault()}.
    *
-   * <p>If you have called {@link #dump(Object, File)} before calling this method, consider using
-   * {@link #loadOrDump(Object, File)} rather than calling dump and load one after each other. This
-   * way you save CPU time by not making the library find annotations twice.
+   * <p>To write the defaults when the file doesn't exist yet, use {@link #loadOrDump(Object,
+   * File)}.
    *
    * @param annotatedConfig the annotated config you want to load to
    * @param file the file you want to load
@@ -240,9 +229,8 @@ public interface ConfigResolver {
    * the default {@link Settings} from the builder of this config resolver, or {@link
    * ACDefaultSettings#getDefault()}.
    *
-   * <p>If you have called {@link #dump(Object, Path)} before calling this method, consider using
-   * {@link #loadOrDump(Object, Path)} rather than calling dump and load one after each other. This
-   * way you save CPU time by not making the library find annotations twice.
+   * <p>To write the defaults when the file doesn't exist yet, use {@link #loadOrDump(Object,
+   * Path)}.
    *
    * @param annotatedConfig the annotated config you want to load to
    * @param path the file path you want to load
@@ -253,17 +241,16 @@ public interface ConfigResolver {
    * Loads the specified {@code annotatedConfig} from the specified {@link File} {@code file} using
    * the {@link Settings} {@code settings} specified.
    *
-   * <p>If you have called {@link #dump(Object, File)} before calling this method, consider using
-   * {@link #loadOrDump(Object, File, Settings)} rather than calling dump and load one after each
-   * other. This way you save CPU time by not making the library find annotations twice.
+   * <p>To write the defaults when the file doesn't exist yet, use {@link #loadOrDump(Object, File,
+   * Settings)}.
    *
    * <p>The provided settings must be <i>mutable</i> as AnnotationConfig will fill them with
    * defaults if they are missing.
    *
    * @param annotatedConfig the annotated config you want to load to
    * @param file the file you want to load
-   * @throws IllegalArgumentException if the provided settings are immutable
    * @param settings the load settings
+   * @throws IllegalArgumentException if the provided settings are immutable
    */
   void load(Object annotatedConfig, File file, Settings settings);
 
@@ -271,9 +258,8 @@ public interface ConfigResolver {
    * Loads the specified {@code annotatedConfig} from the specified {@link Path} {@code path} using
    * the {@link Settings} {@code settings} specified.
    *
-   * <p>If you have called {@link #dump(Object, Path)} before calling this method, consider using
-   * {@link #loadOrDump(Object, Path, Settings)} rather than calling dump and load one after each
-   * other. This way you save CPU time by not making the library find annotations twice.
+   * <p>To write the defaults when the file doesn't exist yet, use {@link #loadOrDump(Object, Path,
+   * Settings)}.
    *
    * <p>The provided settings must be <i>mutable</i> as AnnotationConfig will fill them with
    * defaults if they are missing.
@@ -302,7 +288,7 @@ public interface ConfigResolver {
    * <p>The provided settings must be <i>mutable</i> as AnnotationConfig will fill them with
    * defaults if they are missing.
    *
-   * @param annotatedConfig the annotated you config you want to load to
+   * @param annotatedConfig the annotated config you want to load to
    * @param values the values you want to load
    * @param settings the load settings
    * @throws IllegalArgumentException if the provided settings are immutable
@@ -310,28 +296,28 @@ public interface ConfigResolver {
   void load(Object annotatedConfig, Map<String, Object> values, Settings settings);
 
   /**
-   * Loads the specified {@code annotatedConfig} from the specified {@link InputStream} {@code in}
-   * the default {@link Settings} from the builder of this config resolver, or {@link
-   * ACDefaultSettings#getDefault()}.
+   * Loads the specified {@code annotatedConfig} from the specified {@link InputStream} {@code in},
+   * read as UTF-8, using the default {@link Settings} from the builder of this config resolver, or
+   * {@link ACDefaultSettings#getDefault()}.
    *
-   * <p>If you have a {@link File} or {@link Path} instance before calling that, consider using
-   * {@link #load(Object, File)}. This way you allow AnnotatedConfig to generate missing options if
+   * <p>If you have a {@link File} or {@link Path}, consider using {@link #load(Object, File)} or
+   * {@link #load(Object, Path)}. This way AnnotationConfig can add missing options to the file if
    * the load settings allow it.
    *
    * @param annotatedConfig the annotated config you want to load to
    * @param in the input stream you want to load
    */
   default void load(Object annotatedConfig, InputStream in) {
-    load(annotatedConfig, new InputStreamReader(in));
+    load(annotatedConfig, new InputStreamReader(in, StandardCharsets.UTF_8));
   }
 
   /**
    * Loads the specified {@code annotatedConfig} from the specified {@link InputStream} {@code in}
    * using the {@link Settings} {@code settings} specified.
    *
-   * <p>If you have a {@link File} or {@link Path} instance before calling that, consider using
-   * {@link #load(Object, File, Settings)}. This way you allow AnnotatedConfig to generate missing
-   * options if the load settings allow it.
+   * <p>The stream is read as UTF-8. If you have a {@link File} or {@link Path}, consider using
+   * {@link #load(Object, File, Settings)} or {@link #load(Object, Path, Settings)}. This way
+   * AnnotationConfig can add missing options to the file if the load settings allow it.
    *
    * <p>The provided settings must be <i>mutable</i> as AnnotationConfig will fill them with
    * defaults if they are missing.
@@ -342,16 +328,16 @@ public interface ConfigResolver {
    * @throws IllegalArgumentException if the provided settings are immutable
    */
   default void load(Object annotatedConfig, InputStream in, Settings settings) {
-    load(annotatedConfig, new InputStreamReader(in), settings);
+    load(annotatedConfig, new InputStreamReader(in, StandardCharsets.UTF_8), settings);
   }
 
   /**
    * Loads the specified {@code annotatedConfig} from the specified {@link Reader} {@code reader}
-   * the default {@link Settings} from the builder of this config resolver, or {@link
+   * using the default {@link Settings} from the builder of this config resolver, or {@link
    * ACDefaultSettings#getDefault()}.
    *
-   * <p>If you have a {@link File} or {@link Path} instance before calling that, consider using
-   * {@link #load(Object, File)}. This way you allow AnnotatedConfig to generate missing options if
+   * <p>If you have a {@link File} or {@link Path}, consider using {@link #load(Object, File)} or
+   * {@link #load(Object, Path)}. This way AnnotationConfig can add missing options to the file if
    * the load settings allow it.
    *
    * @param annotatedConfig the annotated config you want to load to
@@ -363,9 +349,9 @@ public interface ConfigResolver {
    * Loads the specified {@code annotatedConfig} from the specified {@link Reader} {@code reader}
    * using the {@link Settings} {@code settings} specified.
    *
-   * <p>If you have a {@link File} or {@link Path} instance before calling that, consider using
-   * {@link #load(Object, File, Settings)}. This way you allow AnnotatedConfig to generate missing
-   * options if the load settings allow it.
+   * <p>If you have a {@link File} or {@link Path}, consider using {@link #load(Object, File,
+   * Settings)} or {@link #load(Object, Path, Settings)}. This way AnnotationConfig can add missing
+   * options to the file if the load settings allow it.
    *
    * <p>The provided settings must be <i>mutable</i> as AnnotationConfig will fill them with
    * defaults if they are missing.
@@ -430,28 +416,26 @@ public interface ConfigResolver {
   void loadOrDump(Object annotatedConfig, Path path, Settings settings);
 
   /**
-   * Loads the configurations in the {@link File} {@code dir} specified, and if any do not exist,
-   * the defaults (if specified) are dumped to the specified {@link WritableObject} {@code
-   * dumpFile}. <br>
+   * Loads the configurations in the {@link File} {@code dir} specified. If it holds none, the
+   * defaults are dumped to the specified {@link WritableObject} {@code dumpFile}. <br>
    * <b>The specified {@link File} {@code dir} has to be a directory.</b> It is created if it does
    * not exist.
    *
    * @param dir the directory to load configurations from
    * @param configToResolveTo a {@link Supplier} of the needed configuration objects
    * @param dumpFile the default dump file
+   * @param <T> configuration type needed
    * @return a map of the loaded configurations, key being the file name. If the map is empty then
    *     AnnotationConfig couldn't find any configurations in the folder, and you should fall back
    *     to the defaults.
    * @throws IllegalArgumentException if the specified {@code dir} exists and is not a directory
-   * @param <T> configuration type needed
    */
   <T> Map<String, T> resolveMultiple(
       File dir, Supplier<T> configToResolveTo, WritableObject dumpFile);
 
   /**
-   * Loads the configurations in the {@link File} {@code dir} specified, and if any do not exist,
-   * the defaults (if specified) are dumped to the specified {@link WritableObject} {@code
-   * dumpFile}. <br>
+   * Loads the configurations in the {@link File} {@code dir} specified. If it holds none, the
+   * defaults are dumped to the specified {@link WritableObject} {@code dumpFile}. <br>
    * <b>The specified {@link File} {@code dir} has to be a directory.</b> It is created if it does
    * not exist.
    *
@@ -473,28 +457,26 @@ public interface ConfigResolver {
       File dir, Supplier<T> configToResolveTo, WritableObject dumpFile, Settings settings);
 
   /**
-   * Loads the configurations in the {@link Path} {@code dir} specified, and if any do not exist,
-   * the defaults (if specified) are dumped to the specified {@link WritableObject} {@code
-   * dumpFile}. <br>
+   * Loads the configurations in the {@link Path} {@code dir} specified. If it holds none, the
+   * defaults are dumped to the specified {@link WritableObject} {@code dumpFile}. <br>
    * <b>The specified {@link Path} {@code dir} has to be a directory.</b> It is created if it does
    * not exist.
    *
    * @param dir the directory to load configurations from
    * @param configToResolveTo a {@link Supplier} of the needed configuration objects
    * @param dumpFile the default dump file
+   * @param <T> configuration type needed
    * @return a map of the loaded configurations, key being the file name. If the map is empty then
    *     AnnotationConfig couldn't find any configurations in the folder, and you should fall back
    *     to the defaults.
    * @throws IllegalArgumentException if the specified {@code dir} exists and is not a directory
-   * @param <T> configuration type needed
    */
   <T> Map<String, T> resolveMultiple(
       Path dir, Supplier<T> configToResolveTo, WritableObject dumpFile);
 
   /**
-   * Loads the configurations in the {@link Path} {@code dir} specified, and if any do not exist,
-   * the defaults (if specified) are dumped to the specified {@link WritableObject} {@code
-   * dumpFile}. <br>
+   * Loads the configurations in the {@link Path} {@code dir} specified. If it holds none, the
+   * defaults are dumped to the specified {@link WritableObject} {@code dumpFile}. <br>
    * <b>The specified {@link Path} {@code dir} has to be a directory.</b> It is created if it does
    * not exist.
    *
@@ -521,7 +503,6 @@ public interface ConfigResolver {
    * @since 2.0.0
    * @author Ivan Pekov
    */
-  @NullMarked
   class Builder {
 
     @Nullable private String commentPrefix;
@@ -541,8 +522,9 @@ public interface ConfigResolver {
       this.commentPrefix = copy.commentPrefix;
       this.valueWriter = copy.valueWriter;
       this.valueReader = copy.valueReader;
-      this.settings = copy.settings;
-      this.fileExtensions = copy.fileExtensions;
+      this.settings = copy.settings == null ? null : copy.settings.copy(false);
+      this.fileExtensions =
+          copy.fileExtensions == null ? new ArrayList<>() : new ArrayList<>(copy.fileExtensions);
     }
 
     /**
@@ -555,12 +537,13 @@ public interface ConfigResolver {
     }
 
     /**
-     * Sets the comment prefix for the config type you want to generate configs.
+     * Sets the comment prefix for the config type you want to generate configs. Formats without
+     * comments, such as JSON, set none.
      *
-     * @param val the config prefix you want to set
+     * @param val the comment prefix you want to set
      * @return this instance for chaining
      */
-    public Builder withCommentPrefix(String val) {
+    public Builder withCommentPrefix(@Nullable String val) {
       commentPrefix = val;
       return this;
     }
@@ -569,7 +552,7 @@ public interface ConfigResolver {
      * Sets a {@link ValueWriter} for the config type you want to generate configs. This cannot be
      * null.
      *
-     * @param val the value writer supplier you want to set
+     * @param val the value writer you want to set
      * @return this instance for chaining
      */
     public Builder withValueWriter(ValueWriter val) {
@@ -606,8 +589,8 @@ public interface ConfigResolver {
     }
 
     /**
-     * Sets the {@link KeyResolver} for the config type you want to generate configs. If null, it
-     * will use the default {@link KeyResolver#DEFAULT}.
+     * Sets the {@link KeyResolver} for the config type you want to generate configs. Without one,
+     * {@link KeyResolver#DEFAULT} is used.
      *
      * @param resolver the resolver you want to set
      * @return this instance for chaining

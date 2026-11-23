@@ -28,7 +28,60 @@ import java.math.BigDecimal;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
-public class ArrayWriteTest {
+class TestArrayWrite {
+
+  @Test
+  void testWriteArray() {
+    Subject config = new Subject();
+    StringWriter writer = new StringWriter();
+    YamlConfig.getConfigResolver().dump(config, writer);
+
+    String expected =
+        "foo: [1, 2]\n"
+            + "\n"
+            + "bigDec: [1111.2222, 3333.4444]\n"
+            + "\n"
+            + "myObjectArr:\n"
+            + "  - foo: 1\n"
+            + "    baz: true\n"
+            + "  - foo: 2\n"
+            + "    baz: false\n";
+
+    Assertions.assertEquals(expected, writer.toString());
+  }
+
+  @Test
+  void testReadArray() {
+    Subject config = new Subject();
+    YamlConfig.getConfigResolver()
+        .load(config, getClass().getClassLoader().getResourceAsStream("array-write.yml"));
+
+    Assertions.assertEquals(3, config.foo.length);
+    Assertions.assertEquals(5, config.foo[2]);
+    Assertions.assertEquals(2, config.myObjectArr.length);
+    Assertions.assertEquals(3, config.myObjectArr[0].foo);
+    Assertions.assertEquals(2, config.bigDec.length);
+    Assertions.assertEquals(new BigDecimal("4444.5555"), config.bigDec[1]);
+  }
+
+  @Test
+  void testReadEmptyArray() {
+    Simple s = new Simple();
+    StringReader r = new StringReader("foo: []");
+    YamlConfig.getConfigResolver().load(s, r);
+
+    Assertions.assertEquals(0, s.foo.length);
+  }
+
+  @Test
+  void testReadSimple() {
+    Simple s = new Simple();
+    StringReader r = new StringReader("foo: [5, 6, 7]");
+    YamlConfig.getConfigResolver().load(s, r);
+
+    Assertions.assertEquals(3, s.foo.length);
+    Assertions.assertEquals(5, s.foo[0]);
+  }
 
   static class Subject {
 
@@ -61,58 +114,5 @@ public class ArrayWriteTest {
 
   static class Simple {
     private int[] foo = new int[] {1, 2, 3};
-  }
-
-  @Test
-  public void testWriteArray() {
-    Subject config = new Subject();
-    StringWriter writer = new StringWriter();
-    YamlConfig.getConfigResolver().dump(config, writer);
-
-    String expected =
-        "foo: [1, 2]\n"
-            + "\n"
-            + "bigDec: [1111.2222, 3333.4444]\n"
-            + "\n"
-            + "myObjectArr:\n"
-            + "  - foo: 1\n"
-            + "    baz: true\n"
-            + "  - foo: 2\n"
-            + "    baz: false\n";
-
-    Assertions.assertEquals(expected, writer.toString());
-  }
-
-  @Test
-  public void testReadArray() {
-    Subject config = new Subject();
-    YamlConfig.getConfigResolver()
-        .load(config, getClass().getClassLoader().getResourceAsStream("array-write.yml"));
-
-    Assertions.assertEquals(3, config.foo.length);
-    Assertions.assertEquals(5, config.foo[2]);
-    Assertions.assertEquals(2, config.myObjectArr.length);
-    Assertions.assertEquals(3, config.myObjectArr[0].foo);
-    Assertions.assertEquals(2, config.bigDec.length);
-    Assertions.assertEquals(new BigDecimal("4444.5555"), config.bigDec[1]);
-  }
-
-  @Test
-  void testReadEmptyArray() {
-    Simple s = new Simple();
-    StringReader r = new StringReader("foo: []");
-    YamlConfig.getConfigResolver().load(s, r);
-
-    Assertions.assertEquals(0, s.foo.length);
-  }
-
-  @Test
-  void testReadSimple() {
-    Simple s = new Simple();
-    StringReader r = new StringReader("foo: [5, 6, 7]");
-    YamlConfig.getConfigResolver().load(s, r);
-
-    Assertions.assertEquals(3, s.foo.length);
-    Assertions.assertEquals(5, s.foo[0]);
   }
 }

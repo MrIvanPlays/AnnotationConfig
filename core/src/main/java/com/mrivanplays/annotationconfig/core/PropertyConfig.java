@@ -29,13 +29,19 @@ import java.util.Properties;
 import org.jspecify.annotations.NullMarked;
 
 /**
- * Represents configuration, utilising .conf/.properties configuration type.
+ * Represents configuration, utilising the .properties configuration type (also as .conf files).
  *
- * @since 1.0
+ * @since 1.0.0
  * @author Ivan Pekov
  */
 @NullMarked
 public final class PropertyConfig {
+
+  private PropertyConfig() {
+    throw new IllegalStateException("Instantiation of utility-type class");
+  }
+
+  // <editor-fold desc="Internal implementation" defaultstate="collapsed">
 
   /**
    * Returns the {@link ConfigResolver} instance of PropertyConfig
@@ -46,17 +52,10 @@ public final class PropertyConfig {
     return ResolverHolder.RESOLVER;
   }
 
-  // <editor-fold desc="Internal implementation" defaultstate="collapsed">
-
-  /** Builds the resolver on first use; class initialization makes that happen exactly once. */
-  private static final class ResolverHolder {
-
-    static final ConfigResolver RESOLVER = createConfigResolver();
-  }
-
   private static ConfigResolver createConfigResolver() {
     return ConfigResolver.newBuilder()
         .withCommentPrefix("# ")
+        .withFileExtension(".conf")
         .withFileExtension(".properties")
         .withValueReader((reader, _) -> {
           Properties properties = new Properties();
@@ -76,12 +75,20 @@ public final class PropertyConfig {
     if (s.indexOf(',') < 0) {
       return s;
     }
-    String[] parts = s.split(",", -1); // -1 keeps trailing empty elements
+    // -1 keeps trailing empty elements
+    String[] parts = s.split(",", -1);
     Object[] result = new Object[parts.length];
     for (int i = 0; i < parts.length; i++) {
       result[i] = parts[i].trim();
     }
     return result;
   }
+
   // </editor-fold>
+
+  /** Builds the resolver on first use; class initialisation makes that happen exactly once. */
+  private static final class ResolverHolder {
+
+    static final ConfigResolver RESOLVER = createConfigResolver();
+  }
 }

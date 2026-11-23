@@ -36,7 +36,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
 /** Resolver behaviour with JSON files: missing options, parent classes and static fields. */
-public class TestJsonResolver {
+class TestJsonResolver {
 
   private static final ConfigResolver RESOLVER = JsonConfig.getConfigResolver();
 
@@ -47,6 +47,62 @@ public class TestJsonResolver {
   }
 
   // <editor-fold desc="Missing options">
+
+  @Test
+  void missingOptionsAreAddedToTheFile(@TempDir Path dir) throws IOException {
+    Path file = dir.resolve("config.json");
+    RESOLVER.dump(new Version1(), file);
+
+    Version2 config = new Version2();
+    RESOLVER.load(config, file);
+
+    // values in the file win over changed defaults, missing options get their default
+    Assertions.assertEquals("foo", config.foo);
+    Assertions.assertTrue(config.added);
+    Assertions.assertEquals(1, config.section.a);
+    Assertions.assertEquals(3, config.section.b);
+    String expected =
+        """
+        {
+          "foo": "foo",
+          "added": true,
+          "section": {
+            "a": 1,
+            "b": 3
+          }
+        }\
+        """;
+    Assertions.assertEquals(expected, Files.readString(file));
+  }
+
+  @Test
+  void parentFieldsOnlyWithFindParentFields() {
+    Assertions.assertEquals("{\n  \"own\": \"own\"\n}", dump(new Extended(), new Settings()));
+    Assertions.assertEquals(
+        "{\n  \"own\": \"own\",\n  \"base\": 1\n}",
+        dump(new Extended(), new Settings().put(ACDefaultSettings.FIND_PARENT_FIELDS, true)));
+  }
+
+  @Test
+  void staticFieldsOnlyWithFindStaticFields() {
+    Settings findStatic = new Settings().put(ACDefaultSettings.FIND_STATIC_FIELDS, true);
+    Assertions.assertEquals(
+        "{\n  \"counter\": 5,\n  \"own\": \"own\"\n}", dump(new Extended(), findStatic));
+
+    try {
+      RESOLVER.load(new Extended(), new StringReader("{\"counter\": 9, \"own\": \"x\"}"));
+      Assertions.assertEquals(5, Extended.counter, "loaded without FIND_STATIC_FIELDS");
+      RESOLVER.load(
+          new Extended(), new StringReader("{\"counter\": 9, \"own\": \"x\"}"), findStatic);
+      Assertions.assertEquals(9, Extended.counter);
+    } finally {
+      Extended.counter = 5;
+    }
+  }
+
+  // </editor-fold>
+
+  // <editor-fold desc="Parent and static fields">
 
   static class Version1 {
 
@@ -75,37 +131,6 @@ public class TestJsonResolver {
     }
   }
 
-  @Test
-  public void missingOptionsAreAddedToTheFile(@TempDir Path dir) throws IOException {
-    Path file = dir.resolve("config.json");
-    RESOLVER.dump(new Version1(), file);
-
-    Version2 config = new Version2();
-    RESOLVER.load(config, file);
-
-    // values in the file win over changed defaults, missing options get their default
-    Assertions.assertEquals("foo", config.foo);
-    Assertions.assertTrue(config.added);
-    Assertions.assertEquals(1, config.section.a);
-    Assertions.assertEquals(3, config.section.b);
-    String expected =
-        """
-        {
-          "foo": "foo",
-          "added": true,
-          "section": {
-            "a": 1,
-            "b": 3
-          }
-        }\
-        """;
-    Assertions.assertEquals(expected, Files.readString(file));
-  }
-
-  // </editor-fold>
-
-  // <editor-fold desc="Parent and static fields">
-
   static class Base {
 
     public int base = 1;
@@ -115,31 +140,6 @@ public class TestJsonResolver {
 
     public static int counter = 5;
     public String own = "own";
-  }
-
-  @Test
-  public void parentFieldsOnlyWithFindParentFields() {
-    Assertions.assertEquals("{\n  \"own\": \"own\"\n}", dump(new Extended(), new Settings()));
-    Assertions.assertEquals(
-        "{\n  \"own\": \"own\",\n  \"base\": 1\n}",
-        dump(new Extended(), new Settings().put(ACDefaultSettings.FIND_PARENT_FIELDS, true)));
-  }
-
-  @Test
-  public void staticFieldsOnlyWithFindStaticFields() {
-    Settings findStatic = new Settings().put(ACDefaultSettings.FIND_STATIC_FIELDS, true);
-    Assertions.assertEquals(
-        "{\n  \"counter\": 5,\n  \"own\": \"own\"\n}", dump(new Extended(), findStatic));
-
-    try {
-      RESOLVER.load(new Extended(), new StringReader("{\"counter\": 9, \"own\": \"x\"}"));
-      Assertions.assertEquals(5, Extended.counter, "loaded without FIND_STATIC_FIELDS");
-      RESOLVER.load(
-          new Extended(), new StringReader("{\"counter\": 9, \"own\": \"x\"}"), findStatic);
-      Assertions.assertEquals(9, Extended.counter);
-    } finally {
-      Extended.counter = 5;
-    }
   }
 
   // </editor-fold>

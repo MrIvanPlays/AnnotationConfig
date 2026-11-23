@@ -23,40 +23,59 @@
 package com.mrivanplays.annotationconfig.core.serialization;
 
 import java.util.Objects;
+import org.jspecify.annotations.NullMarked;
+import org.jspecify.annotations.Nullable;
 
 /**
- * Represents a utility class to help you call AnnotationConfig's default serializer for stuff which
- * do not need a custom serializer in a custom serializer of some kind.
+ * Calls AnnotationConfig's default serializer, for use inside a custom serializer for values that
+ * need no custom serializer of their own.
  *
  * @author Ivan Pekov
  * @since 3.0.0
  */
 @SuppressWarnings("unchecked")
+@NullMarked
 public final class SimpleValueSerializer {
 
+  private SimpleValueSerializer() {
+    throw new IllegalStateException("Instantiation of utility-type class");
+  }
+
   /**
-   * See {@link FieldTypeSerializer#deserialize(DataObject, SerializationContext,
-   * AnnotationAccessor)}
+   * Deserializes {@code value} with the default serializer.
+   *
+   * @param value the data to deserialize
+   * @param neededValueType the type to deserialize to
+   * @param annotatedConfig the annotated config the value belongs to, if any
+   * @param <T> the type to deserialize to
+   * @return the deserialized value, or {@code null}
+   * @see FieldTypeSerializer#deserialize(DataObject, SerializationContext, AnnotationAccessor)
    */
-  public static <T> T deserialize(
-      DataObject value, Class<? extends T> neededValueType, Object annotatedConfig) {
+  public static <T> @Nullable T deserialize(
+      DataObject value, Class<? extends T> neededValueType, @Nullable Object annotatedConfig) {
     return deserialize(value, neededValueType, annotatedConfig, AnnotationAccessor.EMPTY);
   }
 
   /**
-   * See {@link FieldTypeSerializer#deserialize(DataObject, SerializationContext,
-   * AnnotationAccessor)}
+   * Deserializes {@code value} with the default serializer.
    *
+   * @param value the data to deserialize
+   * @param neededValueType the type to deserialize to
+   * @param annotatedConfig the annotated config the value belongs to, if any
+   * @param annotationAccessor the annotations of the value
+   * @param <T> the type to deserialize to
+   * @return the deserialized value, or {@code null}
+   * @see FieldTypeSerializer#deserialize(DataObject, SerializationContext, AnnotationAccessor)
    * @since 3.1.0
    */
-  public static <T> T deserialize(
+  public static <T> @Nullable T deserialize(
       DataObject value,
       Class<? extends T> neededValueType,
-      Object annotatedConfig,
+      @Nullable Object annotatedConfig,
       AnnotationAccessor annotationAccessor) {
     Objects.requireNonNull(value, "value");
     Objects.requireNonNull(neededValueType, "neededValueType");
-    Objects.requireNonNull(annotatedConfig, "annotatedConfig");
+    Objects.requireNonNull(annotationAccessor, "annotationAccessor");
     return (T)
         DefaultSerializer.INSTANCE.deserialize(
             value,
@@ -64,28 +83,42 @@ public final class SimpleValueSerializer {
             annotationAccessor);
   }
 
-  /** See {@link FieldTypeSerializer#serialize(Object, SerializationContext, AnnotationAccessor)} */
+  /**
+   * Serializes {@code value} with the default serializer.
+   *
+   * @param value the value to serialize
+   * @param valueType the type of the value
+   * @param annotatedConfig the annotated config the value belongs to, if any
+   * @param <T> the type of the value
+   * @return the serialized value
+   * @see FieldTypeSerializer#serialize(Object, SerializationContext, AnnotationAccessor)
+   */
   public static <T> DataObject serialize(
-      T value, Class<? extends T> valueType, Object annotatedConfig) {
+      T value, Class<? extends T> valueType, @Nullable Object annotatedConfig) {
     return serialize(value, valueType, annotatedConfig, AnnotationAccessor.EMPTY);
   }
 
   /**
-   * See {@link FieldTypeSerializer#serialize(Object, SerializationContext, AnnotationAccessor)}
+   * Serializes {@code value} with the default serializer.
    *
+   * @param value the value to serialize
+   * @param valueType the type of the value
+   * @param annotatedConfig the annotated config the value belongs to, if any
+   * @param annotationAccessor the annotations of the value
+   * @param <T> the type of the value
+   * @return the serialized value
+   * @see FieldTypeSerializer#serialize(Object, SerializationContext, AnnotationAccessor)
    * @since 3.1.0
    */
   public static <T> DataObject serialize(
       T value,
       Class<? extends T> valueType,
-      Object annotatedConfig,
+      @Nullable Object annotatedConfig,
       AnnotationAccessor annotationAccessor) {
     Objects.requireNonNull(value, "value");
     Objects.requireNonNull(valueType, "valueType");
-    Objects.requireNonNull(annotatedConfig, "annotatedConfig");
+    Objects.requireNonNull(annotationAccessor, "annotationAccessor");
     return DefaultSerializer.INSTANCE.serialize(
         value, SerializationContext.of(valueType, valueType, annotatedConfig), annotationAccessor);
   }
-
-  private SimpleValueSerializer() {}
 }

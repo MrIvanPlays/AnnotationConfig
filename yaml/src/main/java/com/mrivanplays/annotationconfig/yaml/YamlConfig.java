@@ -33,16 +33,25 @@ import org.yaml.snakeyaml.Yaml;
 /**
  * Represents configuration, utilising YAML
  *
- * @since 1.0
+ * @since 1.0.0
  * @author Ivan Pekov
  */
 @NullMarked
 public final class YamlConfig {
 
   /**
-   * Returns the {@link Setting} with which the yaml instance is referenced in the {@link Settings}
+   * The {@link Setting} with which the {@link Yaml} instance is referenced in the {@link Settings}.
+   * A configured instance is used for reading and writing, and has to be created with {@code
+   * DumperOptions.setProcessComments(true)}, otherwise comments are dropped.
    */
   public static final Setting<Yaml> YAML_INSTANCE = Setting.of("yaml", Yaml.class);
+
+  // <editor-fold desc="Internal Implementation" defaultstate="collapsed">
+  static final YamlHandler HANDLER = new YamlHandler();
+
+  private YamlConfig() {
+    throw new IllegalStateException("Instantiation of utility-type class");
+  }
 
   /**
    * Returns the {@link ConfigResolver} instance of YamlConfig
@@ -51,15 +60,6 @@ public final class YamlConfig {
    */
   public static ConfigResolver getConfigResolver() {
     return ResolverHolder.RESOLVER;
-  }
-
-  // <editor-fold desc="Internal Implementation" defaultstate="collapsed">
-  static final YamlHandler HANDLER = new YamlHandler();
-
-  /** Builds the resolver on first use; class initialisation makes that happen exactly once. */
-  private static final class ResolverHolder {
-
-    static final ConfigResolver RESOLVER = createConfigResolver();
   }
 
   private static ConfigResolver createConfigResolver() {
@@ -73,5 +73,12 @@ public final class YamlConfig {
         .withFileExtension(".yaml")
         .build();
   }
+
   // </editor-fold>
+
+  /** Builds the resolver on first use; class initialisation makes that happen exactly once. */
+  private static final class ResolverHolder {
+
+    static final ConfigResolver RESOLVER = createConfigResolver();
+  }
 }

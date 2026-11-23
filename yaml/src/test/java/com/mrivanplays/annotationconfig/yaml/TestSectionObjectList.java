@@ -34,37 +34,7 @@ import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
-class SectionObjectListTest {
-
-  static class SerializedObject {
-
-    private int foo;
-    private String baz;
-
-    public SerializedObject() {}
-
-    public SerializedObject(int foo, String baz) {
-      this.foo = foo;
-      this.baz = baz;
-    }
-
-    public int getFoo() {
-      return foo;
-    }
-
-    public String getBaz() {
-      return baz;
-    }
-  }
-
-  static class Subject {
-
-    public SectionObjectList<SerializedObject> list =
-        SectionObjectList.newBuilderForType(SerializedObject.class)
-            .defaultValue("foo", new SerializedObject(1, "lorem"))
-            .defaultValue("bar", new SerializedObject(2, "ipsum"))
-            .build();
-  }
+class TestSectionObjectList {
 
   private static final Type LIST_TYPE =
       new TypeToken<SectionObjectList<SerializedObject>>() {}.getType();
@@ -114,5 +84,35 @@ class SectionObjectListTest {
     Assertions.assertEquals("dolor", serialized.get("baz").getBaz());
     Assertions.assertEquals(69, serialized.get("foo").getFoo());
     Assertions.assertEquals("sit", serialized.get("foo").getBaz());
+  }
+
+  static class SerializedObject {
+
+    private int foo;
+    private String baz;
+
+    public SerializedObject() {}
+
+    public SerializedObject(int foo, String baz) {
+      this.foo = foo;
+      this.baz = baz;
+    }
+
+    public int getFoo() {
+      return foo;
+    }
+
+    public String getBaz() {
+      return baz;
+    }
+  }
+
+  static class Subject {
+
+    public SectionObjectList<SerializedObject> list =
+        SectionObjectList.newBuilderForType(SerializedObject.class)
+            .defaultValue("foo", new SerializedObject(1, "lorem"))
+            .defaultValue("bar", new SerializedObject(2, "ipsum"))
+            .build();
   }
 }

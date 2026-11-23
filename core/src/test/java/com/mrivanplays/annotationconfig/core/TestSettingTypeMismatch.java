@@ -27,7 +27,7 @@ import com.mrivanplays.annotationconfig.core.resolver.settings.Settings;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
-public class TestSettingTypeMismatch {
+class TestSettingTypeMismatch {
 
   static final Setting<String> STR_S = Setting.of("string", String.class);
   static final Setting<Boolean> BOOL_S = Setting.of("string", Boolean.class);

@@ -42,7 +42,7 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Objects;
 import java.util.Set;
-import org.jspecify.annotations.NonNull;
+import org.jspecify.annotations.NullMarked;
 import org.jspecify.annotations.Nullable;
 import org.yaml.snakeyaml.DumperOptions;
 import org.yaml.snakeyaml.DumperOptions.FlowStyle;
@@ -74,14 +74,14 @@ import org.yaml.snakeyaml.nodes.Tag;
  * @author claude, Ivan Pekov
  * @since 3.1.0
  */
+@NullMarked
 public final class YamlHandler implements ValueReader, ValueWriter {
 
   /** Used when no instance is configured. Created on first use, then reused for every write. */
-  private Yaml defaultYaml;
+  @Nullable private Yaml defaultYaml;
 
   @Override
-  @NonNull
-  public Map<String, Object> read(@NonNull Reader reader, @NonNull Settings settings) {
+  public Map<String, Object> read(Reader reader, Settings settings) {
     Yaml yaml = settings.get(YamlConfig.YAML_INSTANCE).orElseGet(this::defaultYaml);
     synchronized (yaml) {
       //noinspection unchecked
@@ -92,17 +92,15 @@ public final class YamlHandler implements ValueReader, ValueWriter {
 
   @Override
   public void write(
-      @NonNull Map<String, Object> values,
-      @NonNull Map<String, List<String>> fieldComments,
-      @NonNull PrintWriter writer,
-      @NonNull Settings settings) {
-    Yaml yaml = settings.get(YamlConfig.YAML_INSTANCE).orElse(null);
+      Map<String, Object> values,
+      Map<String, List<String>> fieldComments,
+      PrintWriter writer,
+      Settings settings) {
+    Yaml configured = settings.get(YamlConfig.YAML_INSTANCE).orElse(null);
     // numbers and booleans are only built by hand for the default instance, a configured one may
     // represent them differently
-    boolean defaultInstance = yaml == null;
-    if (defaultInstance) {
-      yaml = defaultYaml();
-    }
+    boolean defaultInstance = configured == null;
+    Yaml yaml = defaultInstance ? defaultYaml() : configured;
     // SnakeYAML emits token by token; collecting the output and writing it once avoids thousands
     // of small writes through the PrintWriter, each of which takes its lock
     StringBuilderWriter output = new StringBuilderWriter();
@@ -118,23 +116,29 @@ public final class YamlHandler implements ValueReader, ValueWriter {
       if (root.getValue().isEmpty()) {
         return;
       }
-      yaml.serialize(root, output); // uses the instance's own options and resolver
+      // uses the instance's own options and resolver
+      yaml.serialize(root, output);
     }
     writer.append(output.builder);
   }
 
   private synchronized Yaml defaultYaml() {
-    if (defaultYaml == null) {
+    Yaml yaml = this.defaultYaml;
+    if (yaml == null) {
       DumperOptions options = new DumperOptions();
-      options.setProcessComments(true); // required, otherwise comments are silently dropped
+      // required, otherwise comments are silently dropped
+      options.setProcessComments(true);
       options.setDefaultFlowStyle(FlowStyle.BLOCK);
       options.setIndent(2);
-      options.setIndicatorIndent(2); // list items are indented under their key
+      // list items are indented under their key
+      options.setIndicatorIndent(2);
       options.setIndentWithIndicator(true);
-      options.setSplitLines(false); // don't wrap long strings
-      defaultYaml = new Yaml(options);
+      // don't wrap long strings
+      options.setSplitLines(false);
+      yaml = new Yaml(options);
+      this.defaultYaml = yaml;
     }
-    return defaultYaml;
+    return yaml;
   }
 
   /**
@@ -148,86 +152,6 @@ public final class YamlHandler implements ValueReader, ValueWriter {
    */
   private record TreeBuilder(
       Yaml yaml, Map<String, List<String>> comments, Set<String> sections, boolean fastScalars) {
-
-    /**
-     * @param path dotted path of this map ("" for the root), or null to write no comments below it
-     * @param topLevel true for the root map: a blank line is added between its entries
-     */
-    MappingNode mapping(Map<?, ?> map, String path, boolean topLevel) {
-      // No commented key below this map: no dotted paths are built. A key that holds a map is
-      // still looked up by its plain key, which commentLines falls back to, so the path given to
-      // the maps below stays one that isn't in sections.
-      boolean pruned = path != null && !path.isEmpty() && !sections.contains(path);
-      List<NodeTuple> tuples = new ArrayList<>(map.size());
-      boolean first = true;
-      for (Entry<?, ?> entry : map.entrySet()) {
-        if (entry.getValue() == null) {
-          continue; // YAML has no "absent" value, so null entries are skipped
-        }
-        String key = String.valueOf(entry.getKey());
-        String childPath = path == null || pruned ? null : path.isEmpty() ? key : path + "." + key;
-        Node value = node(entry.getValue(), pruned ? path : childPath);
-
-        // most keys have neither a blank line nor comments, so the list is only made when needed
-        List<CommentLine> lines = null;
-        if (topLevel && !first) {
-          lines = new ArrayList<>();
-          lines.add(new CommentLine(null, null, "", CommentType.BLANK_LINE));
-        }
-        List<CommentLine> found = List.of();
-        if (childPath != null) {
-          found = commentLines(childPath, key, value instanceof MappingNode);
-        } else if (pruned && value instanceof MappingNode) {
-          found = commentLines(comments.get(key));
-        }
-        if (!found.isEmpty()) {
-          if (lines == null) {
-            lines = new ArrayList<>(found.size());
-          }
-          lines.addAll(found);
-        }
-        ScalarNode keyNode = new ScalarNode(Tag.STR, key, null, null, ScalarStyle.PLAIN);
-        if (lines != null) {
-          keyNode.setBlockComments(lines);
-        }
-        tuples.add(new NodeTuple(keyNode, value));
-        first = false;
-      }
-      return new MappingNode(Tag.MAP, tuples, FlowStyle.BLOCK);
-    }
-
-    private Node node(Object value, String path) {
-      if (value instanceof Map<?, ?> map) {
-        return mapping(map, path, false);
-      }
-      if (value instanceof Collection<?> collection) {
-        List<Node> items = new ArrayList<>(collection.size());
-        for (Object item : collection) {
-          items.add(item(item));
-        }
-        return new SequenceNode(Tag.SEQ, items, FlowStyle.BLOCK);
-      }
-      if (value.getClass().isArray()) { // primitive and object arrays, written as [a, b, c]
-        int length = Array.getLength(value);
-        List<Node> items = new ArrayList<>(length);
-        for (int i = 0; i < length; i++) {
-          items.add(item(Array.get(value, i)));
-        }
-        return new SequenceNode(Tag.SEQ, items, FlowStyle.FLOW);
-      }
-      if (value instanceof MultilineString multiline) {
-        return multiline(multiline);
-      }
-      if (value instanceof String string) {
-        return new ScalarNode(Tag.STR, string, null, null, ScalarStyle.DOUBLE_QUOTED);
-      }
-      if (value instanceof Number || value instanceof Boolean) {
-        // correct tag and formatting (.nan, .inf, ...)
-        return fastScalars ? scalar(value) : yaml.represent(value);
-      }
-      // enums and anything else: plain text, SnakeYAML quotes it if it would be ambiguous
-      return new ScalarNode(Tag.STR, String.valueOf(value), null, null, ScalarStyle.PLAIN);
-    }
 
     /**
      * The node the default instance's representer would create for a number or boolean (see
@@ -261,20 +185,13 @@ public final class YamlHandler implements ValueReader, ValueWriter {
       return new ScalarNode(Tag.FLOAT, text, null, null, ScalarStyle.PLAIN);
     }
 
-    /** List and array elements: no comments, and null is written as an explicit null. */
-    private Node item(Object value) {
-      if (value == null) {
-        return new ScalarNode(Tag.NULL, "null", null, null, ScalarStyle.PLAIN);
-      }
-      return node(value, null);
-    }
-
     private static ScalarNode multiline(MultilineString multiline) {
       String text = multiline.getString();
       char marker = multiline.getMarkerChar();
       ScalarStyle style;
       if (text.indexOf('\n') < 0) {
-        style = ScalarStyle.DOUBLE_QUOTED; // single line: nothing to fold or keep
+        // single line: nothing to fold or keep
+        style = ScalarStyle.DOUBLE_QUOTED;
       } else {
         style =
             switch (marker) {
@@ -289,26 +206,121 @@ public final class YamlHandler implements ValueReader, ValueWriter {
       return new ScalarNode(Tag.STR, text, null, null, style);
     }
 
-    private List<CommentLine> commentLines(String path, String key, boolean isMap) {
-      List<String> found = comments.get(path);
-      if ((found == null || found.isEmpty()) && isMap && !path.equals(key)) {
-        found = comments.get(key);
-      }
-      return commentLines(found);
-    }
-
     private static List<CommentLine> commentLines(@Nullable List<String> found) {
       if (found == null || found.isEmpty()) {
         return List.of();
       }
       List<CommentLine> lines = new ArrayList<>(found.size());
       for (String comment : found) {
-        for (String line : LinesHelper.split(comment)) { // one '#' per line
+        // one '#' per line
+        for (String line : LinesHelper.split(comment)) {
           lines.add(
               new CommentLine(null, null, line.isEmpty() ? "" : " " + line, CommentType.BLOCK));
         }
       }
       return lines;
+    }
+
+    /**
+     * @param path dotted path of this map ("" for the root), or null to write no comments below it
+     * @param topLevel true for the root map: a blank line is added between its entries
+     */
+    MappingNode mapping(Map<?, ?> map, @Nullable String path, boolean topLevel) {
+      // No commented key below this map: no dotted paths are built. A key that holds a map is
+      // still looked up by its plain key, which commentLines falls back to, so the path given to
+      // the maps below stays one that isn't in sections.
+      boolean pruned = path != null && !path.isEmpty() && !sections.contains(path);
+      List<NodeTuple> tuples = new ArrayList<>(map.size());
+      boolean first = true;
+      for (Entry<?, ?> entry : map.entrySet()) {
+        Object entryValue = entry.getValue();
+        if (entryValue == null) {
+          // YAML has no "absent" value, so null entries are skipped
+          continue;
+        }
+        String key = String.valueOf(entry.getKey());
+        String childPath = null;
+        if (path != null && !pruned) {
+          childPath = path.isEmpty() ? key : path + "." + key;
+        }
+        Node value = node(entryValue, pruned ? path : childPath);
+
+        // most keys have neither a blank line nor comments, so the list is only made when needed
+        List<CommentLine> lines = null;
+        if (topLevel && !first) {
+          lines = new ArrayList<>();
+          lines.add(new CommentLine(null, null, "", CommentType.BLANK_LINE));
+        }
+        List<CommentLine> found = List.of();
+        if (childPath != null) {
+          found = commentLines(childPath, key, value instanceof MappingNode);
+        } else if (pruned && value instanceof MappingNode) {
+          found = commentLines(comments.get(key));
+        }
+        if (!found.isEmpty()) {
+          if (lines == null) {
+            lines = new ArrayList<>(found.size());
+          }
+          lines.addAll(found);
+        }
+        ScalarNode keyNode = new ScalarNode(Tag.STR, key, null, null, ScalarStyle.PLAIN);
+        if (lines != null) {
+          keyNode.setBlockComments(lines);
+        }
+        tuples.add(new NodeTuple(keyNode, value));
+        first = false;
+      }
+      return new MappingNode(Tag.MAP, tuples, FlowStyle.BLOCK);
+    }
+
+    private Node node(Object value, @Nullable String path) {
+      if (value instanceof Map<?, ?> map) {
+        return mapping(map, path, false);
+      }
+      if (value instanceof Collection<?> collection) {
+        List<Node> items = new ArrayList<>(collection.size());
+        for (Object item : collection) {
+          items.add(item(item));
+        }
+        return new SequenceNode(Tag.SEQ, items, FlowStyle.BLOCK);
+      }
+      // primitive and object arrays, written as [a, b, c]
+      if (value.getClass().isArray()) {
+        int length = Array.getLength(value);
+        List<Node> items = new ArrayList<>(length);
+        for (int i = 0; i < length; i++) {
+          items.add(item(Array.get(value, i)));
+        }
+        return new SequenceNode(Tag.SEQ, items, FlowStyle.FLOW);
+      }
+      if (value instanceof MultilineString multiline) {
+        return multiline(multiline);
+      }
+      if (value instanceof String string) {
+        return new ScalarNode(Tag.STR, string, null, null, ScalarStyle.DOUBLE_QUOTED);
+      }
+      if (value instanceof Number || value instanceof Boolean) {
+        // correct tag and formatting (.nan, .inf, ...)
+        return fastScalars ? scalar(value) : yaml.represent(value);
+      }
+      // enums and anything else: plain text, SnakeYAML quotes it if it would be ambiguous
+      return new ScalarNode(Tag.STR, String.valueOf(value), null, null, ScalarStyle.PLAIN);
+    }
+
+    /** List and array elements: no comments, and null is written as an explicit null. */
+    private Node item(@Nullable Object value) {
+      if (value == null) {
+        return new ScalarNode(Tag.NULL, "null", null, null, ScalarStyle.PLAIN);
+      }
+      return node(value, null);
+    }
+
+    private List<CommentLine> commentLines(String path, String key, boolean isMap) {
+      List<String> found = comments.get(path);
+      if ((found == null || found.isEmpty()) && isMap && !path.equals(key)) {
+        found = comments.get(key);
+      }
+      return commentLines(found);
     }
   }
 
@@ -323,22 +335,22 @@ public final class YamlHandler implements ValueReader, ValueWriter {
     }
 
     @Override
-    public void write(char @NonNull [] buffer, int offset, int length) {
+    public void write(char[] buffer, int offset, int length) {
       builder.append(buffer, offset, length);
     }
 
     @Override
-    public void write(@NonNull String string) {
+    public void write(String string) {
       builder.append(string);
     }
 
     @Override
-    public void write(@NonNull String string, int offset, int length) {
+    public void write(String string, int offset, int length) {
       builder.append(string, offset, offset + length);
     }
 
     @Override
-    public Writer append(CharSequence sequence) {
+    public Writer append(@Nullable CharSequence sequence) {
       builder.append(sequence);
       return this;
     }

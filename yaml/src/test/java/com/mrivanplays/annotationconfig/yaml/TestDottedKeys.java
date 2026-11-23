@@ -29,26 +29,19 @@ import java.io.StringWriter;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
-public class TestDottedKeys {
-
-  private static final class Subject {
-
-    @Comment("Mashallah")
-    @Key("dotted.key.test.mashallah")
-    private String mashallah = "foo";
-  }
+class TestDottedKeys {
 
   private final ConfigResolver resolver = YamlConfig.getConfigResolver();
 
   @Test
-  public void testValueGet() {
+  void testValueGet() {
     Subject config = new Subject();
     resolver.load(config, getClass().getClassLoader().getResourceAsStream("dotted-keys.yml"));
     Assertions.assertEquals("bar", config.mashallah);
   }
 
   @Test
-  public void testGeneration() {
+  void testGeneration() {
     StringWriter writer = new StringWriter();
     resolver.dump(new Subject(), writer);
     String expected =
@@ -58,5 +51,12 @@ public class TestDottedKeys {
             + "      # Mashallah\n"
             + "      mashallah: \"foo\"\n";
     Assertions.assertEquals(expected, writer.toString());
+  }
+
+  private static final class Subject {
+
+    @Comment("Mashallah")
+    @Key("dotted.key.test.mashallah")
+    private String mashallah = "foo";
   }
 }

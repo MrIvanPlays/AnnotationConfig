@@ -27,10 +27,10 @@ import java.time.OffsetDateTime;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
-public class TestTOML {
+class TestTOML {
 
   @Test
-  public void testLoad() {
+  void testLoad() {
     TOMLTestSubject config = new TOMLTestSubject();
     TomlConfig.getConfigResolver()
         .load(config, getClass().getClassLoader().getResourceAsStream("test-toml.toml"));
@@ -47,7 +47,7 @@ public class TestTOML {
   }
 
   @Test
-  public void testDump() {
+  void testDump() {
     StringWriter writer = new StringWriter();
     TomlConfig.getConfigResolver().dump(new TOMLTestSubject(), writer);
     String expected =

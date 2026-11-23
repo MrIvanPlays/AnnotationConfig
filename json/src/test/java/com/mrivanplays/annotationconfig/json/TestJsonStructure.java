@@ -43,7 +43,7 @@ import org.junit.jupiter.api.Test;
  * lists become JSON arrays, dotted keys become nested objects. Comments are not written, as JSON
  * has none.
  */
-public class TestJsonStructure {
+class TestJsonStructure {
 
   private static final ConfigResolver RESOLVER = JsonConfig.getConfigResolver();
 
@@ -60,34 +60,8 @@ public class TestJsonStructure {
 
   // <editor-fold desc="Config objects">
 
-  @Comment("Comments are not written to JSON")
-  static class Sections {
-
-    @Comment("Section comment")
-    @ConfigObject
-    public Server server = new Server();
-
-    @Comment("Plain field comment")
-    public String name = "Ivan";
-
-    public static class Server {
-
-      @Key("ip")
-      public String host = "localhost";
-
-      public int port = 25565;
-
-      @ConfigObject public Limits limits = new Limits();
-    }
-
-    public static class Limits {
-
-      public int players = 20;
-    }
-  }
-
   @Test
-  public void configObjectsAreNestedObjects() {
+  void configObjectsAreNestedObjects() {
     String expected =
         """
         {
@@ -105,7 +79,7 @@ public class TestJsonStructure {
   }
 
   @Test
-  public void configObjectsLoad() {
+  void configObjectsLoad() {
     Sections config =
         load(
             new Sections(),
@@ -121,24 +95,8 @@ public class TestJsonStructure {
     Assertions.assertEquals("Pekov", config.name);
   }
 
-  // </editor-fold>
-
-  // <editor-fold desc="Dotted keys">
-
-  static class DottedKeys {
-
-    @Key("commands.subcommands.help.foo")
-    public String foo = "bar";
-
-    @Key("commands.subcommands.this.bar")
-    public String bar = "aaa";
-
-    @Key("commands.subcommands.this.baz")
-    public int baz = -1;
-  }
-
   @Test
-  public void dottedKeysAreNestedObjects() {
+  void dottedKeysAreNestedObjects() {
     String expected =
         """
         {
@@ -158,8 +116,12 @@ public class TestJsonStructure {
     Assertions.assertEquals(expected, dump(new DottedKeys()));
   }
 
+  // </editor-fold>
+
+  // <editor-fold desc="Dotted keys">
+
   @Test
-  public void dottedKeysLoad() {
+  void dottedKeysLoad() {
     DottedKeys config =
         load(
             new DottedKeys(),
@@ -174,35 +136,8 @@ public class TestJsonStructure {
     Assertions.assertEquals(69420, config.baz);
   }
 
-  // </editor-fold>
-
-  // <editor-fold desc="Arrays and lists">
-
-  static class Arrays {
-
-    public int[] numbers = {1, 2};
-    public BigDecimal[] decimals = {new BigDecimal("1111.2222"), new BigDecimal("3333.4444")};
-    public Item[] items = {new Item("a", 1), new Item("b", 2)};
-    public List<String> names = List.of("Hello", "bla bla");
-    public List<Item> itemList = List.of(new Item("c", 3));
-    public List<String> empty = Collections.emptyList();
-  }
-
-  public static class Item {
-
-    public String name;
-    public int amount;
-
-    public Item() {}
-
-    Item(String name, int amount) {
-      this.name = name;
-      this.amount = amount;
-    }
-  }
-
   @Test
-  public void arraysAndListsAreJsonArrays() {
+  void arraysAndListsAreJsonArrays() {
     String expected =
         """
         {
@@ -241,7 +176,7 @@ public class TestJsonStructure {
   }
 
   @Test
-  public void arraysAndListsLoad() {
+  void arraysAndListsLoad() {
     Arrays config =
         load(
             new Arrays(),
@@ -268,43 +203,18 @@ public class TestJsonStructure {
     Assertions.assertEquals(List.of("now", "filled"), config.empty);
   }
 
-  static class SingleValueList {
+  // </editor-fold>
 
-    public List<String> foo;
-  }
+  // <editor-fold desc="Arrays and lists">
 
   @Test
-  public void singleValueIsReadAsList() {
+  void singleValueIsReadAsList() {
     SingleValueList config = load(new SingleValueList(), "{\"foo\": \"aabb\"}");
     Assertions.assertEquals(List.of("aabb"), config.foo);
   }
 
-  // </editor-fold>
-
-  // <editor-fold desc="Maps and DataObject">
-
-  static class Maps {
-
-    public Map<String, List<Map<String, Object>>> values = Map.of("entries", entries());
-
-    private static List<Map<String, Object>> entries() {
-      Map<String, Object> first = new LinkedHashMap<>();
-      first.put("foo", 1);
-      first.put("baz", List.of("baba", "yaga"));
-      Map<String, Object> nested = new LinkedHashMap<>();
-      nested.put("lorem", "ipsum");
-      Map<String, Object> second = new LinkedHashMap<>();
-      second.put("foo", 3);
-      second.put("baz", nested);
-      List<Map<String, Object>> entries = new ArrayList<>();
-      entries.add(first);
-      entries.add(second);
-      return entries;
-    }
-  }
-
   @Test
-  public void mapsAreJsonObjects() {
+  void mapsAreJsonObjects() {
     String expected =
         """
         {
@@ -330,20 +240,8 @@ public class TestJsonStructure {
     Assertions.assertEquals(expected, dump(new Maps()));
   }
 
-  static class DataObjectField {
-
-    public DataObject data = data();
-
-    private static DataObject data() {
-      DataObject data = new DataObject();
-      data.put("foo", 2);
-      data.put("bar", "baz");
-      return data;
-    }
-  }
-
   @Test
-  public void dataObjectRoundTrip() {
+  void dataObjectRoundTrip() {
     Assertions.assertEquals(
         """
         {
@@ -361,28 +259,8 @@ public class TestJsonStructure {
     Assertions.assertEquals("foo", config.data.get("bar").getAsString());
   }
 
-  // </editor-fold>
-
-  // <editor-fold desc="Records">
-
-  record Location(@Key("world-name") String world, int x, int y, double z) {
-
-    // records with more than one constructor are supported
-    Location(String world) {
-      this(world, 0, 0, 0);
-    }
-  }
-
-  static class Records {
-
-    @ConfigObject public Location spawn = new Location("world", 20, 2, 1.5);
-
-    // not a config object: serialized by the default serializer
-    public Location home = new Location("nether", -1, 64, 3.0);
-  }
-
   @Test
-  public void recordsAreJsonObjects() {
+  void recordsAreJsonObjects() {
     String expected =
         """
         {
@@ -404,7 +282,7 @@ public class TestJsonStructure {
   }
 
   @Test
-  public void recordsLoad() {
+  void recordsLoad() {
     Records config =
         load(
             new Records(),
@@ -416,6 +294,128 @@ public class TestJsonStructure {
             """);
     Assertions.assertEquals(new Location("end", 1, 2, 3.5), config.spawn);
     Assertions.assertEquals(new Location("overworld", 4, 5, 6.0), config.home);
+  }
+
+  @Comment("Comments are not written to JSON")
+  static class Sections {
+
+    @Comment("Section comment")
+    @ConfigObject
+    public Server server = new Server();
+
+    @Comment("Plain field comment")
+    public String name = "Ivan";
+
+    public static class Server {
+
+      @Key("ip")
+      public String host = "localhost";
+
+      public int port = 25565;
+
+      @ConfigObject public Limits limits = new Limits();
+    }
+
+    public static class Limits {
+
+      public int players = 20;
+    }
+  }
+
+  // </editor-fold>
+
+  // <editor-fold desc="Maps and DataObject">
+
+  static class DottedKeys {
+
+    @Key("commands.subcommands.help.foo")
+    public String foo = "bar";
+
+    @Key("commands.subcommands.this.bar")
+    public String bar = "aaa";
+
+    @Key("commands.subcommands.this.baz")
+    public int baz = -1;
+  }
+
+  static class Arrays {
+
+    public int[] numbers = {1, 2};
+    public BigDecimal[] decimals = {new BigDecimal("1111.2222"), new BigDecimal("3333.4444")};
+    public Item[] items = {new Item("a", 1), new Item("b", 2)};
+    public List<String> names = List.of("Hello", "bla bla");
+    public List<Item> itemList = List.of(new Item("c", 3));
+    public List<String> empty = Collections.emptyList();
+  }
+
+  public static class Item {
+
+    public String name;
+    public int amount;
+
+    public Item() {}
+
+    Item(String name, int amount) {
+      this.name = name;
+      this.amount = amount;
+    }
+  }
+
+  static class SingleValueList {
+
+    public List<String> foo;
+  }
+
+  // </editor-fold>
+
+  // <editor-fold desc="Records">
+
+  static class Maps {
+
+    public Map<String, List<Map<String, Object>>> values = Map.of("entries", entries());
+
+    private static List<Map<String, Object>> entries() {
+      Map<String, Object> first = new LinkedHashMap<>();
+      first.put("foo", 1);
+      first.put("baz", List.of("baba", "yaga"));
+      Map<String, Object> nested = new LinkedHashMap<>();
+      nested.put("lorem", "ipsum");
+      Map<String, Object> second = new LinkedHashMap<>();
+      second.put("foo", 3);
+      second.put("baz", nested);
+      List<Map<String, Object>> entries = new ArrayList<>();
+      entries.add(first);
+      entries.add(second);
+      return entries;
+    }
+  }
+
+  static class DataObjectField {
+
+    public DataObject data = data();
+
+    private static DataObject data() {
+      DataObject data = new DataObject();
+      data.put("foo", 2);
+      data.put("bar", "baz");
+      return data;
+    }
+  }
+
+  record Location(@Key("world-name") String world, int x, int y, double z) {
+
+    // records with more than one constructor are supported
+    Location(String world) {
+      this(world, 0, 0, 0);
+    }
+  }
+
+  static class Records {
+
+    @ConfigObject public Location spawn = new Location("world", 20, 2, 1.5);
+
+    // not a config object: serialized by the default serializer
+    public Location home = new Location("nether", -1, 64, 3.0);
   }
 
   // </editor-fold>

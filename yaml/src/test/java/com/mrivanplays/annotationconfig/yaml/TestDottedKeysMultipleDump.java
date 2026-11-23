@@ -29,40 +29,10 @@ import java.io.StringWriter;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
-public class TestDottedKeysMultipleDump {
-
-  @Comment("Generated using AnnotationConfig v3.1.0")
-  private static final class Subject {
-
-    @ConfigObject private BarSection bar = new BarSection();
-
-    @Comment("This is a test comment on top of a section")
-    public static class BarSection {
-
-      @Comment("Foo comment")
-      @Key("baz.foo")
-      private String foo = "bar";
-
-      @Comment("Bar comment")
-      @Key("baz.bar")
-      private String bar = "foo";
-    }
-
-    @Comment("Foo comment")
-    @Key("kappa.baz.foo")
-    private String foo = "bar";
-
-    @Comment("Bar comment")
-    @Key("kappa.baz.bar")
-    private String bar1 = "foo";
-
-    @Comment("This is a control field")
-    @Key("control-field")
-    private int controlField = -1;
-  }
+class TestDottedKeysMultipleDump {
 
   @Test
-  public void testDump() {
+  void testDump() {
     Subject config = new Subject();
     StringWriter dumpTo = new StringWriter();
     YamlConfig.getConfigResolver().dump(config, dumpTo);
@@ -89,5 +59,35 @@ public class TestDottedKeysMultipleDump {
             + "control-field: -1\n";
 
     Assertions.assertEquals(expected, dumpTo.toString());
+  }
+
+  @Comment("Generated using AnnotationConfig v3.1.0")
+  private static final class Subject {
+
+    @ConfigObject private BarSection bar = new BarSection();
+
+    @Comment("Foo comment")
+    @Key("kappa.baz.foo")
+    private String foo = "bar";
+
+    @Comment("Bar comment")
+    @Key("kappa.baz.bar")
+    private String bar1 = "foo";
+
+    @Comment("This is a control field")
+    @Key("control-field")
+    private int controlField = -1;
+
+    @Comment("This is a test comment on top of a section")
+    public static class BarSection {
+
+      @Comment("Foo comment")
+      @Key("baz.foo")
+      private String foo = "bar";
+
+      @Comment("Bar comment")
+      @Key("baz.bar")
+      private String bar = "foo";
+    }
   }
 }

@@ -66,51 +66,26 @@ import org.jspecify.annotations.Nullable;
 @NullMarked
 public final class Json5ValueWriter implements ValueWriter {
 
-  private static final char[] HEX = "0123456789abcdef".toCharArray();
+  private static final char[] HEX = "0123456789ABCDEF".toCharArray();
   private static final String INDENT = "  ";
 
-  @Override
-  public void write(
-      Map<String, Object> values,
-      Map<String, List<String>> fieldComments,
-      PrintWriter writer,
-      Settings settings) {
-    StringBuilder out = new StringBuilder(256);
-    Comments comments = new Comments(fieldComments);
-    // without comments there is nothing to look up, so no dotted paths are built
-    appendObject(out, values, 0, comments.byPath().isEmpty() ? null : "", comments);
-    writer.append(out);
-  }
-
-  /**
-   * The comments to write.
-   *
-   * @param byPath the comments of each option, under its dotted path
-   * @param sections the dotted paths of the objects that hold a commented option, at any depth:
-   *     {@code a} and {@code a.b} for {@code a.b.c}. Inside other objects no paths are built.
-   */
-  private record Comments(Map<String, List<String>> byPath, Set<String> sections) {
-
-    Comments(Map<String, List<String>> byPath) {
-      // options without comments have an empty list, which MapUtils#parentPaths skips
-      this(byPath, MapUtils.parentPaths(byPath));
-    }
-  }
-
-  /**
-   * @param path the dotted path of this object ("" for the root) under which the comments of its
-   *     keys are stored, or null to write no comments
-   */
   private static void appendObject(
-      StringBuilder out, Map<?, ?> object, int depth, @Nullable String path, Comments comments) {
-    if (path != null && !path.isEmpty() && !comments.sections().contains(path)) {
-      path = null; // nothing below is commented
-    }
+      StringBuilder out,
+      Map<?, ?> object,
+      int depth,
+      @Nullable String objectPath,
+      Comments comments) {
+    // null when nothing below is commented
+    String path =
+        objectPath != null && !objectPath.isEmpty() && !comments.sections().contains(objectPath)
+            ? null
+            : objectPath;
     boolean first = true;
     for (Map.Entry<?, ?> entry : object.entrySet()) {
       Object value = unwrap(entry.getValue());
       if (value == null) {
-        continue; // as Gson does for JSON: a null entry is left out
+        // as Gson does for JSON: a null entry is left out
+        continue;
       }
       out.append(first ? "{\n" : ",\n");
       first = false;
@@ -282,6 +257,34 @@ public final class Json5ValueWriter implements ValueWriter {
   }
 
   private static void indent(StringBuilder out, int depth) {
-    out.repeat(INDENT, Math.max(0, depth));
+    out.repeat(INDENT, depth);
+  }
+
+  @Override
+  public void write(
+      Map<String, Object> values,
+      Map<String, List<String>> fieldComments,
+      PrintWriter writer,
+      Settings settings) {
+    StringBuilder out = new StringBuilder(256);
+    Comments comments = new Comments(fieldComments);
+    // without comments there is nothing to look up, so no dotted paths are built
+    appendObject(out, values, 0, comments.byPath().isEmpty() ? null : "", comments);
+    writer.append(out);
+  }
+
+  /**
+   * The comments to write.
+   *
+   * @param byPath the comments of each option, under its dotted path
+   * @param sections the dotted paths of the objects that hold a commented option, at any depth:
+   *     {@code a} and {@code a.b} for {@code a.b.c}. Inside other objects no paths are built.
+   */
+  private record Comments(Map<String, List<String>> byPath, Set<String> sections) {
+
+    Comments(Map<String, List<String>> byPath) {
+      // options without comments have an empty list, which MapUtils#parentPaths skips
+      this(byPath, MapUtils.parentPaths(byPath));
+    }
   }
 }

@@ -68,9 +68,13 @@ import org.jspecify.annotations.Nullable;
  *   <li>Floats use {@code inf} and {@code nan}. Integers that do not fit in 64 bits, which TOML
  *       does not allow, are written as strings.
  *   <li>Date and time values ({@link OffsetDateTime}, {@link LocalDateTime}, {@link LocalDate},
- *       {@link LocalTime}) are written as TOML date-times.
+ *       {@link LocalTime}) are written as TOML date-times, and so are {@link ZonedDateTime} (with
+ *       its offset, without the zone ID) and {@link Instant} (in UTC).
  *   <li>Arrays and lists are written as arrays, objects inside them as inline tables.
  * </ul>
+ *
+ * <p>Lines end with '\n' and never with {@code println()}: the line separator of the OS would mix
+ * with the '\n' of the class comment.
  *
  * @author claude, Ivan Pekov
  * @since 2.1.0
@@ -80,6 +84,7 @@ public final class TomlValueWriter implements ValueWriter {
 
   private static final char[] HEX = "0123456789ABCDEF".toCharArray();
 
+  /** Creates a new value writer. */
   public TomlValueWriter() {}
 
   /**
@@ -94,52 +99,11 @@ public final class TomlValueWriter implements ValueWriter {
     Objects.requireNonNull(defaultMapper, "defaultMapper");
   }
 
-  @Override
-  public void write(
-      Map<String, Object> values,
-      Map<String, List<String>> fieldComments,
-      PrintWriter writer,
-      Settings settings) {
-    // The file is built first and written once, as the other writers do: many small writes through
-    // the PrintWriter each take its lock. A value that can't be written fails before anything is.
-    StringBuilder out = new StringBuilder(256);
-    writeTable(out, null, null, values, new Comments(fieldComments), false);
-    writer.append(out);
-  }
-
-  /**
-   * The comments to write.
-   *
-   * @param byPath the comments of each option, under its dotted path
-   * @param sections the dotted paths of the tables that hold a commented option, at any depth:
-   *     {@code a} and {@code a.b} for {@code a.b.c}. In other tables the values' paths aren't
-   *     built, as nothing is looked up under them.
-   */
-  private record Comments(Map<String, List<String>> byPath, Set<String> sections) {
-
-    Comments(Map<String, List<String>> byPath) {
-      // options without comments have an empty list, which MapUtils#parentPaths skips
-      this(byPath, MapUtils.parentPaths(byPath));
-    }
-
-    /** The comments of {@code path}, or {@code null}: options without comments have none. */
-    @Nullable List<String> get(String path) {
-      if (this.byPath.isEmpty()) {
-        return null;
-      }
-      List<String> comments = this.byPath.get(path);
-      return comments == null || comments.isEmpty() ? null : comments;
-    }
-  }
-
   /**
    * Writes one table: its header, the values that are not tables, then each table inside it.
    *
    * <p>The header is left out when the table has neither values nor comments of its own, as {@code
    * [a.b]} defines {@code a} already; an {@code [a]} above it would be empty.
-   *
-   * <p>'\n' and not println() everywhere: the line separator of the OS would mix with the '\n' of
-   * the class comment.
    *
    * @param path the dotted key of the table as the comments are stored under, also used in error
    *     messages; {@code null} for the top level, which has no header
@@ -247,8 +211,6 @@ public final class TomlValueWriter implements ValueWriter {
     return table == null ? key : table + '.' + key;
   }
 
-  // <editor-fold desc="Values">
-
   /**
    * Appends {@code value} in TOML syntax.
    *
@@ -259,8 +221,7 @@ public final class TomlValueWriter implements ValueWriter {
       StringBuilder out, @Nullable Object value, @Nullable String table, String key) {
     switch (value) {
       case null -> throw noNull(path(table, key));
-      case DataObject data ->
-          appendValue(out, data.isSingleValue() ? data.getAsObject() : data.getAsMap(), table, key);
+      case DataObject data -> appendValue(out, unwrap(data), table, key);
       case MultilineString multiline -> appendMultilineString(out, multiline.getString());
       case String string -> appendString(out, string);
       case Character character -> appendString(out, String.valueOf(character.charValue()));
@@ -305,16 +266,19 @@ public final class TomlValueWriter implements ValueWriter {
       first = false;
       String entryKey = String.valueOf(entry.getKey());
       Object value = entry.getValue();
+      // the path is only built for an error
       if (value == null) {
-        // the path is only built for the error
         throw noNull(path(table, key) + '.' + entryKey);
       }
       appendKey(out, entryKey);
       out.append(" = ");
-      appendValue(out, value, table, key);
+      // errors inside name the entry, not only the inline table
+      appendValue(out, value, path(table, key), entryKey);
     }
     out.append('}');
   }
+
+  // <editor-fold desc="Values">
 
   private static void appendCollection(
       StringBuilder out, Collection<?> elements, @Nullable String table, String key) {
@@ -410,10 +374,6 @@ public final class TomlValueWriter implements ValueWriter {
     return new IllegalArgumentException("'" + path + "': TOML has no null value");
   }
 
-  // </editor-fold>
-
-  // <editor-fold desc="Keys and strings">
-
   /** The key as written in TOML: bare when it can be, quoted otherwise. */
   private static String formatKey(String key) {
     if (isBareKey(key)) {
@@ -431,6 +391,10 @@ public final class TomlValueWriter implements ValueWriter {
       appendString(out, key);
     }
   }
+
+  // </editor-fold>
+
+  // <editor-fold desc="Keys and strings">
 
   /** Bare keys may only contain A-Z, a-z, 0-9, '_' and '-'. */
   private static boolean isBareKey(String key) {
@@ -478,8 +442,9 @@ public final class TomlValueWriter implements ValueWriter {
   }
 
   /**
-   * A multi-line basic string. The line break after the opening delimiter is not part of the value,
-   * and line breaks are written as {@code \n} so the value reads back the same on every platform.
+   * A multi-line basic string. The line break after the opening delimiter is not part of the value.
+   * Line breaks are written as a line feed ('\n') and a carriage return as the {@code \r} escape,
+   * so the value reads back the same on every platform.
    */
   private static void appendMultilineString(StringBuilder out, String value) {
     out.append("\"\"\"\n");
@@ -529,6 +494,44 @@ public final class TomlValueWriter implements ValueWriter {
       return !tabAllowed;
     }
     return c < 0x20 || c == 0x7f;
+  }
+
+  @Override
+  public void write(
+      Map<String, Object> values,
+      Map<String, List<String>> fieldComments,
+      PrintWriter writer,
+      Settings settings) {
+    // The file is built first and written once, as the other writers do: many small writes through
+    // the PrintWriter each take its lock. A value that can't be written fails before anything is.
+    StringBuilder out = new StringBuilder(256);
+    writeTable(out, null, null, values, new Comments(fieldComments), false);
+    writer.append(out);
+  }
+
+  /**
+   * The comments to write.
+   *
+   * @param byPath the comments of each option, under its dotted path
+   * @param sections the dotted paths of the tables that hold a commented option, at any depth:
+   *     {@code a} and {@code a.b} for {@code a.b.c}. In other tables the values' paths aren't
+   *     built, as nothing is looked up under them.
+   */
+  private record Comments(Map<String, List<String>> byPath, Set<String> sections) {
+
+    Comments(Map<String, List<String>> byPath) {
+      // options without comments have an empty list, which MapUtils#parentPaths skips
+      this(byPath, MapUtils.parentPaths(byPath));
+    }
+
+    /** The comments of {@code path}, or {@code null}: options without comments have none. */
+    @Nullable List<String> get(String path) {
+      if (this.byPath.isEmpty()) {
+        return null;
+      }
+      List<String> comments = this.byPath.get(path);
+      return comments == null || comments.isEmpty() ? null : comments;
+    }
   }
 
   // </editor-fold>

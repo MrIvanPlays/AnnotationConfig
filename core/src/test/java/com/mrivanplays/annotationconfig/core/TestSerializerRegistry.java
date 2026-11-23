@@ -39,44 +39,13 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
-public class SerializerRegistryTest {
+class TestSerializerRegistry {
 
   private static final SerializerRegistry REGISTRY = SerializerRegistry.INSTANCE;
-
-  /** A type only this test registers serializers for. */
-  static final class Point {
-
-    final int x;
-    final int y;
-
-    Point(int x, int y) {
-      this.x = x;
-      this.y = y;
-    }
-
-    static Point parse(String text) {
-      String[] parts = text.split(":");
-      return new Point(Integer.parseInt(parts[0]), Integer.parseInt(parts[1]));
-    }
-  }
-
-  static class Subject {
-
-    Point point = new Point(1, 2);
-  }
-
   private static final FieldTypeSerializer<Point> SERIALIZER =
       FieldTypeSerializer.functional(
           (data, _, _) -> Point.parse(data.getAsString()),
           (value, _, _) -> new DataObject(value.x + ":" + value.y));
-
-  // the registry is global, so no test may leave a serializer for Point behind
-  @AfterEach
-  void unregister() {
-    if (REGISTRY.hasSerializer(Point.class)) {
-      REGISTRY.unregisterSerializer(Point.class);
-    }
-  }
 
   private static String dump() {
     StringWriter writer = new StringWriter();
@@ -88,6 +57,14 @@ public class SerializerRegistryTest {
     Subject subject = new Subject();
     PropertyConfig.getConfigResolver().load(subject, new StringReader(properties));
     return subject.point;
+  }
+
+  // the registry is global, so no test may leave a serializer for Point behind
+  @AfterEach
+  void unregister() {
+    if (REGISTRY.hasSerializer(Point.class)) {
+      REGISTRY.unregisterSerializer(Point.class);
+    }
   }
 
   @Test
@@ -185,5 +162,27 @@ public class SerializerRegistryTest {
     }
     Assertions.assertEquals(threads - 1, rejected.get());
     Assertions.assertTrue(REGISTRY.hasSerializer(Point.class));
+  }
+
+  /** A type only this test registers serializers for. */
+  static final class Point {
+
+    final int x;
+    final int y;
+
+    Point(int x, int y) {
+      this.x = x;
+      this.y = y;
+    }
+
+    static Point parse(String text) {
+      String[] parts = text.split(":");
+      return new Point(Integer.parseInt(parts[0]), Integer.parseInt(parts[1]));
+    }
+  }
+
+  static class Subject {
+
+    Point point = new Point(1, 2);
   }
 }

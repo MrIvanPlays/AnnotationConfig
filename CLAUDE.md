@@ -18,6 +18,8 @@ Java 25, Maven multi-module build.
     keep loading, and otherwise uses `DottedResolver`.
   - `@Min` / `@Max` members default to the bound that never rejects (`MIN_VALUE` / `MAX_VALUE`,
     infinities), so `-1` is a usable bound.
+  - Every module `pom.xml` repeats `url`, `developers`, `licenses` and `scm`: Maven Central requires
+    them in each published POM. Don't remove them as duplicates of the parent's.
 
 ## Modules
 
@@ -59,7 +61,7 @@ Java 25, Maven multi-module build.
   point are read as strings (number fields parse all but hex); the `\x`, `\v` and `\0` escapes fail;
   a line continuation (backslash before a line break) keeps the line break, which JSON5 drops. So
   `@Multiline` strings are written on one line with `\n` escapes. The CHANGELOG and the Javadoc of
-  `JsonConfig#getJSON5ConfigResolver()` list these limits; keep them in sync.
+  `JsonConfig#getJson5ConfigResolver()` list these limits; keep them in sync.
 - `PropertiesDumper` and `Json5ValueWriter` build the whole output in a `StringBuilder` and write
   it to the `PrintWriter` once, and JSON is written by one `Gson#toJson` call: many small writes
   through the `PrintWriter` (each takes its lock) measured ~35% slower. `YamlHandler` gives
@@ -132,6 +134,8 @@ Java 25, Maven multi-module build.
   changes with `!` and a `BREAKING CHANGE:` footer. Commits that only change documentation end
   their subject with `[ci skip]`.
 - Commit only when asked, and as one commit unless asked otherwise. Don't push.
+- `// <editor-fold ...>` / `// </editor-fold>` comments are the IDE layout the maintainer uses: keep
+  them, and keep code added next to a fold inside or outside it as fits.
 - `CHANGELOG.md` has one section per version; user-visible and breaking changes go there.
 - Public API: `annotations`, `resolver`, `serialization`, `settings` and `utils` in `core`, plus the
   format entry points (`YamlConfig`, `JsonConfig`, ...). The `core.internal` package and classes

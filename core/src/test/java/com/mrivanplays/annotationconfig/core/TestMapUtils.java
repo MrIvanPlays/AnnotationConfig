@@ -28,7 +28,7 @@ import java.util.Map;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
-public class MapUtilsTest {
+class TestMapUtils {
 
   /** {@code {outer: {inner: {key: value}}}}, built from mutable maps. */
   private static Map<String, Object> nested(String outer, String inner, String key, Object value) {
@@ -39,17 +39,6 @@ public class MapUtilsTest {
     Map<String, Object> root = new HashMap<>();
     root.put(outer, middle);
     return root;
-  }
-
-  @Test
-  public void populateFirstMergesTheSecondMapIntoTheFirst() {
-    Map<String, Object> first = nested("foo", "baz", "bar", "aa");
-    Map<String, Object> second = nested("foo", "baz", "eee", "rrr");
-
-    MapUtils.populateFirst(first, second);
-
-    Assertions.assertEquals(Map.of("foo", Map.of("baz", Map.of("bar", "aa", "eee", "rrr"))), first);
-    Assertions.assertEquals(Map.of("foo", Map.of("baz", Map.of("eee", "rrr"))), second);
   }
 
   /** {@code {keys[0]: {keys[1]: ... {keys[n-1]: value}}}}, built from mutable maps. */
@@ -66,7 +55,18 @@ public class MapUtilsTest {
   }
 
   @Test
-  public void populateFirstMergesAtAnyDepth() {
+  void populateFirstMergesTheSecondMapIntoTheFirst() {
+    Map<String, Object> first = nested("foo", "baz", "bar", "aa");
+    Map<String, Object> second = nested("foo", "baz", "eee", "rrr");
+
+    MapUtils.populateFirst(first, second);
+
+    Assertions.assertEquals(Map.of("foo", Map.of("baz", Map.of("bar", "aa", "eee", "rrr"))), first);
+    Assertions.assertEquals(Map.of("foo", Map.of("baz", Map.of("eee", "rrr"))), second);
+  }
+
+  @Test
+  void populateFirstMergesAtAnyDepth() {
     Map<String, Object> first = chain(1, "a", "b", "c", "d", "x");
     MapUtils.populateFirst(first, chain(2, "a", "b", "c", "d", "y"));
     // the deeper map of the second replaced the first's before
@@ -75,7 +75,7 @@ public class MapUtilsTest {
   }
 
   @Test
-  public void populateFirstKeepsTheValuesOfTheFirstMap() {
+  void populateFirstKeepsTheValuesOfTheFirstMap() {
     Map<String, Object> first = chain(1, "a", "x");
     first.put("only", "first");
     Map<String, Object> second = chain(2, "a", "x");

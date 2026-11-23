@@ -31,12 +31,12 @@ import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
-public class TestYAML {
+class TestYAML {
 
   private final ConfigResolver resolver = YamlConfig.getConfigResolver();
 
   @Test
-  public void dumpedFileLoadsBack(@TempDir Path dir) {
+  void dumpedFileLoadsBack(@TempDir Path dir) {
     Path file = dir.resolve("config.yml");
     resolver.dump(new YAMLTestSubject(), file);
 
@@ -49,7 +49,7 @@ public class TestYAML {
   }
 
   @Test
-  public void newOptionsAreAddedToAnOlderFile(@TempDir Path dir) throws IOException {
+  void newOptionsAreAddedToAnOlderFile(@TempDir Path dir) throws IOException {
     // YAMLSecondTestSubject is YAMLTestSubject with options added
     Path file = dir.resolve("config.yml");
     resolver.dump(new YAMLTestSubject(), file);

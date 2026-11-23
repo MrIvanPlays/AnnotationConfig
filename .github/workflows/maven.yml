@@ -19,4 +19,4 @@ jobs:
           distribution: zulu
           java-version: ${{ matrix.java }}
           cache: maven
-      - run: mvn package
+      - run: mvn -B package

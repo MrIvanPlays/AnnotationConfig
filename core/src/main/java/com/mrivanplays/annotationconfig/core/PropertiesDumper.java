@@ -34,7 +34,6 @@ import java.util.regex.Pattern;
  * Writes an ordered map as a .properties file. Per-key comments are kept, and keys and values are
  * escaped so that {@link java.util.Properties#load} reads back exactly what was written.
  *
- * @author claude
  * @hidden
  */
 final class PropertiesDumper {
@@ -44,17 +43,19 @@ final class PropertiesDumper {
   private static final Pattern LINE_BREAK = Pattern.compile("\r\n|\r|\n");
   private static final char[] HEX = "0123456789ABCDEF".toCharArray();
 
-  private PropertiesDumper() {}
+  private PropertiesDumper() {
+    throw new IllegalStateException("Instantiation of utility-type class");
+  }
 
   /**
    * @param values entries are written in iteration order, so pass a LinkedHashMap to keep order
-   * @param fieldComments comment lines per key; may be null. Comments that contain line breaks are
-   *     split so that every line gets its own "#" prefix
+   * @param fieldComments comment lines per key. Comments that contain line breaks are split so that
+   *     every line gets its own "#" prefix
    * @param escapeUnicode true: non-ASCII characters are written as unicode escapes, which is safe
    *     for Properties.load(InputStream) (ISO-8859-1). false: written as-is, so the file must be
    *     read back with a Reader using the same charset as the writer (e.g. UTF-8)
    */
-  public static void dump(
+  static void dump(
       PrintWriter writer,
       Map<String, Object> values,
       Map<String, List<String>> fieldComments,
@@ -70,7 +71,7 @@ final class PropertiesDumper {
       first = false;
 
       String key = entry.getKey();
-      List<String> comments = fieldComments == null ? null : fieldComments.get(key);
+      List<String> comments = fieldComments.get(key);
       if (comments != null) {
         for (String comment : comments) {
           appendComment(out, comment);
@@ -108,7 +109,7 @@ final class PropertiesDumper {
       }
       case Map<?, ?> map ->
           throw new IllegalArgumentException("'" + key + "': .properties does not support maps");
-      case List<?> objects ->
+      case List<?> _ ->
           throw new IllegalArgumentException("'" + key + "': .properties does not support lists");
       case MultilineString multilineString ->
           appendEscaped(out, multilineString.getString(), false, true, escapeUnicode);
@@ -159,50 +160,36 @@ final class PropertiesDumper {
     boolean atLineStart = true;
     for (int i = 0; i < s.length(); i++) {
       char c = s.charAt(i);
+      // leading spaces keep atLineStart true so all of them get escaped
+      boolean lineStartAfter = false;
       switch (c) {
-        case '\\':
-          out.append("\\\\");
-          atLineStart = false;
-          break;
-        case '\n':
+        case '\\' -> out.append("\\\\");
+        case '\n' -> {
           if (multiline) {
             out.append("\\n\\").append(EOL);
-            atLineStart = true;
+            lineStartAfter = true;
           } else {
             out.append("\\n");
-            atLineStart = false;
           }
-          break;
-        case '\r':
-          out.append("\\r");
-          atLineStart = false;
-          break;
-        case '\t':
-          out.append("\\t");
-          atLineStart = false;
-          break;
-        case '\f':
-          out.append("\\f");
-          atLineStart = false;
-          break;
-        case ' ':
+        }
+        case '\r' -> out.append("\\r");
+        case '\t' -> out.append("\\t");
+        case '\f' -> out.append("\\f");
+        case ' ' -> {
           if (isKey || atLineStart) {
             out.append("\\ ");
+            lineStartAfter = atLineStart;
           } else {
             out.append(' ');
           }
-          break; // leading spaces keep atLineStart true so all of them get escaped
-        case '=':
-        case ':':
-        case '#':
-        case '!':
+        }
+        case '=', ':', '#', '!' -> {
           if (isKey) {
             out.append('\\');
           }
           out.append(c);
-          atLineStart = false;
-          break;
-        default:
+        }
+        default -> {
           if (c < 0x20 || c == 0x7f || (escapeUnicode && c > 0x7e)) {
             out.append("\\u")
                 .append(HEX[(c >> 12) & 0xF])
@@ -212,8 +199,9 @@ final class PropertiesDumper {
           } else {
             out.append(c);
           }
-          atLineStart = false;
+        }
       }
+      atLineStart = lineStartAfter;
     }
   }
 

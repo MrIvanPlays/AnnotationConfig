@@ -43,29 +43,12 @@ class TestClassCommentOrder {
 
   private static final ConfigResolver RESOLVER = PropertyConfig.getConfigResolver();
 
-  @Comment("grandparent comment")
-  static class Grandparent {
-
-    int g1 = 1;
-    int g2 = 2;
-  }
-
-  @Comment("parent comment")
-  static class Parent extends Grandparent {
-
-    int p1 = 3;
-    int p2 = 4;
-  }
-
-  @Comment("child comment")
-  static class Child extends Parent {
-
-    int c1 = 5;
-    int c2 = 6;
-  }
-
   private static Settings findParentFields() {
     return new Settings().put(ACDefaultSettings.FIND_PARENT_FIELDS, true);
+  }
+
+  private static List<Integer> values(Child child) {
+    return List.of(child.g1, child.g2, child.p1, child.p2, child.c1, child.c2);
   }
 
   @Test
@@ -122,7 +105,24 @@ class TestClassCommentOrder {
     Assertions.assertEquals(Child.class, holders.get(2).getClazz());
   }
 
-  private static List<Integer> values(Child child) {
-    return List.of(child.g1, child.g2, child.p1, child.p2, child.c1, child.c2);
+  @Comment("grandparent comment")
+  static class Grandparent {
+
+    int g1 = 1;
+    int g2 = 2;
+  }
+
+  @Comment("parent comment")
+  static class Parent extends Grandparent {
+
+    int p1 = 3;
+    int p2 = 4;
+  }
+
+  @Comment("child comment")
+  static class Child extends Parent {
+
+    int c1 = 5;
+    int c2 = 6;
   }
 }

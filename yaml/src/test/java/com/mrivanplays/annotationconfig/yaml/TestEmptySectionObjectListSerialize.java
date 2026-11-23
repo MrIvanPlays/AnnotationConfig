@@ -31,30 +31,7 @@ import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
-public class TestEmptySectionObjectListSerialize {
-
-  static class SubjectValue {
-
-    public String foo;
-    public String bar;
-
-    public SubjectValue() {}
-
-    public SubjectValue(String foo, String bar) {
-      this.foo = foo;
-      this.bar = bar;
-    }
-  }
-
-  static class SubjectConfig {
-
-    public SectionObjectList<SubjectValue> list =
-        SectionObjectList.newBuilderForType(SubjectValue.class)
-            .defaultValue("baz", new SubjectValue("lorem ipsum", "dolor sit amet"))
-            .build();
-
-    private int controlInteger = 1;
-  }
+class TestEmptySectionObjectListSerialize {
 
   private static final Type LIST_TYPE =
       new TypeToken<SectionObjectList<SubjectValue>>() {}.getType();
@@ -89,5 +66,28 @@ public class TestEmptySectionObjectListSerialize {
 
     config.list.update("baz", null);
     Assertions.assertEquals("controlInteger: 1\n", dump(config));
+  }
+
+  static class SubjectValue {
+
+    public String foo;
+    public String bar;
+
+    public SubjectValue() {}
+
+    public SubjectValue(String foo, String bar) {
+      this.foo = foo;
+      this.bar = bar;
+    }
+  }
+
+  static class SubjectConfig {
+
+    public SectionObjectList<SubjectValue> list =
+        SectionObjectList.newBuilderForType(SubjectValue.class)
+            .defaultValue("baz", new SubjectValue("lorem ipsum", "dolor sit amet"))
+            .build();
+
+    private int controlInteger = 1;
   }
 }

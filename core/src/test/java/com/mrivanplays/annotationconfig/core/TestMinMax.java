@@ -30,9 +30,47 @@ import org.junit.jupiter.api.Test;
 
 /**
  * Checks that loading applies {@link Min} and {@link Max}. The comparison rules themselves are
- * covered by {@code internal.MinMaxValidatorTest}.
+ * covered by {@code internal.TestMinMaxValidator}.
  */
-public class TestMinMax {
+class TestMinMax {
+
+  private static void load(Object config, String properties) {
+    PropertyConfig.getConfigResolver().load(config, new StringReader(properties));
+  }
+
+  private static void assertRejected(Object config, String properties) {
+    Assertions.assertThrows(
+        IllegalArgumentException.class, () -> load(config, properties), properties);
+  }
+
+  @Test
+  void numbersInRangeAreLoaded() {
+    NumberSubject config = new NumberSubject();
+    load(config, "doubleValue=-33.9");
+    Assertions.assertEquals(-33.9, config.doubleValue);
+    load(config, "doubleValue=44.4");
+    Assertions.assertEquals(44.4, config.doubleValue);
+  }
+
+  @Test
+  void numbersOutOfRangeAreRejected() {
+    assertRejected(new NumberSubject(), "doubleValue=-34.6");
+    assertRejected(new NumberSubject(), "doubleValue=45.2");
+  }
+
+  @Test
+  void stringsAreCheckedByLength() {
+    StringSubject config = new StringSubject();
+    load(config, "value=abc");
+    Assertions.assertEquals("abc", config.value);
+    assertRejected(new StringSubject(), "value=a");
+    assertRejected(new StringSubject(), "value=This exceeds the max limit set");
+  }
+
+  @Test
+  void annotationOnInvalidTypeIsRejected() {
+    assertRejected(new MisplacedSubject(), "value=false");
+  }
 
   static class NumberSubject {
 
@@ -52,43 +90,5 @@ public class TestMinMax {
 
     @Min(minInt = 1)
     private boolean value = false;
-  }
-
-  private static void load(Object config, String properties) {
-    PropertyConfig.getConfigResolver().load(config, new StringReader(properties));
-  }
-
-  private static void assertRejected(Object config, String properties) {
-    Assertions.assertThrows(
-        IllegalArgumentException.class, () -> load(config, properties), properties);
-  }
-
-  @Test
-  public void numbersInRangeAreLoaded() {
-    NumberSubject config = new NumberSubject();
-    load(config, "doubleValue=-33.9");
-    Assertions.assertEquals(-33.9, config.doubleValue);
-    load(config, "doubleValue=44.4");
-    Assertions.assertEquals(44.4, config.doubleValue);
-  }
-
-  @Test
-  public void numbersOutOfRangeAreRejected() {
-    assertRejected(new NumberSubject(), "doubleValue=-34.6");
-    assertRejected(new NumberSubject(), "doubleValue=45.2");
-  }
-
-  @Test
-  public void stringsAreCheckedByLength() {
-    StringSubject config = new StringSubject();
-    load(config, "value=abc");
-    Assertions.assertEquals("abc", config.value);
-    assertRejected(new StringSubject(), "value=a");
-    assertRejected(new StringSubject(), "value=This exceeds the max limit set");
-  }
-
-  @Test
-  public void annotationOnInvalidTypeIsRejected() {
-    assertRejected(new MisplacedSubject(), "value=false");
   }
 }

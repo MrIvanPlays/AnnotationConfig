@@ -33,13 +33,12 @@ import java.lang.annotation.Target;
  * multiline {@link String}. This annotation can only be applied on {@link java.lang.reflect.Field
  * Fields} with type {@link String}.
  *
- * <p>(YAML related): Since 3.1.0 the YAML module switched from home-grown writing of values to a
- * writing backed by SnakeYAML e.g. AnnotationConfig does a bit preprocessing before calling
- * SnakeYAML's dumper. This means that, if double quotes are used to dump multiline strings,
- * SnakeYAML would dump them as {@code "foo \n bar \n baz"}. Whilst this preserves the behaviour
- * that when the string is read is multiline, it won't be pretty syntax in the file. If you want
- * pretty syntax change the marker char to either '|' or '>'. Current char is preserved for legacy
- * purposes.
+ * <p>(YAML related): Since 3.1.0 the YAML module writes values through SnakeYAML instead of its own
+ * writer, i.e. AnnotationConfig does a bit of preprocessing before calling SnakeYAML's dumper. This
+ * means that, if double quotes are used to dump multiline strings, SnakeYAML writes them as {@code
+ * "foo \n bar \n baz"}. The string still reads back with its line breaks, but it isn't pretty in
+ * the file. For a block, change the marker char to either '|' or '>'. The default is kept for
+ * compatibility.
  *
  * @since 2.1.0
  * @author Ivan Pekov

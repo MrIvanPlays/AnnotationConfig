@@ -20,48 +20,35 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.mrivanplays.annotationconfig.json;
+package com.mrivanplays.annotationconfig.core;
 
-import java.io.InputStream;
-import java.io.StringWriter;
+import com.mrivanplays.annotationconfig.core.annotations.comment.Comment;
+import com.mrivanplays.annotationconfig.core.serialization.AnnotationAccessor;
+import com.mrivanplays.annotationconfig.core.utils.AnnotationUtils;
+import java.util.List;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
-public class JsonConfigTest {
+class TestGetComments {
+
+  private static List<String> commentsOf(String fieldName) throws NoSuchFieldException {
+    return AnnotationUtils.getComments(
+        AnnotationAccessor.createFromField(Subject.class.getDeclaredField(fieldName)));
+  }
+
+  @Test
+  void testGetComments() throws Exception {
+    Assertions.assertEquals(List.of("This is a single comment"), commentsOf("aa"));
+    Assertions.assertEquals(List.of("And these are", "Multiple comments"), commentsOf("bb"));
+  }
 
   static class Subject {
 
-    private String foo = "bar";
-    private int bar = 3;
+    @Comment("This is a single comment")
+    private String aa = "bb";
 
-    public Subject() {}
-
-    public String foo() {
-      return foo;
-    }
-
-    public int bar() {
-      return bar;
-    }
-  }
-
-  @Test
-  void testDump() {
-    StringWriter writer = new StringWriter();
-    String expected = "{\n  \"foo\": \"bar\",\n  \"bar\": 3\n}";
-    Subject subject = new Subject();
-    JsonConfig.getConfigResolver().dump(subject, writer);
-
-    Assertions.assertEquals(expected, writer.toString());
-  }
-
-  @Test
-  void testLoad() {
-    InputStream is = getClass().getClassLoader().getResourceAsStream("loadTest.json");
-    Subject subject = new Subject();
-    JsonConfig.getConfigResolver().load(subject, is);
-
-    Assertions.assertEquals("lorem", subject.foo());
-    Assertions.assertEquals(5, subject.bar());
+    @Comment("And these are")
+    @Comment("Multiple comments")
+    private String bb = "aa";
   }
 }

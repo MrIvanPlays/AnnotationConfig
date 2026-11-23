@@ -25,7 +25,7 @@ package com.mrivanplays.annotationconfig.core.utils;
 import org.jspecify.annotations.NullUnmarked;
 
 /**
- * Represents a function, taking 3 inputs and receiving a return value.
+ * Represents a function, taking 3 inputs and returning a value.
  *
  * @param <A> input a
  * @param <B> input b

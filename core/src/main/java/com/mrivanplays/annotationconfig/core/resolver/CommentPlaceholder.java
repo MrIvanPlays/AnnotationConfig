@@ -68,8 +68,8 @@ public interface CommentPlaceholder extends Function<String, String> {
   /**
    * Check whether the passed {@code CommentPlaceholder} instance matches/equals this instance. <br>
    * AnnotationConfig uses this method for unregistering placeholder objects in the {@link
-   * CommentPlaceholderRegistry}. If you do not intent to unregister placeholders, or the default
-   * implementation works for you, you may not override this method.
+   * CommentPlaceholderRegistry}. If you do not intend to unregister placeholders, or the default
+   * implementation works for you, you don't need to override this method.
    *
    * @param other to check
    * @return true if matches, false otherwise

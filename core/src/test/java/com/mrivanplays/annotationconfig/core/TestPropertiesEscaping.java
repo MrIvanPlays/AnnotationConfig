@@ -33,28 +33,7 @@ import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
 /** Keys and values are escaped so that java.util.Properties reads back exactly what was written. */
-public class TestPropertiesEscaping {
-
-  static class Subject {
-
-    @Comment("first line\nsecond line")
-    public String plain = "nothing to escape = : # !";
-
-    @Key("spaced key")
-    public String spacedKey = "a";
-
-    @Key("sep=:#!")
-    public String separators = "b";
-
-    public String leading = "  indented";
-    public String backslash = "C:\\dir";
-    public String unicode = "caf\u00e9 \u2603";
-    public String tab = "a\tb";
-    public String control = "bell\u0007";
-    public String newline = "line1\nline2";
-
-    @Multiline public String multiline = "a\nb";
-  }
+class TestPropertiesEscaping {
 
   private static String dump() {
     StringWriter writer = new StringWriter();
@@ -63,7 +42,7 @@ public class TestPropertiesEscaping {
   }
 
   @Test
-  public void escapedOutput() {
+  void escapedOutput() {
     // the properties resolver writes the fields in reverse order
     String expected =
         String.join(
@@ -95,7 +74,7 @@ public class TestPropertiesEscaping {
   }
 
   @Test
-  public void javaPropertiesReadsTheValuesBack() throws IOException {
+  void javaPropertiesReadsTheValuesBack() throws IOException {
     Properties properties = new Properties();
     properties.load(new StringReader(dump()));
     Subject expected = new Subject();
@@ -109,5 +88,26 @@ public class TestPropertiesEscaping {
     Assertions.assertEquals(expected.control, properties.getProperty("control"));
     Assertions.assertEquals(expected.newline, properties.getProperty("newline"));
     Assertions.assertEquals(expected.multiline, properties.getProperty("multiline"));
+  }
+
+  static class Subject {
+
+    @Comment("first line\nsecond line")
+    public String plain = "nothing to escape = : # !";
+
+    @Key("spaced key")
+    public String spacedKey = "a";
+
+    @Key("sep=:#!")
+    public String separators = "b";
+
+    public String leading = "  indented";
+    public String backslash = "C:\\dir";
+    public String unicode = "caf\u00e9 \u2603";
+    public String tab = "a\tb";
+    public String control = "bell\u0007";
+    public String newline = "line1\nline2";
+
+    @Multiline public String multiline = "a\nb";
   }
 }

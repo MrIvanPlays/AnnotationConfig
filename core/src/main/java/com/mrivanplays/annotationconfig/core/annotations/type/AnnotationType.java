@@ -32,10 +32,10 @@ import com.mrivanplays.annotationconfig.core.annotations.RawConfig;
 import com.mrivanplays.annotationconfig.core.annotations.comment.Comment;
 import com.mrivanplays.annotationconfig.core.annotations.comment.Comments;
 import java.lang.annotation.Annotation;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
-import java.util.concurrent.ConcurrentHashMap;
 import org.jspecify.annotations.NullMarked;
 
 /**
@@ -56,10 +56,8 @@ public enum AnnotationType {
   RAW_CONFIG(RawConfig.class),
   MULTILINE(Multiline.class);
 
-  private final Class<? extends Annotation> annotationType;
-
   private static final Map<Class<? extends Annotation>, AnnotationType> BY_ANNOTATION_CLASS =
-      new ConcurrentHashMap<>();
+      new HashMap<>();
 
   static {
     for (AnnotationType type : AnnotationType.values()) {
@@ -67,19 +65,21 @@ public enum AnnotationType {
     }
   }
 
+  private final Class<? extends Annotation> annotationType;
+
+  AnnotationType(Class<? extends Annotation> annotationType) {
+    this.annotationType = annotationType;
+  }
+
   /**
    * Returns an {@link Optional} value, which may contain the {@link AnnotationType} matched to the
-   * specified {@param annotationType}.
+   * specified {@code annotationType}.
    *
    * @param annotationType the annotation type wanted
    * @return annotation type or an empty optional
    */
   public static Optional<AnnotationType> match(Class<? extends Annotation> annotationType) {
     return Optional.ofNullable(BY_ANNOTATION_CLASS.get(annotationType));
-  }
-
-  AnnotationType(Class<? extends Annotation> annotationType) {
-    this.annotationType = annotationType;
   }
 
   /**
@@ -99,17 +99,20 @@ public enum AnnotationType {
    */
   public boolean is(Class<? extends Annotation> anno) {
     Objects.requireNonNull(anno, "anno");
-    return anno.isAssignableFrom(annotationType);
+    // annotation types can't extend each other
+    return anno == annotationType;
   }
 
   /**
+   * Returns if the specified annotation type is this one.
+   *
    * @param type annotation type
    * @return boolean value, representing the outcome of this check
    * @see #is(Class)
    */
   public boolean is(AnnotationType type) {
     Objects.requireNonNull(type, "type");
-    return is(type.getRawType());
+    return this == type;
   }
 
   @Override

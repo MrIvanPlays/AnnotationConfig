@@ -34,7 +34,7 @@ public class ExampleLoadJson5Config {
     // that are missing from it. The file can be edited by hand with // and /* */ comments,
     // unquoted keys and single-quoted strings, but not with trailing commas or hexadecimal
     // numbers, which Gson, the JSON5 reader, does not support.
-    JsonConfig.getJSON5ConfigResolver().loadOrDump(config, new File("examples/server.json5"));
+    JsonConfig.getJson5ConfigResolver().loadOrDump(config, new File("examples/server.json5"));
 
     // plain JSON works the same way through JsonConfig.getConfigResolver(), with .json files and
     // without the comments

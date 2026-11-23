@@ -20,27 +20,27 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.mrivanplays.annotationconfig.toml;
+package com.mrivanplays.annotationconfig.core;
 
-import java.io.StringWriter;
+import java.io.StringReader;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
-public class ArrayWriteTest {
+class TestNullReadSetNull {
+
+  @Test
+  void testNullRead() {
+    Subject subject = new Subject();
+    // SET_NULL is the default null read handler: an empty number has no value and becomes null,
+    // while an empty string is a value of its own
+    PropertyConfig.getConfigResolver().load(subject, new StringReader("foo=\n\nbar="));
+    Assertions.assertNull(subject.foo);
+    Assertions.assertEquals("", subject.bar);
+  }
 
   static class Subject {
 
-    private double[] arr = new double[] {1.1, 2.2};
-  }
-
-  @Test
-  public void testWrite() {
-    Subject config = new Subject();
-    StringWriter writer = new StringWriter();
-    TomlConfig.getConfigResolver().dump(config, writer);
-
-    String expected = "arr = [1.1, 2.2]\n";
-
-    Assertions.assertEquals(expected, writer.toString());
+    Integer foo = 1;
+    String bar = "aa";
   }
 }

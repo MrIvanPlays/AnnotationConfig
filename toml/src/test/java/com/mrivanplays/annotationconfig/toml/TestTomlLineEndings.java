@@ -31,7 +31,16 @@ import org.junit.jupiter.api.Test;
  * TOML is written with '\n' on every OS. The class comment and the values used different line
  * endings, so files written on Windows mixed CRLF and LF.
  */
-public class TestTomlLineEndings {
+class TestTomlLineEndings {
+
+  @Test
+  void tomlUsesLineFeeds() {
+    StringWriter writer = new StringWriter();
+    TomlConfig.getConfigResolver().dump(new Subject(), writer);
+    // not normalized: the line endings are what is tested
+    Assertions.assertEquals(
+        "# Class comment\n\n# field comment\na = 1\n\nb = 2\n", writer.toString());
+  }
 
   @Comment("Class comment")
   static class Subject {
@@ -40,14 +49,5 @@ public class TestTomlLineEndings {
     public int a = 1;
 
     public int b = 2;
-  }
-
-  @Test
-  public void tomlUsesLineFeeds() {
-    StringWriter writer = new StringWriter();
-    TomlConfig.getConfigResolver().dump(new Subject(), writer);
-    // not normalized: the line endings are what is tested
-    Assertions.assertEquals(
-        "# Class comment\n\n# field comment\na = 1\n\nb = 2\n", writer.toString());
   }
 }

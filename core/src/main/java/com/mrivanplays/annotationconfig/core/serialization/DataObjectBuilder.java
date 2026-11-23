@@ -43,12 +43,18 @@ public final class DataObjectBuilder {
   }
 
   /**
-   * Creates a copy of the specified {@link DataObjectBuilder} {@code other}
+   * Creates a copy of the specified {@link DataObjectBuilder} {@code other}. The copy holds its own
+   * {@link DataObject}, and the maps in it are copied too, so adding to one builder doesn't change
+   * the other. Other values, such as lists, are shared.
    *
    * @param other builder to copy
    */
   public DataObjectBuilder(DataObjectBuilder other) {
-    this.object = Objects.requireNonNull(other, "other").object;
+    DataObject source = Objects.requireNonNull(other, "other").object;
+    this.object =
+        source.isSingleValue()
+            ? new DataObject(source.getAsObject(), source.isImmutable())
+            : new DataObject(source.getAsMap(), source.isImmutable());
   }
 
   /**

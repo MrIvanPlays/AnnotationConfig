@@ -22,25 +22,32 @@
 
 package com.mrivanplays.annotationconfig.core;
 
-import java.io.StringReader;
+import com.mrivanplays.annotationconfig.core.resolver.ConfigResolver;
+import java.io.File;
+import java.nio.file.Path;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
 
-class NullReadSetNullTest {
+class TestSaveChanges {
+
+  @Test
+  void dumpReplacesTheFileAndLoadReadsItBack(@TempDir Path dir) {
+    ConfigResolver resolver = PropertyConfig.getConfigResolver();
+    File file = dir.resolve("saveChangesTest.properties").toFile();
+    Subject subject = new Subject();
+    resolver.dump(subject, file);
+
+    subject.foo = "www";
+    resolver.dump(subject, file);
+
+    subject.foo = "This should be overwritten";
+    resolver.load(subject, file);
+    Assertions.assertEquals("www", subject.foo);
+  }
 
   static class Subject {
 
-    Integer foo = 1;
-    String bar = "aa";
-  }
-
-  @Test
-  void testNullRead() {
-    Subject subject = new Subject();
-    // SET_NULL is the default null read handler: an empty number has no value and becomes null,
-    // while an empty string is a value of its own
-    PropertyConfig.getConfigResolver().load(subject, new StringReader("foo=\n\nbar="));
-    Assertions.assertNull(subject.foo);
-    Assertions.assertEquals("", subject.bar);
+    String foo = "barbaba";
   }
 }

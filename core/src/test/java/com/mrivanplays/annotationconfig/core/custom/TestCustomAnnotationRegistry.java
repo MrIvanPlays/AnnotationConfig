@@ -40,15 +40,9 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
-public class CustomAnnotationRegistryTest {
+class TestCustomAnnotationRegistry {
 
   private static final CustomAnnotationRegistry REGISTRY = CustomAnnotationRegistry.INSTANCE;
-
-  /** An annotation only this test registers validators for. */
-  @Retention(RetentionPolicy.RUNTIME)
-  @Target(ElementType.FIELD)
-  @interface Checked {}
-
   private static final AnnotationValidator<Checked> VALIDATOR =
       (_, _, _, _) -> ValidationResponse.success();
 
@@ -121,4 +115,9 @@ public class CustomAnnotationRegistryTest {
     }
     Assertions.assertEquals(threads - 1, rejected.get());
   }
+
+  /** An annotation only this test registers validators for. */
+  @Retention(RetentionPolicy.RUNTIME)
+  @Target(ElementType.FIELD)
+  @interface Checked {}
 }

@@ -28,7 +28,46 @@ import java.io.StringWriter;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
-public class TestMultilineString {
+class TestMultilineString {
+
+  @Test
+  void testFailSubject() {
+    Assertions.assertThrowsExactly(
+        IllegalArgumentException.class,
+        () -> {
+          FailSubject subject = new FailSubject();
+          YamlConfig.getConfigResolver().dump(subject, new StringWriter());
+        });
+  }
+
+  @Test
+  void testDump() {
+    Subject config = new Subject();
+    StringWriter writer = new StringWriter();
+    YamlConfig.getConfigResolver().dump(config, writer);
+
+    String expectedMultiline =
+"""
+  Look at ma!
+  I am a multiline string!
+""";
+
+    String expected = "control-field: -1\n" + "\n" + "multiline: |\n" + expectedMultiline;
+
+    Assertions.assertEquals(expected, writer.toString());
+  }
+
+  @Test
+  void testLoad() {
+    Subject config = new Subject();
+    YamlConfig.getConfigResolver()
+        .load(config, getClass().getClassLoader().getResourceAsStream("multiline-string.yml"));
+
+    String expected = " Hello! \n" + " My name is Ivan! \n" + " I like to code! \n ";
+
+    Assertions.assertEquals(expected, config.multiline);
+    Assertions.assertEquals(-2, config.controlField);
+  }
 
   static class Subject {
 
@@ -46,44 +85,5 @@ I am a multiline string!
   static class FailSubject {
 
     @Multiline private int foo = 1;
-  }
-
-  @Test
-  public void testFailSubject() {
-    Assertions.assertThrowsExactly(
-        IllegalArgumentException.class,
-        () -> {
-          FailSubject subject = new FailSubject();
-          YamlConfig.getConfigResolver().dump(subject, new StringWriter());
-        });
-  }
-
-  @Test
-  public void testDump() {
-    Subject config = new Subject();
-    StringWriter writer = new StringWriter();
-    YamlConfig.getConfigResolver().dump(config, writer);
-
-    String expectedMultiline =
-"""
-  Look at ma!
-  I am a multiline string!
-""";
-
-    String expected = "control-field: -1\n" + "\n" + "multiline: |\n" + expectedMultiline;
-
-    Assertions.assertEquals(expected, writer.toString());
-  }
-
-  @Test
-  public void testLoad() {
-    Subject config = new Subject();
-    YamlConfig.getConfigResolver()
-        .load(config, getClass().getClassLoader().getResourceAsStream("multiline-string.yml"));
-
-    String expected = " Hello! \n" + " My name is Ivan! \n" + " I like to code! \n ";
-
-    Assertions.assertEquals(expected, config.multiline);
-    Assertions.assertEquals(-2, config.controlField);
   }
 }

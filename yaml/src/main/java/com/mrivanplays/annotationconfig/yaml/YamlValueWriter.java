@@ -27,24 +27,26 @@ import com.mrivanplays.annotationconfig.core.resolver.settings.Settings;
 import java.io.PrintWriter;
 import java.util.List;
 import java.util.Map;
-import org.jspecify.annotations.NonNull;
+import org.jspecify.annotations.NullMarked;
 
 /**
- * Represents the default yaml value writer. It uses homebrew writing to support comments.
+ * The YAML value writer of 3.0.x. It now writes through {@link YamlHandler}, as {@link
+ * YamlConfig#getConfigResolver()} does.
  *
  * @author Ivan Pekov
  * @since 2.1.0
  * @deprecated replaced by {@link YamlHandler}
  */
 @Deprecated(since = "3.1.0")
+@NullMarked
 public final class YamlValueWriter implements ValueWriter {
 
   @Override
   public void write(
-      @NonNull Map<String, Object> values,
-      @NonNull Map<String, List<String>> fieldComments,
-      @NonNull PrintWriter writer,
-      @NonNull Settings settings) {
+      Map<String, Object> values,
+      Map<String, List<String>> fieldComments,
+      PrintWriter writer,
+      Settings settings) {
     YamlConfig.HANDLER.write(values, fieldComments, writer, settings);
   }
 }

@@ -31,7 +31,27 @@ import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
 /** A map holding a list of maps, whose values are a list in one entry and a map in the other. */
-public class ListEntryMapWithMapValueMapTest {
+class TestListEntryMapWithMapValueMap {
+
+  @Test
+  void testDump() {
+    StringWriter writer = new StringWriter();
+    YamlConfig.getConfigResolver().dump(new Subject(), writer);
+    String expected =
+        "values:\n"
+            + "  entries:\n"
+            + "    - foo: 1\n"
+            + "      bar: 2\n"
+            + "      baz:\n"
+            + "        - \"baba\"\n"
+            + "        - \"yaga\"\n"
+            + "    - foo: 3\n"
+            + "      bar: 4\n"
+            + "      baz:\n"
+            + "        baba: \"yaga\"\n"
+            + "        lorem: \"ipsum\"\n";
+    Assertions.assertEquals(expected, writer.toString());
+  }
 
   static class Subject {
 
@@ -57,25 +77,5 @@ public class ListEntryMapWithMapValueMapTest {
       entries.add(second);
       return entries;
     }
-  }
-
-  @Test
-  public void testDump() {
-    StringWriter writer = new StringWriter();
-    YamlConfig.getConfigResolver().dump(new Subject(), writer);
-    String expected =
-        "values:\n"
-            + "  entries:\n"
-            + "    - foo: 1\n"
-            + "      bar: 2\n"
-            + "      baz:\n"
-            + "        - \"baba\"\n"
-            + "        - \"yaga\"\n"
-            + "    - foo: 3\n"
-            + "      bar: 4\n"
-            + "      baz:\n"
-            + "        baba: \"yaga\"\n"
-            + "        lorem: \"ipsum\"\n";
-    Assertions.assertEquals(expected, writer.toString());
   }
 }

@@ -23,21 +23,22 @@
 package com.mrivanplays.annotationconfig.core.internal;
 
 import java.lang.reflect.Field;
-import org.jspecify.annotations.NonNull;
+import org.jspecify.annotations.NullMarked;
+import org.jspecify.annotations.Nullable;
 
 /**
  * A commented class or a field of a config, in the order they are written: the classes first, the
  * class a config extends before the config's class (see {@code FIND_PARENT_FIELDS}), then the
- * fields by descending {@link #getFieldOrder() field order}.
+ * fields by descending field order.
  *
  * @hidden
  */
+@NullMarked
 public final class AnnotationHolder implements Comparable<AnnotationHolder> {
-  private FieldInfo info;
-  private int fieldOrder;
-  private final boolean isClass;
-  private Class<?> clazz;
-  private int classOrder;
+  @Nullable private final FieldInfo info;
+  private final int fieldOrder;
+  @Nullable private final Class<?> clazz;
+  private final int classOrder;
 
   /**
    * @param classOrder how many classes up from the config's class {@code clazz} is, negated: 0 for
@@ -45,62 +46,65 @@ public final class AnnotationHolder implements Comparable<AnnotationHolder> {
    *     classes that extend it. The class holders of one set have different orders.
    */
   public AnnotationHolder(Class<?> clazz, int classOrder) {
-    this.isClass = true;
+    this.info = null;
+    this.fieldOrder = 0;
     this.clazz = clazz;
     this.classOrder = classOrder;
   }
 
   public AnnotationHolder(FieldInfo info, int fieldOrder) {
-    this.isClass = false;
     this.info = info;
     this.fieldOrder = fieldOrder;
+    this.clazz = null;
+    this.classOrder = 0;
   }
 
   public boolean isClass() {
-    return isClass;
+    return this.clazz != null;
   }
 
-  public int getFieldOrder() {
-    return fieldOrder;
-  }
-
+  /** The field of a field holder. */
   public Field getField() {
-    return info.field();
+    return getInfo().field();
   }
 
+  /** The field of a field holder. */
   public FieldInfo getInfo() {
-    return info;
+    if (this.info == null) {
+      throw new IllegalStateException("Not a field holder: " + this);
+    }
+    return this.info;
   }
 
+  /** The class of a class holder. */
   public Class<?> getClazz() {
-    return clazz;
+    if (this.clazz == null) {
+      throw new IllegalStateException("Not a class holder: " + this);
+    }
+    return this.clazz;
   }
 
   @Override
   public String toString() {
-    return "AnnotationHolder{"
-        + "field="
-        + (info == null ? null : info.field())
-        + ", fieldOrder="
-        + fieldOrder
-        + ", isClass="
-        + isClass
-        + '}';
+    return this.clazz != null
+        ? "AnnotationHolder{class=" + this.clazz.getName() + ", classOrder=" + this.classOrder + '}'
+        : "AnnotationHolder{field=" + getField() + ", fieldOrder=" + this.fieldOrder + '}';
   }
 
   @Override
-  public int compareTo(@NonNull AnnotationHolder o) {
-    if (isClass && o.isClass) {
+  public int compareTo(AnnotationHolder o) {
+    boolean isClass = isClass();
+    if (isClass && o.isClass()) {
       // the class a config extends before the config's class
-      return Integer.compare(classOrder, o.classOrder);
+      return Integer.compare(this.classOrder, o.classOrder);
     }
     if (isClass) {
       return -1;
     }
-    if (o.isClass) {
+    if (o.isClass()) {
       return 1;
     }
     // descending: with SHOULD_REVERSE_FIELDS this gives declaration order, without it the reverse
-    return Integer.compare(o.fieldOrder, fieldOrder);
+    return Integer.compare(o.fieldOrder, this.fieldOrder);
   }
 }

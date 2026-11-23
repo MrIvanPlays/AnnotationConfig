@@ -51,35 +51,7 @@ public class YAMLSecondTestSubject {
   @Comment("baz")
   private int a = 1;
 
-  @Comment("All supported messages")
-  public static class Messages {
-
-    @Key("no-console")
-    private String noConsole = "No console!";
-
-    @Key("console-only")
-    private String consoleOnly = "This command is console only!";
-
-    public String getNoConsole() {
-      return noConsole;
-    }
-
-    public String getConsoleOnly() {
-      return consoleOnly;
-    }
-  }
-
   @ConfigObject private Location location = new Location();
-
-  @Comment("The location of the player")
-  public static class Location {
-
-    private String world = "world";
-
-    private int x = 20;
-    private int y = 2;
-    private int z = 1;
-  }
 
   @Comment("Second location")
   private LocationNoConfigObject locationTwo = new LocationNoConfigObject("world", 20, 2, 1);
@@ -92,14 +64,6 @@ public class YAMLSecondTestSubject {
   @ConfigObject
   @Key("new-section")
   private NonExistingSection nonExistingSection = new NonExistingSection();
-
-  @Comment("This is some dummy section")
-  public static class NonExistingSection {
-    private String foo = "foo";
-    private int bar = 2;
-    private double baz = 2.0;
-    private boolean enabled = true;
-  }
 
   public String getName() {
     return name;
@@ -139,5 +103,41 @@ public class YAMLSecondTestSubject {
 
   public LocationNoConfigObject getLocationThree() {
     return locationThree;
+  }
+
+  @Comment("All supported messages")
+  public static class Messages {
+
+    @Key("no-console")
+    private String noConsole = "No console!";
+
+    @Key("console-only")
+    private String consoleOnly = "This command is console only!";
+
+    public String getNoConsole() {
+      return noConsole;
+    }
+
+    public String getConsoleOnly() {
+      return consoleOnly;
+    }
+  }
+
+  @Comment("The location of the player")
+  public static class Location {
+
+    private String world = "world";
+
+    private int x = 20;
+    private int y = 2;
+    private int z = 1;
+  }
+
+  @Comment("This is some dummy section")
+  public static class NonExistingSection {
+    private String foo = "foo";
+    private int bar = 2;
+    private double baz = 2.0;
+    private boolean enabled = true;
   }
 }

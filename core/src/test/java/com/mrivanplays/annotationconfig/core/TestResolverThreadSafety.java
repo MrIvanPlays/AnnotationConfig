@@ -43,11 +43,6 @@ class TestResolverThreadSafety {
 
   private static final int THREADS = 16;
 
-  @Test
-  void concurrentFirstCallsGetOneResolver() throws Exception {
-    assertOneInstance(PropertyConfig.class, "getConfigResolver");
-  }
-
   private static void assertOneInstance(Class<?> entryPoint, String getter) throws Exception {
     Method method =
         new PackageFirstLoader(entryPoint).loadClass(entryPoint.getName()).getMethod(getter);
@@ -67,6 +62,11 @@ class TestResolverThreadSafety {
         Assertions.assertSame(first, result.get());
       }
     }
+  }
+
+  @Test
+  void concurrentFirstCallsGetOneResolver() throws Exception {
+    assertOneInstance(PropertyConfig.class, "getConfigResolver");
   }
 
   /**

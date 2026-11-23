@@ -52,11 +52,20 @@ import org.jspecify.annotations.Nullable;
  * {@link com.mrivanplays.annotationconfig.core.utils.TypeToken} in order for this list to properly
  * (de)serialize.
  *
+ * @param <T> object type
  * @author Ivan Pekov
- * @since v2.1.1
+ * @since 2.1.1
  */
 @NullMarked
 public final class SectionObjectList<T> implements Iterable<Entry<String, T>> {
+
+  private final Map<String, T> values;
+  private final Class<? extends T> clazz;
+
+  SectionObjectList(Class<? extends T> clazz, Map<String, T> values) {
+    this.clazz = Objects.requireNonNull(clazz, "class");
+    this.values = values;
+  }
 
   /**
    * Creates a new {@link SectionObjectListBuilder} with pre-defined {@link Class} type.
@@ -67,14 +76,6 @@ public final class SectionObjectList<T> implements Iterable<Entry<String, T>> {
    */
   public static <T> SectionObjectListBuilder<T> newBuilderForType(Class<? extends T> type) {
     return new SectionObjectListBuilder<>(type);
-  }
-
-  private final Map<String, T> values;
-  private final Class<? extends T> clazz;
-
-  SectionObjectList(Class<? extends T> clazz, Map<String, T> values) {
-    this.clazz = Objects.requireNonNull(clazz, "class");
-    this.values = values;
   }
 
   /**
@@ -97,25 +98,14 @@ public final class SectionObjectList<T> implements Iterable<Entry<String, T>> {
 
   /**
    * Returns an immutable {@link Iterator} representation of the keys and values held in this {@code
-   * SectionObjectList}.
+   * SectionObjectList}: neither the iterator nor its entries can change the list.
    *
    * @return iterator
    */
   @Override
   public Iterator<Entry<String, T>> iterator() {
     // immutable since 3.1.0
-    Iterator<Entry<String, T>> original = this.values.entrySet().iterator();
-    return new Iterator<>() {
-      @Override
-      public boolean hasNext() {
-        return original.hasNext();
-      }
-
-      @Override
-      public Entry<String, T> next() {
-        return original.next();
-      }
-    };
+    return Collections.unmodifiableMap(this.values).entrySet().iterator();
   }
 
   /**
@@ -143,8 +133,8 @@ public final class SectionObjectList<T> implements Iterable<Entry<String, T>> {
   }
 
   /**
-   * Update the specified {@code key} with a new value. Setting the value to {@code null} will
-   * remove existing keys.
+   * Update the specified {@code key} with a new value. Setting the value to {@code null} removes
+   * the key.
    *
    * @param key key to update, cannot be null
    * @param newValue new value to update with
@@ -174,7 +164,7 @@ public final class SectionObjectList<T> implements Iterable<Entry<String, T>> {
    *
    * @param <T> object type
    * @author Ivan Pekov
-   * @since v2.1.1
+   * @since 2.1.1
    */
   public static final class SectionObjectListBuilder<T> {
 
@@ -199,6 +189,8 @@ public final class SectionObjectList<T> implements Iterable<Entry<String, T>> {
      * @return this instance for chaining
      */
     public SectionObjectListBuilder<T> defaultValue(String key, T value) {
+      Objects.requireNonNull(key, "key");
+      Objects.requireNonNull(value, "value");
       this.values.put(key, value);
       return this;
     }
@@ -213,7 +205,8 @@ public final class SectionObjectList<T> implements Iterable<Entry<String, T>> {
         throw new IllegalStateException(
             "No defaults for SectionObjectList<" + type.getSimpleName() + ">");
       }
-      return new SectionObjectList<>(type, values);
+      // a copy: lists built by one builder don't share their values
+      return new SectionObjectList<>(type, new LinkedHashMap<>(values));
     }
   }
 }

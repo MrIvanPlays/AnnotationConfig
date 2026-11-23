@@ -43,12 +43,12 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
 /**
- * {@link Json5ValueWriter} through {@link JsonConfig#getJSON5ConfigResolver()}, which reads the
+ * {@link Json5ValueWriter} through {@link JsonConfig#getJson5ConfigResolver()}, which reads the
  * written JSON5 back with Gson in lenient mode.
  */
-public class TestJson5ValueWriter {
+class TestJson5ValueWriter {
 
-  private static final ConfigResolver RESOLVER = JsonConfig.getJSON5ConfigResolver();
+  private static final ConfigResolver RESOLVER = JsonConfig.getJson5ConfigResolver();
 
   private static String dump(Object config) {
     StringWriter writer = new StringWriter();
@@ -63,57 +63,8 @@ public class TestJson5ValueWriter {
 
   // <editor-fold desc="Comments">
 
-  @Comment("Class comment")
-  static class Commented {
-
-    @Comment("The name")
-    public String name = "Ivan";
-
-    @Comment("Server settings")
-    @ConfigObject
-    public Server server = new Server();
-
-    @Comment("first line\nsecond line")
-    public int multi = 1;
-
-    public List<Item> items = List.of(new Item("a", 1));
-  }
-
-  @Comment("Server class comment")
-  public static class Server {
-
-    @Comment("ip comment")
-    @Key("ip")
-    public String host = "localhost";
-
-    public int port = 25565;
-
-    @ConfigObject public Limits limits = new Limits();
-  }
-
-  public static class Limits {
-
-    @Comment("players comment")
-    public int players = 20;
-  }
-
-  public static class Item {
-
-    @Comment("not written: comments inside arrays are not supported")
-    public String name;
-
-    public int amount;
-
-    public Item() {}
-
-    Item(String name, int amount) {
-      this.name = name;
-      this.amount = amount;
-    }
-  }
-
   @Test
-  public void commentsAreLineCommentsAboveTheirKeys() {
+  void commentsAreLineCommentsAboveTheirKeys() {
     String expected =
         """
         // Class comment
@@ -146,7 +97,7 @@ public class TestJson5ValueWriter {
   }
 
   @Test
-  public void commentedOutputLoadsBack() {
+  void commentedOutputLoadsBack() {
     Commented config = new Commented();
     config.name = "Pekov";
     config.server.port = 1;
@@ -163,19 +114,8 @@ public class TestJson5ValueWriter {
     Assertions.assertEquals(4, loaded.items.get(1).amount);
   }
 
-  @Comment("Section without its own comment")
-  public static class SectionComment {
-
-    public int value = 1;
-  }
-
-  static class SectionCommentHolder {
-
-    @ConfigObject public SectionComment section = new SectionComment();
-  }
-
   @Test
-  public void sectionsGetTheirClassComment() {
+  void sectionsGetTheirClassComment() {
     Assertions.assertEquals(
         """
         {
@@ -188,35 +128,8 @@ public class TestJson5ValueWriter {
         dump(new SectionCommentHolder()));
   }
 
-  // </editor-fold>
-
-  // <editor-fold desc="Keys">
-
-  static class Keys {
-
-    public int identifier_1 = 1;
-
-    @Key("$dollar")
-    public int dollar = 2;
-
-    @Key("world-name")
-    public int dash = 3;
-
-    @Key("has space")
-    public int space = 4;
-
-    @Key("1st")
-    public int digitFirst = 5;
-
-    @Key("quo\"te")
-    public int quote = 6;
-
-    @Key("dotted.key")
-    public int dotted = 7;
-  }
-
   @Test
-  public void identifierKeysAreUnquoted() {
+  void identifierKeysAreUnquoted() {
     String expected =
         """
         {
@@ -248,42 +161,8 @@ public class TestJson5ValueWriter {
     Assertions.assertEquals(17, loaded.dotted);
   }
 
-  // </editor-fold>
-
-  // <editor-fold desc="Values">
-
-  enum Mode {
-    FAST,
-    SLOW
-  }
-
-  static class Values {
-
-    public String plain = "Hello";
-    public String escaped = "say \"hi\" \\ back";
-    public String control = "line1\nline2\ttab\rcr\u0007bell\u2028sep";
-    public String unicode = "caf\u00e9 \u2603";
-    public String empty = "";
-    public char character = 'x';
-
-    @Multiline('|')
-    public String multiline = "first\nsecond";
-
-    public boolean flag = true;
-    public Mode mode = Mode.FAST;
-    public int integer = -42;
-    public long longValue = Long.MAX_VALUE;
-    public double decimal = 2.5;
-    public float single = 3.11f;
-    public double notANumber = Double.NaN;
-    public double positiveInfinity = Double.POSITIVE_INFINITY;
-    public float negativeInfinity = Float.NEGATIVE_INFINITY;
-    public BigDecimal bigDecimal = new BigDecimal("0.12345678901234567890");
-    public BigInteger bigInteger = new BigInteger("123456789012345678901234567890");
-  }
-
   @Test
-  public void valuesUseJson5Syntax() {
+  void valuesUseJson5Syntax() {
     String expected =
         """
         {
@@ -311,7 +190,7 @@ public class TestJson5ValueWriter {
   }
 
   @Test
-  public void valuesRoundTrip() {
+  void valuesRoundTrip() {
     Values target = new Values();
     target.plain = null;
     target.escaped = null;
@@ -355,32 +234,8 @@ public class TestJson5ValueWriter {
     Assertions.assertEquals(original.bigInteger, target.bigInteger);
   }
 
-  // </editor-fold>
-
-  // <editor-fold desc="Arrays, maps and records">
-
-  record Location(@Key("world-name") String world, int x, double z) {}
-
-  static class Structures {
-
-    public int[] numbers = {1, 2};
-    public double[] decimals = {};
-    public List<List<String>> nested = List.of(List.of("a", "b"), List.of());
-    public Map<String, Object> map = map();
-    public Location location = new Location("w", 3, 1.5);
-
-    private static Map<String, Object> map() {
-      Map<String, Object> map = new LinkedHashMap<>();
-      map.put("key", "value");
-      map.put("missing", null);
-      map.put("empty", new LinkedHashMap<>());
-      map.put("list", List.of(Map.of("x", 1)));
-      return map;
-    }
-  }
-
   @Test
-  public void arraysMapsAndRecords() {
+  void arraysMapsAndRecords() {
     // a null entry of an object is left out, as Gson does for JSON
     String expected =
         """
@@ -417,7 +272,7 @@ public class TestJson5ValueWriter {
   }
 
   @Test
-  public void arraysMapsAndRecordsLoad() {
+  void arraysMapsAndRecordsLoad() {
     Structures loaded =
         load(
             new Structures(),
@@ -437,29 +292,17 @@ public class TestJson5ValueWriter {
     Assertions.assertEquals(new Location("nether", -1, 2.5), loaded.location);
   }
 
-  static class Empty {
-
-    @Ignore public int ignored = 1;
-  }
-
   @Test
-  public void configWithoutOptionsIsAnEmptyObject() {
+  void configWithoutOptionsIsAnEmptyObject() {
     Assertions.assertEquals("{}", dump(new Empty()));
   }
 
   // </editor-fold>
 
-  // <editor-fold desc="Reading hand-written JSON5">
-
-  static class HandWritten {
-
-    public String name = "default";
-    public int port = 0;
-    public List<String> tags = List.of();
-  }
+  // <editor-fold desc="Keys">
 
   @Test
-  public void handWrittenJson5Loads() {
+  void handWrittenJson5Loads() {
     HandWritten loaded =
         load(
             new HandWritten(),
@@ -478,28 +321,8 @@ public class TestJson5ValueWriter {
     Assertions.assertEquals(List.of("a", "b"), loaded.tags);
   }
 
-  // </editor-fold>
-
-  // <editor-fold desc="Files">
-
-  static class Version1 {
-
-    @Comment("foo comment")
-    public String foo = "foo";
-  }
-
-  // Version1 with a changed default and an option added
-  static class Version2 {
-
-    @Comment("foo comment")
-    public String foo = "changed";
-
-    @Comment("added comment")
-    public boolean added = true;
-  }
-
   @Test
-  public void missingOptionsAreAddedWithTheirComments(@TempDir Path dir) throws IOException {
+  void missingOptionsAreAddedWithTheirComments(@TempDir Path dir) throws IOException {
     Path file = dir.resolve("config.json5");
     RESOLVER.dump(new Version1(), file);
 
@@ -518,6 +341,183 @@ public class TestJson5ValueWriter {
         }\
         """;
     Assertions.assertEquals(expected, Files.readString(file));
+  }
+
+  // </editor-fold>
+
+  // <editor-fold desc="Values">
+
+  enum Mode {
+    FAST,
+    SLOW
+  }
+
+  @Comment("Class comment")
+  static class Commented {
+
+    @Comment("The name")
+    public String name = "Ivan";
+
+    @Comment("Server settings")
+    @ConfigObject
+    public Server server = new Server();
+
+    @Comment("first line\nsecond line")
+    public int multi = 1;
+
+    public List<Item> items = List.of(new Item("a", 1));
+  }
+
+  @Comment("Server class comment")
+  public static class Server {
+
+    @Comment("ip comment")
+    @Key("ip")
+    public String host = "localhost";
+
+    public int port = 25565;
+
+    @ConfigObject public Limits limits = new Limits();
+  }
+
+  public static class Limits {
+
+    @Comment("players comment")
+    public int players = 20;
+  }
+
+  // </editor-fold>
+
+  // <editor-fold desc="Arrays, maps and records">
+
+  public static class Item {
+
+    @Comment("not written: comments inside arrays are not supported")
+    public String name;
+
+    public int amount;
+
+    public Item() {}
+
+    Item(String name, int amount) {
+      this.name = name;
+      this.amount = amount;
+    }
+  }
+
+  @Comment("Section without its own comment")
+  public static class SectionComment {
+
+    public int value = 1;
+  }
+
+  static class SectionCommentHolder {
+
+    @ConfigObject public SectionComment section = new SectionComment();
+  }
+
+  static class Keys {
+
+    public int identifier_1 = 1;
+
+    @Key("$dollar")
+    public int dollar = 2;
+
+    @Key("world-name")
+    public int dash = 3;
+
+    @Key("has space")
+    public int space = 4;
+
+    @Key("1st")
+    public int digitFirst = 5;
+
+    @Key("quo\"te")
+    public int quote = 6;
+
+    @Key("dotted.key")
+    public int dotted = 7;
+  }
+
+  static class Values {
+
+    public String plain = "Hello";
+    public String escaped = "say \"hi\" \\ back";
+    public String control = "line1\nline2\ttab\rcr\u0007bell\u2028sep";
+    public String unicode = "caf\u00e9 \u2603";
+    public String empty = "";
+    public char character = 'x';
+
+    @Multiline('|')
+    public String multiline = "first\nsecond";
+
+    public boolean flag = true;
+    public Mode mode = Mode.FAST;
+    public int integer = -42;
+    public long longValue = Long.MAX_VALUE;
+    public double decimal = 2.5;
+    public float single = 3.11f;
+    public double notANumber = Double.NaN;
+    public double positiveInfinity = Double.POSITIVE_INFINITY;
+    public float negativeInfinity = Float.NEGATIVE_INFINITY;
+    public BigDecimal bigDecimal = new BigDecimal("0.12345678901234567890");
+    public BigInteger bigInteger = new BigInteger("123456789012345678901234567890");
+  }
+
+  record Location(@Key("world-name") String world, int x, double z) {}
+
+  // </editor-fold>
+
+  // <editor-fold desc="Reading hand-written JSON5">
+
+  static class Structures {
+
+    public int[] numbers = {1, 2};
+    public double[] decimals = {};
+    public List<List<String>> nested = List.of(List.of("a", "b"), List.of());
+    public Map<String, Object> map = map();
+    public Location location = new Location("w", 3, 1.5);
+
+    private static Map<String, Object> map() {
+      Map<String, Object> map = new LinkedHashMap<>();
+      map.put("key", "value");
+      map.put("missing", null);
+      map.put("empty", new LinkedHashMap<>());
+      map.put("list", List.of(Map.of("x", 1)));
+      return map;
+    }
+  }
+
+  static class Empty {
+
+    @Ignore public int ignored = 1;
+  }
+
+  // </editor-fold>
+
+  // <editor-fold desc="Files">
+
+  static class HandWritten {
+
+    public String name = "default";
+    public int port = 0;
+    public List<String> tags = List.of();
+  }
+
+  static class Version1 {
+
+    @Comment("foo comment")
+    public String foo = "foo";
+  }
+
+  // Version1 with a changed default and an option added
+  static class Version2 {
+
+    @Comment("foo comment")
+    public String foo = "changed";
+
+    @Comment("added comment")
+    public boolean added = true;
   }
 
   // </editor-fold>

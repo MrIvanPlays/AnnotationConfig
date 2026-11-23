@@ -29,7 +29,7 @@ import org.jspecify.annotations.NullMarked;
 import org.jspecify.annotations.Nullable;
 
 /**
- * Utilities to help with reflection stuff. <br>
+ * Utilities to help with reflection stuff.
  *
  * @author Ivan Pekov
  * @since 3.0.0
@@ -40,7 +40,11 @@ import org.jspecify.annotations.Nullable;
 @Deprecated(since = "3.1.0", forRemoval = true)
 public final class ReflectionUtils {
 
-  @Deprecated(forRemoval = true, since = "3.1.0")
+  private ReflectionUtils() {
+    throw new IllegalStateException("Instantiation of utility-type class");
+  }
+
+  @Deprecated(since = "3.1.0", forRemoval = true)
   public static boolean isPrimitive(String typeName) {
     return PrimitiveNameTypes.getNameType(typeName) != null;
   }
@@ -69,7 +73,7 @@ public final class ReflectionUtils {
     return nameType.castToArray(obj);
   }
 
-  @Deprecated(forRemoval = true, since = "3.1.0")
+  @Deprecated(since = "3.1.0", forRemoval = true)
   public static Object castArrayToType(Class<?> type, Object obj) {
     if (!obj.getClass().isArray()) {
       throw new IllegalArgumentException("Not array");
@@ -87,7 +91,6 @@ public final class ReflectionUtils {
     return ret;
   }
 
-  @Deprecated(forRemoval = true, since = "3.1.0")
   private static String constructTypeName(String name) {
     if (name.startsWith("[L")) {
       name = name.substring(2);
@@ -96,10 +99,6 @@ public final class ReflectionUtils {
       name = name.substring(0, name.length() - 1);
     }
     return name;
-  }
-
-  private ReflectionUtils() {
-    throw new IllegalArgumentException("Instantiation of utility-type class.");
   }
 
   /**
@@ -217,7 +216,7 @@ public final class ReflectionUtils {
       @Override
       @Deprecated
       public Object resolveToPrimitiveType(Object obj) {
-        return (int) Integer.valueOf(String.valueOf(obj)).intValue();
+        return Integer.valueOf(String.valueOf(obj)).intValue();
       }
     },
     @Deprecated
@@ -308,7 +307,7 @@ public final class ReflectionUtils {
           String stringVal = String.valueOf(obj);
           if (stringVal.length() != 1) {
             throw new IllegalArgumentException(
-                "Invalid input ; expected character got String: " + stringVal);
+                "Invalid input; expected character got String: " + stringVal);
           }
           return stringVal.charAt(0);
         }
@@ -417,6 +416,16 @@ public final class ReflectionUtils {
       }
     };
 
+    public final Class<?> primitiveType;
+    public final Class<?> objectClass;
+    private final String[] names;
+
+    PrimitiveNameTypes(Class<?> primitiveType, Class<?> objectClass, String... names) {
+      this.primitiveType = primitiveType;
+      this.objectClass = objectClass;
+      this.names = names;
+    }
+
     @Nullable
     @Deprecated
     public static PrimitiveNameTypes getNameType(String typeName) {
@@ -428,17 +437,6 @@ public final class ReflectionUtils {
         }
       }
       return null;
-    }
-
-    private final String[] names;
-    public final Class<?> primitiveType;
-
-    public final Class<?> objectClass;
-
-    PrimitiveNameTypes(Class<?> primitiveType, Class<?> objectClass, String... names) {
-      this.primitiveType = primitiveType;
-      this.objectClass = objectClass;
-      this.names = names;
     }
 
     @Deprecated

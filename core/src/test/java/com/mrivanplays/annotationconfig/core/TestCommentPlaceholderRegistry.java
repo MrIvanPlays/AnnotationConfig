@@ -31,15 +31,15 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
-public class CommentPlaceholderRegistryTest {
+class TestCommentPlaceholderRegistry {
 
   private static final CommentPlaceholder PLACEHOLDER = CommentPlaceholder.simple("%foo%", "bar");
   private static final CommentPlaceholderRegistry REGISTRY = CommentPlaceholderRegistry.INSTANCE;
 
-  static class Subject {
-
-    @Comment("I get that %foo%")
-    private String foo = "bar";
+  private static String dump() {
+    StringWriter writer = new StringWriter();
+    PropertyConfig.getConfigResolver().dump(new Subject(), writer);
+    return writer.toString();
   }
 
   // the registry is global, so no test may leave a placeholder registered
@@ -48,12 +48,6 @@ public class CommentPlaceholderRegistryTest {
     for (String token : List.of("%foo%", "%a%", "%b%")) {
       REGISTRY.unregisterPlaceholder(CommentPlaceholder.simple(token, ""));
     }
-  }
-
-  private static String dump() {
-    StringWriter writer = new StringWriter();
-    PropertyConfig.getConfigResolver().dump(new Subject(), writer);
-    return writer.toString();
   }
 
   @Test
@@ -117,5 +111,11 @@ public class CommentPlaceholderRegistryTest {
     Assertions.assertEquals(comments, applied);
     applied.add("mutable");
     Assertions.assertEquals(List.of("no placeholders here"), comments);
+  }
+
+  static class Subject {
+
+    @Comment("I get that %foo%")
+    private String foo = "bar";
   }
 }

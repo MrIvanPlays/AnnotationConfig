@@ -28,7 +28,6 @@ import com.mrivanplays.annotationconfig.core.annotations.Key;
 import com.mrivanplays.annotationconfig.core.annotations.RawConfig;
 import com.mrivanplays.annotationconfig.core.annotations.comment.Comment;
 import com.mrivanplays.annotationconfig.core.annotations.comment.Comments;
-import com.mrivanplays.annotationconfig.core.annotations.type.AnnotationType;
 import com.mrivanplays.annotationconfig.core.resolver.CommentPlaceholderRegistry;
 import com.mrivanplays.annotationconfig.core.serialization.AnnotationAccessor;
 import java.lang.reflect.Field;
@@ -45,6 +44,10 @@ import org.jspecify.annotations.NullMarked;
  */
 @NullMarked
 public final class AnnotationUtils {
+
+  private AnnotationUtils() {
+    throw new IllegalStateException("Instantiation of utility-type class");
+  }
 
   /**
    * Returns the key of the specified {@link Field}
@@ -115,7 +118,7 @@ public final class AnnotationUtils {
    * not apply placeholders.
    *
    * @param annotationAccessor the annotation accessor for which the comments to get
-   * @return comments, either an empty list or list with comments
+   * @return comments, either an empty list or a list with comments
    * @since 3.1.0
    */
   public static List<String> getComments(AnnotationAccessor annotationAccessor) {
@@ -127,22 +130,22 @@ public final class AnnotationUtils {
    *
    * @param annotationAccessor the annotation accessor for which the comments to get
    * @param applyPlaceholders whether to apply placeholders
-   * @return comments, either an empty list or list with comments
+   * @return comments, either an empty list or a list with comments
    * @since 3.1.0
    */
   public static List<String> getComments(
       AnnotationAccessor annotationAccessor, boolean applyPlaceholders) {
     Objects.requireNonNull(annotationAccessor, "annotationAccessor");
     // one @Comment is held as itself, several as their @Comments container
-    if (annotationAccessor.hasAnnotation(AnnotationType.COMMENT)) {
-      Comment comment = annotationAccessor.getAnnotation(Comment.class).orElseThrow();
+    Comment comment = annotationAccessor.getAnnotation(Comment.class).orElse(null);
+    if (comment != null) {
       return List.of(
           applyPlaceholders
               ? CommentPlaceholderRegistry.INSTANCE.applyPlaceholders(comment)
               : comment.value());
     }
-    if (annotationAccessor.hasAnnotation(AnnotationType.COMMENTS)) {
-      Comments comments = annotationAccessor.getAnnotation(Comments.class).orElseThrow();
+    Comments comments = annotationAccessor.getAnnotation(Comments.class).orElse(null);
+    if (comments != null) {
       if (applyPlaceholders) {
         return CommentPlaceholderRegistry.INSTANCE.applyPlaceholders(comments);
       }
@@ -154,9 +157,5 @@ public final class AnnotationUtils {
       return List.of(lines);
     }
     return Collections.emptyList();
-  }
-
-  private AnnotationUtils() {
-    throw new IllegalArgumentException("Initialization of utility-type class");
   }
 }

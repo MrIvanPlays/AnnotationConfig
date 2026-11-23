@@ -48,40 +48,12 @@ class TestDefaultSerializerFields {
 
   private static final ConfigResolver RESOLVER = PropertyConfig.getConfigResolver();
 
-  /** One field and a constant: written and read as the field's value alone. */
-  static class Port {
-
-    static final int DEFAULT = 25565;
-
-    int value = DEFAULT;
-
-    public Port() {}
+  private static FieldTypeSerializer serializer() {
+    return SerializerRegistry.INSTANCE.getDefaultSerializer();
   }
 
-  static class WithPort {
-
-    Port port = new Port();
-  }
-
-  /** Only a static field, so nothing to read or write without FIND_STATIC_FIELDS. */
-  static class OnlyStatic {
-
-    static int counter = 5;
-
-    public OnlyStatic() {}
-  }
-
-  static class WithOnlyStatic {
-
-    OnlyStatic holder = new OnlyStatic();
-  }
-
-  static class Data {
-
-    static final String CONSTANT = "constant";
-
-    String name = "name";
-    int amount = 3;
+  private static AnnotationAccessor noAnnotations() {
+    return AnnotationAccessor.EMPTY;
   }
 
   @AfterEach
@@ -137,31 +109,6 @@ class TestDefaultSerializerFields {
         Map.of("CONSTANT", "constant", "name", "name", "amount", 3), serialized.getAsMap());
   }
 
-  // <editor-fold desc="Fields of a parent class">
-
-  public static class Holder {
-
-    public String name = "default";
-    public int amount;
-
-    public Holder() {}
-
-    Holder(String name, int amount) {
-      this.name = name;
-      this.amount = amount;
-    }
-  }
-
-  public record Pair(String name, int amount) {}
-
-  static class Parent {
-
-    Holder holder = new Holder("kept", 7);
-    Pair pair = new Pair("kept", 7);
-  }
-
-  static class Child extends Parent {}
-
   @Test
   void anInstanceInAFieldOfTheParentClassIsReused() {
     Child config = new Child();
@@ -195,13 +142,66 @@ class TestDefaultSerializerFields {
     Assertions.assertEquals(new Pair("read", 7), read);
   }
 
+  /** One field and a constant: written and read as the field's value alone. */
+  static class Port {
+
+    static final int DEFAULT = 25565;
+
+    int value = DEFAULT;
+
+    public Port() {}
+  }
+
+  // <editor-fold desc="Fields of a parent class">
+
+  static class WithPort {
+
+    Port port = new Port();
+  }
+
+  /** Only a static field, so nothing to read or write without FIND_STATIC_FIELDS. */
+  static class OnlyStatic {
+
+    static int counter = 5;
+
+    public OnlyStatic() {}
+  }
+
+  static class WithOnlyStatic {
+
+    OnlyStatic holder = new OnlyStatic();
+  }
+
+  static class Data {
+
+    static final String CONSTANT = "constant";
+
+    String name = "name";
+    int amount = 3;
+  }
+
+  public static class Holder {
+
+    public String name = "default";
+    public int amount;
+
+    public Holder() {}
+
+    Holder(String name, int amount) {
+      this.name = name;
+      this.amount = amount;
+    }
+  }
+
+  public record Pair(String name, int amount) {}
+
   // </editor-fold>
 
-  private static FieldTypeSerializer serializer() {
-    return SerializerRegistry.INSTANCE.getDefaultSerializer();
+  static class Parent {
+
+    Holder holder = new Holder("kept", 7);
+    Pair pair = new Pair("kept", 7);
   }
 
-  private static AnnotationAccessor noAnnotations() {
-    return AnnotationAccessor.EMPTY;
-  }
+  static class Child extends Parent {}
 }

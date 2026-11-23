@@ -30,30 +30,9 @@ import java.io.StringWriter;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
-public class RecordTest {
-
-  record ConfigObj(
-      String name, String type, String value, String foo, int bar, boolean perf, double aa) {
-
-    // simulate having more than 1 ctor
-    ConfigObj(String name) {
-      this(name, null, null, null, -2, false, -3.5);
-    }
-  }
-
-  static class Subj {
-
-    @ConfigObject public ConfigObj b = new ConfigObj("aa", "bb", "cc", "aaaa", 255, true, 2.5);
-  }
-
-  // the same record in a field that is not annotated with @ConfigObject
-  static class Subj2 {
-
-    public ConfigObj b = new ConfigObj("aa", "bb", "cc", "aaaa", 255, true, 2.5);
-  }
+class TestRecord {
 
   private static final ConfigObj LOADED = new ConfigObj("cc", "ppp", "llll", "pong", 1, false, 6.9);
-
   private static final String PAYLOAD =
       "b:\n"
           + "  name: \"cc\"\n"
@@ -107,5 +86,25 @@ public class RecordTest {
                 .copy()
                 .put(ACDefaultSettings.NULL_READ_HANDLER, NullReadHandleOption.USE_DEFAULT_VALUE));
     Assertions.assertEquals(new ConfigObj("cc", "ppp", "cc", "pong", 1, false, 6.9), s.b);
+  }
+
+  record ConfigObj(
+      String name, String type, String value, String foo, int bar, boolean perf, double aa) {
+
+    // simulate having more than 1 ctor
+    ConfigObj(String name) {
+      this(name, null, null, null, -2, false, -3.5);
+    }
+  }
+
+  static class Subj {
+
+    @ConfigObject public ConfigObj b = new ConfigObj("aa", "bb", "cc", "aaaa", 255, true, 2.5);
+  }
+
+  // the same record in a field that is not annotated with @ConfigObject
+  static class Subj2 {
+
+    public ConfigObj b = new ConfigObj("aa", "bb", "cc", "aaaa", 255, true, 2.5);
   }
 }

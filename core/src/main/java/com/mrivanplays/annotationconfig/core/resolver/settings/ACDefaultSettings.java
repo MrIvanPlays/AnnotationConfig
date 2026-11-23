@@ -34,37 +34,52 @@ import org.jspecify.annotations.NullMarked;
 @NullMarked
 public final class ACDefaultSettings {
 
+  /**
+   * Whether the fields of a config class are written in declaration order. Without it they are
+   * written in reverse declaration order, as {@code .properties} does; YAML, JSON and TOML set it.
+   * Defaults to {@code false}.
+   */
   public static final Setting<Boolean> SHOULD_REVERSE_FIELDS =
       Setting.of("should_reverse_fields", Boolean.class);
 
+  /**
+   * How a value that is read as {@code null} is handled: whether the field is set to {@code null}
+   * or keeps its default value. Defaults to {@link NullReadHandleOption#SET_NULL}.
+   */
   public static final Setting<NullReadHandleOption> NULL_READ_HANDLER =
       Setting.of("null_read_handler", NullReadHandleOption.class);
 
+  /**
+   * Whether loading a file that misses options of the config writes the file again with them.
+   * Defaults to {@code true}.
+   */
   public static final Setting<Boolean> GENERATE_NEW_OPTIONS =
       Setting.of("generate_new_options", Boolean.class);
 
   /**
+   * The {@link KeyResolver} that puts the values of the options into the written map and gets them
+   * out of the read one. Defaults to {@link KeyResolver#DEFAULT}.
+   *
    * @since 3.1.0
    */
-  public static final Setting<KeyResolver> KEY_RESOLVER = Setting.of(KeyResolver.class);
+  public static final Setting<KeyResolver> KEY_RESOLVER =
+      Setting.of("key_resolver", KeyResolver.class);
 
   /**
    * A setting indicating whether to find {@link java.lang.reflect.Field fields} of classes which
-   * have been inherited by the given config class.
+   * have been inherited by the given config class. Defaults to {@code false}.
    *
    * <p>Consider this example:
    *
-   * <pre>
-   *   <code>
+   * <pre>{@code
    * public class BaseConfig {
-   *       int foo = 1;
-   *     }
+   *   int foo = 1;
+   * }
    *
-   *     public class SpecificConfig extends BaseConfig {
-   *       String bar = "baz";
-   *     }
-   *   </code>
-   * </pre>
+   * public class SpecificConfig extends BaseConfig {
+   *   String bar = "baz";
+   * }
+   * }</pre>
    *
    * <p>This setting indicates whether the field {@code foo} will also be an option in the dumped
    * config or not.
@@ -79,14 +94,12 @@ public final class ACDefaultSettings {
    *
    * <p>Consider this example:
    *
-   * <pre>
-   *   <code>
+   * <pre>{@code
    * public class Config {
-   *       static int counter = 0;
-   *       String foo = "bar";
-   *     }
-   *   </code>
-   * </pre>
+   *   static int counter = 0;
+   *   String foo = "bar";
+   * }
+   * }</pre>
    *
    * <p>With this setting off only {@code foo} is dumped and loaded. With it on, {@code counter} is
    * dumped too, and loading sets it, which changes it for every instance of the class.
@@ -96,6 +109,10 @@ public final class ACDefaultSettings {
   public static final Setting<Boolean> FIND_STATIC_FIELDS =
       Setting.of("find_static_fields", Boolean.class);
 
+  private ACDefaultSettings() {
+    throw new IllegalStateException("Instantiation of utility-type class");
+  }
+
   /**
    * Get the default {@link Settings settings}.
    *
@@ -103,11 +120,6 @@ public final class ACDefaultSettings {
    */
   public static Settings getDefault() {
     return Holder.SETTINGS;
-  }
-
-  // <editor-fold desc="Holder impl" defaultstate="collapsed">
-  private static final class Holder {
-    static final Settings SETTINGS = generateSettings();
   }
 
   private static Settings generateSettings() {
@@ -123,7 +135,8 @@ public final class ACDefaultSettings {
 
   // </editor-fold>
 
-  private ACDefaultSettings() {
-    throw new IllegalStateException("Instantiation of utility-type class");
+  // <editor-fold desc="Holder impl" defaultstate="collapsed">
+  private static final class Holder {
+    static final Settings SETTINGS = generateSettings();
   }
 }

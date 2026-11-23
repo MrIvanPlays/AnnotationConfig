@@ -63,8 +63,8 @@ public class ExampleJson5Config {
     @Comment("In seconds")
     private int timeout = 30;
 
-    // getters
+    // getters would go here
   }
 
-  // getters
+  // getters would go here
 }

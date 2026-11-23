@@ -28,12 +28,97 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.mrivanplays.annotationconfig.core.annotations.Max;
 import com.mrivanplays.annotationconfig.core.annotations.Min;
-import java.lang.reflect.Field;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import org.junit.jupiter.api.Test;
 
-public class MinMaxValidatorTest {
+class TestMinMaxValidator {
+
+  private static FieldInfo field(String name) throws NoSuchFieldException {
+    return new FieldInfo(Subject.class.getDeclaredField(name));
+  }
+
+  private static void ok(String field, Object value) throws Exception {
+    FieldInfo f = field(field);
+    assertDoesNotThrow(() -> MinMaxValidator.validate(f, field, value), field + " = " + value);
+  }
+
+  private static String fails(String field, Object value) throws Exception {
+    FieldInfo f = field(field);
+    String message =
+        assertThrows(
+                IllegalArgumentException.class,
+                () -> MinMaxValidator.validate(f, field, value),
+                field + " = " + value)
+            .getMessage();
+    assertTrue(message.contains(field), message);
+    return message;
+  }
+
+  @Test
+  void decimalBoundsAreNotTruncated() throws Exception {
+    fails("decimal", 1.9);
+    fails("decimal", 0.2);
+    ok("decimal", 1.5);
+    ok("decimal", 0.5);
+  }
+
+  @Test
+  void longsAreNotOverflowed() throws Exception {
+    fails("bigLong", 3_000_000_000L);
+    ok("bigLong", 10L);
+  }
+
+  @Test
+  void bigNumbersCompareExactly() throws Exception {
+    fails("bigLong", new BigInteger("100000000000000000000"));
+    fails("decimal", new BigDecimal("1.5000000000000001"));
+  }
+
+  @Test
+  void floatBoundUsesItsDecimalValue() throws Exception {
+    ok("smallFloat", 0.1f);
+    ok("smallFloat", 0.1);
+    fails("smallFloat", 0.09);
+  }
+
+  @Test
+  void integerBounds() throws Exception {
+    fails("plain", 1);
+    ok("plain", 2);
+    ok("plain", 5);
+    fails("plain", 6);
+  }
+
+  @Test
+  void minusOneIsAUsableBound() throws Exception {
+    ok("minusOne", -1);
+    fails("minusOne", -2);
+    fails("minusOne", 0);
+  }
+
+  @Test
+  void stringsAreCheckedByLength() throws Exception {
+    fails("text", "ab");
+    ok("text", "abc");
+    ok("text", "abcdefg");
+    fails("text", "abcdefgh");
+  }
+
+  @Test
+  void invalidAnnotations() throws Exception {
+    assertTrue(fails("twoMins", 3).contains("only one"));
+    assertTrue(fails("noMin", 3).contains("should set an annotation member"));
+    assertTrue(fails("twoMaxes", 0).contains("only one"));
+    assertTrue(fails("misplaced", true).contains("invalid field type"));
+  }
+
+  @Test
+  void nothingToCheck() throws Exception {
+    ok("unannotated", 1_000);
+    // a value read as null used to be reported as a misplaced annotation
+    ok("plain", null);
+  }
 
   @SuppressWarnings("unused")
   private static final class Subject {
@@ -72,91 +157,5 @@ public class MinMaxValidatorTest {
     boolean misplaced;
 
     int unannotated;
-  }
-
-  private static Field field(String name) throws NoSuchFieldException {
-    return Subject.class.getDeclaredField(name);
-  }
-
-  private static void ok(String field, Object value) throws Exception {
-    Field f = field(field);
-    assertDoesNotThrow(() -> MinMaxValidator.validate(f, field, value), field + " = " + value);
-  }
-
-  private static String fails(String field, Object value) throws Exception {
-    Field f = field(field);
-    String message =
-        assertThrows(
-                IllegalArgumentException.class,
-                () -> MinMaxValidator.validate(f, field, value),
-                field + " = " + value)
-            .getMessage();
-    assertTrue(message.contains(field), message);
-    return message;
-  }
-
-  @Test
-  public void decimalBoundsAreNotTruncated() throws Exception {
-    fails("decimal", 1.9);
-    fails("decimal", 0.2);
-    ok("decimal", 1.5);
-    ok("decimal", 0.5);
-  }
-
-  @Test
-  public void longsAreNotOverflowed() throws Exception {
-    fails("bigLong", 3_000_000_000L);
-    ok("bigLong", 10L);
-  }
-
-  @Test
-  public void bigNumbersCompareExactly() throws Exception {
-    fails("bigLong", new BigInteger("100000000000000000000"));
-    fails("decimal", new BigDecimal("1.5000000000000001"));
-  }
-
-  @Test
-  public void floatBoundUsesItsDecimalValue() throws Exception {
-    ok("smallFloat", 0.1f);
-    ok("smallFloat", 0.1);
-    fails("smallFloat", 0.09);
-  }
-
-  @Test
-  public void integerBounds() throws Exception {
-    fails("plain", 1);
-    ok("plain", 2);
-    ok("plain", 5);
-    fails("plain", 6);
-  }
-
-  @Test
-  public void minusOneIsAUsableBound() throws Exception {
-    ok("minusOne", -1);
-    fails("minusOne", -2);
-    fails("minusOne", 0);
-  }
-
-  @Test
-  public void stringsAreCheckedByLength() throws Exception {
-    fails("text", "ab");
-    ok("text", "abc");
-    ok("text", "abcdefg");
-    fails("text", "abcdefgh");
-  }
-
-  @Test
-  public void invalidAnnotations() throws Exception {
-    assertTrue(fails("twoMins", 3).contains("only one"));
-    assertTrue(fails("noMin", 3).contains("should set an annotation member"));
-    assertTrue(fails("twoMaxes", 0).contains("only one"));
-    assertTrue(fails("misplaced", true).contains("invalid field type"));
-  }
-
-  @Test
-  public void nothingToCheck() throws Exception {
-    ok("unannotated", 1_000);
-    // a value read as null used to be reported as a misplaced annotation
-    ok("plain", null);
   }
 }

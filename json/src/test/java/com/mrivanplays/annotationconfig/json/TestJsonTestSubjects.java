@@ -31,7 +31,7 @@ import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 
 /** Writing and reading each number type; every subject has a single public field. */
-public class TestJsonTestSubjects {
+class TestJsonTestSubjects {
 
   static Stream<Arguments> writeCases() {
     return Stream.of(

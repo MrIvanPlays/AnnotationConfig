@@ -33,26 +33,82 @@ import com.mrivanplays.annotationconfig.core.serialization.DataObject;
 import com.mrivanplays.annotationconfig.core.serialization.FieldTypeSerializer;
 import com.mrivanplays.annotationconfig.core.serialization.SerializationContext;
 import com.mrivanplays.annotationconfig.yaml.SectionObjectList;
-import java.util.Arrays;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import org.jspecify.annotations.NonNull;
+import org.jspecify.annotations.NullMarked;
 
 @SuppressWarnings({"FieldMayBeFinal", "FieldCanBeLocal", "unused"})
 @Comment("Generated using AnnotationConfig v%version%")
+@NullMarked
 public class ExampleConfig {
 
-  @Comment("This value can only be between 1 and 3 ( 1 and 3 included )")
+  @Comment("This value can only be between 1 and 3 (1 and 3 included)")
   @Min(minInt = 1)
   @Max(maxInt = 3)
   private int foo = 2;
 
-  @Comment("This string cannot be longer than 20 characters ( spaces are included )")
+  @Comment("This string cannot be longer than 20 characters (spaces are included)")
   @Max(maxInt = 20)
   private String bar = "This is some string";
 
   @ConfigObject private MessagesSection messages = new MessagesSection();
+  @Ignore private String importantClass = "com.mrivanplays.something.Important"; // this is ignored
+
+  @Comment("This is also going to be serialized as a config object,")
+  @Comment("but it is much more controllable than @ConfigObject")
+  private SomethingToSerialize serialize = new SomethingToSerialize("foo", 1, (byte) 0x2);
+
+  @Comment("This cannot have a negative value")
+  @Min(minDouble = 0)
+  @Key("barxtwo") // you can also apply @Key to regular fields, not just in config objects
+  private double baz = 0.2;
+
+  @Comment("AnnotationConfig can also read & write lists")
+  @Key("foo-list")
+  private List<String> fooList = List.of("This is", "a lore", "as an example", "for list");
+
+  @Comment("Lists can be of all primitive types")
+  @Key("bar-list")
+  private List<Integer> barList = List.of(1, 2, 3, 4);
+
+  @Comment("And of non primitive types, which also include records")
+  private List<Foo> foosList = List.of(new Foo("baz", 1), new Foo("lorem", 3));
+
+  @Comment("Same for maps, but a map can only be Map<String, Object>")
+  @Comment("otherwise you will need another object")
+  @Key("foo-map")
+  private Map<String, Object> fooMap = defaultFooMap();
+
+  @Comment("This doesn't have a serializer registered")
+  @Comment("so it gets serialized by the default serializer")
+  @Key("default-serializer-example")
+  private DefaultSerializationExample defaultSerExample =
+      new DefaultSerializationExample("bar", 1, 5.6);
+
+  @Comment("You can create sections like this too")
+  @Key("inside.section.foo")
+  private String fooInsideSection = "foo";
+
+  @ConfigObject
+  @Key("section-inside-section")
+  private SectionInsideSection insideSection = new SectionInsideSection();
+
+  @Comment("This is a section object list")
+  private SectionObjectList<SectionObject> sectionObjectList =
+      SectionObjectList.newBuilderForType(SectionObject.class)
+          .defaultValue("asdfp", new SectionObject(1, "lorem"))
+          .defaultValue("pepepepepe", new SectionObject(2, "ipsum"))
+          .build();
+
+  private static Map<String, Object> defaultFooMap() {
+    // a LinkedHashMap keeps the order of the entries in the file
+    Map<String, Object> map = new LinkedHashMap<>();
+    map.put("foo", 1);
+    map.put("bar", "This is a section value");
+    map.put("baz", 3);
+    return map;
+  }
 
   @Comment("All configurable messages")
   public static final class MessagesSection {
@@ -65,14 +121,8 @@ public class ExampleConfig {
     @Key("no-spamming")
     private String noSpamming = "You can't spam this";
 
-    // getters
+    // getters would go here
   }
-
-  @Ignore private String importantClass = "com.mrivanplays.something.Important"; // this is ignored
-
-  @Comment("This is also going to be serialized as a config object,")
-  @Comment("but it is much more controllable rather than @ConfigObject")
-  private SomethingToSerialize serialize = new SomethingToSerialize("foo", 1, (byte) 0x2);
 
   // since 3.1.0 records are supported too!
   public record SomethingToSerialize(String foo, int bar, byte baz) {}
@@ -85,21 +135,30 @@ public class ExampleConfig {
   public static final class SomethingToSerializeSerializer
       implements FieldTypeSerializer<SomethingToSerialize> {
 
-    @Override
-    public @NonNull SomethingToSerialize deserialize(
-        @NonNull DataObject data,
-        @NonNull SerializationContext<SomethingToSerialize> context,
-        @NonNull AnnotationAccessor annotations) {
-      return new SomethingToSerialize(
-          data.get("foo").getAsString(), data.get("bar").getAsShort(), data.get("baz").getAsByte());
+    private static DataObject value(DataObject data, String key) {
+      DataObject value = data.get(key);
+      if (value == null) {
+        throw new IllegalArgumentException("Missing '" + key + "' in " + data);
+      }
+      return value;
     }
 
     @Override
-    @NonNull
+    public SomethingToSerialize deserialize(
+        DataObject data,
+        SerializationContext<SomethingToSerialize> context,
+        AnnotationAccessor annotations) {
+      return new SomethingToSerialize(
+          value(data, "foo").getAsString(),
+          value(data, "bar").getAsInt(),
+          value(data, "baz").getAsByte());
+    }
+
+    @Override
     public DataObject serialize(
-        @NonNull SomethingToSerialize value,
-        @NonNull SerializationContext<SomethingToSerialize> context,
-        @NonNull AnnotationAccessor annotations) {
+        SomethingToSerialize value,
+        SerializationContext<SomethingToSerialize> context,
+        AnnotationAccessor annotations) {
       DataObject ret = new DataObject();
       ret.put("foo", value.foo());
       ret.put("bar", value.bar());
@@ -108,41 +167,7 @@ public class ExampleConfig {
     }
   }
 
-  @Comment("This cannot have a negative value")
-  @Min(minDouble = 0)
-  @Key("barxtwo") // you can also apply @Key to regular fields, not just in config objects
-  private double baz = 0.2;
-
-  @Comment("AnnotatedConfig can also read & write lists")
-  @Key("foo-list")
-  private List<String> fooList = Arrays.asList("This is", "a lore", "as an example", "for list");
-
-  @Comment("Lists can be of all primitive types")
-  @Key("bar-list")
-  private List<Integer> barList = Arrays.asList(1, 2, 3, 4);
-
-  @Comment("And of non primitive types, which also include records")
-  private List<Foo> foosList = Arrays.asList(new Foo("baz", 1), new Foo("lorem", 3));
-
   record Foo(String bar, int baz) {}
-
-  @Comment("Same for maps, but a map can only be Map<String, Object>")
-  @Comment("otherwise you will need another object")
-  @Key("foo-map")
-  private Map<String, Object> fooMap =
-      new LinkedHashMap<>() {
-        {
-          put("foo", 1);
-          put("bar", "This is a section value");
-          put("baz", 3);
-        }
-      };
-
-  @Comment("This doesn't have a serializer registered")
-  @Comment("so it gets serialized by the default serializer")
-  @Key("default-serializer-example")
-  private DefaultSerializationExample defaultSerExample =
-      new DefaultSerializationExample("bar", 1, 5.6);
 
   public static final class DefaultSerializationExample {
 
@@ -158,16 +183,8 @@ public class ExampleConfig {
       this.baz = baz;
     }
 
-    // getters
+    // getters would go here
   }
-
-  @Comment("You can create sections like this too")
-  @Key("inside.section.foo")
-  private String fooInsideSection = "foo";
-
-  @ConfigObject
-  @Key("section-inside-section")
-  private SectionInsideSection insideSection = new SectionInsideSection();
 
   @Comment("This is a section inside a section example")
   public static class SectionInsideSection {
@@ -180,18 +197,11 @@ public class ExampleConfig {
     @Key("pp.foo")
     private double foo = 3.3;
 
-    // getters
+    // getters would go here
   }
 
   // this is featured in the next example
   public record SectionObject(int aabb, String ccdd) {}
 
-  @Comment("This is a section object list")
-  private SectionObjectList<SectionObject> sectionObjectList =
-      SectionObjectList.newBuilderForType(SectionObject.class)
-          .defaultValue("asdfp", new SectionObject(1, "lorem"))
-          .defaultValue("pepepepepe", new SectionObject(2, "ipsum"))
-          .build();
-
-  // getters
+  // getters would go here
 }

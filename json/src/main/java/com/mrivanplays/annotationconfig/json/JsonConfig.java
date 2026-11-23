@@ -53,6 +53,15 @@ import org.jspecify.annotations.Nullable;
 @NullMarked
 public final class JsonConfig {
 
+  /**
+   * The {@link Setting} with which the {@link Gson} instance is referenced in the {@link Settings}.
+   *
+   * <p>A configured instance is used for reading and writing. To read numbers exactly, it should be
+   * created with {@code setObjectToNumberStrategy(ToNumberPolicy.BIG_DECIMAL)}, as the default
+   * instance is.
+   */
+  public static final Setting<Gson> GSON_INSTANCE = Setting.of("gson", Gson.class);
+
   private static final Gson GSON =
       new GsonBuilder()
           .setPrettyPrinting()
@@ -63,14 +72,9 @@ public final class JsonConfig {
           .setObjectToNumberStrategy(ToNumberPolicy.BIG_DECIMAL)
           .create();
 
-  /**
-   * Returns the {@link Setting} with which the gson instance is referenced in the {@link Settings}.
-   *
-   * <p>A configured instance is used for reading and writing. To read numbers exactly, it should be
-   * created with {@code setObjectToNumberStrategy(ToNumberPolicy.BIG_DECIMAL)}, as the default
-   * instance is.
-   */
-  public static final Setting<Gson> GSON_INSTANCE = Setting.of("gson", Gson.class);
+  private JsonConfig() {
+    throw new IllegalStateException("Instantiation of utility-type class");
+  }
 
   /**
    * Returns the {@link ConfigResolver} instance of plain JSON spec configuration.
@@ -81,6 +85,8 @@ public final class JsonConfig {
     return StandardHolder.RESOLVER;
   }
 
+  // <editor-fold desc="Internal Implementation" defaultstate="collapsed">
+
   /**
    * Returns the {@link ConfigResolver} instance for <a href="https://spec.json5.org">JSON5</a>
    * configuration files ({@code .json5}), a superset of JSON that supports comments.
@@ -88,7 +94,7 @@ public final class JsonConfig {
    * <p>Configs are written by {@link Json5ValueWriter}: comments as {@code //} lines above their
    * keys, identifier keys without quotes, and {@code Infinity} and {@code NaN} as JSON5 numbers.
    * They are read with Gson in lenient mode, like {@link #getConfigResolver()} reads them, so plain
-   * JSON files load as well, and so does written by hand JSON5 with comments, unquoted keys and
+   * JSON files load as well, and so does hand-written JSON5 with comments, unquoted keys and
    * single-quoted strings. Gson does not read all of JSON5: trailing commas, hexadecimal numbers,
    * numbers with a leading {@code +} or a leading or trailing decimal point, the {@code \x}, {@code
    * \v} and {@code \0} escapes and line continuations in strings are rejected or read differently.
@@ -98,25 +104,12 @@ public final class JsonConfig {
    * @return config resolver
    * @since 3.1.0
    */
-  public static ConfigResolver getJSON5ConfigResolver() {
+  public static ConfigResolver getJson5ConfigResolver() {
     return Json5Holder.RESOLVER;
   }
 
-  // <editor-fold desc="Internal Implementation" defaultstate="collapsed">
-
-  // Each resolver is built on first use; class initialisation makes that happen exactly once.
-  private static final class StandardHolder {
-
-    static final ConfigResolver RESOLVER = createConfigResolver(false);
-  }
-
-  private static final class Json5Holder {
-
-    static final ConfigResolver RESOLVER = createConfigResolver(true);
-  }
-
   private static ConfigResolver createConfigResolver(boolean json5) {
-    ConfigResolver.Builder cache =
+    ConfigResolver.Builder builder =
         ConfigResolver.newBuilder()
             .withSetting(ACDefaultSettings.SHOULD_REVERSE_FIELDS, true)
             .withSetting(ACDefaultSettings.KEY_RESOLVER, DottedResolver.getInstance())
@@ -125,13 +118,13 @@ public final class JsonConfig {
                     settings.get(GSON_INSTANCE).orElse(GSON).fromJson(reader, LinkedHashMap.class),
                     Collections.emptyMap()));
     if (json5) {
-      return cache
+      return builder
           .withValueWriter(new Json5ValueWriter())
           .withFileExtension(".json5")
           .withCommentPrefix("// ")
           .build();
     }
-    return cache.withValueWriter(standardValueWriter()).withFileExtension(".json").build();
+    return builder.withValueWriter(standardValueWriter()).withFileExtension(".json").build();
   }
 
   private static ValueWriter standardValueWriter() {
@@ -145,9 +138,10 @@ public final class JsonConfig {
         writer.print(settings.get(GSON_INSTANCE).orElse(GSON).toJson(unwrapMultiline(values)));
       }
 
+      // JSON has no comments, so they aren't collected
       @Override
       public boolean writesComments() {
-        return false; // JSON has no comments, so they aren't collected
+        return false;
       }
     };
   }
@@ -194,5 +188,17 @@ public final class JsonConfig {
     }
     return value;
   }
+
+  // Each resolver is built on first use; class initialisation makes that happen exactly once.
+  private static final class StandardHolder {
+
+    static final ConfigResolver RESOLVER = createConfigResolver(false);
+  }
+
   // </editor-fold>
+
+  private static final class Json5Holder {
+
+    static final ConfigResolver RESOLVER = createConfigResolver(true);
+  }
 }

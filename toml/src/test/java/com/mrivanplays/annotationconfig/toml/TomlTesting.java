@@ -40,6 +40,8 @@ final class TomlTesting {
   private static final TomlMapper PARSER =
       TomlMapper.builder().configure(TomlReadFeature.PARSE_JAVA_TIME, true).build();
 
+  private TomlTesting() {}
+
   /** Dumps {@code config}, checks that the output is valid TOML and returns it with LF endings. */
   static String dump(Object config) {
     StringWriter writer = new StringWriter();
@@ -68,6 +70,4 @@ final class TomlTesting {
       throw new UncheckedIOException("Not valid TOML:\n" + toml, e);
     }
   }
-
-  private TomlTesting() {}
 }

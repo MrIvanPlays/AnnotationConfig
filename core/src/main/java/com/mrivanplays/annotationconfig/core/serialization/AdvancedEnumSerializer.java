@@ -37,8 +37,8 @@ import org.jspecify.annotations.Nullable;
  * {@link Enum} serializer, which uses different tricks to serialize enum constants to user-friendly
  * values for configs, and also to read them properly.
  *
- * <p>Lets be real, every developer tried or is going to try to serialize enum constants, so they
- * are more user-friendly to be configured. Yet everyone who tried wasn't really able to go farther
+ * <p>Let's be real, every developer tried or is going to try to serialize enum constants, so they
+ * are more user-friendly to be configured. Yet everyone who tried wasn't really able to go further
  * than accepting this input: {@code enum_constant} for an enum constant of {@code ENUM_CONSTANT}.
  * As already mentioned, this serializer uses tricks in order to accept literally every output
  * possible. Say you have an enum constant of {@code ACCEPT_ONLY_TRUE}. This serializer serializes
@@ -74,6 +74,27 @@ import org.jspecify.annotations.Nullable;
 @NullMarked
 public final class AdvancedEnumSerializer<E extends Enum<E>> implements FieldTypeSerializer<E> {
 
+  /** The default matches condition */
+  public static final BiPredicate<Integer, List<String>> DEFAULT_MATCHES_CONDITION =
+      (matches, parts) -> matches == parts.size();
+
+  private final Class<E> enumClass;
+  private final BiPredicate<Integer, List<String>> matchesCondition;
+
+  private AdvancedEnumSerializer(Class<E> enumClass) {
+    this(enumClass, DEFAULT_MATCHES_CONDITION);
+  }
+
+  private AdvancedEnumSerializer(
+      Class<E> enumClass, BiPredicate<Integer, List<String>> matchesCondition) {
+    Objects.requireNonNull(enumClass, "enumClass");
+    if (!enumClass.isEnum()) {
+      throw new IllegalArgumentException("Not an enum");
+    }
+    this.enumClass = enumClass;
+    this.matchesCondition = Objects.requireNonNull(matchesCondition, "matchesCondition");
+  }
+
   /**
    * Creates a new {@link AdvancedEnumSerializer} for the specified {@code enumClass}
    *
@@ -106,25 +127,8 @@ public final class AdvancedEnumSerializer<E extends Enum<E>> implements FieldTyp
     return new AdvancedEnumSerializer<>(enumClass, matchesCondition);
   }
 
-  /** The default matches condition */
-  public static final BiPredicate<Integer, List<String>> DEFAULT_MATCHES_CONDITION =
-      (matches, parts) -> matches == parts.size();
-
-  private final Class<E> enumClass;
-  private final BiPredicate<Integer, List<String>> matchesCondition;
-
-  private AdvancedEnumSerializer(Class<E> enumClass) {
-    this(enumClass, DEFAULT_MATCHES_CONDITION);
-  }
-
-  private AdvancedEnumSerializer(
-      Class<E> enumClass, BiPredicate<Integer, List<String>> matchesCondition) {
-    Objects.requireNonNull(enumClass, "enumClass");
-    if (!enumClass.isEnum()) {
-      throw new IllegalArgumentException("Not an enum");
-    }
-    this.enumClass = enumClass;
-    this.matchesCondition = Objects.requireNonNull(matchesCondition, "matchesCondition");
+  private static boolean containsChar(String val, char c) {
+    return val.indexOf(c) != -1;
   }
 
   /** {@inheritDoc} */
@@ -145,14 +149,10 @@ public final class AdvancedEnumSerializer<E extends Enum<E>> implements FieldTyp
    */
   @Nullable
   public E deserializeSimple(@Nullable DataObject data) {
-    if (data == null) {
+    if (data == null || data.getAsObject() == null) {
       return null;
     }
-    String input = data.getAsString();
-    if (input == null) {
-      return null;
-    }
-    return this.deserializeSimple(input);
+    return this.deserializeSimple(data.getAsString());
   }
 
   /**
@@ -204,7 +204,7 @@ public final class AdvancedEnumSerializer<E extends Enum<E>> implements FieldTyp
 
     // try to make our lives easier
     if (possibleConstants.size() == 1) {
-      return possibleConstants.stream().findFirst().orElse(null);
+      return possibleConstants.iterator().next();
     }
 
     // last effort: findTheBestMatch
@@ -221,28 +221,24 @@ public final class AdvancedEnumSerializer<E extends Enum<E>> implements FieldTyp
   @Nullable
   private E findTheBestMatch(EnumSet<E> values, List<String> parts) {
     for (E val : values) {
-      // this filters out even more the possible values
       String name = val.name();
-      List<String> list = null;
-      if (containsChar(name, '_')) {
-        list = Arrays.asList(name.split("_"));
-      } else {
-        // skip entirely the map if parts.size() is 1
-        if (parts.size() == 1) {
-          if (name.equalsIgnoreCase(parts.getFirst())) {
-            return val;
-          }
+      if (!containsChar(name, '_')) {
+        // a one word constant can only match one part, exactly
+        if (parts.size() == 1 && name.equalsIgnoreCase(parts.getFirst())) {
+          return val;
         }
-      }
-      if (list == null) {
         continue;
       }
-
+      List<String> words = new ArrayList<>(Arrays.asList(name.split("_")));
+      // every word of the constant is matched by one part at most, so "true true" doesn't match
+      // ACCEPT_TRUE
       int matches = 0;
       for (String part : parts) {
-        for (String listPart : list) {
-          if (part.equalsIgnoreCase(listPart)) {
+        for (int i = 0; i < words.size(); i++) {
+          if (part.equalsIgnoreCase(words.get(i))) {
+            words.remove(i);
             matches++;
+            break;
           }
         }
       }
@@ -285,29 +281,17 @@ public final class AdvancedEnumSerializer<E extends Enum<E>> implements FieldTyp
    * @return parts list, or an empty list
    */
   private List<String> getParts(String val) {
-    List<String> parts = new ArrayList<>();
-    Character splitChar = null;
-    if (containsChar(val, '_')) {
-      splitChar = '_';
-    } else if (containsChar(val, ' ')) {
-      splitChar = ' ';
-    }
-    if (splitChar == null) {
+    if (!containsChar(val, '_') && !containsChar(val, ' ')) {
       return Collections.emptyList();
     }
-    String[] split = val.split(Character.toString(splitChar));
-    for (String part : split) {
-      if (containsChar(part, '_') || containsChar(part, ' ')) {
-        parts.addAll(getParts(part));
-        continue;
+    List<String> parts = new ArrayList<>();
+    // underscores and spaces in any mix; empty parts from repeated separators are skipped
+    for (String part : val.split("[_ ]")) {
+      if (!part.isEmpty()) {
+        parts.add(part);
       }
-      parts.add(part);
     }
     return parts;
-  }
-
-  private boolean containsChar(String val, char c) {
-    return val.indexOf(c) != -1;
   }
 
   /** {@inheritDoc} */

@@ -36,7 +36,7 @@ import org.jspecify.annotations.NullMarked;
  *
  * @param <T> section object list object type
  * @author Ivan Pekov
- * @since v2.1.1
+ * @since 2.1.1
  * @see SectionObjectList
  */
 @SuppressWarnings({"unchecked", "rawtypes"})
@@ -56,6 +56,7 @@ public final class SectionObjectListSerializer<T>
             .orElseThrow(() ->
                 new IllegalArgumentException(
                     "Illegal field to deserialize: null default SectionObjectList"));
+    // a copy of the read maps, so they can be read without being copied again
     Map<String, Object> map = data.getAsMap();
     Map<String, T> deserialized = new LinkedHashMap<>();
     SerializerRegistry serializerRegistry = SerializerRegistry.INSTANCE;
@@ -65,11 +66,11 @@ public final class SectionObjectListSerializer<T>
             .orElse(serializerRegistry.getDefaultSerializer());
     for (Map.Entry<String, Object> entry : map.entrySet()) {
       if (!(entry.getValue() instanceof Map)) {
-        throw new IllegalArgumentException("Illegal SectionObjectList inputted: " + data);
+        throw new IllegalArgumentException("Invalid SectionObjectList: " + data);
       }
       Object obj =
           serializer.deserialize(
-              new DataObject(entry.getValue()),
+              new DataObject(entry.getValue(), true),
               SerializationContext.of(
                   null,
                   def.get(entry.getKey()),
@@ -101,17 +102,22 @@ public final class SectionObjectListSerializer<T>
             .getSerializer(value.getObjectsType())
             .orElse(serializerRegistry.getDefaultSerializer());
     for (Map.Entry<String, T> entry : value) {
-      ret.putAll(
-          entry.getKey(),
+      T object = value.getObjectsType().cast(entry.getValue());
+      DataObject serialized =
           serializer.serialize(
-              value.getObjectsType().cast(entry.getValue()),
+              object,
               SerializationContext.of(
-                  value.getObjectsType().cast(entry.getValue()),
+                  object,
                   value.getObjectsType(),
                   value.getObjectsType(),
                   context.getAnnotatedConfig(),
                   context.getSettings()),
-              AnnotationAccessor.EMPTY));
+              AnnotationAccessor.EMPTY);
+      if (serialized == null) {
+        throw new NullPointerException(
+            "Expected DataObject, but got null ; SectionObjectList key: " + entry.getKey());
+      }
+      ret.putAll(entry.getKey(), serialized);
     }
     return ret;
   }

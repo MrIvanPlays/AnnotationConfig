@@ -53,12 +53,6 @@ public final class ClassInfo {
           return new ClassInfo(type);
         }
       };
-
-  /** The info of {@code type}, created on first use. */
-  public static ClassInfo of(Class<?> type) {
-    return CACHE.get(type);
-  }
-
   private final Class<?> type;
   private final List<FieldInfo> fields;
   private final List<String> comments;
@@ -68,7 +62,8 @@ public final class ClassInfo {
   private final List<FieldInfo> dataFields;
   private final List<FieldInfo> dataFieldsWithStatic;
   // one set per combination of the three settings resolveAnnotationHolders depends on
-  private final AtomicReferenceArray<Set<AnnotationHolder>> holders = new AtomicReferenceArray<>(8);
+  private final AtomicReferenceArray<@Nullable Set<AnnotationHolder>> holders =
+      new AtomicReferenceArray<>(8);
   @Nullable private volatile RecordInfo record;
 
   private ClassInfo(Class<?> type) {
@@ -98,8 +93,9 @@ public final class ClassInfo {
     this.hasAnnotations = type.getAnnotations().length > 0;
   }
 
-  public Class<?> type() {
-    return this.type;
+  /** The info of {@code type}, created on first use. */
+  public static ClassInfo of(Class<?> type) {
+    return CACHE.get(type);
   }
 
   /** Every declared field, in declaration order. */
@@ -145,7 +141,6 @@ public final class ClassInfo {
     }
     List<FieldInfo> fields = new ArrayList<>(this.fields);
     if (findParentFields) {
-      // compared by identity: getCanonicalName() is null for local and anonymous classes
       int classOrder = 0;
       for (Class<?> parent = this.type.getSuperclass();
           parent != null && parent != Object.class;
@@ -183,6 +178,7 @@ public final class ClassInfo {
   public RecordInfo record() {
     RecordInfo record = this.record;
     if (record == null) {
+      // created twice at worst, by threads that get here at the same time; both are equal
       record = new RecordInfo(this);
       this.record = record;
     }

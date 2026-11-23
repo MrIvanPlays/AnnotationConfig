@@ -1,9 +1,9 @@
 # Generated using AnnotationConfig v3.1.0
 
-# This value can only be between 1 and 3 ( 1 and 3 included )
+# This value can only be between 1 and 3 (1 and 3 included)
 foo: 2
 
-# This string cannot be longer than 20 characters ( spaces are included )
+# This string cannot be longer than 20 characters (spaces are included)
 bar: "This is some string"
 
 # All configurable messages
@@ -14,7 +14,7 @@ messages:
   no-spamming: "You can't spam this"
 
 # This is also going to be serialized as a config object,
-# but it is much more controllable rather than @ConfigObject
+# but it is much more controllable than @ConfigObject
 serialize:
   foo: "foo"
   bar: 1
@@ -23,7 +23,7 @@ serialize:
 # This cannot have a negative value
 barxtwo: 0.2
 
-# AnnotatedConfig can also read & write lists
+# AnnotationConfig can also read & write lists
 foo-list:
   - "This is"
   - "a lore"

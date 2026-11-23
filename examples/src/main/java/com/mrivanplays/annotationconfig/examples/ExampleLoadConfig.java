@@ -47,10 +47,10 @@ public class ExampleLoadConfig {
     serializers.registerSerializer(
         SomethingToSerialize.class, new ExampleConfig.SomethingToSerializeSerializer());
 
-    // register a custom placeholder
+    // register a custom placeholder; a real application would put its own version here
     commentPlaceholders.registerPlaceholder(CommentPlaceholder.simple("%version%", "3.1.0"));
 
-    // now I personally prefer load or dump but you can go with whatever you want to
+    // loads the file if it exists, otherwise writes the defaults to it
     YamlConfig.getConfigResolver().loadOrDump(config, new File("examples/application-config.yaml"));
 
     // do stuff with config ...

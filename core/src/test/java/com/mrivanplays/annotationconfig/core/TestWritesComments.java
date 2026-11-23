@@ -32,52 +32,13 @@ import java.io.StringWriter;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import org.jspecify.annotations.NullMarked;
+import org.jspecify.annotations.Nullable;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
 /** A value writer that doesn't write comments gets none; every other one gets all of them. */
 class TestWritesComments {
-
-  static class Config {
-
-    @Comment("the name")
-    String name = "x";
-
-    @Comment("the section")
-    @ConfigObject
-    Section section = new Section();
-
-    static class Section {
-
-      @Comment("the port")
-      int port = 1;
-    }
-  }
-
-  /** Records the comments it gets. */
-  static final class Recording implements ValueWriter {
-
-    private final boolean writesComments;
-    Map<String, List<String>> comments;
-
-    Recording(boolean writesComments) {
-      this.writesComments = writesComments;
-    }
-
-    @Override
-    public void write(
-        Map<String, Object> values,
-        Map<String, List<String>> fieldComments,
-        PrintWriter writer,
-        Settings settings) {
-      this.comments = fieldComments;
-    }
-
-    @Override
-    public boolean writesComments() {
-      return this.writesComments;
-    }
-  }
 
   private static Map<String, List<String>> dump(Recording writer) {
     ConfigResolver resolver =
@@ -103,5 +64,47 @@ class TestWritesComments {
   @Test
   void aWriterWithoutCommentsGetsNone() {
     Assertions.assertEquals(Map.of(), dump(new Recording(false)));
+  }
+
+  static class Config {
+
+    @Comment("the name")
+    String name = "x";
+
+    @Comment("the section")
+    @ConfigObject
+    Section section = new Section();
+
+    static class Section {
+
+      @Comment("the port")
+      int port = 1;
+    }
+  }
+
+  /** Records the comments it gets. */
+  @NullMarked
+  static final class Recording implements ValueWriter {
+
+    private final boolean writesComments;
+    @Nullable Map<String, List<String>> comments;
+
+    Recording(boolean writesComments) {
+      this.writesComments = writesComments;
+    }
+
+    @Override
+    public void write(
+        Map<String, Object> values,
+        Map<String, List<String>> fieldComments,
+        PrintWriter writer,
+        Settings settings) {
+      this.comments = fieldComments;
+    }
+
+    @Override
+    public boolean writesComments() {
+      return this.writesComments;
+    }
   }
 }

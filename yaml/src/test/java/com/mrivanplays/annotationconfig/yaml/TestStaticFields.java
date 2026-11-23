@@ -31,27 +31,21 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
-public class TestStaticFields {
+class TestStaticFields {
 
   private static final ConfigResolver RESOLVER = YamlConfig.getConfigResolver();
-
-  public static class Subject {
-
-    public static int counter = 5;
-    public int value = 1;
-  }
-
-  @AfterEach
-  public void resetStatic() {
-    Subject.counter = 5;
-  }
 
   private static Settings findStatic() {
     return new Settings().put(ACDefaultSettings.FIND_STATIC_FIELDS, true);
   }
 
+  @AfterEach
+  void resetStatic() {
+    Subject.counter = 5;
+  }
+
   @Test
-  public void staticFieldsAreSkippedByDefault() {
+  void staticFieldsAreSkippedByDefault() {
     StringWriter writer = new StringWriter();
     RESOLVER.dump(new Subject(), writer);
     String dumped = writer.toString();
@@ -65,7 +59,7 @@ public class TestStaticFields {
   }
 
   @Test
-  public void staticFieldsAreOptionsWhenEnabled() {
+  void staticFieldsAreOptionsWhenEnabled() {
     StringWriter writer = new StringWriter();
     RESOLVER.dump(new Subject(), writer, findStatic());
     String dumped = writer.toString();
@@ -73,5 +67,11 @@ public class TestStaticFields {
 
     RESOLVER.load(new Subject(), new StringReader("counter: 9\nvalue: 3"), findStatic());
     Assertions.assertEquals(9, Subject.counter);
+  }
+
+  public static class Subject {
+
+    public static int counter = 5;
+    public int value = 1;
   }
 }

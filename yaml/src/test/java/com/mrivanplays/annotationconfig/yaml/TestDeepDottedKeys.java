@@ -33,16 +33,6 @@ import org.junit.jupiter.api.Test;
 class TestDeepDottedKeys {
 
   private static final ConfigResolver RESOLVER = YamlConfig.getConfigResolver();
-
-  static class Subject {
-
-    @Key("a.b.c.d.x")
-    int x = 1;
-
-    @Key("a.b.c.d.y")
-    int y = 2;
-  }
-
   private static final String EXPECTED =
       """
       a:
@@ -89,5 +79,14 @@ class TestDeepDottedKeys {
     RESOLVER.load(subject, new StringReader(writer.toString()));
     Assertions.assertEquals(1, subject.x);
     Assertions.assertEquals(2, subject.y);
+  }
+
+  static class Subject {
+
+    @Key("a.b.c.d.x")
+    int x = 1;
+
+    @Key("a.b.c.d.y")
+    int y = 2;
   }
 }

@@ -44,15 +44,45 @@ import java.lang.annotation.Target;
 @Target(ElementType.FIELD)
 public @interface Min {
 
+  /**
+   * The minimum {@code int} value, or the minimum length of a string.
+   *
+   * @return the bound
+   */
   int minInt() default Integer.MIN_VALUE;
 
+  /**
+   * The minimum {@code double} value.
+   *
+   * @return the bound
+   */
   double minDouble() default Double.NEGATIVE_INFINITY;
 
+  /**
+   * The minimum {@code byte} value.
+   *
+   * @return the bound
+   */
   byte minByte() default Byte.MIN_VALUE;
 
+  /**
+   * The minimum {@code float} value.
+   *
+   * @return the bound
+   */
   float minFloat() default Float.NEGATIVE_INFINITY;
 
+  /**
+   * The minimum {@code short} value.
+   *
+   * @return the bound
+   */
   short minShort() default Short.MIN_VALUE;
 
+  /**
+   * The minimum {@code long} value.
+   *
+   * @return the bound
+   */
   long minLong() default Long.MIN_VALUE;
 }

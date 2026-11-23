@@ -39,13 +39,108 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
 /** Resolver behaviour with TOML files: missing options, files, parent classes and static fields. */
-public class TestTomlResolver {
+class TestTomlResolver {
 
   private static String read(Path file) throws IOException {
     return Files.readString(file);
   }
 
   // <editor-fold desc="Missing options">
+
+  private static String dump(Object config, Settings settings) {
+    StringWriter writer = new StringWriter();
+    RESOLVER.dump(config, writer, settings);
+    return writer.toString();
+  }
+
+  @Test
+  void missingOptionsAreNotAddedByDefault(@TempDir Path dir) throws IOException {
+    Path file = dir.resolve("config.toml");
+    RESOLVER.dump(new Version1(), file);
+    String written = read(file);
+
+    Version2 config = new Version2();
+    RESOLVER.load(config, file);
+
+    // values in the file win over changed defaults, missing options keep their default
+    Assertions.assertEquals("foo", config.foo);
+    Assertions.assertTrue(config.added);
+    Assertions.assertEquals(1, config.section.a);
+    Assertions.assertEquals(3, config.section.b);
+    // GENERATE_NEW_OPTIONS is off for TOML: the file is left as it was
+    Assertions.assertEquals(written, read(file));
+  }
+
+  @Test
+  void missingOptionsAreAddedWithGenerateNewOptions(@TempDir Path dir) throws IOException {
+    Path file = dir.resolve("config.toml");
+    RESOLVER.dump(new Version1(), file);
+
+    RESOLVER.load(
+        new Version2(), file, new Settings().put(ACDefaultSettings.GENERATE_NEW_OPTIONS, true));
+
+    String expected =
+        """
+        foo = 'foo'
+
+        # added comment
+        added = true
+
+        [section]
+        a = 1
+        b = 3
+        """;
+    String written = read(file);
+    Assertions.assertEquals(expected, written);
+    parse(written);
+  }
+
+  @Test
+  void fileRoundTrip(@TempDir Path dir) throws IOException {
+    Path file = dir.resolve("config.toml");
+    RESOLVER.dump(new FileSubject(), file);
+    parse(Files.readString(file));
+
+    FileSubject loaded = new FileSubject();
+    loaded.message = null;
+    loaded.ratio = 0;
+    loaded.section.a = 0;
+    RESOLVER.load(loaded, file);
+    Assertions.assertEquals("it's \"quoted\"\nand multi-line", loaded.message);
+    Assertions.assertTrue(Double.isNaN(loaded.ratio));
+    Assertions.assertEquals(1, loaded.section.a);
+  }
+
+  // </editor-fold>
+
+  // <editor-fold desc="Files">
+
+  @Test
+  void parentFieldsOnlyWithFindParentFields() {
+    Assertions.assertEquals("own = 'own'\n", dump(new Extended(), new Settings()));
+    Assertions.assertEquals(
+        "own = 'own'\n\nbase = 1\n",
+        dump(new Extended(), new Settings().put(ACDefaultSettings.FIND_PARENT_FIELDS, true)));
+  }
+
+  @Test
+  void staticFieldsOnlyWithFindStaticFields() {
+    Settings findStatic = new Settings().put(ACDefaultSettings.FIND_STATIC_FIELDS, true);
+    Assertions.assertEquals("counter = 5\n\nown = 'own'\n", dump(new Extended(), findStatic));
+
+    try {
+      RESOLVER.load(new Extended(), new StringReader("counter = 9\nown = 'x'"));
+      Assertions.assertEquals(5, Extended.counter, "loaded without FIND_STATIC_FIELDS");
+      RESOLVER.load(new Extended(), new StringReader("counter = 9\nown = 'x'"), findStatic);
+      Assertions.assertEquals(9, Extended.counter);
+    } finally {
+      Extended.counter = 5;
+    }
+  }
+
+  // </editor-fold>
+
+  // <editor-fold desc="Parent and static fields">
 
   static class Version1 {
 
@@ -76,52 +171,6 @@ public class TestTomlResolver {
     }
   }
 
-  @Test
-  public void missingOptionsAreNotAddedByDefault(@TempDir Path dir) throws IOException {
-    Path file = dir.resolve("config.toml");
-    RESOLVER.dump(new Version1(), file);
-    String written = read(file);
-
-    Version2 config = new Version2();
-    RESOLVER.load(config, file);
-
-    // values in the file win over changed defaults, missing options keep their default
-    Assertions.assertEquals("foo", config.foo);
-    Assertions.assertTrue(config.added);
-    Assertions.assertEquals(1, config.section.a);
-    Assertions.assertEquals(3, config.section.b);
-    // GENERATE_NEW_OPTIONS is off for TOML: the file is left as it was
-    Assertions.assertEquals(written, read(file));
-  }
-
-  @Test
-  public void missingOptionsAreAddedWithGenerateNewOptions(@TempDir Path dir) throws IOException {
-    Path file = dir.resolve("config.toml");
-    RESOLVER.dump(new Version1(), file);
-
-    RESOLVER.load(
-        new Version2(), file, new Settings().put(ACDefaultSettings.GENERATE_NEW_OPTIONS, true));
-
-    String expected =
-        """
-        foo = 'foo'
-
-        # added comment
-        added = true
-
-        [section]
-        a = 1
-        b = 3
-        """;
-    String written = read(file);
-    Assertions.assertEquals(expected, written);
-    parse(written);
-  }
-
-  // </editor-fold>
-
-  // <editor-fold desc="Files">
-
   @Comment("Generated by AnnotationConfig")
   static class FileSubject {
 
@@ -133,26 +182,6 @@ public class TestTomlResolver {
     @ConfigObject public Version1.Section1 section = new Version1.Section1();
   }
 
-  @Test
-  public void fileRoundTrip(@TempDir Path dir) throws IOException {
-    Path file = dir.resolve("config.toml");
-    RESOLVER.dump(new FileSubject(), file);
-    parse(Files.readString(file));
-
-    FileSubject loaded = new FileSubject();
-    loaded.message = null;
-    loaded.ratio = 0;
-    loaded.section.a = 0;
-    RESOLVER.load(loaded, file);
-    Assertions.assertEquals("it's \"quoted\"\nand multi-line", loaded.message);
-    Assertions.assertTrue(Double.isNaN(loaded.ratio));
-    Assertions.assertEquals(1, loaded.section.a);
-  }
-
-  // </editor-fold>
-
-  // <editor-fold desc="Parent and static fields">
-
   static class Base {
 
     public int base = 1;
@@ -162,35 +191,6 @@ public class TestTomlResolver {
 
     public static int counter = 5;
     public String own = "own";
-  }
-
-  private static String dump(Object config, Settings settings) {
-    StringWriter writer = new StringWriter();
-    RESOLVER.dump(config, writer, settings);
-    return writer.toString();
-  }
-
-  @Test
-  public void parentFieldsOnlyWithFindParentFields() {
-    Assertions.assertEquals("own = 'own'\n", dump(new Extended(), new Settings()));
-    Assertions.assertEquals(
-        "own = 'own'\n\nbase = 1\n",
-        dump(new Extended(), new Settings().put(ACDefaultSettings.FIND_PARENT_FIELDS, true)));
-  }
-
-  @Test
-  public void staticFieldsOnlyWithFindStaticFields() {
-    Settings findStatic = new Settings().put(ACDefaultSettings.FIND_STATIC_FIELDS, true);
-    Assertions.assertEquals("counter = 5\n\nown = 'own'\n", dump(new Extended(), findStatic));
-
-    try {
-      RESOLVER.load(new Extended(), new StringReader("counter = 9\nown = 'x'"));
-      Assertions.assertEquals(5, Extended.counter, "loaded without FIND_STATIC_FIELDS");
-      RESOLVER.load(new Extended(), new StringReader("counter = 9\nown = 'x'"), findStatic);
-      Assertions.assertEquals(9, Extended.counter);
-    } finally {
-      Extended.counter = 5;
-    }
   }
 
   // </editor-fold>

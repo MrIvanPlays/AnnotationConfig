@@ -35,11 +35,11 @@ import org.jspecify.annotations.Nullable;
 @NullMarked
 public interface KeyResolver {
 
-  /** Returns the default key resolver used by AnnotationConfig. */
+  /** The default key resolver used by AnnotationConfig: every key is a key of the root map. */
   KeyResolver DEFAULT =
       new KeyResolver() {
         @Override
-        public Object unbox(String key, Map<String, Object> values) {
+        public @Nullable Object unbox(String key, Map<String, Object> values) {
           return values.get(key);
         }
 
@@ -52,9 +52,7 @@ public interface KeyResolver {
   /**
    * AnnotationConfig calls this method whenever it needs the value of the specified {@code key}.
    *
-   * <p>Keep in mind just because modification of the inputted {@link Map} {@code values} won't bug
-   * you it does not mean it goes without consequences. It is strongly not recommended as it may
-   * alter the set values.
+   * <p>Don't modify the {@link Map} {@code values}: it holds the values that are being loaded.
    *
    * @param key the key of the value
    * @param values the values to unbox it from

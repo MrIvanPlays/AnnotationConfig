@@ -54,6 +54,10 @@ import org.jspecify.annotations.Nullable;
 @NullMarked
 public final class MapUtils {
 
+  private MapUtils() {
+    throw new IllegalStateException("Instantiation of utility-type class");
+  }
+
   /**
    * @deprecated not used by AnnotationConfig anymore
    */
@@ -176,9 +180,5 @@ public final class MapUtils {
       }
     }
     return parents;
-  }
-
-  private MapUtils() {
-    throw new IllegalArgumentException("Instantiation of utility-type class.");
   }
 }

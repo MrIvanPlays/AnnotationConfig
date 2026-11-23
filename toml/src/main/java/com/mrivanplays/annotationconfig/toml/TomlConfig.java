@@ -46,35 +46,26 @@ import org.jspecify.annotations.Nullable;
 /**
  * Represents configuration, utilising TOML.
  *
- * @since 1.0
+ * @since 1.0.0
  * @author Ivan Pekov
  */
 @SuppressWarnings("unchecked")
 @NullMarked
 public final class TomlConfig {
 
-  private static final TomlMapper DEFAULT_TOML_MAPPER =
-      TomlMapper.builder().configure(TomlReadFeature.PARSE_JAVA_TIME, true).build();
-
-  /** Returns the {@link Setting} with which the mapper is referenced. */
+  /** The {@link Setting} with which the {@link TomlMapper} used for reading is referenced. */
   public static final Setting<TomlMapper> MAPPER_KEY = Setting.of("mapper", TomlMapper.class);
 
-  /**
-   * Returns the {@link ConfigResolver} instance for toml config.
-   *
-   * @return config resolver
-   */
-  public static ConfigResolver getConfigResolver() {
-    return ResolverHolder.RESOLVER;
-  }
-
+  private static final TomlMapper DEFAULT_TOML_MAPPER =
+      TomlMapper.builder().configure(TomlReadFeature.PARSE_JAVA_TIME, true).build();
   // <editor-fold desc="Internal Implementation" defaultstate="collapsed">
   private static final ValueWriter TOML_VALUE_WRITER = new TomlValueWriter();
 
   /**
    * Dotted keys ({@code @Key("server.ip")}) are written as tables, as in YAML and JSON. Before
-   * 3.1.0 they were written as one quoted key ({@code 'server.ip' = ...}), so a key that is in the
-   * file as it is read first; otherwise {@link DottedResolver} looks it up in the tables.
+   * 3.1.0 they were written as one quoted key ({@code 'server.ip' = ...}), so the key is first
+   * looked up as it is, as one key; if it isn't there, {@link DottedResolver} looks it up in the
+   * tables.
    */
   private static final KeyResolver TOML_KEY_RESOLVER =
       new KeyResolver() {
@@ -93,10 +84,17 @@ public final class TomlConfig {
         }
       };
 
-  /** Builds the resolver on first use; class initialisation makes that happen exactly once. */
-  private static final class ResolverHolder {
+  private TomlConfig() {
+    throw new IllegalStateException("Instantiation of utility-type class");
+  }
 
-    static final ConfigResolver RESOLVER = createConfigResolver();
+  /**
+   * Returns the {@link ConfigResolver} instance for toml config.
+   *
+   * @return config resolver
+   */
+  public static ConfigResolver getConfigResolver() {
+    return ResolverHolder.RESOLVER;
   }
 
   private static ConfigResolver createConfigResolver() {
@@ -149,5 +147,12 @@ public final class TomlConfig {
       // another thread registered one in the meantime, which is fine
     }
   }
+
   // </editor-fold>
+
+  /** Builds the resolver on first use; class initialisation makes that happen exactly once. */
+  private static final class ResolverHolder {
+
+    static final ConfigResolver RESOLVER = createConfigResolver();
+  }
 }

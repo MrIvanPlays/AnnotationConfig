@@ -31,12 +31,53 @@ import java.io.StringWriter;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
-public class TestResolverParentsAndSections {
+class TestResolverParentsAndSections {
 
   private static final ConfigResolver RESOLVER = YamlConfig.getConfigResolver();
 
   private static Settings findParents() {
     return new Settings().put(ACDefaultSettings.FIND_PARENT_FIELDS, true);
+  }
+
+  private static int occurrences(String text, String part) {
+    return text.split(java.util.regex.Pattern.quote(part), -1).length - 1;
+  }
+
+  @Test
+  void sectionKeepsParentClassComments() {
+    StringWriter writer = new StringWriter();
+    RESOLVER.dump(new WithSection(), writer, findParents());
+    String dumped = writer.toString();
+    // the parent's comment used to be replaced by a second copy of the child's
+    Assertions.assertEquals(1, occurrences(dumped, "child comment"), dumped);
+    Assertions.assertEquals(1, occurrences(dumped, "parent comment"), dumped);
+    Assertions.assertTrue(dumped.contains("parentValue: 1"), dumped);
+  }
+
+  @Test
+  void nullSectionDumpNamesTheField() {
+    IllegalArgumentException e =
+        Assertions.assertThrows(
+            IllegalArgumentException.class,
+            () -> RESOLVER.dump(new NullSection(), new StringWriter()));
+    Assertions.assertTrue(e.getMessage().contains("'section'"), e.getMessage());
+  }
+
+  @Test
+  void localClassHierarchyWithParentFields() {
+    class LocalBase {
+
+      public int a = 1;
+    }
+    class Local extends LocalBase {
+
+      public int b = 2;
+    }
+    // local classes have no canonical name, which used to throw a NullPointerException
+    StringWriter writer = new StringWriter();
+    RESOLVER.dump(new Local(), writer, findParents());
+    String dumped = writer.toString();
+    Assertions.assertTrue(dumped.contains("a: 1") && dumped.contains("b: 2"), dumped);
   }
 
   @Comment("parent comment")
@@ -59,46 +100,5 @@ public class TestResolverParentsAndSections {
   public static class NullSection {
 
     @ConfigObject public Section section = null;
-  }
-
-  private static int occurrences(String text, String part) {
-    return text.split(java.util.regex.Pattern.quote(part), -1).length - 1;
-  }
-
-  @Test
-  public void sectionKeepsParentClassComments() {
-    StringWriter writer = new StringWriter();
-    RESOLVER.dump(new WithSection(), writer, findParents());
-    String dumped = writer.toString();
-    // the parent's comment used to be replaced by a second copy of the child's
-    Assertions.assertEquals(1, occurrences(dumped, "child comment"), dumped);
-    Assertions.assertEquals(1, occurrences(dumped, "parent comment"), dumped);
-    Assertions.assertTrue(dumped.contains("parentValue: 1"), dumped);
-  }
-
-  @Test
-  public void nullSectionDumpNamesTheField() {
-    IllegalArgumentException e =
-        Assertions.assertThrows(
-            IllegalArgumentException.class,
-            () -> RESOLVER.dump(new NullSection(), new StringWriter()));
-    Assertions.assertTrue(e.getMessage().contains("'section'"), e.getMessage());
-  }
-
-  @Test
-  public void localClassHierarchyWithParentFields() {
-    class LocalBase {
-
-      public int a = 1;
-    }
-    class Local extends LocalBase {
-
-      public int b = 2;
-    }
-    // local classes have no canonical name, which used to throw a NullPointerException
-    StringWriter writer = new StringWriter();
-    RESOLVER.dump(new Local(), writer, findParents());
-    String dumped = writer.toString();
-    Assertions.assertTrue(dumped.contains("a: 1") && dumped.contains("b: 2"), dumped);
   }
 }

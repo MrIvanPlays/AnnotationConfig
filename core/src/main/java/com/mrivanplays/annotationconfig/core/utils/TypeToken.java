@@ -30,18 +30,30 @@ import org.jspecify.annotations.NullMarked;
  * Represents a helper of capturing types of {@link java.util.List Lists} or other generics for ease
  * of registration in {@link com.mrivanplays.annotationconfig.core.serialization.SerializerRegistry}
  *
+ * <pre>{@code
+ * Type type = new TypeToken<List<String>>() {}.getType();
+ * }</pre>
+ *
  * @param <T> type to capture
  * @author Ivan Pekov
- * @since v2.1.1
+ * @since 2.1.1
  */
 @NullMarked
 public abstract class TypeToken<T> {
 
   private final Type type;
 
+  /**
+   * Captures the type argument of the subclass.
+   *
+   * @throws IllegalStateException if the subclass doesn't give a type argument
+   */
   public TypeToken() {
-    Type superclass = getClass().getGenericSuperclass();
-    this.type = ((ParameterizedType) superclass).getActualTypeArguments()[0];
+    if (!(getClass().getGenericSuperclass() instanceof ParameterizedType superclass)) {
+      throw new IllegalStateException(
+          "TypeToken must be created with a type argument: new TypeToken<Foo>() {}");
+    }
+    this.type = superclass.getActualTypeArguments()[0];
   }
 
   /**

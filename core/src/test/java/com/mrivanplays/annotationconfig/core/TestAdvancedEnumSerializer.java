@@ -28,19 +28,7 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import com.mrivanplays.annotationconfig.core.serialization.AdvancedEnumSerializer;
 import org.junit.jupiter.api.Test;
 
-public class AdvancedEnumSerializerTest {
-
-  enum Values {
-    ACCEPT_ALL_TRUE,
-    ACCEPT_ALL_FALSE,
-    ACCEPT_ALL_BOTH,
-    DENY_ALL_FALSE,
-    DENY_ALL_TRUE,
-    DENY_ALL_BOTH,
-    TRUE,
-    FALSE,
-    THA_COOL
-  }
+class TestAdvancedEnumSerializer {
 
   private static final AdvancedEnumSerializer<Values> serializer =
       AdvancedEnumSerializer.forEnum(Values.class);
@@ -54,21 +42,21 @@ public class AdvancedEnumSerializerTest {
   }
 
   @Test
-  public void testSerialization() {
+  void testSerialization() {
     assertEquals("accept all true", serialize(Values.ACCEPT_ALL_TRUE));
     assertEquals("true", serialize(Values.TRUE));
     assertEquals("tha cool", serialize(Values.THA_COOL));
   }
 
   @Test
-  public void testDeserializingNormal() {
+  void testDeserializingNormal() {
     assertEquals(Values.ACCEPT_ALL_TRUE, deserialize("accept all true"));
     assertEquals(Values.ACCEPT_ALL_TRUE, deserialize("accept_all_true"));
     assertEquals(Values.ACCEPT_ALL_TRUE, deserialize("ACCEPT_ALL_TRUE"));
   }
 
   @Test
-  public void testDeserializingShuffled() {
+  void testDeserializingShuffled() {
     assertEquals(Values.DENY_ALL_TRUE, deserialize("all deny true"));
     assertEquals(Values.DENY_ALL_TRUE, deserialize("all true deny"));
     assertEquals(Values.DENY_ALL_TRUE, deserialize("true deny all"));
@@ -84,9 +72,33 @@ public class AdvancedEnumSerializerTest {
   }
 
   @Test
-  public void testDeserializingError() {
+  void eachWordOfAConstantIsMatchedOnce() {
+    // "deny" matched DENY twice, so three words matched the three of DENY_ALL_TRUE
+    assertNull(deserialize("deny deny true"));
+  }
+
+  @Test
+  void repeatedSeparatorsAreIgnored() {
+    assertEquals(Values.ACCEPT_ALL_TRUE, deserialize("accept  all  true"));
+    assertEquals(Values.DENY_ALL_TRUE, deserialize("true__deny all"));
+  }
+
+  @Test
+  void testDeserializingError() {
     assertNull(deserialize(null));
     assertNull(deserialize("something"));
     assertNull(deserialize("deny aa bb cc"));
+  }
+
+  enum Values {
+    ACCEPT_ALL_TRUE,
+    ACCEPT_ALL_FALSE,
+    ACCEPT_ALL_BOTH,
+    DENY_ALL_FALSE,
+    DENY_ALL_TRUE,
+    DENY_ALL_BOTH,
+    TRUE,
+    FALSE,
+    THA_COOL
   }
 }

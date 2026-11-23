@@ -20,34 +20,27 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.mrivanplays.annotationconfig.core;
+package com.mrivanplays.annotationconfig.toml;
 
-import com.mrivanplays.annotationconfig.core.resolver.ConfigResolver;
-import java.io.File;
-import java.nio.file.Path;
+import java.io.StringWriter;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.io.TempDir;
 
-class SaveChangesTest {
+class TestArrayWrite {
+
+  @Test
+  void testWrite() {
+    Subject config = new Subject();
+    StringWriter writer = new StringWriter();
+    TomlConfig.getConfigResolver().dump(config, writer);
+
+    String expected = "arr = [1.1, 2.2]\n";
+
+    Assertions.assertEquals(expected, writer.toString());
+  }
 
   static class Subject {
 
-    String foo = "barbaba";
-  }
-
-  @Test
-  void dumpReplacesTheFileAndLoadReadsItBack(@TempDir Path dir) {
-    ConfigResolver resolver = PropertyConfig.getConfigResolver();
-    File file = dir.resolve("saveChangesTest.properties").toFile();
-    Subject subject = new Subject();
-    resolver.dump(subject, file);
-
-    subject.foo = "www";
-    resolver.dump(subject, file);
-
-    subject.foo = "This should be overwritten";
-    resolver.load(subject, file);
-    Assertions.assertEquals("www", subject.foo);
+    private double[] arr = new double[] {1.1, 2.2};
   }
 }

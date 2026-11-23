@@ -46,35 +46,7 @@ public class YAMLTestSubject {
   @Comment("this is a list")
   private List<String> list = Arrays.asList("Hello", "bla bla");
 
-  @Comment("All supported messages")
-  public static class Messages {
-
-    @Key("no-console")
-    private String noConsole = "No console!";
-
-    @Key("console-only")
-    private String consoleOnly = "This command is console only!";
-
-    public String getNoConsole() {
-      return noConsole;
-    }
-
-    public String getConsoleOnly() {
-      return consoleOnly;
-    }
-  }
-
   @ConfigObject private Location location = new Location();
-
-  @Comment("The location of the player")
-  public static class Location {
-
-    private String world = "world";
-
-    private int x = 20;
-    private int y = 2;
-    private int z = 1;
-  }
 
   @Comment("Second location")
   private LocationNoConfigObject locationTwo = new LocationNoConfigObject("world", 20, 2, 1);
@@ -105,5 +77,33 @@ public class YAMLTestSubject {
 
   public LocationNoConfigObject getLocationTwo() {
     return locationTwo;
+  }
+
+  @Comment("All supported messages")
+  public static class Messages {
+
+    @Key("no-console")
+    private String noConsole = "No console!";
+
+    @Key("console-only")
+    private String consoleOnly = "This command is console only!";
+
+    public String getNoConsole() {
+      return noConsole;
+    }
+
+    public String getConsoleOnly() {
+      return consoleOnly;
+    }
+  }
+
+  @Comment("The location of the player")
+  public static class Location {
+
+    private String world = "world";
+
+    private int x = 20;
+    private int y = 2;
+    private int z = 1;
   }
 }

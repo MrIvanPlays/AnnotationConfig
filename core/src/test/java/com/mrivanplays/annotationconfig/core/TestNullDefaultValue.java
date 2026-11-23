@@ -26,12 +26,7 @@ import java.io.StringWriter;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
-public class TestNullDefaultValue {
-
-  static class Subj {
-
-    String foo;
-  }
+class TestNullDefaultValue {
 
   @Test
   void testDump() {
@@ -40,5 +35,10 @@ public class TestNullDefaultValue {
             IllegalArgumentException.class,
             () -> PropertyConfig.getConfigResolver().dump(new Subj(), new StringWriter()));
     Assertions.assertEquals("No default value for field 'foo'", e.getMessage());
+  }
+
+  static class Subj {
+
+    String foo;
   }
 }

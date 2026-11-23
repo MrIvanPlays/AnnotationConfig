@@ -37,6 +37,10 @@ public final class LinesHelper {
 
   private static final Pattern LINE_BREAK = Pattern.compile("\\R");
 
+  private LinesHelper() {
+    throw new IllegalStateException("Instantiation of utility-type class");
+  }
+
   /**
    * The lines of {@code text}, split at every line break {@code \R} matches. Nearly every comment
    * is one line, which is returned as it is, without a regex.
@@ -57,6 +61,4 @@ public final class LinesHelper {
     }
     return false;
   }
-
-  private LinesHelper() {}
 }

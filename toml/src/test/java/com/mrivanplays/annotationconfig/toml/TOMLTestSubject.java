@@ -38,6 +38,35 @@ public class TOMLTestSubject {
 
   @ConfigObject private MySection server = new MySection();
 
+  @Comment("OffsetDateTime")
+  // a fixed value, so that tests can compare the full output
+  private OffsetDateTime dateTime = OffsetDateTime.parse("2021-11-10T17:31:48+02:00");
+
+  @Comment("This has been dumped with the default serializer")
+  @Key("default-serializer")
+  private DefaultSerializerDump tableWithDefaultSerialize =
+      new DefaultSerializerDump("foo string", 1, 0.555);
+
+  public String getName() {
+    return name;
+  }
+
+  public boolean isBar() {
+    return bar;
+  }
+
+  public MySection getServer() {
+    return server;
+  }
+
+  public OffsetDateTime getDateTime() {
+    return dateTime;
+  }
+
+  public DefaultSerializerDump getTableWithDefaultSerialize() {
+    return tableWithDefaultSerialize;
+  }
+
   @Comment("Server")
   public static class MySection {
 
@@ -57,15 +86,6 @@ public class TOMLTestSubject {
       return port;
     }
   }
-
-  @Comment("OffsetDateTime")
-  // a fixed value, so that tests can compare the full output
-  private OffsetDateTime dateTime = OffsetDateTime.parse("2021-11-10T17:31:48+02:00");
-
-  @Comment("This has been dumped with the default serializer")
-  @Key("default-serializer")
-  private DefaultSerializerDump tableWithDefaultSerialize =
-      new DefaultSerializerDump("foo string", 1, 0.555);
 
   public static class DefaultSerializerDump {
 
@@ -92,25 +112,5 @@ public class TOMLTestSubject {
     public double getBaz() {
       return baz;
     }
-  }
-
-  public String getName() {
-    return name;
-  }
-
-  public boolean isBar() {
-    return bar;
-  }
-
-  public MySection getServer() {
-    return server;
-  }
-
-  public OffsetDateTime getDateTime() {
-    return dateTime;
-  }
-
-  public DefaultSerializerDump getTableWithDefaultSerialize() {
-    return tableWithDefaultSerialize;
   }
 }
