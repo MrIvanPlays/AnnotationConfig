@@ -59,19 +59,13 @@ public final class TomlConfig {
   /** Returns the {@link Setting} with which the mapper is referenced. */
   public static final Setting<TomlMapper> MAPPER_KEY = Setting.of("mapper", TomlMapper.class);
 
-  @Nullable private static ConfigResolver configResolver;
-
   /**
    * Returns the {@link ConfigResolver} instance for toml config.
    *
    * @return config resolver
    */
   public static ConfigResolver getConfigResolver() {
-    if (configResolver == null) {
-      generateConfigResolver();
-    }
-    //noinspection DataFlowIssue
-    return configResolver;
+    return ResolverHolder.RESOLVER;
   }
 
   // <editor-fold desc="Internal Implementation" defaultstate="collapsed">
@@ -80,7 +74,7 @@ public final class TomlConfig {
   /**
    * Dotted keys ({@code @Key("server.ip")}) are written as tables, as in YAML and JSON. Before
    * 3.1.0 they were written as one quoted key ({@code 'server.ip' = ...}), so a key that is in the
-   * file as it is is read first; otherwise {@link DottedResolver} looks it up in the tables.
+   * file as it is read first; otherwise {@link DottedResolver} looks it up in the tables.
    */
   private static final KeyResolver TOML_KEY_RESOLVER =
       new KeyResolver() {
@@ -99,28 +93,33 @@ public final class TomlConfig {
         }
       };
 
-  private static void generateConfigResolver() {
+  /** Builds the resolver on first use; class initialisation makes that happen exactly once. */
+  private static final class ResolverHolder {
+
+    static final ConfigResolver RESOLVER = createConfigResolver();
+  }
+
+  private static ConfigResolver createConfigResolver() {
     registerDateTimeSerializer(OffsetDateTime.class, OffsetDateTime::parse);
     registerDateTimeSerializer(LocalDateTime.class, LocalDateTime::parse);
     registerDateTimeSerializer(LocalDate.class, LocalDate::parse);
     registerDateTimeSerializer(LocalTime.class, LocalTime::parse);
-    configResolver =
-        ConfigResolver.newBuilder()
-            .withSetting(MAPPER_KEY, DEFAULT_TOML_MAPPER)
-            .withSetting(ACDefaultSettings.GENERATE_NEW_OPTIONS, false)
-            .withSetting(ACDefaultSettings.KEY_RESOLVER, TOML_KEY_RESOLVER)
-            .withSetting(ACDefaultSettings.SHOULD_REVERSE_FIELDS, true)
-            .withValueWriter(TOML_VALUE_WRITER)
-            .withCommentPrefix("# ")
-            .withFileExtension(".toml")
-            .withValueReader((reader, settings) ->
-                (Map<String, Object>)
-                    settings
-                        .get(MAPPER_KEY)
-                        .orElse(DEFAULT_TOML_MAPPER)
-                        .reader()
-                        .readValue(reader, LinkedHashMap.class))
-            .build();
+    return ConfigResolver.newBuilder()
+        .withSetting(MAPPER_KEY, DEFAULT_TOML_MAPPER)
+        .withSetting(ACDefaultSettings.GENERATE_NEW_OPTIONS, false)
+        .withSetting(ACDefaultSettings.KEY_RESOLVER, TOML_KEY_RESOLVER)
+        .withSetting(ACDefaultSettings.SHOULD_REVERSE_FIELDS, true)
+        .withValueWriter(TOML_VALUE_WRITER)
+        .withCommentPrefix("# ")
+        .withFileExtension(".toml")
+        .withValueReader((reader, settings) ->
+            (Map<String, Object>)
+                settings
+                    .get(MAPPER_KEY)
+                    .orElse(DEFAULT_TOML_MAPPER)
+                    .reader()
+                    .readValue(reader, LinkedHashMap.class))
+        .build();
   }
 
   /**

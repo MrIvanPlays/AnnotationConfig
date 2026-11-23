@@ -27,7 +27,6 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Properties;
 import org.jspecify.annotations.NullMarked;
-import org.jspecify.annotations.Nullable;
 
 /**
  * Represents configuration, utilising .conf/.properties configuration type.
@@ -38,39 +37,39 @@ import org.jspecify.annotations.Nullable;
 @NullMarked
 public final class PropertyConfig {
 
-  @Nullable private static ConfigResolver configResolver;
-
   /**
    * Returns the {@link ConfigResolver} instance of PropertyConfig
    *
    * @return config resolver
    */
   public static ConfigResolver getConfigResolver() {
-    if (configResolver == null) {
-      generateConfigResolver();
-    }
-    //noinspection DataFlowIssue
-    return configResolver;
+    return ResolverHolder.RESOLVER;
   }
 
   // <editor-fold desc="Internal implementation" defaultstate="collapsed">
-  private static void generateConfigResolver() {
-    configResolver =
-        ConfigResolver.newBuilder()
-            .withCommentPrefix("# ")
-            .withFileExtension(".properties")
-            .withValueReader((reader, _) -> {
-              Properties properties = new Properties();
-              properties.load(reader);
-              Map<String, Object> ret = new HashMap<>();
-              for (String key : properties.stringPropertyNames()) {
-                ret.put(key, parseValue(properties.getProperty(key)));
-              }
-              return ret;
-            })
-            .withValueWriter((values, fieldComments, writer, _) ->
-                PropertiesDumper.dump(writer, values, fieldComments, true))
-            .build();
+
+  /** Builds the resolver on first use; class initialization makes that happen exactly once. */
+  private static final class ResolverHolder {
+
+    static final ConfigResolver RESOLVER = createConfigResolver();
+  }
+
+  private static ConfigResolver createConfigResolver() {
+    return ConfigResolver.newBuilder()
+        .withCommentPrefix("# ")
+        .withFileExtension(".properties")
+        .withValueReader((reader, _) -> {
+          Properties properties = new Properties();
+          properties.load(reader);
+          Map<String, Object> ret = new HashMap<>();
+          for (String key : properties.stringPropertyNames()) {
+            ret.put(key, parseValue(properties.getProperty(key)));
+          }
+          return ret;
+        })
+        .withValueWriter((values, fieldComments, writer, _) ->
+            PropertiesDumper.dump(writer, values, fieldComments, true))
+        .build();
   }
 
   private static Object parseValue(String s) {

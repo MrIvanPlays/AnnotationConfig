@@ -28,7 +28,6 @@ import com.mrivanplays.annotationconfig.core.resolver.settings.ACDefaultSettings
 import com.mrivanplays.annotationconfig.core.resolver.settings.Setting;
 import com.mrivanplays.annotationconfig.core.resolver.settings.Settings;
 import org.jspecify.annotations.NullMarked;
-import org.jspecify.annotations.Nullable;
 import org.yaml.snakeyaml.Yaml;
 
 /**
@@ -45,35 +44,34 @@ public final class YamlConfig {
    */
   public static final Setting<Yaml> YAML_INSTANCE = Setting.of("yaml", Yaml.class);
 
-  @Nullable private static ConfigResolver configResolver;
-
   /**
    * Returns the {@link ConfigResolver} instance of YamlConfig
    *
    * @return config resolver
    */
   public static ConfigResolver getConfigResolver() {
-    if (configResolver == null) {
-      generateConfigResolver();
-    }
-    //noinspection DataFlowIssue
-    return configResolver;
+    return ResolverHolder.RESOLVER;
   }
 
   // <editor-fold desc="Internal Implementation" defaultstate="collapsed">
   static final YamlHandler HANDLER = new YamlHandler();
 
-  private static void generateConfigResolver() {
-    configResolver =
-        ConfigResolver.newBuilder()
-            .withValueReader(HANDLER)
-            .withValueWriter(HANDLER)
-            .withSetting(ACDefaultSettings.SHOULD_REVERSE_FIELDS, true)
-            .withSetting(ACDefaultSettings.KEY_RESOLVER, DottedResolver.getInstance())
-            .withCommentPrefix("# ")
-            .withFileExtension(".yml")
-            .withFileExtension(".yaml")
-            .build();
+  /** Builds the resolver on first use; class initialisation makes that happen exactly once. */
+  private static final class ResolverHolder {
+
+    static final ConfigResolver RESOLVER = createConfigResolver();
+  }
+
+  private static ConfigResolver createConfigResolver() {
+    return ConfigResolver.newBuilder()
+        .withValueReader(HANDLER)
+        .withValueWriter(HANDLER)
+        .withSetting(ACDefaultSettings.SHOULD_REVERSE_FIELDS, true)
+        .withSetting(ACDefaultSettings.KEY_RESOLVER, DottedResolver.getInstance())
+        .withCommentPrefix("# ")
+        .withFileExtension(".yml")
+        .withFileExtension(".yaml")
+        .build();
   }
   // </editor-fold>
 }

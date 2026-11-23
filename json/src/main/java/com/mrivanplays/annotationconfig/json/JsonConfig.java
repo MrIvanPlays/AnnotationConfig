@@ -71,20 +71,13 @@ public final class JsonConfig {
    */
   public static final Setting<Gson> GSON_INSTANCE = Setting.of("gson", Gson.class);
 
-  @Nullable private static ConfigResolver configResolverStandard;
-  @Nullable private static ConfigResolver configResolverJson5;
-
   /**
    * Returns the {@link ConfigResolver} instance of plain JSON spec configuration.
    *
    * @return config resolver
    */
   public static ConfigResolver getConfigResolver() {
-    if (configResolverStandard == null) {
-      generateConfigResolver(false);
-    }
-    //noinspection DataFlowIssue
-    return configResolverStandard;
+    return StandardHolder.RESOLVER;
   }
 
   /**
@@ -93,12 +86,11 @@ public final class JsonConfig {
    *
    * <p>Configs are written by {@link Json5ValueWriter}: comments as {@code //} lines above their
    * keys, identifier keys without quotes, and {@code Infinity} and {@code NaN} as JSON5 numbers.
-   * They are read with Gson in lenient mode, like {@link #getConfigResolver()} reads them, so
-   * plain JSON files load as well, and so does hand-written JSON5 with comments, unquoted keys and
+   * They are read with Gson in lenient mode, like {@link #getConfigResolver()} reads them, so plain
+   * JSON files load as well, and so does written by hand JSON5 with comments, unquoted keys and
    * single-quoted strings. Gson does not read all of JSON5: trailing commas, hexadecimal numbers,
-   * numbers with a leading {@code +} or a leading or trailing decimal point, the {@code \x},
-   * {@code \v} and {@code \0} escapes and line continuations in strings are rejected or read
-   * differently.
+   * numbers with a leading {@code +} or a leading or trailing decimal point, the {@code \x}, {@code
+   * \v} and {@code \0} escapes and line continuations in strings are rejected or read differently.
    *
    * <p>{@link #GSON_INSTANCE} is used for reading, as with JSON; writing does not use Gson.
    *
@@ -106,15 +98,23 @@ public final class JsonConfig {
    * @since 3.1.0
    */
   public static ConfigResolver getJSON5ConfigResolver() {
-    if (configResolverJson5 == null) {
-      generateConfigResolver(true);
-    }
-    // noinspection DataFlowIssue
-    return configResolverJson5;
+    return Json5Holder.RESOLVER;
   }
 
   // <editor-fold desc="Internal Implementation" defaultstate="collapsed">
-  private static void generateConfigResolver(boolean json5) {
+
+  // Each resolver is built on first use; class initialisation makes that happen exactly once.
+  private static final class StandardHolder {
+
+    static final ConfigResolver RESOLVER = createConfigResolver(false);
+  }
+
+  private static final class Json5Holder {
+
+    static final ConfigResolver RESOLVER = createConfigResolver(true);
+  }
+
+  private static ConfigResolver createConfigResolver(boolean json5) {
     ConfigResolver.Builder cache =
         ConfigResolver.newBuilder()
             .withSetting(ACDefaultSettings.SHOULD_REVERSE_FIELDS, true)
@@ -124,16 +124,13 @@ public final class JsonConfig {
                     settings.get(GSON_INSTANCE).orElse(GSON).fromJson(reader, LinkedHashMap.class),
                     Collections.emptyMap()));
     if (json5) {
-      configResolverJson5 =
-          cache
-              .withValueWriter(new Json5ValueWriter())
-              .withFileExtension(".json5")
-              .withCommentPrefix("// ")
-              .build();
-    } else {
-      configResolverStandard =
-          cache.withValueWriter(standardValueWriter()).withFileExtension(".json").build();
+      return cache
+          .withValueWriter(new Json5ValueWriter())
+          .withFileExtension(".json5")
+          .withCommentPrefix("// ")
+          .build();
     }
+    return cache.withValueWriter(standardValueWriter()).withFileExtension(".json").build();
   }
 
   private static ValueWriter standardValueWriter() {

@@ -101,9 +101,9 @@ Configs with values that only passed because of the truncation now fail to load.
 
 #### Empty strings are values
 
-An empty string in a config (`message=` in `.properties`, `message: ""` in YAML, `"message": ""` in
-JSON, `message = ''` in TOML) used to be read as no value: the field became `null`, or kept its
-default with the `USE_DEFAULT_VALUE` null read handler. It is now read as `""`, also inside lists,
+An empty string in a config (`message=` in `.properties`, `message: ""` in YAML, `message = ''` in
+TOML) used to be read as no value: the field became `null`, or kept its default with the
+`USE_DEFAULT_VALUE` null read handler. It is now read as `""`, also inside lists,
 so an option can be configured to be empty.
 
 Empty values of other types, such as a number written as `count=`, are still read as no value.
@@ -122,8 +122,7 @@ Jackson's TOML parser reads every float as a `BigDecimal`, so a float in a TOML
 `Map<String, Object>` field, or in a map read through `getAsMap()` in a custom serializer, is now a
 `BigDecimal` instead of a `Double`. Code that casts such a value to `Double` fails with a
 `ClassCastException`; read it as a `Number` instead (`((Number) map.get("ratio")).doubleValue()`).
-JSON numbers in maps are `BigDecimal` as well. YAML is not affected, as SnakeYAML reads floats as
-`Double`.
+YAML is not affected, as SnakeYAML reads floats as `Double`.
 
 Integers beyond the `long` range in a YAML map, which SnakeYAML reads as `BigInteger`, used to throw
 an `ArithmeticException` and are now read. Lists are written the same way: `BigDecimal`s
@@ -201,10 +200,15 @@ public class MyConfig {
 `@Ignore` and `@RawConfig` are not supported on record components. AnnotationConfig prints a
 warning when it finds them.
 
-#### New `json` module
+#### `FIND_STATIC_FIELDS` setting
 
-The new `json` module adds a `JsonConfig` implementation backed by Google's Gson library. It does
-not support comments, as JSON has none.
+`ACDefaultSettings.FIND_STATIC_FIELDS` (default `false`) controls whether static fields are config
+options. See [Static fields are no longer config options](#static-fields-are-no-longer-config-options).
+
+### JSON module
+
+The new `json` module adds a `JsonConfig` implementation backed by Google's Gson library. Its JSON
+resolver writes no comments, as JSON has none; the [JSON5 resolver](#json5-support) does.
 
 - Config objects, records, maps and other objects are written as JSON objects, arrays and lists as
   JSON arrays.
@@ -247,11 +251,6 @@ these JSON5 features as the spec defines them:
   typed `Object` get the string. The same holds for `Infinity` and `NaN`.
 - The `\x41`, `\v` and `\0` escapes fail to load.
 - A line continuation in a string keeps the line break in the value.
-
-#### `FIND_STATIC_FIELDS` setting
-
-`ACDefaultSettings.FIND_STATIC_FIELDS` (default `false`) controls whether static fields are config
-options. See [Static fields are no longer config options](#static-fields-are-no-longer-config-options).
 
 ### SnakeYAML-backed YAML writer
 
@@ -374,11 +373,14 @@ reads back exactly:
 - A config class with annotations but no `@Comment` no longer starts the file with a blank line.
 - Configs are written with `\n` line endings on every OS. On Windows, files mixed CRLF and LF: the
   class comment was written with the OS line separator, as were `.properties` and TOML files, while
-  YAML and JSON used `\n`. `.properties` and TOML files written on Windows now end their lines with
+  YAML used `\n`. `.properties` and TOML files written on Windows now end their lines with
   `\n` instead of `\r\n`; both are read either way.
 - `resolveMultiple` creates a missing directory and dumps the defaults into it, instead of
   throwing an `IllegalArgumentException`. It also dumps the defaults when the directory only holds
   files that are not configs, and returns the configs sorted by file name.
+- `getConfigResolver()` of `PropertyConfig`, `YamlConfig` and `TomlConfig` returns one instance
+  even when it is first called from several threads at once. They created the resolver on first
+  use without synchronization, so concurrent first calls could each get their own instance.
 
 ### Changes in `AnnotationAccessor`
 

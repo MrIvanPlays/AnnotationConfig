@@ -73,12 +73,17 @@ Java 25, Maven multi-module build.
 ## Build and test
 
 - Full build with tests: `mvn -o install`
+- `.mvn/maven.config` builds modules in parallel (`-T 1C`, so output of different modules
+  interleaves), and `.mvn/jvm.config` plus the `argLine` property in `pom.xml` run Maven and the
+  test JVMs with C1 only (`-XX:TieredStopAtLevel=1`). Together they made `install` ~35% faster and
+  `clean install` ~40% faster. `-T 2C` and `-XX:+UseSerialGC` were measured and gave nothing more.
 - One test: `mvn -o test -pl yaml -Dtest=TestStaticFields`
 - Testing a format module against changed `core` code: run `mvn -o install -DskipTests -pl core`
   first. With `-pl`, the module uses the installed core jar, not the sources.
 - Checkstyle (Google style, `checkstyle.xml`) runs during `process-classes` on main and test
   sources. Violations are reported as warnings and do not fail the build, so look for them in
-  the build output.
+  the build output. The `deployment` profile skips it (`checkstyle.skip`); add
+  `-Dcheckstyle.skip=false` to run it there.
 - Building an older commit for comparison: `git archive <commit> | tar -x -C <dir>` and
   `mvn -o package -Dmaven.test.skip=true` there. `package` leaves `~/.m2` alone, and `git archive`
   leaves the repository untouched.
@@ -133,6 +138,13 @@ Java 25, Maven multi-module build.
 - Surefire only runs classes named `Test*`, `*Test`, `*Tests` or `*TestCase`; other names are
   silently skipped.
 - Use `@TempDir` for files, never the working directory.
+- Test classes run in parallel (JUnit configuration parameters in the surefire config of
+  `pom.xml`); the methods of one class run one after another. A class may change global state
+  (registries, static fields) only under keys and types no other class uses, or it must be
+  annotated `@Isolated`.
+- The shared resolvers are created in holder classes (`ResolverHolder`, ...): the JVM initializes a
+  class once, so concurrent first calls get one instance. `TestResolverThreadSafety` in each module
+  loads the entry point in a fresh class loader to check that.
 - Writer tests compare the exact output (Java text blocks, which always use `\n`) without
   normalizing line endings, and also read it back. A test for a fixed bug should fail on the old
   code: check that by running it against the previous commit's version of the class.
