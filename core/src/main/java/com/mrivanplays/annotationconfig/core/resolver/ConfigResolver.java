@@ -433,8 +433,8 @@ public interface ConfigResolver {
    * Loads the configurations in the {@link File} {@code dir} specified, and if any do not exist,
    * the defaults (if specified) are dumped to the specified {@link WritableObject} {@code
    * dumpFile}. <br>
-   * <b>The specified {@link File} {@code dir} has to be a directory.</b> It is created if it
-   * does not exist.
+   * <b>The specified {@link File} {@code dir} has to be a directory.</b> It is created if it does
+   * not exist.
    *
    * @param dir the directory to load configurations from
    * @param configToResolveTo a {@link Supplier} of the needed configuration objects
@@ -452,8 +452,8 @@ public interface ConfigResolver {
    * Loads the configurations in the {@link File} {@code dir} specified, and if any do not exist,
    * the defaults (if specified) are dumped to the specified {@link WritableObject} {@code
    * dumpFile}. <br>
-   * <b>The specified {@link File} {@code dir} has to be a directory.</b> It is created if it
-   * does not exist.
+   * <b>The specified {@link File} {@code dir} has to be a directory.</b> It is created if it does
+   * not exist.
    *
    * <p>The provided settings must be <i>mutable</i> as AnnotationConfig will fill them with
    * defaults if they are missing.
@@ -476,8 +476,8 @@ public interface ConfigResolver {
    * Loads the configurations in the {@link Path} {@code dir} specified, and if any do not exist,
    * the defaults (if specified) are dumped to the specified {@link WritableObject} {@code
    * dumpFile}. <br>
-   * <b>The specified {@link Path} {@code dir} has to be a directory.</b> It is created if it
-   * does not exist.
+   * <b>The specified {@link Path} {@code dir} has to be a directory.</b> It is created if it does
+   * not exist.
    *
    * @param dir the directory to load configurations from
    * @param configToResolveTo a {@link Supplier} of the needed configuration objects
@@ -495,8 +495,8 @@ public interface ConfigResolver {
    * Loads the configurations in the {@link Path} {@code dir} specified, and if any do not exist,
    * the defaults (if specified) are dumped to the specified {@link WritableObject} {@code
    * dumpFile}. <br>
-   * <b>The specified {@link Path} {@code dir} has to be a directory.</b> It is created if it
-   * does not exist.
+   * <b>The specified {@link Path} {@code dir} has to be a directory.</b> It is created if it does
+   * not exist.
    *
    * <p>The provided settings must be <i>mutable</i> as AnnotationConfig will fill them with
    * defaults if they are missing.

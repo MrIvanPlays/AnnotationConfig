@@ -56,11 +56,10 @@ class TestResolverThreadSafety {
       List<Future<Object>> results = new ArrayList<>();
       for (int i = 0; i < THREADS; i++) {
         results.add(
-            executor.submit(
-                () -> {
-                  start.await();
-                  return method.invoke(null);
-                }));
+            executor.submit(() -> {
+              start.await();
+              return method.invoke(null);
+            }));
       }
       Object first = results.getFirst().get();
       Assertions.assertNotNull(first);

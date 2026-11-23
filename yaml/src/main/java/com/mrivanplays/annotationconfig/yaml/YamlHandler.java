@@ -137,11 +137,10 @@ public final class YamlHandler implements ValueReader, ValueWriter {
   /**
    * Converts plain Java values into a SnakeYAML node tree. Created once per write call.
    *
-   * @param fastScalars whether numbers and booleans may be built directly instead of through
-   *     {@link Yaml#represent(Object)}, which is only correct for the default instance
+   * @param fastScalars whether numbers and booleans may be built directly instead of through {@link
+   *     Yaml#represent(Object)}, which is only correct for the default instance
    */
-  private record TreeBuilder(
-      Yaml yaml, Map<String, List<String>> comments, boolean fastScalars) {
+  private record TreeBuilder(Yaml yaml, Map<String, List<String>> comments, boolean fastScalars) {
 
     /**
      * @param path dotted path of this map ("" for the root), or null to write no comments below it

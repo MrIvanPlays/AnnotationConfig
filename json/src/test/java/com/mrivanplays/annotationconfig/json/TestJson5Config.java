@@ -106,7 +106,8 @@ public class TestJson5Config {
             // Seconds
             timeout: 30
           }
-        }""";
+        }\
+        """;
     Assertions.assertEquals(expected, dump(JSON5, new Server()));
   }
 
@@ -125,7 +126,8 @@ public class TestJson5Config {
           "database": {
             "timeout": 30
           }
-        }""";
+        }\
+        """;
     Assertions.assertEquals(expected, dump(JsonConfig.getConfigResolver(), new Server()));
   }
 
@@ -201,8 +203,7 @@ public class TestJson5Config {
     // Gson's default number policy reads untyped numbers as Double
     Gson gson = new GsonBuilder().setStrictness(Strictness.LENIENT).create();
     Untyped custom = new Untyped();
-    JSON5.load(
-        custom, new StringReader(input), new Settings().put(JsonConfig.GSON_INSTANCE, gson));
+    JSON5.load(custom, new StringReader(input), new Settings().put(JsonConfig.GSON_INSTANCE, gson));
     Assertions.assertEquals(1.5, custom.value);
   }
 }

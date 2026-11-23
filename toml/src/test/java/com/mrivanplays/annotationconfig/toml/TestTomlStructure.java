@@ -38,8 +38,8 @@ import org.junit.jupiter.api.Test;
 
 /**
  * How config classes map to TOML: top-level options are separated by an empty line, config objects
- * and other objects become tables after them, arrays and lists become arrays with inline tables
- * for objects. Every output is also parsed by a separate TOML parser.
+ * and other objects become tables after them, arrays and lists become arrays with inline tables for
+ * objects. Every output is also parsed by a separate TOML parser.
  */
 public class TestTomlStructure {
 
@@ -157,8 +157,7 @@ public class TestTomlStructure {
   public void tableHeadersQuoteTheirKeys() {
     String toml = dump(new QuotedTable());
     Assertions.assertEquals("['has space'.'dotted.key']\nx = 1\n", toml);
-    Assertions.assertEquals(
-        Map.of("has space", Map.of("dotted.key", Map.of("x", 1))), parse(toml));
+    Assertions.assertEquals(Map.of("has space", Map.of("dotted.key", Map.of("x", 1))), parse(toml));
   }
 
   @Test
@@ -191,8 +190,7 @@ public class TestTomlStructure {
   @Test
   public void commentsBelongToExactlyOneKey() {
     // "port" has no comment and is a prefix of "portal", so it used to get portal's comment
-    Assertions.assertEquals(
-        "# portal comment\nportal = 1\n\nport = 2\n", dump(new SimilarNames()));
+    Assertions.assertEquals("# portal comment\nportal = 1\n\nport = 2\n", dump(new SimilarNames()));
   }
 
   static class MultilineComment {

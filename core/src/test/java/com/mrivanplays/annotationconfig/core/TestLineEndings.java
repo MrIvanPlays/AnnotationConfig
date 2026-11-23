@@ -47,7 +47,6 @@ public class TestLineEndings {
     StringWriter writer = new StringWriter();
     PropertyConfig.getConfigResolver().dump(new Subject(), writer);
     // not normalized: the line endings are what is tested
-    Assertions.assertEquals(
-        "# Class comment\n\nb=2\n\n# field comment\na=1\n", writer.toString());
+    Assertions.assertEquals("# Class comment\n\nb=2\n\n# field comment\na=1\n", writer.toString());
   }
 }

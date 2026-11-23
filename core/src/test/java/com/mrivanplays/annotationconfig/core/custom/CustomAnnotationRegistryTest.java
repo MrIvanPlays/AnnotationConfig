@@ -102,16 +102,15 @@ public class CustomAnnotationRegistryTest {
     try {
       for (int i = 0; i < threads; i++) {
         futures.add(
-            executor.submit(
-                () -> {
-                  start.await();
-                  try {
-                    REGISTRY.register(Checked.class, VALIDATOR);
-                  } catch (IllegalArgumentException e) {
-                    rejected.incrementAndGet();
-                  }
-                  return null;
-                }));
+            executor.submit(() -> {
+              start.await();
+              try {
+                REGISTRY.register(Checked.class, VALIDATOR);
+              } catch (IllegalArgumentException e) {
+                rejected.incrementAndGet();
+              }
+              return null;
+            }));
       }
       start.countDown();
       for (Future<?> future : futures) {

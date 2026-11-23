@@ -97,7 +97,8 @@ public class TestJsonResolver {
             "a": 1,
             "b": 3
           }
-        }""";
+        }\
+        """;
     Assertions.assertEquals(expected, Files.readString(file));
   }
 
@@ -118,8 +119,7 @@ public class TestJsonResolver {
 
   @Test
   public void parentFieldsOnlyWithFindParentFields() {
-    Assertions.assertEquals(
-        "{\n  \"own\": \"own\"\n}", dump(new Extended(), new Settings()));
+    Assertions.assertEquals("{\n  \"own\": \"own\"\n}", dump(new Extended(), new Settings()));
     Assertions.assertEquals(
         "{\n  \"own\": \"own\",\n  \"base\": 1\n}",
         dump(new Extended(), new Settings().put(ACDefaultSettings.FIND_PARENT_FIELDS, true)));

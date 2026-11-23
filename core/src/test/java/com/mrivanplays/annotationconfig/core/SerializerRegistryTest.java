@@ -166,16 +166,15 @@ public class SerializerRegistryTest {
     try {
       for (int i = 0; i < threads; i++) {
         futures.add(
-            executor.submit(
-                () -> {
-                  start.await();
-                  try {
-                    REGISTRY.registerSerializer(Point.class, SERIALIZER);
-                  } catch (IllegalArgumentException e) {
-                    rejected.incrementAndGet();
-                  }
-                  return null;
-                }));
+            executor.submit(() -> {
+              start.await();
+              try {
+                REGISTRY.registerSerializer(Point.class, SERIALIZER);
+              } catch (IllegalArgumentException e) {
+                rejected.incrementAndGet();
+              }
+              return null;
+            }));
       }
       start.countDown();
       for (Future<?> future : futures) {

@@ -285,7 +285,8 @@ public class TestTomlValues {
   @Test
   public void datesRoundTrip() {
     Dates loaded = roundTrip(new Dates(), new Dates());
-    Assertions.assertEquals(OffsetDateTime.parse("2021-11-10T17:31:00+02:00"), loaded.offsetDateTime);
+    Assertions.assertEquals(
+        OffsetDateTime.parse("2021-11-10T17:31:00+02:00"), loaded.offsetDateTime);
     Assertions.assertEquals(LocalDateTime.parse("2021-11-10T17:31:48.5"), loaded.localDateTime);
     Assertions.assertEquals(LocalDate.parse("2021-11-10"), loaded.localDate);
     Assertions.assertEquals(LocalTime.parse("17:31"), loaded.localTime);

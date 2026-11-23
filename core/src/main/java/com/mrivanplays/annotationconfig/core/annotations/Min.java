@@ -32,9 +32,9 @@ import java.lang.annotation.Target;
  * Annotation, representing a minimal string length or a minimal int/double/byte/float/short/long
  * value.
  *
- * <p>Exactly one member has to be set. Each member defaults to the lowest value of its type
- * ({@code Integer.MIN_VALUE}, {@code Double.NEGATIVE_INFINITY}, ...), which means "not set"; any
- * other value, including {@code -1}, is a bound.
+ * <p>Exactly one member has to be set. Each member defaults to the lowest value of its type ({@code
+ * Integer.MIN_VALUE}, {@code Double.NEGATIVE_INFINITY}, ...), which means "not set"; any other
+ * value, including {@code -1}, is a bound.
  *
  * @since 2.0.0
  * @author Ivan Pekov

@@ -1,0 +1,34 @@
+# Editor settings following Google Java Style, as google-java-format formats it:
+# https://google.github.io/styleguide/javaguide.html
+root = true
+
+[*]
+charset = utf-8
+end_of_line = lf
+indent_style = space
+indent_size = 2
+insert_final_newline = true
+trim_trailing_whitespace = true
+
+[*.java]
+max_line_length = 100
+# The ij_ settings are read by IntelliJ IDEA only.
+# Continuation lines are indented by at least +4 (4.5.2)
+ij_continuation_indent_size = 4
+ij_visual_guides = 100
+# All static imports in one block, then all other imports, never wildcards (3.3)
+ij_java_imports_layout = $*, |, *
+ij_java_class_count_to_use_import_on_demand = 999
+ij_java_names_count_to_use_import_on_demand = 999
+
+[*.md]
+# Two trailing spaces are a line break in Markdown
+trim_trailing_whitespace = false
+
+[*.sh]
+indent_size = 4
+
+# Test fixtures are read as they are, and some end without a line break: leave them unchanged
+[**/src/test/resources/**]
+insert_final_newline = unset
+trim_trailing_whitespace = unset

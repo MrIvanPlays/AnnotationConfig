@@ -48,8 +48,7 @@ public class MapUtilsTest {
 
     MapUtils.populateFirst(first, second);
 
-    Assertions.assertEquals(
-        Map.of("foo", Map.of("baz", Map.of("bar", "aa", "eee", "rrr"))), first);
+    Assertions.assertEquals(Map.of("foo", Map.of("baz", Map.of("bar", "aa", "eee", "rrr"))), first);
     Assertions.assertEquals(Map.of("foo", Map.of("baz", Map.of("eee", "rrr"))), second);
   }
 }

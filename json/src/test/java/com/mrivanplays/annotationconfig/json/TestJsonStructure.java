@@ -99,7 +99,8 @@ public class TestJsonStructure {
             }
           },
           "name": "Ivan"
-        }""";
+        }\
+        """;
     Assertions.assertEquals(expected, dump(new Sections()));
   }
 
@@ -112,7 +113,8 @@ public class TestJsonStructure {
             {
               "server": {"ip": "example.org", "port": 25577, "limits": {"players": 50}},
               "name": "Pekov"
-            }""");
+            }\
+            """);
     Assertions.assertEquals("example.org", config.server.host);
     Assertions.assertEquals(25577, config.server.port);
     Assertions.assertEquals(50, config.server.limits.players);
@@ -151,7 +153,8 @@ public class TestJsonStructure {
               }
             }
           }
-        }""";
+        }\
+        """;
     Assertions.assertEquals(expected, dump(new DottedKeys()));
   }
 
@@ -164,7 +167,8 @@ public class TestJsonStructure {
             {"commands": {"subcommands": {
               "help": {"foo": "pepega"},
               "this": {"bar": "baz", "baz": 69420}
-            }}}""");
+            }}}\
+            """);
     Assertions.assertEquals("pepega", config.foo);
     Assertions.assertEquals("baz", config.bar);
     Assertions.assertEquals(69420, config.baz);
@@ -231,7 +235,8 @@ public class TestJsonStructure {
             }
           ],
           "empty": []
-        }""";
+        }\
+        """;
     Assertions.assertEquals(expected, dump(new Arrays()));
   }
 
@@ -248,7 +253,8 @@ public class TestJsonStructure {
               "names": [],
               "itemList": [{"name": "y", "amount": 8}, {"name": "z", "amount": 9}],
               "empty": ["now", "filled"]
-            }""");
+            }\
+            """);
     Assertions.assertArrayEquals(new int[] {3, 4, 5}, config.numbers);
     Assertions.assertArrayEquals(
         new BigDecimal[] {new BigDecimal("2222.3333"), new BigDecimal("4444.5555")},
@@ -319,7 +325,8 @@ public class TestJsonStructure {
               }
             ]
           }
-        }""";
+        }\
+        """;
     Assertions.assertEquals(expected, dump(new Maps()));
   }
 
@@ -344,7 +351,8 @@ public class TestJsonStructure {
             "foo": 2,
             "bar": "baz"
           }
-        }""",
+        }\
+        """,
         dump(new DataObjectField()));
 
     DataObjectField config =
@@ -390,7 +398,8 @@ public class TestJsonStructure {
             "y": 64,
             "z": 3.0
           }
-        }""";
+        }\
+        """;
     Assertions.assertEquals(expected, dump(new Records()));
   }
 
@@ -403,7 +412,8 @@ public class TestJsonStructure {
             {
               "spawn": {"world-name": "end", "x": 1, "y": 2, "z": 3.5},
               "home": {"world-name": "overworld", "x": 4, "y": 5, "z": 6.0}
-            }""");
+            }\
+            """);
     Assertions.assertEquals(new Location("end", 1, 2, 3.5), config.spawn);
     Assertions.assertEquals(new Location("overworld", 4, 5, 6.0), config.home);
   }

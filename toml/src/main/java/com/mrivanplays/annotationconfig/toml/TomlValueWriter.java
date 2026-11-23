@@ -53,10 +53,10 @@ import org.jspecify.annotations.Nullable;
  * <ul>
  *   <li>Every top-level option is separated by an empty line, and its comments are written above
  *       it. Config objects and other objects are written as tables ({@code [server]}), with the
- *       comments of the object above the header and one line per value below it, each with its
- *       own comments. Objects inside them become sub-tables ({@code [server.limits]}). A table
- *       with neither values nor comments of its own gets no header: {@code [a.b]} defines
- *       {@code a} already.
+ *       comments of the object above the header and one line per value below it, each with its own
+ *       comments. Objects inside them become sub-tables ({@code [server.limits]}). A table with
+ *       neither values nor comments of its own gets no header: {@code [a.b]} defines {@code a}
+ *       already.
  *   <li>TOML ends a table only where the next one starts, so options that are not tables are
  *       written first, and the tables after them, both in declaration order. Empty objects are
  *       written as {@code {}}, in place.
@@ -108,8 +108,8 @@ public final class TomlValueWriter implements ValueWriter {
   /**
    * Writes one table: its header, the values that are not tables, then each table inside it.
    *
-   * <p>The header is left out when the table has neither values nor comments of its own, as
-   * {@code [a.b]} defines {@code a} already; an {@code [a]} above it would be empty.
+   * <p>The header is left out when the table has neither values nor comments of its own, as {@code
+   * [a.b]} defines {@code a} already; an {@code [a]} above it would be empty.
    *
    * <p>'\n' and not println() everywhere: the line separator of the OS would mix with the '\n' of
    * the class comment.
@@ -258,7 +258,8 @@ public final class TomlValueWriter implements ValueWriter {
           appendString(out, number.toString());
         }
       }
-      case OffsetDateTime dateTime -> DateTimeFormatter.ISO_OFFSET_DATE_TIME.formatTo(dateTime, out);
+      case OffsetDateTime dateTime ->
+          DateTimeFormatter.ISO_OFFSET_DATE_TIME.formatTo(dateTime, out);
       case ZonedDateTime dateTime -> DateTimeFormatter.ISO_OFFSET_DATE_TIME.formatTo(dateTime, out);
       case Instant instant -> DateTimeFormatter.ISO_INSTANT.formatTo(instant, out);
       case LocalDateTime dateTime -> DateTimeFormatter.ISO_LOCAL_DATE_TIME.formatTo(dateTime, out);
@@ -359,7 +360,6 @@ public final class TomlValueWriter implements ValueWriter {
     }
   }
 
-
   private static void appendDouble(StringBuilder out, double value) {
     if (Double.isNaN(value)) {
       out.append("nan");
@@ -452,9 +452,8 @@ public final class TomlValueWriter implements ValueWriter {
   }
 
   /**
-   * A multi-line basic string. The line break after the opening delimiter is not part of the
-   * value, and line breaks are written as {@code \n} so the value reads back the same on every
-   * platform.
+   * A multi-line basic string. The line break after the opening delimiter is not part of the value,
+   * and line breaks are written as {@code \n} so the value reads back the same on every platform.
    */
   private static void appendMultilineString(StringBuilder out, String value) {
     out.append("\"\"\"\n");

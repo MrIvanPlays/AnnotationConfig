@@ -52,8 +52,7 @@ public class TestJsonLineEndings {
 
   @Test
   public void jsonUsesLineFeeds() {
-    Assertions.assertEquals(
-        "{\n  \"a\": 1,\n  \"b\": 2\n}", dump(JsonConfig.getConfigResolver()));
+    Assertions.assertEquals("{\n  \"a\": 1,\n  \"b\": 2\n}", dump(JsonConfig.getConfigResolver()));
   }
 
   @Test

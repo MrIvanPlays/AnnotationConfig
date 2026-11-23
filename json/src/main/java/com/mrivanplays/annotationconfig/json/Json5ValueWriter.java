@@ -45,10 +45,10 @@ import org.jspecify.annotations.Nullable;
  *       options inside config objects. Comments of keys inside arrays are not written.
  *   <li>Keys that are identifiers ({@code [A-Za-z_$][A-Za-z0-9_$]*}) are written unquoted, any
  *       other key in double quotes.
- *   <li>Strings are double-quoted. {@code @Multiline} strings are written on one line with
- *       {@code \n} escapes, not split with JSON5's line continuations (a backslash before a line
- *       break): JSON5 drops the line break, but Gson keeps it in the value, so such a string would
- *       not read back the same.
+ *   <li>Strings are double-quoted. {@code @Multiline} strings are written on one line with {@code
+ *       \n} escapes, not split with JSON5's line continuations (a backslash before a line break):
+ *       JSON5 drops the line break, but Gson keeps it in the value, so such a string would not read
+ *       back the same.
  *   <li>Infinity and NaN are written as {@code Infinity}, {@code -Infinity} and {@code NaN}.
  *   <li>The layout is the one of pretty printed JSON (two spaces per level, one array element per
  *       line), without trailing commas. A {@code null} entry of an object is left out, a {@code

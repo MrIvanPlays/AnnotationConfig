@@ -34,8 +34,8 @@ import org.yaml.snakeyaml.DumperOptions.FlowStyle;
 import org.yaml.snakeyaml.Yaml;
 
 /**
- * Numbers and booleans are built by hand for the default Yaml instance instead of through SnakeYAML's
- * representer. The output has to be the same as the representer's.
+ * Numbers and booleans are built by hand for the default Yaml instance instead of through
+ * SnakeYAML's representer. The output has to be the same as the representer's.
  */
 public class TestYamlScalars {
 
@@ -83,8 +83,7 @@ public class TestYamlScalars {
   @Test
   public void scalarsMatchSnakeYamlsRepresenter() {
     String fast = dump(new Settings());
-    String represented =
-        dump(new Settings().put(YamlConfig.YAML_INSTANCE, representerInstance()));
+    String represented = dump(new Settings().put(YamlConfig.YAML_INSTANCE, representerInstance()));
     Assertions.assertEquals(represented, fast);
   }
 

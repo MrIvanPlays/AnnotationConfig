@@ -54,7 +54,6 @@ public class YAMLSecondTestSubject {
   @Comment("All supported messages")
   public static class Messages {
 
-
     @Key("no-console")
     private String noConsole = "No console!";
 

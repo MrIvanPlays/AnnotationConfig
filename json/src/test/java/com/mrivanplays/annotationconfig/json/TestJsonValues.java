@@ -73,7 +73,8 @@ public class TestJsonValues {
               "longValue": 22221111,
               "shortValue": -32768,
               "longs": [1, 10000000, 123456789]
-            }""");
+            }\
+            """);
     Assertions.assertEquals(2_000_000_000, config.integer);
     Assertions.assertEquals(22_221_111L, config.longValue);
     Assertions.assertEquals(Short.MIN_VALUE, config.shortValue);
@@ -90,7 +91,8 @@ public class TestJsonValues {
               "longValue": 9007199254740993,
               "bigInteger": 123456789012345678901234567890,
               "bigDecimal": 0.12345678901234567890
-            }""");
+            }\
+            """);
     Assertions.assertEquals(9_007_199_254_740_993L, config.longValue);
     Assertions.assertEquals(new BigInteger("123456789012345678901234567890"), config.bigInteger);
     Assertions.assertEquals(new BigDecimal("0.12345678901234567890"), config.bigDecimal);
@@ -116,7 +118,8 @@ public class TestJsonValues {
             1,
             2
           ]
-        }""";
+        }\
+        """;
     Assertions.assertEquals(expected, dump(config));
   }
 
@@ -179,7 +182,8 @@ public class TestJsonValues {
           "integers": [
             123456789012345678901234567890
           ]
-        }""";
+        }\
+        """;
     UntypedNumbers config = load(new UntypedNumbers(), json);
     Assertions.assertEquals(new BigDecimal("1"), config.map.get("whole"));
     Assertions.assertEquals(new BigDecimal("0.12345678901234567890"), config.map.get("decimal"));
@@ -212,7 +216,8 @@ public class TestJsonValues {
           "plain": "a=b & c<d> 'e'",
           "character": "x",
           "multiline": "first line\\nsecond line\\n"
-        }""";
+        }\
+        """;
     Assertions.assertEquals(expected, dump(new Text()));
   }
 
@@ -235,7 +240,8 @@ public class TestJsonValues {
         load(
             new Text(),
             """
-            {"plain": "x=1&y=2", "character": "q", "multiline": "one\\ntwo"}""");
+            {"plain": "x=1&y=2", "character": "q", "multiline": "one\\ntwo"}\
+            """);
     Assertions.assertEquals("x=1&y=2", config.plain);
     Assertions.assertEquals('q', config.character);
     Assertions.assertEquals("one\ntwo", config.multiline);
@@ -273,7 +279,8 @@ public class TestJsonValues {
             "special",
             "fastmode"
           ]
-        }""";
+        }\
+        """;
     Assertions.assertEquals(expected, dump(new Enums()));
   }
 
@@ -283,7 +290,8 @@ public class TestJsonValues {
         load(
             new Enums(),
             """
-            {"mode": "SPECIAL", "special": "FastMode", "modes": ["fastmode"]}""");
+            {"mode": "SPECIAL", "special": "FastMode", "modes": ["fastmode"]}\
+            """);
     Assertions.assertEquals(Mode.SPECIAL, config.mode);
     Assertions.assertEquals(Mode.fastMode, config.special);
     Assertions.assertEquals(List.of(Mode.fastMode), config.modes);
@@ -332,7 +340,8 @@ public class TestJsonValues {
           "wildcard": [
             1.5
           ]
-        }""",
+        }\
+        """,
         dump(config));
   }
 
