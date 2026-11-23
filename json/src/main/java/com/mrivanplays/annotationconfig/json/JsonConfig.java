@@ -85,8 +85,6 @@ public final class JsonConfig {
     return StandardHolder.RESOLVER;
   }
 
-  // <editor-fold desc="Internal Implementation" defaultstate="collapsed">
-
   /**
    * Returns the {@link ConfigResolver} instance for <a href="https://spec.json5.org">JSON5</a>
    * configuration files ({@code .json5}), a superset of JSON that supports comments.
@@ -107,6 +105,8 @@ public final class JsonConfig {
   public static ConfigResolver getJson5ConfigResolver() {
     return Json5Holder.RESOLVER;
   }
+
+  // <editor-fold desc="Internal Implementation" defaultstate="collapsed">
 
   private static ConfigResolver createConfigResolver(boolean json5) {
     ConfigResolver.Builder builder =
@@ -195,10 +195,9 @@ public final class JsonConfig {
     static final ConfigResolver RESOLVER = createConfigResolver(false);
   }
 
-  // </editor-fold>
-
   private static final class Json5Holder {
 
     static final ConfigResolver RESOLVER = createConfigResolver(true);
   }
+  // </editor-fold>
 }

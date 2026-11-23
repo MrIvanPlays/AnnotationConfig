@@ -46,7 +46,6 @@ public final class YamlConfig {
    */
   public static final Setting<Yaml> YAML_INSTANCE = Setting.of("yaml", Yaml.class);
 
-  // <editor-fold desc="Internal Implementation" defaultstate="collapsed">
   static final YamlHandler HANDLER = new YamlHandler();
 
   private YamlConfig() {
@@ -62,6 +61,7 @@ public final class YamlConfig {
     return ResolverHolder.RESOLVER;
   }
 
+  // <editor-fold desc="Internal Implementation" defaultstate="collapsed">
   private static ConfigResolver createConfigResolver() {
     return ConfigResolver.newBuilder()
         .withValueReader(HANDLER)
@@ -74,11 +74,10 @@ public final class YamlConfig {
         .build();
   }
 
-  // </editor-fold>
-
   /** Builds the resolver on first use; class initialisation makes that happen exactly once. */
   private static final class ResolverHolder {
 
     static final ConfigResolver RESOLVER = createConfigResolver();
   }
+  // </editor-fold>
 }

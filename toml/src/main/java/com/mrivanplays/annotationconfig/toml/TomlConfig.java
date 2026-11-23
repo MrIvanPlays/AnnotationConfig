@@ -58,7 +58,7 @@ public final class TomlConfig {
 
   private static final TomlMapper DEFAULT_TOML_MAPPER =
       TomlMapper.builder().configure(TomlReadFeature.PARSE_JAVA_TIME, true).build();
-  // <editor-fold desc="Internal Implementation" defaultstate="collapsed">
+
   private static final ValueWriter TOML_VALUE_WRITER = new TomlValueWriter();
 
   /**
@@ -97,6 +97,7 @@ public final class TomlConfig {
     return ResolverHolder.RESOLVER;
   }
 
+  // <editor-fold desc="Internal Implementation" defaultstate="collapsed">
   private static ConfigResolver createConfigResolver() {
     registerDateTimeSerializer(OffsetDateTime.class, OffsetDateTime::parse);
     registerDateTimeSerializer(LocalDateTime.class, LocalDateTime::parse);

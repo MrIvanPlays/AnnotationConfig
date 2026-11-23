@@ -41,8 +41,6 @@ public final class PropertyConfig {
     throw new IllegalStateException("Instantiation of utility-type class");
   }
 
-  // <editor-fold desc="Internal implementation" defaultstate="collapsed">
-
   /**
    * Returns the {@link ConfigResolver} instance of PropertyConfig
    *
@@ -51,6 +49,8 @@ public final class PropertyConfig {
   public static ConfigResolver getConfigResolver() {
     return ResolverHolder.RESOLVER;
   }
+
+  // <editor-fold desc="Internal implementation" defaultstate="collapsed">
 
   private static ConfigResolver createConfigResolver() {
     return ConfigResolver.newBuilder()
@@ -84,11 +84,10 @@ public final class PropertyConfig {
     return result;
   }
 
-  // </editor-fold>
-
   /** Builds the resolver on first use; class initialisation makes that happen exactly once. */
   private static final class ResolverHolder {
 
     static final ConfigResolver RESOLVER = createConfigResolver();
   }
+  // </editor-fold>
 }
