@@ -36,10 +36,10 @@ import org.jspecify.annotations.Nullable;
  * section of the config):
  *
  * <ul>
- *   <li>merging the maps of dotted keys that share their first parts ({@link
- *       #populateFirst(Map, Map)});
- *   <li>copying maps with their keys as text, as values read from a file can have keys that are
- *       not strings, such as numbers in YAML ({@link #copyWithStringKeys(Map, Function)} and the
+ *   <li>merging the maps of dotted keys that share their first parts ({@link #populateFirst(Map,
+ *       Map)});
+ *   <li>copying maps with their keys as text, as values read from a file can have keys that are not
+ *       strings, such as numbers in YAML ({@link #copyWithStringKeys(Map, Function)} and the
  *       methods built on it);
  *   <li>finding the sections that hold a key of a map by dotted path ({@link #parentPaths(Map)}).
  * </ul>
@@ -57,7 +57,7 @@ public final class MapUtils {
   /**
    * @deprecated not used by AnnotationConfig anymore
    */
-  @Deprecated(since = "3.1.0")
+  @Deprecated(since = "3.1.0", forRemoval = true)
   public static Map<String, Object> getLastCommonMap(
       Map<String, Object> map1, Map<String, Object> map2) {
     Map<String, Object> ret = map2;
@@ -86,9 +86,9 @@ public final class MapUtils {
    *   <li>otherwise {@code map1} keeps its value.
    * </ul>
    *
-   * <p>So {@code {a={b={c={x=1}}}}} and {@code {a={b={c={y=2}}}}} give {@code
-   * {a={b={c={x=1, y=2}}}}}. {@code map2} is not changed, but the maps it holds are put into {@code
-   * map1} as they are, not copied, so a later merge into {@code map1} can change them.
+   * <p>So {@code {a={b={c={x=1}}}}} and {@code {a={b={c={y=2}}}}} give {@code {a={b={c={x=1,
+   * y=2}}}}}. {@code map2} is not changed, but the maps it holds are put into {@code map1} as they
+   * are, not copied, so a later merge into {@code map1} can change them.
    *
    * @param map1 the map that is merged into
    * @param map2 the map whose entries are merged into {@code map1}

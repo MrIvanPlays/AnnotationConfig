@@ -153,7 +153,7 @@ public final class FieldInfo {
   }
 
   static List<String> applyPlaceholders(List<String> comments) {
-    return comments.isEmpty()
+    return comments.isEmpty() || !CommentPlaceholderRegistry.INSTANCE.hasPlaceholders()
         ? comments
         : CommentPlaceholderRegistry.INSTANCE.applyPlaceholders(comments);
   }

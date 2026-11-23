@@ -131,8 +131,8 @@ public final class DataObject {
    *
    * <p>The {@code immutable} tag if set to {@code true} will make the data held in the created data
    * object and in the created data object delegates immutable/unmodifiable. An immutable data
-   * object reads the map when it is first accessed, without copying it first, so the map should
-   * not be changed afterwards.
+   * object reads the map when it is first accessed, without copying it first, so the map should not
+   * be changed afterwards.
    *
    * @param data the data which is stored
    * @param immutable whether immutable
@@ -155,9 +155,9 @@ public final class DataObject {
   }
 
   /**
-   * The entries of the map this data object holds, or {@code null} for a single value. An
-   * immutable data object wraps its map here, on first use: the values are wrapped lazily too, so
-   * this costs one map of this level, not a copy of everything below it.
+   * The entries of the map this data object holds, or {@code null} for a single value. An immutable
+   * data object wraps its map here, on first use: the values are wrapped lazily too, so this costs
+   * one map of this level, not a copy of everything below it.
    */
   private Map<String, DataObject> entries() {
     Map<String, DataObject> entries = this.serialize;
@@ -332,9 +332,9 @@ public final class DataObject {
   }
 
   /**
-   * The entries of this data object for reading only, without the deep copy of {@link
-   * #getAsMap()}: the values that are maps are the maps themselves, not copies. An empty map for a
-   * single value. Callers must not modify the returned map or the maps in it.
+   * The entries of this data object for reading only, without the deep copy of {@link #getAsMap()}:
+   * the values that are maps are the maps themselves, not copies. An empty map for a single value.
+   * Callers must not modify the returned map or the maps in it.
    */
   Map<String, Object> mapView() {
     if (this.serialize == null && this.source != null) {
@@ -386,7 +386,7 @@ public final class DataObject {
    */
   public <T> T getAs(Class<T> type) {
     if (data != null) {
-      if (data.getClass().isAssignableFrom(type)) {
+      if (type.isAssignableFrom(data.getClass())) {
         return type.cast(data);
       } else {
         throw new IllegalArgumentException(
@@ -567,7 +567,7 @@ public final class DataObject {
       return true;
     }
     if (other.isSingleValue() && this.isSingleValue()) {
-      return other.data.equals(this.data);
+      return Objects.equals(other.data, this.data);
     } else if (!other.isSingleValue() && this.isSingleValue()) {
       return false;
     } else if (other.isSingleValue()) {

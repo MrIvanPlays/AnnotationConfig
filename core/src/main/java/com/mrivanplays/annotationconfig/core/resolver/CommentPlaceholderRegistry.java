@@ -121,6 +121,16 @@ public enum CommentPlaceholderRegistry {
   }
 
   /**
+   * Check whether this placeholder registry has any placeholders to apply
+   *
+   * @return false if empty, true otherwise
+   * @since 3.1.0
+   */
+  public boolean hasPlaceholders() {
+    return !this.placeholders.isEmpty();
+  }
+
+  /**
    * Returns a new mutable list with the inputted {@code comments}, with all the registered
    * placeholders applied.
    *

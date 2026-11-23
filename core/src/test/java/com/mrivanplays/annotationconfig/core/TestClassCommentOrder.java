@@ -36,8 +36,8 @@ import org.junit.jupiter.api.Test;
 
 /**
  * With {@code FIND_PARENT_FIELDS}, the comments of every class in the hierarchy are written, the
- * class a config extends before the config's class, then the fields. The order of the holders is
- * a consistent {@link Comparable} order, not one that depends on how a {@code TreeSet} inserts.
+ * class a config extends before the config's class, then the fields. The order of the holders is a
+ * consistent {@link Comparable} order, not one that depends on how a {@code TreeSet} inserts.
  */
 class TestClassCommentOrder {
 

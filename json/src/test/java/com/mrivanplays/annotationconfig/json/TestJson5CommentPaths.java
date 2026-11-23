@@ -36,8 +36,8 @@ import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
 /**
- * Comments are looked up by dotted path only in objects that hold a commented value; the others
- * are written the same way without building the paths of their keys.
+ * Comments are looked up by dotted path only in objects that hold a commented value; the others are
+ * written the same way without building the paths of their keys.
  */
 class TestJson5CommentPaths {
 
@@ -88,7 +88,8 @@ class TestJson5CommentPaths {
             // lines
             flat: 4
           }
-        }""";
+        }\
+        """;
     Assertions.assertEquals(expected, out.toString());
     Map<?, ?> read =
         new GsonBuilder()

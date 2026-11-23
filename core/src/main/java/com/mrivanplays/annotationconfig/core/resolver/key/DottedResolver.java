@@ -56,11 +56,8 @@ import org.jspecify.annotations.Nullable;
  * @author Ivan Pekov
  * @since 2.0.1
  */
-@SuppressWarnings("unchecked")
 @NullMarked
 public final class DottedResolver implements KeyResolver {
-
-  @Nullable private static DottedResolver instance;
 
   /**
    * Returns the instance of the {@link DottedResolver}
@@ -68,11 +65,15 @@ public final class DottedResolver implements KeyResolver {
    * @return instance
    */
   public static DottedResolver getInstance() {
-    if (instance == null) {
-      instance = new DottedResolver();
-    }
-    return instance;
+    return Holder.INSTANCE;
   }
+
+  // <editor-fold desc="Holder">
+  private static final class Holder {
+    static final DottedResolver INSTANCE = new DottedResolver();
+  }
+
+  // </editor-fold>
 
   private DottedResolver() {}
 

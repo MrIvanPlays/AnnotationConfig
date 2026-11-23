@@ -471,8 +471,7 @@ final class DefaultSerializer implements FieldTypeSerializer<Object> {
     }
     // static fields only with FIND_STATIC_FIELDS, and never synthetic ones: a class with one field
     // and a constant is written as that one field's value, as a class with only the field is
-    List<FieldInfo> fields =
-        ClassInfo.of(value.getClass()).dataFields(findStaticFields(context));
+    List<FieldInfo> fields = ClassInfo.of(value.getClass()).dataFields(findStaticFields(context));
     if (fields.isEmpty()) {
       throw new IllegalArgumentException("Can't serialize object with no fields.");
     }
@@ -533,14 +532,14 @@ final class DefaultSerializer implements FieldTypeSerializer<Object> {
               "Expected DataObject, but got null ; Field: "
                   + desField.getName()
                   + " ; Field type: "
-                  + desField.getClass().getName());
+                  + desField.getType().getName());
         }
         if (serialized.isEmpty()) {
           continue;
         }
         object.putAll(key, serialized);
       } catch (IllegalAccessException e) {
-        throw new IllegalArgumentException("Field became inaccessible.");
+        throw new IllegalArgumentException("Field became inaccessible.", e);
       }
     }
     return object;

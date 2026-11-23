@@ -24,7 +24,6 @@ package com.mrivanplays.annotationconfig.core.resolver.settings;
 
 import com.mrivanplays.annotationconfig.core.resolver.key.KeyResolver;
 import org.jspecify.annotations.NullMarked;
-import org.jspecify.annotations.Nullable;
 
 /**
  * Represents a holder of the default {@link Settings} for AnnotationConfig.
@@ -97,22 +96,32 @@ public final class ACDefaultSettings {
   public static final Setting<Boolean> FIND_STATIC_FIELDS =
       Setting.of("find_static_fields", Boolean.class);
 
-  @Nullable private static Settings defaults;
-
+  /**
+   * Get the default {@link Settings settings}.
+   *
+   * @return defaults
+   */
   public static Settings getDefault() {
-    if (defaults != null) {
-      return defaults;
-    }
-    return defaults =
-        new Settings()
-            .put(SHOULD_REVERSE_FIELDS, false)
-            .put(NULL_READ_HANDLER, NullReadHandleOption.SET_NULL)
-            .put(GENERATE_NEW_OPTIONS, true)
-            .put(FIND_PARENT_FIELDS, false)
-            .put(FIND_STATIC_FIELDS, false)
-            .put(KEY_RESOLVER, KeyResolver.DEFAULT)
-            .copy(true);
+    return Holder.SETTINGS;
   }
+
+  // <editor-fold desc="Holder impl" defaultstate="collapsed">
+  private static final class Holder {
+    static final Settings SETTINGS = generateSettings();
+  }
+
+  private static Settings generateSettings() {
+    return new Settings()
+        .put(SHOULD_REVERSE_FIELDS, false)
+        .put(NULL_READ_HANDLER, NullReadHandleOption.SET_NULL)
+        .put(GENERATE_NEW_OPTIONS, true)
+        .put(FIND_PARENT_FIELDS, false)
+        .put(FIND_STATIC_FIELDS, false)
+        .put(KEY_RESOLVER, KeyResolver.DEFAULT)
+        .copy(true);
+  }
+
+  // </editor-fold>
 
   private ACDefaultSettings() {
     throw new IllegalStateException("Instantiation of utility-type class");

@@ -109,8 +109,7 @@ class TestDefaultSerializerFields {
   void aStaticOnlyFieldIsNotLoadedWithoutFindStaticFields() {
     WithOnlyStatic config = new WithOnlyStatic();
     Assertions.assertThrows(
-        IllegalArgumentException.class,
-        () -> RESOLVER.load(config, new StringReader("holder=9")));
+        IllegalArgumentException.class, () -> RESOLVER.load(config, new StringReader("holder=9")));
     // the static field was set to 9 before
     Assertions.assertEquals(5, OnlyStatic.counter);
   }

@@ -33,8 +33,8 @@ import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
 /**
- * Comments are looked up by dotted path only in tables that hold a commented value; the others
- * are written the same way without building the paths of their values.
+ * Comments are looked up by dotted path only in tables that hold a commented value; the others are
+ * written the same way without building the paths of their values.
  */
 class TestTomlCommentPaths {
 
