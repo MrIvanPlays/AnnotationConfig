@@ -92,7 +92,7 @@ public enum SerializerRegistry {
 
   /**
    * Register a new {@link FieldTypeSerializer} which can resolve data without a {@link
-   * SerializationContext} and an {@link AnnotationAccessor}
+   * SerializationContext} and an {@link AnnotationAccessor}.
    *
    * @param serializedType the field type that should be serialized
    * @param deserialize deserialization method of the serializedType
@@ -170,7 +170,7 @@ public enum SerializerRegistry {
   }
 
   /**
-   * Unregisters the serializer of the specified serialized type
+   * Unregisters the serializer of the specified serialized type.
    *
    * @param serializedType the serialized type you want the serializer of unregistered
    * @throws IllegalArgumentException if there isn't a serializer for the type specified
@@ -180,7 +180,7 @@ public enum SerializerRegistry {
   }
 
   /**
-   * Unregisters the serializer of the specified serialized type
+   * Unregisters the serializer of the specified serialized type.
    *
    * @param serializedType the serialized type you want the serializer of unregistered
    * @throws IllegalArgumentException if there isn't a serializer for the type specified

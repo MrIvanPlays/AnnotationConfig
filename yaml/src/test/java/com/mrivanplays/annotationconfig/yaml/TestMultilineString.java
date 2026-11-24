@@ -47,10 +47,10 @@ class TestMultilineString {
     YamlConfig.getConfigResolver().dump(config, writer);
 
     String expectedMultiline =
-"""
-  Look at ma!
-  I am a multiline string!
-""";
+        """
+          Look at ma!
+          I am a multiline string!
+        """;
 
     String expected = "control-field: -1\n" + "\n" + "multiline: |\n" + expectedMultiline;
 
@@ -76,10 +76,10 @@ class TestMultilineString {
 
     @Multiline('|')
     public String multiline =
-"""
-Look at ma!
-I am a multiline string!
-""";
+        """
+        Look at ma!
+        I am a multiline string!
+        """;
   }
 
   static class FailSubject {

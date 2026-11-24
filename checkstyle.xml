@@ -35,8 +35,36 @@
       default="checkstyle-suppressions.xml" />
     <property name="optional" value="true"/>
   </module>
+  <!-- Tests name their methods as sentences ("aMissingOptionKeepsItsValue"), their subjects'
+       fields "a", "b", ... and some classes after formats ("TestYAML"), and need no Javadoc -->
+  <module name="SuppressionSingleFilter">
+    <property name="files" value="[\\/]src[\\/]test[\\/]"/>
+    <property name="checks"
+      value="MethodName|MemberName|AbbreviationAsWordInName|MissingJavadocMethod|MissingJavadocType"/>
+  </module>
+  <!-- A Javadoc may be only tags, such as the "@deprecated" of deprecated code: XPath filters
+       can't exempt @Deprecated elements from Javadoc checks. A missing period is still reported. -->
+  <module name="SuppressionSingleFilter">
+    <property name="checks" value="SummaryJavadoc"/>
+    <property name="message" value="^Summary javadoc is missing"/>
+  </module>
+  <!-- Classes marked @hidden are not API: their Javadoc is not checked. Every @hidden is on a type,
+       so its violations are on the lines just above the tag (the start of the Javadoc) and on
+       every line after it (the rest of the type). -->
+  <module name="SuppressWithNearbyTextFilter">
+    <property name="nearbyTextPattern" value="^\s*\*\s*@hidden\b"/>
+    <property name="checkPattern"
+      value="Javadoc|AtclauseOrder|NonEmptyAtclauseDescription|RequireEmptyLineBeforeBlockTagGroup"/>
+    <property name="lineRange" value="-20"/>
+  </module>
+  <module name="SuppressWithNearbyTextFilter">
+    <property name="nearbyTextPattern" value="^\s*\*\s*@hidden\b"/>
+    <property name="checkPattern"
+      value="Javadoc|AtclauseOrder|NonEmptyAtclauseDescription|RequireEmptyLineBeforeBlockTagGroup"/>
+    <property name="lineRange" value="100000"/>
+  </module>
 
-  <!-- Checks for whitespace                               -->
+  <!-- Checks for whitespace                             -->
   <!-- See http://checkstyle.org/checks/whitespace/index.html -->
   <module name="FileTabCharacter">
     <property name="eachLine" value="true"/>
@@ -57,11 +85,8 @@
       <property name="message"
         value="Consider using special escape sequence instead of octal value or Unicode escaped value."/>
     </module>
-    <module name="AvoidEscapedUnicodeCharacters">
-      <property name="allowEscapesForControlCharacters" value="true"/>
-      <property name="allowByTailComment" value="true"/>
-      <property name="allowNonPrintableEscapes" value="true"/>
-    </module>
+    <!-- AvoidEscapedUnicodeCharacters is left out: Java sources are plain ASCII, so non-ASCII
+         characters are written as Unicode escapes -->
     <module name="AvoidStarImport"/>
     <module name="OneTopLevelClass"/>
     <module name="NoLineWrap">
@@ -184,27 +209,27 @@
         value="Member name ''{0}'' must match pattern ''{1}''."/>
     </module>
     <module name="ParameterName">
-      <property name="format" value="^[a-z]([a-z0-9][a-zA-Z0-9]*)?$"/>
+      <property name="format" value="^(_|[a-z]([a-z0-9][a-zA-Z0-9]*)?)$"/>
       <message key="name.invalidPattern"
         value="Parameter name ''{0}'' must match pattern ''{1}''."/>
     </module>
     <module name="LambdaParameterName">
-      <property name="format" value="^[a-z]([a-z0-9][a-zA-Z0-9]*)?$"/>
+      <property name="format" value="^(_|[a-z]([a-z0-9][a-zA-Z0-9]*)?)$"/>
       <message key="name.invalidPattern"
         value="Lambda parameter name ''{0}'' must match pattern ''{1}''."/>
     </module>
     <module name="CatchParameterName">
-      <property name="format" value="^[a-z]([a-z0-9][a-zA-Z0-9]*)?$"/>
+      <property name="format" value="^(_|[a-z]([a-z0-9][a-zA-Z0-9]*)?)$"/>
       <message key="name.invalidPattern"
         value="Catch parameter name ''{0}'' must match pattern ''{1}''."/>
     </module>
     <module name="LocalVariableName">
-      <property name="format" value="^[a-z]([a-z0-9][a-zA-Z0-9]*)?$"/>
+      <property name="format" value="^(_|[a-z]([a-z0-9][a-zA-Z0-9]*)?)$"/>
       <message key="name.invalidPattern"
         value="Local variable name ''{0}'' must match pattern ''{1}''."/>
     </module>
     <module name="PatternVariableName">
-      <property name="format" value="^[a-z]([a-z0-9][a-zA-Z0-9]*)?$"/>
+      <property name="format" value="^(_|[a-z]([a-z0-9][a-zA-Z0-9]*)?)$"/>
       <message key="name.invalidPattern"
         value="Pattern variable name ''{0}'' must match pattern ''{1}''."/>
     </module>
@@ -255,6 +280,8 @@
     <module name="AbbreviationAsWordInName">
       <property name="ignoreFinal" value="false"/>
       <property name="allowedAbbreviationLength" value="0"/>
+      <!-- ACDefaultSettings is public API -->
+      <property name="allowedAbbreviations" value="AC"/>
       <property name="tokens"
         value="CLASS_DEF, INTERFACE_DEF, ENUM_DEF, ANNOTATION_DEF, ANNOTATION_FIELD_DEF,
                     PARAMETER_DEF, VARIABLE_DEF, METHOD_DEF, PATTERN_VARIABLE_DEF, RECORD_DEF,
@@ -330,12 +357,14 @@
     <module name="MissingJavadocMethod">
       <property name="scope" value="public"/>
       <property name="minLineCount" value="2"/>
-      <property name="allowedAnnotations" value="Override, Test"/>
+      <!-- deprecated code is on its way out and keeps the Javadoc it has -->
+      <property name="allowedAnnotations" value="Override, Test, Deprecated"/>
       <property name="tokens" value="METHOD_DEF, CTOR_DEF, ANNOTATION_FIELD_DEF,
                                    COMPACT_CTOR_DEF"/>
     </module>
     <module name="MissingJavadocType">
       <property name="scope" value="protected"/>
+      <property name="skipAnnotations" value="Generated, Deprecated"/>
       <property name="tokens"
         value="CLASS_DEF, INTERFACE_DEF, ENUM_DEF,
                       RECORD_DEF, ANNOTATION_DEF"/>
@@ -358,6 +387,12 @@
       <property name="file" value="${org.checkstyle.google.suppressionxpathfilter.config}"
         default="checkstyle-xpath-suppressions.xml" />
       <property name="optional" value="true"/>
+    </module>
+    <!-- deprecated code is on its way out: it keeps its names -->
+    <module name="SuppressionXpathSingleFilter">
+      <property name="checks" value="LocalVariableName"/>
+      <property name="query"
+        value="//*[MODIFIERS/ANNOTATION/IDENT[@text='Deprecated']]/descendant-or-self::node()"/>
     </module>
     <module name="SuppressWarningsHolder" />
     <module name="SuppressionCommentFilter">

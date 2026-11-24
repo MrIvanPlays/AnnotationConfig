@@ -55,7 +55,7 @@ import org.jspecify.annotations.Nullable;
 public interface ConfigResolver {
 
   /**
-   * Creates a new {@link ConfigResolver.Builder}
+   * Creates a new {@link ConfigResolver.Builder}.
    *
    * @return new builder
    */
@@ -161,7 +161,7 @@ public interface ConfigResolver {
 
   /**
    * Dumps the specified {@code annotatedConfig} to the specified {@link WritableObject writable
-   * object}
+   * object}.
    *
    * @param annotatedConfig the annotated config to dump
    * @param writableObject the writable object to dump to
@@ -498,7 +498,7 @@ public interface ConfigResolver {
       Path dir, Supplier<T> configToResolveTo, WritableObject dumpFile, Settings settings);
 
   /**
-   * Represents a builder of a {@link ConfigResolver}
+   * Represents a builder of a {@link ConfigResolver}.
    *
    * @since 2.0.0
    * @author Ivan Pekov
@@ -514,7 +514,7 @@ public interface ConfigResolver {
     public Builder() {}
 
     /**
-     * Creates a copy of the specified builder
+     * Creates a copy of the specified builder.
      *
      * @param copy the builder you want to copy
      */
@@ -528,7 +528,7 @@ public interface ConfigResolver {
     }
 
     /**
-     * Creates a copy of this builder
+     * Creates a copy of this builder.
      *
      * @return a new builder instance, copy of this builder instance
      */
@@ -573,7 +573,7 @@ public interface ConfigResolver {
 
     /**
      * Binds the specified {@code value} to the specified {@link Setting} {@code setting} in the
-     * default {@link Settings}
+     * default {@link Settings}.
      *
      * @param setting the setting you want this value to be bound to
      * @param value the value bound

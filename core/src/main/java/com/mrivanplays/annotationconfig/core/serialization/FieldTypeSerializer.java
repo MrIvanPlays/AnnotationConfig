@@ -41,14 +41,14 @@ import org.jspecify.annotations.Nullable;
 public interface FieldTypeSerializer<T> {
 
   /**
-   * Creates a new {@link FieldTypeSerializer} from 2 {@link TriFunction TriFunctions}
+   * Creates a new {@link FieldTypeSerializer} from 2 {@link TriFunction TriFunctions}.
    *
    * @param deserialize deserialize method (see {@link FieldTypeSerializer#deserialize(DataObject,
    *     SerializationContext, AnnotationAccessor)})
    * @param serialize serialize method (see {@link FieldTypeSerializer#serialize(Object,
    *     SerializationContext, AnnotationAccessor)})
-   * @return new field type serializer
    * @param <T> type for which this serializer is being registered.
+   * @return new field type serializer
    */
   static <T> FieldTypeSerializer<T> functional(
       TriFunction<DataObject, SerializationContext<T>, AnnotationAccessor, T> deserialize,
@@ -100,7 +100,7 @@ public interface FieldTypeSerializer<T> {
 
   /**
    * Returns {@link #deserialize(DataObject, SerializationContext, AnnotationAccessor)} as a {@link
-   * TriFunction}
+   * TriFunction}.
    *
    * @return tri function of the deserialize method
    */
@@ -124,7 +124,7 @@ public interface FieldTypeSerializer<T> {
 
   /**
    * Returns {@link #serialize(Object, SerializationContext, AnnotationAccessor)} as a {@link
-   * TriFunction}
+   * TriFunction}.
    *
    * @return tri function of the serialize method
    */

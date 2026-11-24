@@ -37,7 +37,7 @@ public final class DataObjectBuilder {
 
   private final DataObject object;
 
-  /** Creates a new {@link DataObjectBuilder} */
+  /** Creates a new {@link DataObjectBuilder}. */
   public DataObjectBuilder() {
     this.object = new DataObject();
   }
@@ -58,7 +58,7 @@ public final class DataObjectBuilder {
   }
 
   /**
-   * Creates a new {@link DataObjectBuilder} from the specified {@link DataObject} {@code from}
+   * Creates a new {@link DataObjectBuilder} from the specified {@link DataObject} {@code from}.
    *
    * @param from the data object to build from
    */
@@ -67,7 +67,7 @@ public final class DataObjectBuilder {
   }
 
   /**
-   * Creates a new copy of this {@link DataObjectBuilder}
+   * Creates a new copy of this {@link DataObjectBuilder}.
    *
    * @return copy
    */
@@ -76,7 +76,7 @@ public final class DataObjectBuilder {
   }
 
   /**
-   * Binds the specified {@code value} to the specified {@code key}
+   * Binds the specified {@code value} to the specified {@code key}.
    *
    * @param key key to bind to
    * @param value value to bind
@@ -90,7 +90,7 @@ public final class DataObjectBuilder {
   }
 
   /**
-   * Binds the specified {@code value} to the specified {@code key}
+   * Binds the specified {@code value} to the specified {@code key}.
    *
    * @param key key to bind to
    * @param value value to bind
@@ -103,7 +103,7 @@ public final class DataObjectBuilder {
   }
 
   /**
-   * Binds the specified {@code value} to the specified {@code key}
+   * Binds the specified {@code value} to the specified {@code key}.
    *
    * @param key key to bind to
    * @param value value to bind
@@ -117,7 +117,8 @@ public final class DataObjectBuilder {
   }
 
   /**
-   * Binds the specified {@link DataObjectBuilder}'s {@link DataObject} to the specified {@code key}
+   * Binds the specified {@link DataObjectBuilder}'s {@link DataObject} to the specified {@code
+   * key}.
    *
    * @param key key to bind to
    * @param other value to bind
@@ -142,7 +143,7 @@ public final class DataObjectBuilder {
   }
 
   /**
-   * Builds this {@link DataObjectBuilder} into a {@link DataObject}
+   * Builds this {@link DataObjectBuilder} into a {@link DataObject}.
    *
    * @return built object
    */

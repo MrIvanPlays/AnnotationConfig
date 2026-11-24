@@ -41,7 +41,7 @@ import java.lang.annotation.Target;
 public @interface Key {
 
   /**
-   * Key value
+   * Key value.
    *
    * @return key
    */

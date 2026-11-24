@@ -31,7 +31,7 @@ import org.jspecify.annotations.NullMarked;
 import org.yaml.snakeyaml.Yaml;
 
 /**
- * Represents configuration, utilising YAML
+ * Represents configuration, utilising YAML.
  *
  * @since 1.0.0
  * @author Ivan Pekov
@@ -53,7 +53,7 @@ public final class YamlConfig {
   }
 
   /**
-   * Returns the {@link ConfigResolver} instance of YamlConfig
+   * Returns the {@link ConfigResolver} instance of YamlConfig.
    *
    * @return config resolver
    */

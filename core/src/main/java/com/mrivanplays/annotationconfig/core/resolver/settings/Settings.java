@@ -70,7 +70,7 @@ public final class Settings {
   }
 
   /**
-   * Checks whether this settings instance stores a value for this setting
+   * Checks whether this settings instance stores a value for this setting.
    *
    * @param setting setting
    * @return whether it has value or not

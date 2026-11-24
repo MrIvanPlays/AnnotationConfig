@@ -50,7 +50,7 @@ public final class AnnotationUtils {
   }
 
   /**
-   * Returns the key of the specified {@link Field}
+   * Returns the key of the specified {@link Field}.
    *
    * @param field the field you want the key of
    * @return the key, always a non-null value

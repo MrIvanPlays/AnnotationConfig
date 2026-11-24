@@ -39,5 +39,10 @@ import java.lang.annotation.Target;
 @Target({ElementType.TYPE, ElementType.FIELD})
 public @interface Comments {
 
+  /**
+   * The repeated {@link Comment} annotations, in the order they are declared.
+   *
+   * @return the comments
+   */
   Comment[] value() default {};
 }

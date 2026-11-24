@@ -57,7 +57,7 @@ class TestTomlResolver {
   void missingOptionsAreNotAddedByDefault(@TempDir Path dir) throws IOException {
     Path file = dir.resolve("config.toml");
     RESOLVER.dump(new Version1(), file);
-    String written = read(file);
+    final String written = read(file);
 
     Version2 config = new Version2();
     RESOLVER.load(config, file);

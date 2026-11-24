@@ -92,7 +92,7 @@ public final class MultilineString {
    *   dolor sit amet
    * </pre>
    *
-   * Or
+   * <p>Or
    *
    * <pre>
    * foo: &gt;

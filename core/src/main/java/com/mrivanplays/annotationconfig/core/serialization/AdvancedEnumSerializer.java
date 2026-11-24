@@ -60,11 +60,12 @@ import org.jspecify.annotations.Nullable;
  * }
  * }</pre>
  *
- * and you want to use AdvancedEnumSerializer to serialize it, you just register it using the {@link
+ * <p>To use AdvancedEnumSerializer to serialize it, you just register it using the {@link
  * SerializerRegistry}. An example of this is:
  *
  * <pre>{@code
- * SerializerRegistry.INSTANCE.registerSerializer(Option.class, AdvancedEnumSerializer.forEnum(Option.class));
+ * SerializerRegistry.INSTANCE.registerSerializer(
+ *     Option.class, AdvancedEnumSerializer.forEnum(Option.class));
  * }</pre>
  *
  * @since 2.0.0
@@ -74,7 +75,7 @@ import org.jspecify.annotations.Nullable;
 @NullMarked
 public final class AdvancedEnumSerializer<E extends Enum<E>> implements FieldTypeSerializer<E> {
 
-  /** The default matches condition */
+  /** The default matches condition. */
   public static final BiPredicate<Integer, List<String>> DEFAULT_MATCHES_CONDITION =
       (matches, parts) -> matches == parts.size();
 
@@ -96,7 +97,7 @@ public final class AdvancedEnumSerializer<E extends Enum<E>> implements FieldTyp
   }
 
   /**
-   * Creates a new {@link AdvancedEnumSerializer} for the specified {@code enumClass}
+   * Creates a new {@link AdvancedEnumSerializer} for the specified {@code enumClass}.
    *
    * @param enumClass the enum class you want an advanced enum serializer
    * @param <E> enum class

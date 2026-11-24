@@ -42,7 +42,7 @@ public final class PropertyConfig {
   }
 
   /**
-   * Returns the {@link ConfigResolver} instance of PropertyConfig
+   * Returns the {@link ConfigResolver} instance of PropertyConfig.
    *
    * @return config resolver
    */

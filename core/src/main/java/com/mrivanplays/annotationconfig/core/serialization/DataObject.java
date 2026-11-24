@@ -53,7 +53,7 @@ public final class DataObject {
   // first use (see entries()). Volatile, as that can happen on any thread.
   private volatile @Nullable Map<String, DataObject> serialize;
 
-  /** Constructs an empty data object */
+  /** Constructs an empty data object. */
   public DataObject() {
     this.serialize = null;
     this.source = null;
@@ -233,7 +233,7 @@ public final class DataObject {
   }
 
   /**
-   * Binds the specified value to the specified key
+   * Binds the specified value to the specified key.
    *
    * @param key the key you want the value to be bound to
    * @param value the value you want bound
@@ -245,7 +245,7 @@ public final class DataObject {
   }
 
   /**
-   * Binds the specified value to the specified key
+   * Binds the specified value to the specified key.
    *
    * @param key the key you want the value to be bound to
    * @param value the value you want bound
@@ -256,7 +256,7 @@ public final class DataObject {
   }
 
   /**
-   * Binds the specified value to the specified key
+   * Binds the specified value to the specified key.
    *
    * @param key the key you want the value to be bound to
    * @param value the value you want bound
@@ -388,7 +388,7 @@ public final class DataObject {
   }
 
   /**
-   * Returns the held value by this data object as a {@link String}
+   * Returns the held value by this data object as a {@link String}.
    *
    * @return held string
    * @see #getAsObject()
@@ -398,7 +398,7 @@ public final class DataObject {
   }
 
   /**
-   * Returns the held value by this data object as an {@code int}
+   * Returns the held value by this data object as an {@code int}.
    *
    * @return held int
    * @see #getAsObject()
@@ -408,7 +408,7 @@ public final class DataObject {
   }
 
   /**
-   * Returns the held value by this data object as a {@link Boolean}
+   * Returns the held value by this data object as a {@link Boolean}.
    *
    * @return held boolean
    * @see #getAsObject()
@@ -418,7 +418,7 @@ public final class DataObject {
   }
 
   /**
-   * Returns the held value by this data object as a {@link Byte}
+   * Returns the held value by this data object as a {@link Byte}.
    *
    * @return held byte
    * @see #getAsObject()
@@ -447,7 +447,7 @@ public final class DataObject {
   }
 
   /**
-   * Returns the held value by this data object as a {@link Double}
+   * Returns the held value by this data object as a {@link Double}.
    *
    * @return held double
    * @see #getAsObject()
@@ -457,7 +457,7 @@ public final class DataObject {
   }
 
   /**
-   * Returns the held value by this data object as a {@link Float}
+   * Returns the held value by this data object as a {@link Float}.
    *
    * @return held float
    * @see #getAsObject()
@@ -467,7 +467,7 @@ public final class DataObject {
   }
 
   /**
-   * Returns the held value by this data object as a {@link Long}
+   * Returns the held value by this data object as a {@link Long}.
    *
    * @return held long
    * @see #getAsObject()
@@ -477,7 +477,7 @@ public final class DataObject {
   }
 
   /**
-   * Returns the held value by this data object as a {@link Short}
+   * Returns the held value by this data object as a {@link Short}.
    *
    * @return held short
    * @see #getAsObject()
@@ -487,7 +487,7 @@ public final class DataObject {
   }
 
   /**
-   * Returns the held value by this data object as a {@link BigDecimal}
+   * Returns the held value by this data object as a {@link BigDecimal}.
    *
    * @return held big decimal
    * @see #getAsObject()
@@ -500,7 +500,7 @@ public final class DataObject {
   }
 
   /**
-   * Returns the held value by this data object as a {@link BigInteger}
+   * Returns the held value by this data object as a {@link BigInteger}.
    *
    * @return held big integer
    * @see #getAsObject()

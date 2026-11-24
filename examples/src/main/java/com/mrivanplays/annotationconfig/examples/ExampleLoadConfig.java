@@ -32,11 +32,10 @@ import com.mrivanplays.annotationconfig.yaml.SectionObjectListSerializer;
 import com.mrivanplays.annotationconfig.yaml.YamlConfig;
 import java.io.File;
 
+/** Loads {@link ExampleConfig}, or writes its defaults when the file doesn't exist yet. */
 public class ExampleLoadConfig {
 
   static void main(String[] args) {
-    ExampleConfig config = new ExampleConfig();
-
     SerializerRegistry serializers = SerializerRegistry.INSTANCE;
     CommentPlaceholderRegistry commentPlaceholders = CommentPlaceholderRegistry.INSTANCE;
 
@@ -51,6 +50,7 @@ public class ExampleLoadConfig {
     commentPlaceholders.registerPlaceholder(CommentPlaceholder.simple("%version%", "3.1.0"));
 
     // loads the file if it exists, otherwise writes the defaults to it
+    ExampleConfig config = new ExampleConfig();
     YamlConfig.getConfigResolver().loadOrDump(config, new File("examples/application-config.yaml"));
 
     // do stuff with config ...

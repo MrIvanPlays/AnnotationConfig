@@ -88,7 +88,7 @@ public final class SectionObjectList<T> implements Iterable<Entry<String, T>> {
   }
 
   /**
-   * Returns an unmodifiable representation of this {@code SectionObjectList} as a {@link Map}
+   * Returns an unmodifiable representation of this {@code SectionObjectList} as a {@link Map}.
    *
    * @return as map
    */
@@ -121,7 +121,7 @@ public final class SectionObjectList<T> implements Iterable<Entry<String, T>> {
   }
 
   /**
-   * Check whether this {@code SectionObjectList} contains a specific key
+   * Check whether this {@code SectionObjectList} contains a specific key.
    *
    * @param key key to check, cannot be null
    * @return true if contains, false otherwise
@@ -160,7 +160,7 @@ public final class SectionObjectList<T> implements Iterable<Entry<String, T>> {
   }
 
   /**
-   * Represents a builder of {@link SectionObjectList}
+   * Represents a builder of {@link SectionObjectList}.
    *
    * @param <T> object type
    * @author Ivan Pekov
@@ -182,7 +182,7 @@ public final class SectionObjectList<T> implements Iterable<Entry<String, T>> {
     }
 
     /**
-     * Specify a default value held by the created {@link SectionObjectList}
+     * Specify a default value held by the created {@link SectionObjectList}.
      *
      * @param key default value key
      * @param value default value

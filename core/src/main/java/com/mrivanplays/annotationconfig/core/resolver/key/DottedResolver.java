@@ -64,15 +64,13 @@ public final class DottedResolver implements KeyResolver {
   private DottedResolver() {}
 
   /**
-   * Returns the instance of the {@link DottedResolver}
+   * Returns the instance of the {@link DottedResolver}.
    *
    * @return instance
    */
   public static DottedResolver getInstance() {
     return Holder.INSTANCE;
   }
-
-  // </editor-fold>
 
   /** {@inheritDoc} */
   @Override
@@ -155,4 +153,6 @@ public final class DottedResolver implements KeyResolver {
   private static final class Holder {
     static final DottedResolver INSTANCE = new DottedResolver();
   }
+
+  // </editor-fold>
 }

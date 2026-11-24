@@ -96,9 +96,21 @@ Java 25, Maven multi-module build.
 - Testing a format module against changed `core` code: run `mvn -o install -DskipTests -pl core`
   first. With `-pl`, the module uses the installed core jar, not the sources.
 - Checkstyle (Google style, `checkstyle.xml`) runs during `process-classes` on main and test
-  sources. Violations are reported as warnings and do not fail the build, so look for them in
-  the build output. The `deployment` profile skips it (`checkstyle.skip`); add
-  `-Dcheckstyle.skip=false` to run it there.
+  sources, and any violation fails the build: `checkstyle.xml` reports them as warnings, and
+  `violationSeverity` in `pom.xml` makes warnings fail. It caches the files that passed in
+  `target/checkstyle-cachefile`, so after changing `checkstyle.xml` run `clean` to check every
+  file. The `deployment` profile skips it (`checkstyle.skip`); add `-Dcheckstyle.skip=false` to
+  run it there.
+- `checkstyle.xml` deviates from Google style on purpose: `_` is allowed as a variable name, `AC`
+  as an abbreviation (`ACDefaultSettings`), Unicode escapes are not checked (sources are ASCII),
+  and test sources are exempt from the naming checks for methods, fields and abbreviations
+  (`aMissingOptionKeepsItsValue`, fields `a`, `b`, `TestYAML`) and from missing Javadoc.
+  The Javadoc of types marked `@hidden` (all of `core.internal`, too) is not checked; the `@hidden`
+  filter (`SuppressWithNearbyTextFilter`) assumes the tag is on a type, as it is everywhere
+  today, and skips the rest of the file after it. `@Deprecated` code needs no Javadoc and is exempt
+  from `LocalVariableName`, and a Javadoc may be
+  only tags (such as `@deprecated`): XPath filters can't exempt `@Deprecated` code from Javadoc
+  checks, so that is allowed everywhere.
 - Building an older commit for comparison: `git archive <commit> | tar -x -C <dir>` and
   `mvn -o package -Dmaven.test.skip=true` there. `package` leaves `~/.m2` alone, and `git archive`
   leaves the repository untouched.

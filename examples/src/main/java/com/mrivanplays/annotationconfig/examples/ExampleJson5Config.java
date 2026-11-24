@@ -55,6 +55,7 @@ public class ExampleJson5Config {
 
   @ConfigObject private Database database = new Database();
 
+  /** A config object, written as a nested JSON5 object. */
   @Comment("Database connection")
   public static final class Database {
 

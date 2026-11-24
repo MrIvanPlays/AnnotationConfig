@@ -38,6 +38,7 @@ import java.util.List;
 import java.util.Map;
 import org.jspecify.annotations.NullMarked;
 
+/** An example config, written to {@code examples/application-config.yaml}. */
 @SuppressWarnings({"FieldMayBeFinal", "FieldCanBeLocal", "unused"})
 @Comment("Generated using AnnotationConfig v%version%")
 @NullMarked
@@ -110,6 +111,7 @@ public class ExampleConfig {
     return map;
   }
 
+  /** A config object: its fields are options of their own, in a section. */
   @Comment("All configurable messages")
   public static final class MessagesSection {
 
@@ -124,7 +126,7 @@ public class ExampleConfig {
     // getters would go here
   }
 
-  // since 3.1.0 records are supported too!
+  /** Records are supported too, since 3.1.0. */
   public record SomethingToSerialize(String foo, int bar, byte baz) {}
 
   /**
@@ -169,6 +171,10 @@ public class ExampleConfig {
 
   record Foo(String bar, int baz) {}
 
+  /**
+   * A class without a serializer of its own, read and written by the default serializer. It
+   * needs an empty constructor.
+   */
   public static final class DefaultSerializationExample {
 
     private String foo;
@@ -177,6 +183,7 @@ public class ExampleConfig {
 
     public DefaultSerializationExample() {}
 
+    /** Creates the default value of the option. */
     public DefaultSerializationExample(String foo, int bar, double baz) {
       this.foo = foo;
       this.bar = bar;
@@ -186,6 +193,7 @@ public class ExampleConfig {
     // getters would go here
   }
 
+  /** A config object whose dotted keys make sections inside its section. */
   @Comment("This is a section inside a section example")
   public static class SectionInsideSection {
 
@@ -200,7 +208,7 @@ public class ExampleConfig {
     // getters would go here
   }
 
-  // this is featured in the next example
+  /** An element of the section object list; see {@link ExampleLoadConfig} for its serializer. */
   public record SectionObject(int aabb, String ccdd) {}
 
   // getters would go here

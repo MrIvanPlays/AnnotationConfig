@@ -44,7 +44,7 @@ import org.jspecify.annotations.NullMarked;
 import org.jspecify.annotations.Nullable;
 
 /**
- * Represents configuration, utilising JSON
+ * Represents configuration, utilising JSON.
  *
  * @since 3.1.0
  * @author Ivan Pekov

@@ -33,7 +33,9 @@ import org.jspecify.annotations.Nullable;
 
 /**
  * Helpers for the maps AnnotationConfig reads and writes, where a value can itself be a map (a
- * section of the config):
+ * section of the config).
+ *
+ * <p>They cover:
  *
  * <ul>
  *   <li>merging the maps of dotted keys that share their first parts ({@link #populateFirst(Map,
@@ -116,8 +118,8 @@ public final class MapUtils {
    *
    * @param map the map to copy
    * @param values what each value is replaced with
-   * @return a new, mutable map
    * @param <V> value type of the copy
+   * @return a new, mutable map
    * @since 3.1.0
    */
   public static <V> Map<String, V> copyWithStringKeys(

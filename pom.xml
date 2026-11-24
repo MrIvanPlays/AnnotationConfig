@@ -99,6 +99,8 @@
         </executions>
         <configuration>
           <configLocation>checkstyle.xml</configLocation>
+          <!-- checkstyle.xml reports every violation as a warning; this makes warnings fail -->
+          <violationSeverity>warning</violationSeverity>
           <includeResources>false</includeResources>
           <includeTestSourceDirectory>true</includeTestSourceDirectory>
         </configuration>
@@ -131,7 +133,8 @@
     <profile>
       <id>deployment</id>
       <properties>
-        <!-- Checkstyle only warns, so a release doesn't need it; -Dcheckstyle.skip=false runs it -->
+        <!-- Checkstyle runs in every other build, so a release skips it;
+             -Dcheckstyle.skip=false runs it -->
         <checkstyle.skip>true</checkstyle.skip>
       </properties>
       <build>

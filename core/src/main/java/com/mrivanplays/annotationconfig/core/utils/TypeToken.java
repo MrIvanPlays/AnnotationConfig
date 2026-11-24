@@ -28,7 +28,8 @@ import org.jspecify.annotations.NullMarked;
 
 /**
  * Represents a helper of capturing types of {@link java.util.List Lists} or other generics for ease
- * of registration in {@link com.mrivanplays.annotationconfig.core.serialization.SerializerRegistry}
+ * of registration in {@link
+ * com.mrivanplays.annotationconfig.core.serialization.SerializerRegistry}.
  *
  * <pre>{@code
  * Type type = new TypeToken<List<String>>() {}.getType();

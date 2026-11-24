@@ -66,7 +66,7 @@ public final class SerializationContext<T> {
   }
 
   /**
-   * Creates a new {@link SerializationContext} from a {@link Field}
+   * Creates a new {@link SerializationContext} from a {@link Field}.
    *
    * @param field field to create context from
    * @param annotatedConfig annotated config
@@ -80,7 +80,7 @@ public final class SerializationContext<T> {
   }
 
   /**
-   * Creates a new {@link SerializationContext} from a {@link Field}
+   * Creates a new {@link SerializationContext} from a {@link Field}.
    *
    * @param field field to create context from
    * @param annotatedConfig annotated config
@@ -104,7 +104,7 @@ public final class SerializationContext<T> {
   }
 
   /**
-   * Creates a new {@link SerializationContext}
+   * Creates a new {@link SerializationContext}.
    *
    * @param classType class type
    * @param genericType generic class type
@@ -118,7 +118,7 @@ public final class SerializationContext<T> {
   }
 
   /**
-   * Creates a new {@link SerializationContext}
+   * Creates a new {@link SerializationContext}.
    *
    * @param classType class type
    * @param genericType generic class type
@@ -137,7 +137,7 @@ public final class SerializationContext<T> {
   }
 
   /**
-   * Creates a new {@link SerializationContext}
+   * Creates a new {@link SerializationContext}.
    *
    * @param def default value. can be null
    * @param classType class type
@@ -152,7 +152,7 @@ public final class SerializationContext<T> {
   }
 
   /**
-   * Creates a new {@link SerializationContext}
+   * Creates a new {@link SerializationContext}.
    *
    * @param def default value. can be null
    * @param classType class type
@@ -173,7 +173,7 @@ public final class SerializationContext<T> {
   }
 
   /**
-   * Creates a new {@link SerializationContext}
+   * Creates a new {@link SerializationContext}.
    *
    * @param name name of field. can be null
    * @param def default value. can be null
@@ -193,7 +193,7 @@ public final class SerializationContext<T> {
   }
 
   /**
-   * Creates a new {@link SerializationContext}
+   * Creates a new {@link SerializationContext}.
    *
    * @param name name of field. can be null
    * @param def default value. can be null

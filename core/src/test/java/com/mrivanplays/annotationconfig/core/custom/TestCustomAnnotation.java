@@ -59,7 +59,7 @@ class TestCustomAnnotation {
 
   @Test
   void testSuccessful() {
-    int callbacksBefore = DummyAnnotation2Handler.SUCCESS_CALLBACKS.get();
+    final int callbacksBefore = DummyAnnotation2Handler.SUCCESS_CALLBACKS.get();
     DummyConfig config = new DummyConfig();
     resolver.load(config, resource("custom-anno-def.properties"));
 

@@ -69,10 +69,12 @@ class TestResolverParentsAndSections {
 
       public int a = 1;
     }
+
     class Local extends LocalBase {
 
       public int b = 2;
     }
+
     // local classes have no canonical name, which used to throw a NullPointerException
     StringWriter writer = new StringWriter();
     RESOLVER.dump(new Local(), writer, findParents());

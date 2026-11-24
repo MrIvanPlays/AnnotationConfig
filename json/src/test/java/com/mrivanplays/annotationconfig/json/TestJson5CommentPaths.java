@@ -51,7 +51,7 @@ class TestJson5CommentPaths {
 
   @Test
   void commentsInSomeObjectsOnly() {
-    Map<String, Object> values =
+    final Map<String, Object> values =
         map(
             "top", 1,
             "plain", map("x", map("y", 2), "pool", map("z", 5)),

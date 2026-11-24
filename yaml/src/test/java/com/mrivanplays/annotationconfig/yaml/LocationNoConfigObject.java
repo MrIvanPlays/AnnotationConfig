@@ -25,7 +25,9 @@ package com.mrivanplays.annotationconfig.yaml;
 public class LocationNoConfigObject {
 
   private String world;
-  private int x, y, z;
+  private int x;
+  private int y;
+  private int z;
 
   public LocationNoConfigObject(String world, int x, int y, int z) {
     this.world = world;

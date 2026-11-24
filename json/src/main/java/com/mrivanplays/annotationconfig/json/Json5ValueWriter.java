@@ -40,7 +40,9 @@ import org.jspecify.annotations.Nullable;
 
 /**
  * Writes values as JSON5 (<a href="https://spec.json5.org">spec.json5.org</a>), which unlike JSON
- * supports comments:
+ * supports comments.
+ *
+ * <p>How values are written:
  *
  * <ul>
  *   <li>The comments of an option are written as {@code //} line comments above its key, also for

@@ -83,7 +83,7 @@ public enum AnnotationType {
   }
 
   /**
-   * Returns the raw annotation type, held by this {@link AnnotationType}
+   * Returns the raw annotation type, held by this {@link AnnotationType}.
    *
    * @return raw annotation class
    */
@@ -92,7 +92,7 @@ public enum AnnotationType {
   }
 
   /**
-   * Returns if the raw annotation type specified meets this {@link AnnotationType}
+   * Returns if the raw annotation type specified meets this {@link AnnotationType}.
    *
    * @param anno the raw annotation type you want to check
    * @return boolean value, representing the outcome of this check

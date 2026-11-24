@@ -157,13 +157,13 @@ final class DefaultSerializer implements FieldTypeSerializer<Object> {
     return isPrimitive(value, true);
   }
 
-  private static boolean isPrimitiveClass(Class<?> valClass) {
-    return PRIMITIVE_CLASS.get(valClass);
-  }
-
   private static boolean isPrimitive(Object value, boolean checkMap) {
     Class<?> valClass = value.getClass();
     return isPrimitiveClass(valClass) || (checkMap && value instanceof Map);
+  }
+
+  private static boolean isPrimitiveClass(Class<?> valClass) {
+    return PRIMITIVE_CLASS.get(valClass);
   }
 
   private static Object deserializeEnum(Class<?> enumType, String value) {

@@ -206,22 +206,9 @@ public final class YamlHandler implements ValueReader, ValueWriter {
       return new ScalarNode(Tag.STR, text, null, null, style);
     }
 
-    private static List<CommentLine> commentLines(@Nullable List<String> found) {
-      if (found == null || found.isEmpty()) {
-        return List.of();
-      }
-      List<CommentLine> lines = new ArrayList<>(found.size());
-      for (String comment : found) {
-        // one '#' per line
-        for (String line : LinesHelper.split(comment)) {
-          lines.add(
-              new CommentLine(null, null, line.isEmpty() ? "" : " " + line, CommentType.BLOCK));
-        }
-      }
-      return lines;
-    }
-
     /**
+     * Builds the node of {@code map}, with the comments of its keys.
+     *
      * @param path dotted path of this map ("" for the root), or null to write no comments below it
      * @param topLevel true for the root map: a blank line is added between its entries
      */
@@ -321,6 +308,21 @@ public final class YamlHandler implements ValueReader, ValueWriter {
         found = comments.get(key);
       }
       return commentLines(found);
+    }
+
+    private static List<CommentLine> commentLines(@Nullable List<String> found) {
+      if (found == null || found.isEmpty()) {
+        return List.of();
+      }
+      List<CommentLine> lines = new ArrayList<>(found.size());
+      for (String comment : found) {
+        // one '#' per line
+        for (String line : LinesHelper.split(comment)) {
+          lines.add(
+              new CommentLine(null, null, line.isEmpty() ? "" : " " + line, CommentType.BLOCK));
+        }
+      }
+      return lines;
     }
   }
 

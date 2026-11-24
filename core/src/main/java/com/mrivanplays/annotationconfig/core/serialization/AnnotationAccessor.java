@@ -39,12 +39,12 @@ public sealed interface AnnotationAccessor permits AnnotationAccessorImpl {
 
   /**
    * Returns an {@link AnnotationAccessor}, which {@link #getAnnotation(Class)} method will always
-   * return {@link Optional#empty()}
+   * return {@link Optional#empty()}.
    */
   AnnotationAccessor EMPTY = AnnotationAccessorImpl.EMPTY;
 
   /**
-   * Creates a new {@link AnnotationAccessor} from the specified {@link Field} {@code field}
+   * Creates a new {@link AnnotationAccessor} from the specified {@link Field} {@code field}.
    *
    * @param field field to create annotation accessor from
    * @return annotation accessor
@@ -54,7 +54,7 @@ public sealed interface AnnotationAccessor permits AnnotationAccessorImpl {
   }
 
   /**
-   * Creates a new {@link AnnotationAccessor} from the specified {@link Class} {@code clazz}
+   * Creates a new {@link AnnotationAccessor} from the specified {@link Class} {@code clazz}.
    *
    * @param clazz class to create annotation accessor from
    * @return annotation accessor
@@ -66,7 +66,7 @@ public sealed interface AnnotationAccessor permits AnnotationAccessorImpl {
 
   /**
    * Returns whether this annotation accessor holds the specified {@link Class} {@code
-   * annotationClass}
+   * annotationClass}.
    *
    * @param annotationClass annotation class, not null
    * @return true if holds, false otherwise
@@ -76,7 +76,7 @@ public sealed interface AnnotationAccessor permits AnnotationAccessorImpl {
 
   /**
    * Returns whether this annotation accessor holds the specified {@link AnnotationType annotation
-   * type}
+   * type}.
    *
    * @param annotationType annotation type to check
    * @return true if holds, false otherwise

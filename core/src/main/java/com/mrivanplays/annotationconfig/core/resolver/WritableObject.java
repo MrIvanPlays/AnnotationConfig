@@ -45,7 +45,7 @@ import org.jspecify.annotations.NullMarked;
 public interface WritableObject {
 
   /**
-   * Creates a new {@link WritableObject} from a {@link File}
+   * Creates a new {@link WritableObject} from a {@link File}.
    *
    * @param file writable object file
    * @return new writable object
@@ -56,7 +56,7 @@ public interface WritableObject {
   }
 
   /**
-   * Creates a new {@link WritableObject} from a {@link Path}
+   * Creates a new {@link WritableObject} from a {@link Path}.
    *
    * @param path writable object path
    * @return new writable object
@@ -74,7 +74,7 @@ public interface WritableObject {
   }
 
   /**
-   * Creates a new {@link WritableObject} from a {@link Writer}
+   * Creates a new {@link WritableObject} from a {@link Writer}.
    *
    * @param writer writable object writer
    * @return new writable object
@@ -85,7 +85,7 @@ public interface WritableObject {
   }
 
   /**
-   * Creates a new {@link WritableObject} from a {@link OutputStream}
+   * Creates a new {@link WritableObject} from a {@link OutputStream}.
    *
    * @param os writable object output stream
    * @return new writable object

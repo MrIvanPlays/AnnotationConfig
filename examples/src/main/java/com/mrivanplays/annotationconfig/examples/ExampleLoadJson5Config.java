@@ -25,6 +25,7 @@ package com.mrivanplays.annotationconfig.examples;
 import com.mrivanplays.annotationconfig.json.JsonConfig;
 import java.io.File;
 
+/** Loads {@link ExampleJson5Config}, or writes its defaults when the file doesn't exist yet. */
 public class ExampleLoadJson5Config {
 
   static void main(String[] args) {
