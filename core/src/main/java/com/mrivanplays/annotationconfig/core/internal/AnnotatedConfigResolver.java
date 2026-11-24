@@ -489,7 +489,9 @@ public final class AnnotatedConfigResolver {
       } catch (IllegalAccessException e) {
         throw new IllegalArgumentException(INACCESSIBLE, e);
       }
-      if (skipNull(deserialized, thisMissingOption, nullReadHandler)) {
+      if (skipNull(deserialized, thisMissingOption, nullReadHandler)
+          || (deserialized == null && field.getType().isPrimitive())) {
+        // a primitive field can't hold null, so it keeps its value even with SET_NULL
         continue;
       }
       if (info.minOrMax()) {

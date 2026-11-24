@@ -130,6 +130,17 @@ a value matches no constant and is read as `null`: the field becomes `null` with
 Repeated separators are now ignored, so `accept  all  true` and `true__deny all`, which used to
 match nothing, are read as `ACCEPT_ALL_TRUE` and `DENY_ALL_TRUE`.
 
+#### `SET_NULL` applies to the fields of custom data types
+
+The fields of a custom data type (a field whose type has its own fields, read by the default
+serializer) kept their value when the file had them without a value, as if `USE_DEFAULT_VALUE` was
+set. They now follow the null read handler as the fields of a config do: with the default
+`SET_NULL` such a field becomes `null`. A field missing from the file still keeps its value.
+
+A primitive field (`int`, `boolean`, ...) read as `null` used to fail to load with `SET_NULL`, in a
+config and in a custom data type. It now keeps its value; `Integer`, `Boolean` and other fields that
+can hold `null` are set to `null`.
+
 #### Numbers in maps keep their type
 
 `DataObject#getAsMap()`, which also fills `Map<String, Object>` fields, returns numbers as they were
@@ -214,8 +225,9 @@ public class MyConfig {
 - Components are read with the serializer registered for their generic type, e.g.
   `SectionObjectList<Item>`, as other fields are.
 - A component that is missing from the file is `null` with the default `SET_NULL` null read
-  handler, so a missing primitive component fails to load. With `USE_DEFAULT_VALUE` it keeps its
-  value from the record the field held, also for a field the config's class inherits.
+  handler. With `USE_DEFAULT_VALUE` it keeps its value from the record the field held, also for a
+  field the config's class inherits. A primitive component, which can't be `null`, does that with
+  either handler, and is `0` / `false` when there is no record to take the value from.
 - `@Ignore` and `@RawConfig` are not supported on record components. AnnotationConfig prints a
   warning the first time it finds them on a record.
 

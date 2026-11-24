@@ -400,6 +400,8 @@ final class DefaultSerializer implements FieldTypeSerializer<Object> {
       if (fieldType.isAssignableFrom(List.class)) {
         neededInstanceAllocation = listElementType(context);
       }
+      NullReadHandleOption nullReadHandle =
+          context.getSettings().get(ACDefaultSettings.NULL_READ_HANDLER).orElseThrow();
       if (neededInstanceAllocation.isRecord()) {
         /*
          * CONTRIBUTOR NOTE: DO NOT TOUCH THIS SECTION AT ALL
@@ -432,9 +434,9 @@ final class DefaultSerializer implements FieldTypeSerializer<Object> {
                     + f.getName());
           }
           if (val == null) {
-            NullReadHandleOption nullReadHandle =
-                context.getSettings().get(ACDefaultSettings.NULL_READ_HANDLER).orElseThrow();
-            if (nullReadHandle == NullReadHandleOption.SET_NULL) {
+            // a primitive component can't be null: it takes its value from the default record,
+            // like with USE_DEFAULT_VALUE, and is zero when there is none
+            if (nullReadHandle == NullReadHandleOption.SET_NULL && !f.getType().isPrimitive()) {
               // actually put a null value otherwise the record won't be constructed properly
               deserialized.put(f.getName(), null);
             } else {
@@ -487,8 +489,14 @@ final class DefaultSerializer implements FieldTypeSerializer<Object> {
           // sort values by the order they occur
           String[] parameterNames = record.parameterNames();
           Object[] ctorValues = new Object[parameterNames.length];
+          Class<?>[] parameterTypes = ctor.getParameterTypes();
           for (int i = 0; i < parameterNames.length; i++) {
-            ctorValues[i] = deserialized.get(parameterNames[i]);
+            Object value = deserialized.get(parameterNames[i]);
+            if (value == null && parameterTypes[i].isPrimitive()) {
+              // the zero value of the primitive type (0, false, '\0')
+              value = Array.get(Array.newInstance(parameterTypes[i], 1), 0);
+            }
+            ctorValues[i] = value;
           }
 
           return ctor.newInstance(ctorValues);
@@ -510,20 +518,27 @@ final class DefaultSerializer implements FieldTypeSerializer<Object> {
             continue;
           }
           Object val = dataMap.get(info.key());
-          if (val == null) {
+          // as for the fields of the config itself: a missing option keeps its value, and so
+          // does one read as null, unless SET_NULL is set and the field can hold null
+          if (val == null && !dataMap.containsKey(info.key())) {
             continue;
           }
           Field desField = info.ensureAccessible();
           FieldTypeSerializer serializer =
               serializerRegistry.getSerializer(info.genericType()).orElse(this);
           try {
-            desField.set(
-                fieldTypeInstance,
+            Object deserialized =
                 serializer.deserialize(
                     new DataObject(val, true),
                     SerializationContext.fromField(
                         desField, fieldTypeInstance, context.getSettings()),
-                    info.accessor()));
+                    info.accessor());
+            if (deserialized == null
+                && (nullReadHandle == NullReadHandleOption.USE_DEFAULT_VALUE
+                    || desField.getType().isPrimitive())) {
+              continue;
+            }
+            desField.set(fieldTypeInstance, deserialized);
           } catch (IllegalAccessException e) {
             throw new IllegalArgumentException(INACCESSIBLE, e);
           }
