@@ -146,6 +146,10 @@ class TestTomlStructure {
         "# first line\n# second line\nvalue = 1\n", dump(new MultilineComment()));
   }
 
+  // </editor-fold>
+
+  // <editor-fold desc="Keys">
+
   @Test
   void keysAreQuotedWhenTheyAreNotBare() {
     String expected =
@@ -221,6 +225,10 @@ class TestTomlStructure {
     Assertions.assertEquals(30, config.server.players);
   }
 
+  // </editor-fold>
+
+  // <editor-fold desc="Arrays and lists">
+
   @Test
   void arraysAreArraysWithInlineTablesForObjects() {
     String expected =
@@ -267,6 +275,10 @@ class TestTomlStructure {
     Assertions.assertEquals(7, config.items[0].amount);
   }
 
+  // </editor-fold>
+
+  // <editor-fold desc="Maps, records and DataObject">
+
   @Test
   void objectsAreTables() {
     // values come before sub-tables, empty maps stay inline
@@ -298,10 +310,6 @@ class TestTomlStructure {
     Assertions.assertEquals(2, config.data.get("foo").getAsInt());
   }
 
-  // </editor-fold>
-
-  // <editor-fold desc="Keys">
-
   @Test
   void objectsLoad() {
     ObjectFields config =
@@ -327,6 +335,10 @@ class TestTomlStructure {
         Assertions.assertThrows(IllegalArgumentException.class, () -> dump(new NullInMap()));
     Assertions.assertTrue(e.getMessage().contains("map.missing"), e.getMessage());
   }
+
+  // </editor-fold>
+
+  // <editor-fold desc="Config objects and comments: subjects">
 
   @Comment("Class comment")
   static class Sections {
@@ -367,10 +379,6 @@ class TestTomlStructure {
     public Map<String, Object> plain = Map.of("inner", Map.of("deeper", Map.of("value", 2)));
   }
 
-  // </editor-fold>
-
-  // <editor-fold desc="Arrays and lists">
-
   static class QuotedTable {
 
     @Key("has space")
@@ -391,6 +399,10 @@ class TestTomlStructure {
     public int value = 1;
   }
 
+  // </editor-fold>
+
+  // <editor-fold desc="Keys: subjects">
+
   static class Keys {
 
     @Key("bare_key-1")
@@ -402,10 +414,6 @@ class TestTomlStructure {
     @Key("quo'te")
     public int quote = 4;
   }
-
-  // </editor-fold>
-
-  // <editor-fold desc="Maps, records and DataObject">
 
   static class DottedKeys {
 
@@ -423,6 +431,10 @@ class TestTomlStructure {
     @Key("limits.players.max")
     public int max = 100;
   }
+
+  // </editor-fold>
+
+  // <editor-fold desc="Arrays and lists: subjects">
 
   public static class Item {
 
@@ -446,6 +458,10 @@ class TestTomlStructure {
     public Item[] items = {new Item("a", 1), new Item("b", 2)};
     public List<String> empty = List.of();
   }
+
+  // </editor-fold>
+
+  // <editor-fold desc="Maps, records and DataObject: subjects">
 
   record Location(@Key("world-name") String world, int x, double z) {}
 
@@ -485,4 +501,5 @@ class TestTomlStructure {
   }
 
   // </editor-fold>
+
 }

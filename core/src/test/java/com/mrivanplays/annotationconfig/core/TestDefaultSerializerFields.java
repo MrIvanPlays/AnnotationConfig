@@ -109,6 +109,8 @@ class TestDefaultSerializerFields {
         Map.of("CONSTANT", "constant", "name", "name", "amount", 3), serialized.getAsMap());
   }
 
+  // <editor-fold desc="Fields of a parent class">
+
   @Test
   void anInstanceInAFieldOfTheParentClassIsReused() {
     Child config = new Child();
@@ -142,6 +144,8 @@ class TestDefaultSerializerFields {
     Assertions.assertEquals(new Pair("read", 7), read);
   }
 
+  // </editor-fold>
+
   /** One field and a constant: written and read as the field's value alone. */
   static class Port {
 
@@ -151,8 +155,6 @@ class TestDefaultSerializerFields {
 
     public Port() {}
   }
-
-  // <editor-fold desc="Fields of a parent class">
 
   static class WithPort {
 
@@ -180,6 +182,8 @@ class TestDefaultSerializerFields {
     int amount = 3;
   }
 
+  // <editor-fold desc="Fields of a parent class: subjects">
+
   public static class Holder {
 
     public String name = "default";
@@ -195,8 +199,6 @@ class TestDefaultSerializerFields {
 
   public record Pair(String name, int amount) {}
 
-  // </editor-fold>
-
   static class Parent {
 
     Holder holder = new Holder("kept", 7);
@@ -204,4 +206,6 @@ class TestDefaultSerializerFields {
   }
 
   static class Child extends Parent {}
+
+  // </editor-fold>
 }

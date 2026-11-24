@@ -95,6 +95,10 @@ class TestJsonStructure {
     Assertions.assertEquals("Pekov", config.name);
   }
 
+  // </editor-fold>
+
+  // <editor-fold desc="Dotted keys">
+
   @Test
   void dottedKeysAreNestedObjects() {
     String expected =
@@ -116,10 +120,6 @@ class TestJsonStructure {
     Assertions.assertEquals(expected, dump(new DottedKeys()));
   }
 
-  // </editor-fold>
-
-  // <editor-fold desc="Dotted keys">
-
   @Test
   void dottedKeysLoad() {
     DottedKeys config =
@@ -135,6 +135,10 @@ class TestJsonStructure {
     Assertions.assertEquals("baz", config.bar);
     Assertions.assertEquals(69420, config.baz);
   }
+
+  // </editor-fold>
+
+  // <editor-fold desc="Arrays and lists">
 
   @Test
   void arraysAndListsAreJsonArrays() {
@@ -203,15 +207,15 @@ class TestJsonStructure {
     Assertions.assertEquals(List.of("now", "filled"), config.empty);
   }
 
-  // </editor-fold>
-
-  // <editor-fold desc="Arrays and lists">
-
   @Test
   void singleValueIsReadAsList() {
     SingleValueList config = load(new SingleValueList(), "{\"foo\": \"aabb\"}");
     Assertions.assertEquals(List.of("aabb"), config.foo);
   }
+
+  // </editor-fold>
+
+  // <editor-fold desc="Maps and DataObject">
 
   @Test
   void mapsAreJsonObjects() {
@@ -259,6 +263,10 @@ class TestJsonStructure {
     Assertions.assertEquals("foo", config.data.get("bar").getAsString());
   }
 
+  // </editor-fold>
+
+  // <editor-fold desc="Records">
+
   @Test
   void recordsAreJsonObjects() {
     String expected =
@@ -296,6 +304,10 @@ class TestJsonStructure {
     Assertions.assertEquals(new Location("overworld", 4, 5, 6.0), config.home);
   }
 
+  // </editor-fold>
+
+  // <editor-fold desc="Config objects: subjects">
+
   @Comment("Comments are not written to JSON")
   static class Sections {
 
@@ -324,7 +336,7 @@ class TestJsonStructure {
 
   // </editor-fold>
 
-  // <editor-fold desc="Maps and DataObject">
+  // <editor-fold desc="Dotted keys: subjects">
 
   static class DottedKeys {
 
@@ -337,6 +349,10 @@ class TestJsonStructure {
     @Key("commands.subcommands.this.baz")
     public int baz = -1;
   }
+
+  // </editor-fold>
+
+  // <editor-fold desc="Arrays and lists: subjects">
 
   static class Arrays {
 
@@ -368,7 +384,7 @@ class TestJsonStructure {
 
   // </editor-fold>
 
-  // <editor-fold desc="Records">
+  // <editor-fold desc="Maps and DataObject: subjects">
 
   static class Maps {
 
@@ -402,6 +418,10 @@ class TestJsonStructure {
     }
   }
 
+  // </editor-fold>
+
+  // <editor-fold desc="Records: subjects">
+
   record Location(@Key("world-name") String world, int x, int y, double z) {
 
     // records with more than one constructor are supported
@@ -419,4 +439,5 @@ class TestJsonStructure {
   }
 
   // </editor-fold>
+
 }

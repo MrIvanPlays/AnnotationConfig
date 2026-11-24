@@ -122,6 +122,7 @@ public final class ACDefaultSettings {
     return Holder.SETTINGS;
   }
 
+  // <editor-fold desc="Holder impl" defaultstate="collapsed">
   private static Settings generateSettings() {
     return new Settings()
         .put(SHOULD_REVERSE_FIELDS, false)
@@ -133,10 +134,8 @@ public final class ACDefaultSettings {
         .copy(true);
   }
 
-  // </editor-fold>
-
-  // <editor-fold desc="Holder impl" defaultstate="collapsed">
   private static final class Holder {
     static final Settings SETTINGS = generateSettings();
   }
+  // </editor-fold>
 }

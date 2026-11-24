@@ -75,6 +75,10 @@ class TestJsonResolver {
     Assertions.assertEquals(expected, Files.readString(file));
   }
 
+  // </editor-fold>
+
+  // <editor-fold desc="Parent and static fields">
+
   @Test
   void parentFieldsOnlyWithFindParentFields() {
     Assertions.assertEquals("{\n  \"own\": \"own\"\n}", dump(new Extended(), new Settings()));
@@ -102,7 +106,7 @@ class TestJsonResolver {
 
   // </editor-fold>
 
-  // <editor-fold desc="Parent and static fields">
+  // <editor-fold desc="Missing options: subjects">
 
   static class Version1 {
 
@@ -131,6 +135,10 @@ class TestJsonResolver {
     }
   }
 
+  // </editor-fold>
+
+  // <editor-fold desc="Parent and static fields: subjects">
+
   static class Base {
 
     public int base = 1;
@@ -143,4 +151,5 @@ class TestJsonResolver {
   }
 
   // </editor-fold>
+
 }

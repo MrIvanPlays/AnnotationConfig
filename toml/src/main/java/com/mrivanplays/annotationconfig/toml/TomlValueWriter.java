@@ -211,6 +211,8 @@ public final class TomlValueWriter implements ValueWriter {
     return table == null ? key : table + '.' + key;
   }
 
+  // <editor-fold desc="Values">
+
   /**
    * Appends {@code value} in TOML syntax.
    *
@@ -277,8 +279,6 @@ public final class TomlValueWriter implements ValueWriter {
     }
     out.append('}');
   }
-
-  // <editor-fold desc="Values">
 
   private static void appendCollection(
       StringBuilder out, Collection<?> elements, @Nullable String table, String key) {
@@ -374,6 +374,10 @@ public final class TomlValueWriter implements ValueWriter {
     return new IllegalArgumentException("'" + path + "': TOML has no null value");
   }
 
+  // </editor-fold>
+
+  // <editor-fold desc="Keys and strings">
+
   /** The key as written in TOML: bare when it can be, quoted otherwise. */
   private static String formatKey(String key) {
     if (isBareKey(key)) {
@@ -391,10 +395,6 @@ public final class TomlValueWriter implements ValueWriter {
       appendString(out, key);
     }
   }
-
-  // </editor-fold>
-
-  // <editor-fold desc="Keys and strings">
 
   /** Bare keys may only contain A-Z, a-z, 0-9, '_' and '-'. */
   private static boolean isBareKey(String key) {
@@ -496,6 +496,8 @@ public final class TomlValueWriter implements ValueWriter {
     return c < 0x20 || c == 0x7f;
   }
 
+  // </editor-fold>
+
   @Override
   public void write(
       Map<String, Object> values,
@@ -534,5 +536,4 @@ public final class TomlValueWriter implements ValueWriter {
     }
   }
 
-  // </editor-fold>
 }

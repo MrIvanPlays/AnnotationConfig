@@ -128,6 +128,10 @@ class TestJson5ValueWriter {
         dump(new SectionCommentHolder()));
   }
 
+  // </editor-fold>
+
+  // <editor-fold desc="Keys">
+
   @Test
   void identifierKeysAreUnquoted() {
     String expected =
@@ -160,6 +164,10 @@ class TestJson5ValueWriter {
     Assertions.assertEquals(16, loaded.quote);
     Assertions.assertEquals(17, loaded.dotted);
   }
+
+  // </editor-fold>
+
+  // <editor-fold desc="Values">
 
   @Test
   void valuesUseJson5Syntax() {
@@ -234,6 +242,10 @@ class TestJson5ValueWriter {
     Assertions.assertEquals(original.bigInteger, target.bigInteger);
   }
 
+  // </editor-fold>
+
+  // <editor-fold desc="Arrays, maps and records">
+
   @Test
   void arraysMapsAndRecords() {
     // a null entry of an object is left out, as Gson does for JSON
@@ -299,7 +311,7 @@ class TestJson5ValueWriter {
 
   // </editor-fold>
 
-  // <editor-fold desc="Keys">
+  // <editor-fold desc="Reading hand-written JSON5">
 
   @Test
   void handWrittenJson5Loads() {
@@ -320,6 +332,10 @@ class TestJson5ValueWriter {
     Assertions.assertEquals(8080, loaded.port);
     Assertions.assertEquals(List.of("a", "b"), loaded.tags);
   }
+
+  // </editor-fold>
+
+  // <editor-fold desc="Files">
 
   @Test
   void missingOptionsAreAddedWithTheirComments(@TempDir Path dir) throws IOException {
@@ -345,12 +361,12 @@ class TestJson5ValueWriter {
 
   // </editor-fold>
 
-  // <editor-fold desc="Values">
-
   enum Mode {
     FAST,
     SLOW
   }
+
+  // <editor-fold desc="Comments: subjects">
 
   @Comment("Class comment")
   static class Commented {
@@ -386,10 +402,6 @@ class TestJson5ValueWriter {
     public int players = 20;
   }
 
-  // </editor-fold>
-
-  // <editor-fold desc="Arrays, maps and records">
-
   public static class Item {
 
     @Comment("not written: comments inside arrays are not supported")
@@ -416,6 +428,10 @@ class TestJson5ValueWriter {
     @ConfigObject public SectionComment section = new SectionComment();
   }
 
+  // </editor-fold>
+
+  // <editor-fold desc="Keys: subjects">
+
   static class Keys {
 
     public int identifier_1 = 1;
@@ -438,6 +454,10 @@ class TestJson5ValueWriter {
     @Key("dotted.key")
     public int dotted = 7;
   }
+
+  // </editor-fold>
+
+  // <editor-fold desc="Values: subjects">
 
   static class Values {
 
@@ -464,11 +484,11 @@ class TestJson5ValueWriter {
     public BigInteger bigInteger = new BigInteger("123456789012345678901234567890");
   }
 
-  record Location(@Key("world-name") String world, int x, double z) {}
-
   // </editor-fold>
 
-  // <editor-fold desc="Reading hand-written JSON5">
+  // <editor-fold desc="Arrays, maps and records: subjects">
+
+  record Location(@Key("world-name") String world, int x, double z) {}
 
   static class Structures {
 
@@ -495,7 +515,7 @@ class TestJson5ValueWriter {
 
   // </editor-fold>
 
-  // <editor-fold desc="Files">
+  // <editor-fold desc="Reading hand-written JSON5: subjects">
 
   static class HandWritten {
 
@@ -503,6 +523,10 @@ class TestJson5ValueWriter {
     public int port = 0;
     public List<String> tags = List.of();
   }
+
+  // </editor-fold>
+
+  // <editor-fold desc="Files: subjects">
 
   static class Version1 {
 
@@ -521,4 +545,5 @@ class TestJson5ValueWriter {
   }
 
   // </editor-fold>
+
 }

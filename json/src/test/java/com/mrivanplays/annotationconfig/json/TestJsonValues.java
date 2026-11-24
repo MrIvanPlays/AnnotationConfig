@@ -170,6 +170,10 @@ class TestJsonValues {
     Assertions.assertEquals(json, dump(config));
   }
 
+  // </editor-fold>
+
+  // <editor-fold desc="Strings and characters">
+
   @Test
   void textIsWrittenAsPlainJsonStrings() {
     // no HTML escaping (= as =), and @Multiline has no special form in JSON
@@ -212,7 +216,7 @@ class TestJsonValues {
 
   // </editor-fold>
 
-  // <editor-fold desc="Strings and characters">
+  // <editor-fold desc="Enums">
 
   @Test
   void enumsAreWrittenByLowerCaseName() {
@@ -254,6 +258,10 @@ class TestJsonValues {
     Assertions.assertTrue(error.getMessage().contains("Mode"), error.getMessage());
   }
 
+  // </editor-fold>
+
+  // <editor-fold desc="Generic lists">
+
   @Test
   void nestedAndWildcardListsRoundTrip() {
     GenericLists config =
@@ -283,8 +291,6 @@ class TestJsonValues {
 
   // </editor-fold>
 
-  // <editor-fold desc="Enums">
-
   enum Mode {
     fastMode,
     SPECIAL {
@@ -294,6 +300,8 @@ class TestJsonValues {
       }
     }
   }
+
+  // <editor-fold desc="Numbers: subjects">
 
   static class Numbers {
 
@@ -319,6 +327,10 @@ class TestJsonValues {
     public List<BigInteger> integers = List.of();
   }
 
+  // </editor-fold>
+
+  // <editor-fold desc="Strings and characters: subjects">
+
   static class Text {
 
     public String plain = "a=b & c<d> 'e'";
@@ -330,7 +342,7 @@ class TestJsonValues {
 
   // </editor-fold>
 
-  // <editor-fold desc="Generic lists">
+  // <editor-fold desc="Enums: subjects">
 
   static class Enums {
 
@@ -339,6 +351,10 @@ class TestJsonValues {
     public List<Mode> modes = List.of(Mode.SPECIAL, Mode.fastMode);
   }
 
+  // </editor-fold>
+
+  // <editor-fold desc="Generic lists: subjects">
+
   static class GenericLists {
 
     public List<List<String>> nested = List.of();
@@ -346,4 +362,5 @@ class TestJsonValues {
   }
 
   // </editor-fold>
+
 }

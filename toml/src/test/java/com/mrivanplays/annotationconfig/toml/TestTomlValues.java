@@ -125,6 +125,10 @@ class TestTomlValues {
     Assertions.assertEquals("\"\"\" quotes \\ backslash\r\nend\"", loaded.tricky);
   }
 
+  // </editor-fold>
+
+  // <editor-fold desc="Numbers">
+
   @Test
   void numbersUseTomlSyntax() {
     String expected =
@@ -170,10 +174,6 @@ class TestTomlValues {
     Assertions.assertEquals(BigInteger.valueOf(42), loaded.fitting);
   }
 
-  // </editor-fold>
-
-  // <editor-fold desc="Numbers">
-
   @Test
   void integersBeyond64BitsAreStrings() {
     // TOML integers are 64 bit: the limits of long are integers, anything larger is a string
@@ -206,6 +206,10 @@ class TestTomlValues {
     Assertions.assertEquals(Long.MAX_VALUE, loaded.max);
     Assertions.assertEquals(-1_000_000_000_000_000_000L, loaded.min);
   }
+
+  // </editor-fold>
+
+  // <editor-fold desc="Date and time">
 
   @Test
   void datesAreTomlDateTimes() {
@@ -279,7 +283,7 @@ class TestTomlValues {
 
   // </editor-fold>
 
-  // <editor-fold desc="Date and time">
+  // <editor-fold desc="Booleans and enums">
 
   @Test
   void booleansAndEnums() {
@@ -299,10 +303,14 @@ class TestTomlValues {
     Assertions.assertEquals(List.of(Mode.FAST), loaded.modes);
   }
 
+  // </editor-fold>
+
   enum Mode {
     FAST,
     SLOW
   }
+
+  // <editor-fold desc="Strings: subjects">
 
   static class Strings {
 
@@ -324,6 +332,10 @@ class TestTomlValues {
     @Multiline public String tricky = "\"\"\" quotes \\ backslash\r\nend\"";
   }
 
+  // </editor-fold>
+
+  // <editor-fold desc="Numbers: subjects">
+
   static class Numbers {
 
     public int integer = -42;
@@ -339,16 +351,16 @@ class TestTomlValues {
     public BigInteger fitting = BigInteger.valueOf(42);
   }
 
-  // </editor-fold>
-
-  // <editor-fold desc="Booleans and enums">
-
   static class OutOfRange {
 
     public long max = Long.MAX_VALUE;
     public long min = Long.MIN_VALUE;
     public BigInteger huge = new BigInteger("123456789012345678901234567890");
   }
+
+  // </editor-fold>
+
+  // <editor-fold desc="Date and time: subjects">
 
   static class Dates {
 
@@ -359,6 +371,10 @@ class TestTomlValues {
     public List<LocalDate> dates = List.of(LocalDate.parse("2000-01-01"));
   }
 
+  // </editor-fold>
+
+  // <editor-fold desc="Booleans and enums: subjects">
+
   static class Misc {
 
     public boolean enabled = true;
@@ -367,4 +383,5 @@ class TestTomlValues {
   }
 
   // </editor-fold>
+
 }
