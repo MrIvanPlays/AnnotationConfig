@@ -106,6 +106,29 @@ WHILE ON THAT NOTE: `ConfigResolver` is not meant to be implemented, only create
 AnnotationConfig internals serialize to a `Map<String, Object>`, and for comments a
 `Map<String, List<String>>` keyed by the dotted path of each option (`server.port`).
 
+# Config fields must not be final
+
+Options are loaded by setting the fields of your config and its sections with reflection, so don't
+make them `final`. AnnotationConfig doesn't skip or reject final fields, as has been the case since
+1.0.0, but setting them doesn't work reliably:
+
+- A `final` field initialized with a constant (`private final int port = 25565;`, or a `String`
+  literal) is inlined by the compiler: the field is set, but your code keeps reading the constant.
+- `static final` fields can't be set at all: with `ACDefaultSettings.FIND_STATIC_FIELDS` set,
+  loading them fails.
+- Since Java 26, setting a `final` field with reflection prints a warning unless it is allowed with
+  `--enable-final-field-mutation`, and a later Java release is to make it an error.
+
+```java
+public class MyConfig {
+
+  private int port = 25565; // not: private final int port = 25565;
+}
+```
+
+Records are the exception: a record is created with its constructor, so its components are final
+as usual. The field that holds the record must still not be final.
+
 # Installation
 
 Maven:
