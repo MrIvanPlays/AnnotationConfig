@@ -463,8 +463,6 @@ array that holds a comma, do not read back as they were written.
   types. The default serializer applied neither; only the fields of a config and its
   `@ConfigObject` sections were validated. See
   [the new feature](#min-max-and-custom-annotations-in-custom-data-types).
-- Custom data types can have a private or package-private empty constructor. Only public ones were
-  found, and the error said that there was no empty constructor.
 - Primitive values that already have the right type are no longer converted through a `String`,
   and type checks are cached per class.
 - A field that the config's class inherits (see `FIND_PARENT_FIELDS`) is found when its current
