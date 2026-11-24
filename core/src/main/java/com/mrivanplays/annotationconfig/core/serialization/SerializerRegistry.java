@@ -124,6 +124,10 @@ public enum SerializerRegistry {
    * serializedType}, then the method will forward deserialize calls to it, otherwise deserialize
    * calls are forwarded to the default serializer.
    *
+   * <p>Unlike {@link #registerSerializer(Class, FieldTypeSerializer)}, this does not throw when a
+   * serializer is registered for the type already: it replaces that serializer, and keeps its
+   * deserialize method.
+   *
    * @param serializedType the field type that should be serialized
    * @param serialize serialization method of the serializedType
    * @param <T> the serialized type
@@ -150,6 +154,10 @@ public enum SerializerRegistry {
    * How is the serialize method handled? If there is a registered serializer for this {@code
    * serializedType}, then the method will forward serialize calls to it, otherwise serialize calls
    * are forwarded to the default serializer.
+   *
+   * <p>Unlike {@link #registerSerializer(Class, FieldTypeSerializer)}, this does not throw when a
+   * serializer is registered for the type already: it replaces that serializer, and keeps its
+   * serialize method.
    *
    * @param serializedType the field type that should be deserialized
    * @param deserialize deserialization method of the serialized type

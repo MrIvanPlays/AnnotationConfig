@@ -83,7 +83,7 @@ class TestJson5Config {
             // Seconds
             timeout: 30
           }
-        }\
+        }
         """;
     Assertions.assertEquals(expected, dump(JSON5, new Server()));
   }
@@ -103,7 +103,7 @@ class TestJson5Config {
           "database": {
             "timeout": 30
           }
-        }\
+        }
         """;
     Assertions.assertEquals(expected, dump(JsonConfig.getConfigResolver(), new Server()));
   }

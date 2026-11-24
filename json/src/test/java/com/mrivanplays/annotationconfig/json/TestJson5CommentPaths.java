@@ -88,7 +88,7 @@ class TestJson5CommentPaths {
             // lines
             flat: 4
           }
-        }\
+        }
         """;
     Assertions.assertEquals(expected, out.toString());
     Map<?, ?> read =

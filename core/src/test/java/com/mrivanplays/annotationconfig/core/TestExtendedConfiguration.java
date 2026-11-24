@@ -61,6 +61,19 @@ class TestExtendedConfiguration {
     Assertions.assertEquals("bar=baz\n", writer.toString());
   }
 
+  @Test
+  void aHiddenParentFieldIsNotAnOption() {
+    StringWriter writer = new StringWriter();
+    PropertyConfig.getConfigResolver().dump(new Hiding(), writer, findParentFields());
+    // the hidden foo of Subject was written too, which failed with "Duplicate key 'foo'"
+    Assertions.assertEquals("# Test comment foo\n\nfoo=child\n", writer.toString());
+    Hiding read = new Hiding();
+    PropertyConfig.getConfigResolver()
+        .load(read, new StringReader("foo=changed"), findParentFields());
+    Assertions.assertEquals("changed", read.foo);
+    Assertions.assertEquals(1, ((Subject) read).foo);
+  }
+
   @Comment("Test comment foo")
   static class Subject {
 
@@ -70,5 +83,10 @@ class TestExtendedConfiguration {
   static class ExtendedSubject extends Subject {
 
     String bar = "baz";
+  }
+
+  static class Hiding extends Subject {
+
+    String foo = "child";
   }
 }

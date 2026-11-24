@@ -109,6 +109,20 @@ class TestDefaultSerializerFields {
         Map.of("CONSTANT", "constant", "name", "name", "amount", 3), serialized.getAsMap());
   }
 
+  @Test
+  void aDataTypeWithAPrivateEmptyConstructorIsCreated() {
+    Object read =
+        serializer()
+            .deserialize(
+                new DataObject(Map.of("name", "read", "amount", 2), true),
+                SerializationContext.of(PrivateConstructor.class, PrivateConstructor.class, null),
+                noAnnotations());
+    // failed with "does not have an empty constructor" before: only public ones were found
+    PrivateConstructor value = Assertions.assertInstanceOf(PrivateConstructor.class, read);
+    Assertions.assertEquals("read", value.name);
+    Assertions.assertEquals(2, value.amount);
+  }
+
   // <editor-fold desc="Fields of a parent class">
 
   @Test
@@ -145,6 +159,14 @@ class TestDefaultSerializerFields {
   }
 
   // </editor-fold>
+
+  static class PrivateConstructor {
+
+    String name = "name";
+    int amount = 1;
+
+    private PrivateConstructor() {}
+  }
 
   /** One field and a constant: written and read as the field's value alone. */
   static class Port {

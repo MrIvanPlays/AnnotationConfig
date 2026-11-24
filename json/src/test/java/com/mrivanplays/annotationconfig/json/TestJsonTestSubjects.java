@@ -35,11 +35,11 @@ class TestJsonTestSubjects {
 
   static Stream<Arguments> writeCases() {
     return Stream.of(
-        Arguments.of(new JsonTestSubjects.TByte(), "{\n  \"b\": 1\n}"),
-        Arguments.of(new JsonTestSubjects.TDouble(), "{\n  \"d\": 2.5\n}"),
-        Arguments.of(new JsonTestSubjects.TFloat(), "{\n  \"f\": 3.11\n}"),
-        Arguments.of(new JsonTestSubjects.TLong(), "{\n  \"l\": 22221111\n}"),
-        Arguments.of(new JsonTestSubjects.TShort(), "{\n  \"s\": 5\n}"));
+        Arguments.of(new JsonTestSubjects.TByte(), "{\n  \"b\": 1\n}\n"),
+        Arguments.of(new JsonTestSubjects.TDouble(), "{\n  \"d\": 2.5\n}\n"),
+        Arguments.of(new JsonTestSubjects.TFloat(), "{\n  \"f\": 3.11\n}\n"),
+        Arguments.of(new JsonTestSubjects.TLong(), "{\n  \"l\": 22221111\n}\n"),
+        Arguments.of(new JsonTestSubjects.TShort(), "{\n  \"s\": 5\n}\n"));
   }
 
   static Stream<Arguments> readCases() {

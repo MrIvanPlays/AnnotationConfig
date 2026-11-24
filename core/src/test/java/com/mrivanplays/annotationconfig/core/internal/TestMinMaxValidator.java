@@ -64,6 +64,13 @@ class TestMinMaxValidator {
   }
 
   @Test
+  void notANumberIsInNoRange() throws Exception {
+    // passed every @Min before: Double.compare puts NaN above every number
+    assertTrue(fails("decimal", Double.NaN).contains("NaN"));
+    assertTrue(fails("smallFloat", Float.NaN).contains("NaN"));
+  }
+
+  @Test
   void longsAreNotOverflowed() throws Exception {
     fails("bigLong", 3_000_000_000L);
     ok("bigLong", 10L);

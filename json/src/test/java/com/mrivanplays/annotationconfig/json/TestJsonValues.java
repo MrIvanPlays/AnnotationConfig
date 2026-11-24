@@ -63,7 +63,7 @@ class TestJsonValues {
               "longValue": 22221111,
               "shortValue": -32768,
               "longs": [1, 10000000, 123456789]
-            }\
+            }
             """);
     Assertions.assertEquals(2_000_000_000, config.integer);
     Assertions.assertEquals(22_221_111L, config.longValue);
@@ -81,7 +81,7 @@ class TestJsonValues {
               "longValue": 9007199254740993,
               "bigInteger": 123456789012345678901234567890,
               "bigDecimal": 0.12345678901234567890
-            }\
+            }
             """);
     Assertions.assertEquals(9_007_199_254_740_993L, config.longValue);
     Assertions.assertEquals(new BigInteger("123456789012345678901234567890"), config.bigInteger);
@@ -108,7 +108,7 @@ class TestJsonValues {
             1,
             2
           ]
-        }\
+        }
         """;
     Assertions.assertEquals(expected, dump(config));
   }
@@ -158,7 +158,7 @@ class TestJsonValues {
           "integers": [
             123456789012345678901234567890
           ]
-        }\
+        }
         """;
     UntypedNumbers config = load(new UntypedNumbers(), json);
     Assertions.assertEquals(new BigDecimal("1"), config.map.get("whole"));
@@ -183,7 +183,7 @@ class TestJsonValues {
           "plain": "a=b & c<d> 'e'",
           "character": "x",
           "multiline": "first line\\nsecond line\\n"
-        }\
+        }
         """;
     Assertions.assertEquals(expected, dump(new Text()));
   }
@@ -229,7 +229,7 @@ class TestJsonValues {
             "special",
             "fastmode"
           ]
-        }\
+        }
         """;
     Assertions.assertEquals(expected, dump(new Enums()));
   }
@@ -284,7 +284,7 @@ class TestJsonValues {
           "wildcard": [
             1.5
           ]
-        }\
+        }
         """,
         dump(config));
   }

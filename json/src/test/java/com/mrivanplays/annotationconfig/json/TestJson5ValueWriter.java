@@ -91,7 +91,7 @@ class TestJson5ValueWriter {
               amount: 1
             }
           ]
-        }\
+        }
         """;
     Assertions.assertEquals(expected, dump(new Commented()));
   }
@@ -123,7 +123,7 @@ class TestJson5ValueWriter {
           section: {
             value: 1
           }
-        }\
+        }
         """,
         dump(new SectionCommentHolder()));
   }
@@ -146,7 +146,7 @@ class TestJson5ValueWriter {
           dotted: {
             key: 7
           }
-        }\
+        }
         """;
     String json5 = dump(new Keys());
     Assertions.assertEquals(expected, json5);
@@ -192,7 +192,7 @@ class TestJson5ValueWriter {
           negativeInfinity: -Infinity,
           bigDecimal: 0.12345678901234567890,
           bigInteger: 123456789012345678901234567890
-        }\
+        }
         """;
     Assertions.assertEquals(expected, dump(new Values()));
   }
@@ -278,7 +278,7 @@ class TestJson5ValueWriter {
             x: 3,
             z: 1.5
           }
-        }\
+        }
         """;
     Assertions.assertEquals(expected, dump(new Structures()));
   }
@@ -295,7 +295,7 @@ class TestJson5ValueWriter {
               nested: [["x"]],
               map: {key: "other"},
               location: {"world-name": "nether", x: -1, z: 2.5}
-            }\
+            }
             """);
     Assertions.assertArrayEquals(new int[] {3, 4, 5}, loaded.numbers);
     Assertions.assertArrayEquals(new double[] {0.5}, loaded.decimals);
@@ -306,7 +306,7 @@ class TestJson5ValueWriter {
 
   @Test
   void configWithoutOptionsIsAnEmptyObject() {
-    Assertions.assertEquals("{}", dump(new Empty()));
+    Assertions.assertEquals("{}\n", dump(new Empty()));
   }
 
   // </editor-fold>
@@ -326,7 +326,7 @@ class TestJson5ValueWriter {
               name: 'single quoted',
               "port": 8080, // comment after a value
               tags: ["a", 'b']
-            }\
+            }
             """);
     Assertions.assertEquals("single quoted", loaded.name);
     Assertions.assertEquals(8080, loaded.port);
@@ -354,7 +354,7 @@ class TestJson5ValueWriter {
           foo: "foo",
           // added comment
           added: true
-        }\
+        }
         """;
     Assertions.assertEquals(expected, Files.readString(file));
   }

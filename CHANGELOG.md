@@ -47,7 +47,8 @@ class Subject {
 ```
 
 `Subject` is the config class and `SerializedObject` the custom data type, which needs the empty
-constructor.
+constructor. The constructor does not have to be public: a private or package-private one works
+too.
 
 Not every custom data type strictly needs one: when the type is not used inside a `List`, `Map` or
 `SectionObjectList`, AnnotationConfig modifies the default instance of the field directly. An empty
@@ -103,7 +104,8 @@ private long limit = 5; // 3000000000 used to pass, as it wrapped to a negative 
 
 Numbers are now compared by their exact value, `BigInteger` and `BigDecimal` included. A `float`
 bound uses the decimal value it was written as, so `@Min(minFloat = 0.1f)` accepts `0.1`.
-Configs with values that only passed because of the truncation now fail to load.
+Configs with values that only passed because of the truncation now fail to load. `NaN` fails
+both annotations; it used to pass any `@Min`.
 
 #### Empty strings are values
 
@@ -140,6 +142,19 @@ set. They now follow the null read handler as the fields of a config do: with th
 A primitive field (`int`, `boolean`, ...) read as `null` used to fail to load with `SET_NULL`, in a
 config and in a custom data type. It now keeps its value; `Integer`, `Boolean` and other fields that
 can hold `null` are set to `null`.
+
+#### `.properties` reading
+
+Empty trailing array elements are kept, and `.conf` files are configs too. See
+[Breaking changes in `.properties`](#breaking-changes-in-properties).
+
+#### Empty config files get the defaults
+
+An existing config file without any options, such as a file created empty by hand, was left as
+it was by `load` and `loadOrDump`: as nothing was read, no option counted as missing. Every option
+now counts as missing, so with `GENERATE_NEW_OPTIONS` (on by default, off for TOML) the file is
+written with the defaults. Loading an empty file, or an empty `Map` through `load(Object, Map)`,
+also sets `@RawConfig` fields to an empty `DataObject`; both used to do nothing.
 
 #### Numbers in maps keep their type
 
@@ -221,15 +236,51 @@ public class MyConfig {
 ```
 
 - A record is created with its canonical constructor. Its components are its fields that are not
-  static.
+  static, and they are passed in the order the record declares them; the names of the
+  constructor's parameters are not used, so records also work when a tool such as an obfuscator
+  strips them.
 - Components are read with the serializer registered for their generic type, e.g.
   `SectionObjectList<Item>`, as other fields are.
 - A component that is missing from the file is `null` with the default `SET_NULL` null read
   handler. With `USE_DEFAULT_VALUE` it keeps its value from the record the field held, also for a
   field the config's class inherits. A primitive component, which can't be `null`, does that with
   either handler, and is `0` / `false` when there is no record to take the value from.
+- `@Min`, `@Max` and the validators of custom annotations apply to components as they do to
+  fields: `record Bounds(@Min(minInt = 0) int min, int max) {}` fails to load a negative `min`. A
+  custom validator that fails silently makes the component take its value from the record the
+  field held, as a missing component does.
 - `@Ignore` and `@RawConfig` are not supported on record components. AnnotationConfig prints a
   warning the first time it finds them on a record.
+
+#### `@Min`, `@Max` and custom annotations in custom data types
+
+`@Min`, `@Max` and the validators of custom annotations apply to the fields of custom data types,
+also of a type with a single field, which is written as that field's value, as they do to the
+fields of a config and of its `@ConfigObject` sections:
+
+```java
+class Limits {
+
+  @Max(maxInt = 100)
+  int players = 20;
+
+  public Limits() {}
+}
+```
+
+A value out of bounds fails to load. A custom validator that fails silently keeps the value the
+field had. For record components, see [Support for records](#support-for-records).
+
+#### Booleans accept `yes`, `no`, `on` and `off`
+
+A `boolean` option, and `DataObject#getAsBoolean()`, now read `yes` and `on` as `true` in every
+format, in any case, as YAML 1.1 already did; `no`, `off` and any other value are `false`, as
+before. In `.properties`, TOML and JSON, `enabled=yes` used to turn the option off.
+
+```properties
+# 3.0.x: false, 3.1.0: true
+enabled=yes
+```
 
 #### `FIND_STATIC_FIELDS` setting
 
@@ -248,6 +299,7 @@ resolver writes no comments, as JSON has none; the [JSON5 resolver](#json5-suppo
   (e.g. inside a `Map<String, Object>` or `DataObject`) are read as `BigDecimal`.
 - Strings are written as they are, without HTML escaping (`=` is not written as `\u003d`).
 - `@Multiline` strings are written as normal strings, since JSON has no multiline syntax.
+- Files end with a line break, as the files of the other formats do. JSON5 files do too.
 - A `Gson` instance can be passed through `JsonConfig.GSON_INSTANCE`. It is used for reading and
   writing, and should use `ToNumberPolicy.BIG_DECIMAL` to read numbers exactly.
 
@@ -353,21 +405,37 @@ written as inline tables.
 - `TomlValueWriter(TomlMapper)` is deprecated in favour of `TomlValueWriter()`, as the mapper is
   not used for writing.
 
-### `.properties` writer
+### `.properties`
 
 `.properties` files are now written by a dedicated writer whose output `java.util.Properties`
-reads back exactly:
+reads back exactly.
+
+#### Breaking changes in `.properties`
+
+- Empty trailing elements of an array are kept: `a,b,` is read as three elements, the last one
+  empty, where 3.0.x read two. An empty element fails to load in a primitive number array
+  (`int[]`, ...) and is `null` in an `Integer[]` and the like.
+- `PropertyConfig`'s resolver also treats `.conf` files as configs, so `resolveMultiple` loads
+  them from a directory too.
+
+#### Other changes in `.properties`
+
+Files written by 3.0.x load as before. Newly written files differ where 3.0.x wrote something
+that did not read back as it was:
 
 - Keys and values are escaped: backslashes, line breaks, tabs, leading spaces, control characters,
   and in keys also spaces and `=`, `:`, `#` and `!`. Non-ASCII characters are written as `\uXXXX`.
+  3.0.x wrote them as they were, so for example a backslash was lost when reading.
 - Comments that contain line breaks get a `#` on every line.
 - `@Multiline` strings are written over several lines using `\` continuation lines.
-- `null` values are written as an empty value.
-- Arrays are written as comma separated values. Nested arrays, maps and lists are rejected with an
-  error that names the key.
-- When reading, empty trailing elements of comma separated values are kept (`a,b,` is read as
-  three elements).
-- `PropertyConfig`'s resolver also treats `.conf` files as configs, e.g. in `resolveMultiple`.
+- `null` values are written as an empty value, instead of failing with a `NullPointerException`.
+- Arrays are written as comma separated values, and elements keep their `[` and `]`, which 3.0.x
+  removed. Nested arrays, maps and lists are rejected with an error that names the key.
+- Lines end with `\n` on every OS, see [Config resolver fixes](#config-resolver-fixes).
+
+As in 3.0.x, every value that holds a comma is read as an array, as the reader can't tell an array
+from text: a string option with a comma in it (`motd=Hello, world`), and an element of a `String`
+array that holds a comma, do not read back as they were written.
 
 ### Default serializer fixes
 
@@ -375,7 +443,9 @@ reads back exactly:
   added as the type the format read (e.g. `Integer`), which caused a `ClassCastException` later.
 - Lists of lists, wildcard lists (`List<? extends Number>`) and lists of generic types no longer
   fail with a `ClassCastException`.
-- `null` elements in lists are kept instead of throwing a `NullPointerException`.
+- `null` elements in lists are kept instead of throwing a `NullPointerException`. `null` elements
+  of arrays of custom data types are kept too; they were left out, so the array was read back
+  shorter. TOML, which has no null, rejects them with an error, as it does in lists.
 - Arrays of custom data types are created with their declared component type (e.g. `Item[]`
   instead of `Object[]`), also for nested classes.
 - Reading an empty list into an array field creates an empty array of the field's type.
@@ -387,7 +457,14 @@ reads back exactly:
   `2000000000.0` has the text form `2.0E9`, which used to be read as `2`.
 - `char` fields accept one character strings, which is how text formats store them.
 - Enums are written with `Enum#name()`. Constants with a body used to fall back to `toString()`.
-  Enum values are read case-insensitively.
+  Enum values are read case-insensitively. The error for an unknown value lists the constants as
+  they are written, not by `toString()`.
+- `@Min`, `@Max` and the validators of custom annotations are applied to the fields of custom data
+  types. The default serializer applied neither; only the fields of a config and its
+  `@ConfigObject` sections were validated. See
+  [the new feature](#min-max-and-custom-annotations-in-custom-data-types).
+- Custom data types can have a private or package-private empty constructor. Only public ones were
+  found, and the error said that there was no empty constructor.
 - Primitive values that already have the right type are no longer converted through a `String`,
   and type checks are cached per class.
 - A field that the config's class inherits (see `FIND_PARENT_FIELDS`) is found when its current
@@ -408,8 +485,15 @@ reads back exactly:
   the field, instead of a `NullPointerException`.
 - With the `SET_NULL` null read handler, a value that is read as `null` on a field with `@Min` or
   `@Max` no longer fails with "annotation placed on invalid field type".
-- Dumping to a file writes a temporary file first and moves it into place, so a failed dump no
-  longer leaves a half written config behind.
+- Dumping over an existing file no longer deletes it first: the config is written to a temporary
+  file next to it, which then replaces it, so a failed dump leaves the old file as it was instead
+  of a missing or half written one. A new file is written in place.
+- Dumping to a file in a directory that doesn't exist creates the directory; it failed with a
+  `NoSuchFileException`.
+- Dumping through a `Path` keeps the file's permissions and a symbolic link stays a link to the
+  file it points to. As the file was deleted and created again, its permissions became those of
+  a new file and a link was replaced by a regular file. The `File` overloads, which wrote over the
+  file, already did both.
 - Errors about duplicate keys and invalid `@Min` / `@Max` values name the key.
 - A config class with annotations but no `@Comment` no longer starts the file with a blank line.
 - Configs are written with `\n` line endings on every OS. On Windows, files mixed CRLF and LF: the
@@ -426,8 +510,14 @@ reads back exactly:
 - `getConfigResolver()` of `PropertyConfig`, `YamlConfig` and `TomlConfig` returns one instance
   even when it is first called from several threads at once. They created the resolver on first
   use without synchronization, so concurrent first calls could each get their own instance.
-- The `File` overloads of `dump`, `load` and `loadOrDump` behave as the `Path` ones: dumping to a
-  directory throws an `IllegalArgumentException`, and loading from a directory does nothing.
+- The `File` overloads of `dump`, `load` and `loadOrDump` behave as the `Path` ones. Dumping to and
+  loading from a directory throw an `IllegalArgumentException`; loading from one used to do
+  nothing.
+- `resolveMultiple` finds config files whatever the case of their extension (`CONFIG.YML`). A file
+  extension given to `ConfigResolver.Builder` without its dot matches only after a dot, so `yml`
+  no longer matches `notyml`.
+- With `FIND_PARENT_FIELDS`, a field of a parent class that a field of the same name hides is not
+  an option. Both were, and dumping failed with a duplicate key.
 - The `InputStream` and `OutputStream` overloads of `load` and `dump` read and write UTF-8, as the
   `File` and `Path` overloads do. They used the default charset of the JVM.
 - `ConfigResolver.Builder#copy()` and the copy constructor copy the settings and file extensions.
@@ -464,11 +554,12 @@ CommentPlaceholderRegistry.INSTANCE.registerPlaceholder(
   from several threads. Registering checked for an existing entry and added the new one in two
   steps, so two threads registering the same type could both succeed.
 - `registerSimpleValueSerializer` and `registerSimpleValueDeserializer` replace the entry in one
-  step, so there is no moment in which the type has no serializer.
+  step, so there is no moment in which the type has no serializer. Their Javadoc now says that
+  they replace a registered serializer, while `registerSerializer` throws.
 - The default serializer that `registerSimpleValueSerializer` and
   `registerSimpleValueDeserializer` fall back to gets the context of the value, with its settings,
   generic type and default value. It used to get a new context without them, and failed with a
-  `NullPointerException` for values without an annotated config, such as record components.
+  `NullPointerException` for values without an annotated config.
 - `SimpleValueSerializer` accepts a `null` annotated config.
 - Unregistering an annotation without a validator fails with "... is not registered" instead of
   "... already not registered".
@@ -502,6 +593,10 @@ CommentPlaceholderRegistry.INSTANCE.registerPlaceholder(
   through `double` and `long`, which lost precision and overflowed.
 - `DataObject#getAsMap` returns a new mutable map for a data object that holds a single value, as
   it does otherwise. It returned an immutable empty map.
+- `new DataObject()` is an empty map: `isEmpty()` is `true` and `isSingleValue()` is `false`. It
+  held no map until a value was put into it, so it was a single value (`null`) and not empty. A
+  custom serializer that returns it for a value with nothing to write now leaves the option out,
+  as for any empty data object, instead of writing a `null` (which TOML rejected).
 - `DataObjectBuilder#copy()` and its copy constructor copy the data object. The copy shared it, so
   adding to the copy changed the original.
 - `Setting` has a `hashCode` that agrees with `equals`, and two settings are equal when their keys

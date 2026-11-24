@@ -39,6 +39,7 @@ import java.nio.file.Path;
 import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
@@ -166,7 +167,9 @@ public final class ConfigResolverImpl implements ConfigResolver {
     Objects.requireNonNull(annotatedConfig, "annotatedConfig");
     Objects.requireNonNull(path, "path");
     Objects.requireNonNull(settings, "settings");
-    if (Files.notExists(path) || Files.isDirectory(path)) {
+    // as dump does: a directory is never a config file, which used to be skipped silently
+    checkNotDirectory(path);
+    if (Files.notExists(path)) {
       return;
     }
     Settings passed = this.passSettings(settings);
@@ -187,9 +190,7 @@ public final class ConfigResolverImpl implements ConfigResolver {
     Objects.requireNonNull(annotatedConfig, "annotatedConfig");
     Objects.requireNonNull(values, "values");
     Objects.requireNonNull(settings, "settings");
-    if (values.isEmpty()) {
-      return;
-    }
+    // empty values are read as every option missing, as from a file or a reader
     Settings passed = this.passSettings(settings);
     AnnotatedConfigResolver.setFields(
         annotatedConfig,
@@ -315,10 +316,16 @@ public final class ConfigResolverImpl implements ConfigResolver {
     return ret;
   }
 
+  /**
+   * Whether the name of {@code path} ends with one of the file extensions, ignoring case, so that
+   * {@code CONFIG.YML} is found too. An extension given without its dot ({@code "yml"}) gets one,
+   * so it doesn't match the end of any name ({@code "html"}).
+   */
   private boolean hasConfigExtension(Path path) {
-    String fileName = path.getFileName().toString();
+    String fileName = path.getFileName().toString().toLowerCase(Locale.ROOT);
     for (String extension : this.fileExtensions) {
-      if (fileName.endsWith(extension)) {
+      String suffix = extension.toLowerCase(Locale.ROOT);
+      if (fileName.endsWith(suffix.startsWith(".") ? suffix : "." + suffix)) {
         return true;
       }
     }
@@ -335,9 +342,8 @@ public final class ConfigResolverImpl implements ConfigResolver {
     } catch (IOException e) {
       throw new RuntimeException("Could not read the configuration " + path, e);
     }
-    if (values.isEmpty()) {
-      return;
-    }
+    // an empty file misses every option, so with GENERATE_NEW_OPTIONS it gets them written; it
+    // used to be left empty, also by loadOrDump
     boolean missingOptions =
         AnnotatedConfigResolver.setFields(annotatedConfig, values, holders, settings);
     if (missingOptions && settings.get(ACDefaultSettings.GENERATE_NEW_OPTIONS).orElseThrow()) {

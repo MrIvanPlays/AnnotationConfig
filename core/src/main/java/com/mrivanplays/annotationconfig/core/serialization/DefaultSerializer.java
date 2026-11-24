@@ -24,6 +24,7 @@ package com.mrivanplays.annotationconfig.core.serialization;
 
 import com.mrivanplays.annotationconfig.core.internal.ClassInfo;
 import com.mrivanplays.annotationconfig.core.internal.FieldInfo;
+import com.mrivanplays.annotationconfig.core.internal.FieldValidation;
 import com.mrivanplays.annotationconfig.core.resolver.settings.ACDefaultSettings;
 import com.mrivanplays.annotationconfig.core.resolver.settings.NullReadHandleOption;
 import java.lang.reflect.Array;
@@ -46,6 +47,7 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.StringJoiner;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Function;
 import org.jspecify.annotations.NonNull;
@@ -109,7 +111,7 @@ final class DefaultSerializer implements FieldTypeSerializer<Object> {
 
   private static Object createFieldTypeInstance(Class<?> fieldType) {
     try {
-      Constructor<?> constructor = fieldType.getConstructor();
+      Constructor<?> constructor = fieldType.getDeclaredConstructor();
       if (!constructor.trySetAccessible()) {
         throw new RuntimeException("Could not set constructor accessible: " + fieldType.getName());
       }
@@ -180,7 +182,19 @@ final class DefaultSerializer implements FieldTypeSerializer<Object> {
             + "' for enum "
             + enumType.getName()
             + "; expected one of "
-            + Arrays.toString(constants));
+            + writtenNames(constants));
+  }
+
+  /**
+   * The names of the constants as they are written (lower case), which is what a config can hold:
+   * toString(), which listed them before, may be overridden to return anything.
+   */
+  private static String writtenNames(Object[] constants) {
+    StringJoiner names = new StringJoiner(", ", "[", "]");
+    for (Object constant : constants) {
+      names.add(((Enum<?>) constant).name().toLowerCase(Locale.ROOT));
+    }
+    return names.toString();
   }
 
   /** Element class of a {@code List<X>} field; {@code Object} when the list is raw. */
@@ -381,12 +395,15 @@ final class DefaultSerializer implements FieldTypeSerializer<Object> {
       FieldTypeSerializer serializer =
           serializerRegistry.getSerializer(info.genericType()).orElse(this);
       try {
-        desField.set(
-            fieldTypeInstance,
+        Object read =
             serializer.deserialize(
                 data,
                 SerializationContext.fromField(desField, fieldTypeInstance, context.getSettings()),
-                info.accessor()));
+                info.accessor());
+        // a validator that fails silently keeps the field's value
+        if (FieldValidation.validate(info, info.key(), read, context.getSettings())) {
+          desField.set(fieldTypeInstance, read);
+        }
       } catch (IllegalAccessException e) {
         throw new IllegalArgumentException(INACCESSIBLE, e);
       }
@@ -410,8 +427,9 @@ final class DefaultSerializer implements FieldTypeSerializer<Object> {
          * IF IT WORKS, DO NOT, FOR ANY CIRCUMSTANCE WHATSOEVER, TOUCH
          */
 
-        // the constructor, its parameter names and the components are looked up once per record
-        // class; the components are the record's fields that are neither static nor synthetic
+        // the constructor, the order of its parameters and the components are looked up once per
+        // record class; the components are the record's fields that are neither static nor
+        // synthetic
         ClassInfo.RecordInfo record = ClassInfo.of(neededInstanceAllocation).record();
         // try to not set with fields and directly use a ctor
         Constructor<?> ctor = record.constructor();
@@ -440,49 +458,28 @@ final class DefaultSerializer implements FieldTypeSerializer<Object> {
               // actually put a null value otherwise the record won't be constructed properly
               deserialized.put(f.getName(), null);
             } else {
-              Optional<Object> recordDefault = context.getDefaultValue();
-              if (recordDefault.isPresent()) {
-                try {
-                  deserialized.put(f.getName(), f.get(recordDefault.get()));
-                } catch (IllegalAccessException e) {
-                  throw new IllegalArgumentException(INACCESSIBLE, e);
-                }
-              } else {
-                Object annotatedConfig = context.getAnnotatedConfig();
-                if (annotatedConfig != null && context.getName().isPresent()) {
-                  // also a field the config's class inherits; no such field: nothing is put
-                  FieldInfo parentField = tryFindField(annotatedConfig, context.getName().get());
-                  if (parentField != null) {
-                    try {
-                      Object defValue = parentField.ensureAccessible().get(annotatedConfig);
-                      // without a record to take the value from, the component is null
-                      deserialized.put(f.getName(), defValue != null ? f.get(defValue) : null);
-                    } catch (IllegalAccessException e) {
-                      deserialized.put(f.getName(), null);
-                      new IllegalArgumentException(
-                              "Field became inaccessible, will be set to null", e)
-                          .printStackTrace();
-                    }
-                  }
-                } else {
-                  // again, set null (unfortunately)
-                  deserialized.put(f.getName(), null);
-                }
-              }
+              putComponentDefault(deserialized, f, context);
             }
             continue;
           }
           FieldTypeSerializer serializer =
               serializerRegistry.getSerializer(component.genericType()).orElse(this);
+          Object read;
           try {
-            deserialized.put(
-                f.getName(),
+            read =
                 serializer.deserialize(
                     new DataObject(val, true),
                     SerializationContext.fromField(f, null, context.getSettings()),
-                    component.accessor()));
+                    component.accessor());
           } catch (IllegalAccessException e) {
             throw new IllegalArgumentException(INACCESSIBLE, e);
+          }
+          // @Min, @Max and custom annotations, as for the fields of a config; a validator that
+          // fails silently keeps the component's value, as a missing component does
+          if (FieldValidation.validate(component, component.key(), read, context.getSettings())) {
+            deserialized.put(f.getName(), read);
+          } else {
+            putComponentDefault(deserialized, f, context);
           }
         }
         try {
@@ -538,6 +535,11 @@ final class DefaultSerializer implements FieldTypeSerializer<Object> {
                     || desField.getType().isPrimitive())) {
               continue;
             }
+            // @Min, @Max and custom annotations, as for the fields of a config; a validator that
+            // fails silently keeps the field's value
+            if (!FieldValidation.validate(info, info.key(), deserialized, context.getSettings())) {
+              continue;
+            }
             desField.set(fieldTypeInstance, deserialized);
           } catch (IllegalAccessException e) {
             throw new IllegalArgumentException(INACCESSIBLE, e);
@@ -546,6 +548,44 @@ final class DefaultSerializer implements FieldTypeSerializer<Object> {
 
         return fieldTypeInstance;
       }
+    }
+  }
+
+  /**
+   * Puts the value component {@code f} keeps when it has no value of its own: its value in the
+   * record the field held (the context's default value, or the field of the annotated config the
+   * context names). Without such a record the component is {@code null}; if the annotated config
+   * has no such field, nothing is put.
+   */
+  private static void putComponentDefault(
+      Map<String, Object> deserialized, Field f, SerializationContext<Object> context) {
+    Optional<Object> recordDefault = context.getDefaultValue();
+    if (recordDefault.isPresent()) {
+      try {
+        deserialized.put(f.getName(), f.get(recordDefault.get()));
+      } catch (IllegalAccessException e) {
+        throw new IllegalArgumentException(INACCESSIBLE, e);
+      }
+      return;
+    }
+    Object annotatedConfig = context.getAnnotatedConfig();
+    if (annotatedConfig != null && context.getName().isPresent()) {
+      // also a field the config's class inherits; no such field: nothing is put
+      FieldInfo parentField = tryFindField(annotatedConfig, context.getName().get());
+      if (parentField != null) {
+        try {
+          Object defValue = parentField.ensureAccessible().get(annotatedConfig);
+          // without a record to take the value from, the component is null
+          deserialized.put(f.getName(), defValue != null ? f.get(defValue) : null);
+        } catch (IllegalAccessException e) {
+          deserialized.put(f.getName(), null);
+          new IllegalArgumentException("Field became inaccessible, will be set to null", e)
+              .printStackTrace();
+        }
+      }
+    } else {
+      // again, set null (unfortunately)
+      deserialized.put(f.getName(), null);
     }
   }
 
@@ -626,7 +666,10 @@ final class DefaultSerializer implements FieldTypeSerializer<Object> {
       Object[] array = (Object[]) value;
       List<Object> list = new ArrayList<>(array.length);
       for (Object toSerialize : array) {
-        if (toSerialize != null) {
+        if (toSerialize == null) {
+          // kept, as in lists; it was left out, so the array came back shorter
+          list.add(null);
+        } else {
           callParentSerializer(
               list, type, serializer, serializationContext, toSerialize, annotations);
         }
@@ -773,8 +816,9 @@ final class DefaultSerializer implements FieldTypeSerializer<Object> {
       registerSerializer(char.class, charSerializer);
       registerSerializer(Character.class, charSerializer);
 
+      // true, yes and on are true, as YAML 1.1 reads them; anything else is false
       Function<Object, Boolean> boolSerializer =
-          parseNonEmpty(Boolean.class, Boolean::parseBoolean);
+          parseNonEmpty(Boolean.class, DataObject::parseBoolean);
       registerSerializer(boolean.class, boolSerializer);
       registerSerializer(Boolean.class, boolSerializer);
 

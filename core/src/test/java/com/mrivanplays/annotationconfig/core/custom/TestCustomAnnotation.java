@@ -79,6 +79,17 @@ class TestCustomAnnotation {
   }
 
   @Test
+  void theFieldOfADataTypeIsValidated() {
+    resolver.load(new WithGreeting(), new StringReader("greeting=Hello there"));
+    // only the fields of a config and its config objects were validated before
+    RuntimeException e =
+        Assertions.assertThrows(
+            RuntimeException.class,
+            () -> resolver.load(new WithGreeting(), new StringReader("greeting=Bye")));
+    Assertions.assertEquals("Dummy throwable", e.getCause().getMessage());
+  }
+
+  @Test
   void testAlterOption() {
     Settings settings = ACDefaultSettings.getDefault().copy();
     settings.put(OptsConstant.DUMMY_DEFAULT, false);
@@ -95,5 +106,15 @@ class TestCustomAnnotation {
     // @DummyAnnotation2's writeValue replaces bar's value when writing
     resolver.load(config, new StringReader(writer.toString()));
     Assertions.assertEquals("Lorem ipsum dolor sit amet.", config.getBar());
+  }
+
+  static class WithGreeting {
+
+    Greeting greeting = new Greeting();
+  }
+
+  static class Greeting {
+
+    @DummyAnnotation String text = "Hello";
   }
 }

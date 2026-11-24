@@ -25,7 +25,6 @@ package com.mrivanplays.annotationconfig.core.internal;
 import com.mrivanplays.annotationconfig.core.annotations.Multiline;
 import com.mrivanplays.annotationconfig.core.annotations.custom.AnnotationValidator;
 import com.mrivanplays.annotationconfig.core.annotations.custom.CustomAnnotationRegistry;
-import com.mrivanplays.annotationconfig.core.annotations.custom.ValidationResponse;
 import com.mrivanplays.annotationconfig.core.annotations.type.AnnotationType;
 import com.mrivanplays.annotationconfig.core.resolver.MultilineString;
 import com.mrivanplays.annotationconfig.core.resolver.ValueWriter;
@@ -49,6 +48,7 @@ import java.nio.file.AtomicMoveNotSupportedException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
+import java.nio.file.attribute.PosixFileAttributeView;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.LinkedHashMap;
@@ -93,38 +93,49 @@ public final class AnnotatedConfigResolver {
       Settings settings,
       @Nullable String commentChar,
       ValueWriter valueWriter) {
-    Path absolutePath = path.toAbsolutePath();
-    Path parent = absolutePath.getParent();
     Path tmp = null;
-
+    Path created = null;
     try {
-      tmp = Files.createTempFile(parent, absolutePath.getFileName().toString() + ".", ".tmp");
-
-      try (PrintWriter writer =
-          new PrintWriter(Files.newBufferedWriter(tmp, StandardCharsets.UTF_8))) {
-
-        toWriter(annotatedConfig, writer, holders, commentChar, valueWriter, settings);
-
-        // checkError() flushes first
-        if (writer.checkError()) {
-          throw new IOException("Failed to write configuration");
-        }
+      // a symbolic link stays a link: the file it points to is written
+      Path target = followLinks(path.toAbsolutePath());
+      Path parent = target.getParent();
+      if (parent != null) {
+        Files.createDirectories(parent);
       }
 
+      if (Files.notExists(target)) {
+        // nothing to keep if writing fails, so the file is written in place, and gets the
+        // permissions a new file gets; a temporary file is only readable by its owner
+        created = target;
+        writeTo(target, annotatedConfig, holders, commentChar, valueWriter, settings);
+        created = null;
+        return;
+      }
+
+      // the old file is replaced only once the new one is complete
+      tmp = Files.createTempFile(parent, target.getFileName().toString() + ".", ".tmp");
+      writeTo(tmp, annotatedConfig, holders, commentChar, valueWriter, settings);
+      // the temporary file is only readable by its owner; the config keeps its permissions
+      if (Files.getFileAttributeView(target, PosixFileAttributeView.class) != null) {
+        Files.setPosixFilePermissions(tmp, Files.getPosixFilePermissions(target));
+      }
       try {
         Files.move(
-            tmp, absolutePath, StandardCopyOption.ATOMIC_MOVE, StandardCopyOption.REPLACE_EXISTING);
+            tmp, target, StandardCopyOption.ATOMIC_MOVE, StandardCopyOption.REPLACE_EXISTING);
       } catch (AtomicMoveNotSupportedException e) {
-        Files.move(tmp, absolutePath, StandardCopyOption.REPLACE_EXISTING);
+        Files.move(tmp, target, StandardCopyOption.REPLACE_EXISTING);
       }
     } catch (IOException e) {
       throw new RuntimeException("Failed to dump configuration to " + path, e);
     } finally {
-      if (tmp != null) {
-        try {
-          Files.deleteIfExists(tmp);
-        } catch (IOException e) {
-          // best effort clean-up ignored
+      // best effort clean-up of a temporary file, or of a new file that couldn't be written
+      for (Path leftOver : new Path[] {tmp, created}) {
+        if (leftOver != null) {
+          try {
+            Files.deleteIfExists(leftOver);
+          } catch (IOException e) {
+            // ignored
+          }
         }
       }
     }
@@ -146,6 +157,36 @@ public final class AnnotatedConfigResolver {
     } catch (IOException e) {
       throw new RuntimeException("Failed to dump configuration to writer", e);
     }
+  }
+
+  private static void writeTo(
+      Path file,
+      Object annotatedConfig,
+      Set<AnnotationHolder> holders,
+      @Nullable String commentChar,
+      ValueWriter valueWriter,
+      Settings settings)
+      throws IOException {
+    try (PrintWriter writer =
+        new PrintWriter(Files.newBufferedWriter(file, StandardCharsets.UTF_8))) {
+      toWriter(annotatedConfig, writer, holders, commentChar, valueWriter, settings);
+      // checkError() flushes first
+      if (writer.checkError()) {
+        throw new IOException("Failed to write configuration");
+      }
+    }
+  }
+
+  /** The file {@code path} points to, following symbolic links, also to a file that is missing. */
+  private static Path followLinks(Path path) throws IOException {
+    Path current = path;
+    // a cycle of links is not followed forever
+    for (int i = 0; i < 40 && Files.isSymbolicLink(current); i++) {
+      Path link = Files.readSymbolicLink(current);
+      Path parent = current.getParent();
+      current = (parent == null ? link : parent.resolve(link)).normalize();
+    }
+    return current;
   }
 
   private static void toWriter(
@@ -494,48 +535,9 @@ public final class AnnotatedConfigResolver {
         // a primitive field can't hold null, so it keeps its value even with SET_NULL
         continue;
       }
-      if (info.minOrMax()) {
-        MinMaxValidator.validate(info, keyName, deserialized);
-      }
-      // check for custom annotations
-      CustomAnnotationRegistry caRegistry = CustomAnnotationRegistry.INSTANCE;
-      if (!caRegistry.isEmpty()) {
-        Throwable error = null;
-        boolean failed = false;
-        for (Annotation annotation : info.annotations()) {
-          Class<? extends Annotation> type = annotation.annotationType();
-          if (AnnotationType.match(type).isPresent()) {
-            // do not handle any validation of our own annotations even if someone registered a
-            // validator for them.
-            continue;
-          }
-          Optional<AnnotationValidator<? extends Annotation>> validatorOpt =
-              caRegistry.getValidator(type);
-          if (validatorOpt.isPresent()) {
-            AnnotationValidator validator = validatorOpt.get();
-            ValidationResponse validatorResponse =
-                validator.validate(annotation, deserialized, settings, field);
-            if (validatorResponse.throwError() != null) {
-              error = validatorResponse.throwError();
-              break;
-            }
-            if (validatorResponse.shouldFailSilently()) {
-              failed = true;
-              break;
-            }
-            Runnable onSuccess = validatorResponse.onSuccess();
-            if (onSuccess != null) {
-              onSuccess.run();
-            }
-          }
-        }
-        if (error != null) {
-          throw new RuntimeException(error);
-        }
-        // error wasn't thrown, so just silently skip if the checks failed
-        if (failed) {
-          continue;
-        }
+      // @Min, @Max and custom annotations; a validator that fails silently keeps the field's value
+      if (!FieldValidation.validate(info, keyName, deserialized, settings)) {
+        continue;
       }
       setField(field, annotatedConfig, deserialized);
     }

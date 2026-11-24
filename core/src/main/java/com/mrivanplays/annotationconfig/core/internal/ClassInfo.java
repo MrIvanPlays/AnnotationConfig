@@ -26,9 +26,10 @@ import com.mrivanplays.annotationconfig.core.serialization.AnnotationAccessor;
 import com.mrivanplays.annotationconfig.core.utils.AnnotationUtils;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
-import java.lang.reflect.Parameter;
+import java.lang.reflect.RecordComponent;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.TreeSet;
@@ -138,6 +139,12 @@ public final class ClassInfo {
     }
     List<FieldInfo> fields = new ArrayList<>(this.fields);
     if (findParentFields) {
+      // a field of a class further up that a field of the same name hides is not an option of its
+      // own: both were added, and the dump failed with a duplicate key
+      Set<String> names = new HashSet<>();
+      for (FieldInfo field : this.fields) {
+        names.add(field.name());
+      }
       int classOrder = 0;
       for (Class<?> parent = this.type.getSuperclass();
           parent != null && parent != Object.class;
@@ -148,7 +155,11 @@ public final class ClassInfo {
         if (parentInfo.hasAnnotations) {
           ret.add(new AnnotationHolder(parent, classOrder));
         }
-        fields.addAll(parentInfo.fields);
+        for (FieldInfo field : parentInfo.fields) {
+          if (names.add(field.name())) {
+            fields.add(field);
+          }
+        }
       }
     }
 
@@ -197,29 +208,25 @@ public final class ClassInfo {
     private RecordInfo(ClassInfo info) {
       Class<?> type = info.type;
       this.components = info.dataFields(false);
-      Constructor<?>[] constructors = type.getDeclaredConstructors();
+      // The canonical constructor takes the components in their declared order. Its parameter
+      // names are not used: they are only kept when compiled with -parameters, and are arg0,
+      // arg1, ... otherwise.
+      RecordComponent[] recordComponents = type.getRecordComponents();
+      Class<?>[] types = new Class<?>[recordComponents.length];
+      this.parameterNames = new String[recordComponents.length];
+      for (int i = 0; i < recordComponents.length; i++) {
+        types[i] = recordComponents[i].getType();
+        // the name of the component, which is the name of its field
+        this.parameterNames[i] = recordComponents[i].getName();
+      }
       Constructor<?> constructor;
-      if (constructors.length == 1) {
-        constructor = constructors[0];
-      } else {
-        // the canonical constructor, whose parameters are the components
-        Class<?>[] types = new Class<?>[this.components.size()];
-        for (int i = 0; i < types.length; i++) {
-          types[i] = this.components.get(i).type();
-        }
-        try {
-          constructor = type.getDeclaredConstructor(types);
-        } catch (NoSuchMethodException e) {
-          throw new RuntimeException("could not find record ctor of '" + type.getName() + "'", e);
-        }
+      try {
+        constructor = type.getDeclaredConstructor(types);
+      } catch (NoSuchMethodException e) {
+        throw new RuntimeException("could not find record ctor of '" + type.getName() + "'", e);
       }
       this.constructor = constructor;
       this.accessible = constructor.trySetAccessible();
-      Parameter[] parameters = constructor.getParameters();
-      this.parameterNames = new String[parameters.length];
-      for (int i = 0; i < parameters.length; i++) {
-        this.parameterNames[i] = parameters[i].getName();
-      }
     }
 
     /** The record's components: its fields that are neither static nor synthetic. */
@@ -236,7 +243,10 @@ public final class ClassInfo {
       return this.accessible;
     }
 
-    /** The names of the constructor's parameters, in order. Shared: don't modify the array. */
+    /**
+     * The names of the record's components, in the order the constructor takes them. Shared:
+     * don't modify the array.
+     */
     public String[] parameterNames() {
       return this.parameterNames;
     }

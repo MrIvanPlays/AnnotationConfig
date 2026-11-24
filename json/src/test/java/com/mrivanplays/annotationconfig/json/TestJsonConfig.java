@@ -32,7 +32,7 @@ class TestJsonConfig {
   @Test
   void testDump() {
     StringWriter writer = new StringWriter();
-    String expected = "{\n  \"foo\": \"bar\",\n  \"bar\": 3\n}";
+    String expected = "{\n  \"foo\": \"bar\",\n  \"bar\": 3\n}\n";
     Subject subject = new Subject();
     JsonConfig.getConfigResolver().dump(subject, writer);
 

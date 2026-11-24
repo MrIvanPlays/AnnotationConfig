@@ -70,7 +70,7 @@ class TestJsonResolver {
             "a": 1,
             "b": 3
           }
-        }\
+        }
         """;
     Assertions.assertEquals(expected, Files.readString(file));
   }
@@ -81,9 +81,9 @@ class TestJsonResolver {
 
   @Test
   void parentFieldsOnlyWithFindParentFields() {
-    Assertions.assertEquals("{\n  \"own\": \"own\"\n}", dump(new Extended(), new Settings()));
+    Assertions.assertEquals("{\n  \"own\": \"own\"\n}\n", dump(new Extended(), new Settings()));
     Assertions.assertEquals(
-        "{\n  \"own\": \"own\",\n  \"base\": 1\n}",
+        "{\n  \"own\": \"own\",\n  \"base\": 1\n}\n",
         dump(new Extended(), new Settings().put(ACDefaultSettings.FIND_PARENT_FIELDS, true)));
   }
 
@@ -91,7 +91,7 @@ class TestJsonResolver {
   void staticFieldsOnlyWithFindStaticFields() {
     Settings findStatic = new Settings().put(ACDefaultSettings.FIND_STATIC_FIELDS, true);
     Assertions.assertEquals(
-        "{\n  \"counter\": 5,\n  \"own\": \"own\"\n}", dump(new Extended(), findStatic));
+        "{\n  \"counter\": 5,\n  \"own\": \"own\"\n}\n", dump(new Extended(), findStatic));
 
     try {
       RESOLVER.load(new Extended(), new StringReader("{\"counter\": 9, \"own\": \"x\"}"));

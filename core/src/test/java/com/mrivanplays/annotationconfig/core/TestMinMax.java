@@ -24,7 +24,12 @@ package com.mrivanplays.annotationconfig.core;
 
 import com.mrivanplays.annotationconfig.core.annotations.Max;
 import com.mrivanplays.annotationconfig.core.annotations.Min;
+import com.mrivanplays.annotationconfig.core.serialization.AnnotationAccessor;
+import com.mrivanplays.annotationconfig.core.serialization.DataObject;
+import com.mrivanplays.annotationconfig.core.serialization.SerializationContext;
+import com.mrivanplays.annotationconfig.core.serialization.SerializerRegistry;
 import java.io.StringReader;
+import java.util.Map;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
@@ -71,6 +76,62 @@ class TestMinMax {
   void annotationOnInvalidTypeIsRejected() {
     assertRejected(new MisplacedSubject(), "value=false");
   }
+
+  // Before, @Min and @Max were only checked for the fields of a config and its config objects.
+
+  @Test
+  void theFieldOfAOneFieldDataTypeIsChecked() {
+    load(new WithLimit(), "limit=5");
+    assertRejected(new WithLimit(), "limit=50");
+  }
+
+  @Test
+  void theFieldsOfADataTypeAreChecked() {
+    Assertions.assertThrows(
+        IllegalArgumentException.class,
+        () -> deserialize(Range.class, Map.of("low", 1, "high", 500)));
+    Range range = (Range) deserialize(Range.class, Map.of("low", 1, "high", 50));
+    Assertions.assertEquals(50, range.high);
+  }
+
+  @Test
+  void theComponentsOfARecordAreChecked() {
+    Assertions.assertThrows(
+        IllegalArgumentException.class,
+        () -> deserialize(Bounds.class, Map.of("min", -5, "max", 10)));
+    Assertions.assertEquals(
+        new Bounds(0, 10), deserialize(Bounds.class, Map.of("min", 0, "max", 10)));
+  }
+
+  private static Object deserialize(Class<?> type, Map<String, ?> values) {
+    return SerializerRegistry.INSTANCE
+        .getDefaultSerializer()
+        .deserialize(
+            new DataObject((Object) values, true),
+            SerializationContext.of(type, type, null),
+            AnnotationAccessor.EMPTY);
+  }
+
+  static class WithLimit {
+
+    Limit limit = new Limit();
+  }
+
+  static class Limit {
+
+    @Max(maxInt = 10)
+    int value = 1;
+  }
+
+  static class Range {
+
+    int low;
+
+    @Max(maxInt = 100)
+    int high;
+  }
+
+  record Bounds(@Min(minInt = 0) int min, int max) {}
 
   static class NumberSubject {
 

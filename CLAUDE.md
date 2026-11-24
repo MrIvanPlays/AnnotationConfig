@@ -8,7 +8,10 @@ Java 25, Maven multi-module build.
 - The version is `3.1.0-SNAPSHOT` and not released yet. The last release is 3.0.3 (on Maven
   Central). Breaking changes are allowed in
   3.1.0, but every user-visible one goes into the 3.1.0 section of `CHANGELOG.md`, under
-  "Breaking changes" when it can change what existing configs do.
+  "Breaking changes" when it can change what existing configs do. Changes are compared with
+  3.0.3 (`git show 3.0.3:<path>`), not with earlier 3.1.0 commits: what something new in 3.1.0
+  (records, JSON, JSON5, the TOML and `.properties` writers, writing through a temporary file)
+  does is described in its own section, not as a change or a fix.
 - Decisions made on purpose, don't change them without asking:
   - An empty string in a config is read as `""`, not as no value; empty numbers are no value.
   - Static fields are skipped unless `ACDefaultSettings.FIND_STATIC_FIELDS` is set.
@@ -20,6 +23,20 @@ Java 25, Maven multi-module build.
     infinities), so `-1` is a usable bound.
   - Every module `pom.xml` repeats `url`, `developers`, `licenses` and `scm`: Maven Central requires
     them in each published POM. Don't remove them as duplicates of the parent's.
+  - Settings passed to `load` / `dump` are filled with the resolver's settings
+    (`ConfigResolverImpl#passSettings` calls `combine` on them), which is why they must be mutable.
+  - A decimal read into a whole-number field (`int`, `long`, `BigInteger`, ...) is cut at its
+    decimal point (`8080.9` is `8080`), not rejected.
+  - Booleans: `true`, `yes` and `on` (any case) are `true`, anything else is `false`, never an
+    error (`DataObject#parseBoolean`, used by `getAsBoolean` and the default serializer). Making
+    unknown values fail would be a breaking change.
+  - YAML is read as YAML 1.1, SnakeYAML's default: `yes`, `no`, `on` and `off` are booleans there.
+  - `TomlConfig` registers the `java.time` serializers in the shared `SerializerRegistry` on first
+    use; they write native TOML date-times when the settings hold `MAPPER_KEY`, strings otherwise.
+  - Kept as they are: the name `SHOULD_REVERSE_FIELDS` (`true` means declaration order),
+    `DefaultSerializer`'s `PRIMITIVE_CLASS` check, its `System.err` warning and `printStackTrace()`,
+    `DataObject#putAll`, `@author claude, Ivan Pekov`, the "DO NOT TOUCH" comment of the record
+    code in `DefaultSerializer`, and `.conf` as a `.properties` extension (documented since 1.0.0).
 
 ## Modules
 
@@ -32,6 +49,16 @@ Java 25, Maven multi-module build.
   combination of settings, and `AnnotatedConfigResolver` and `DefaultSerializer` use it. Comment
   placeholders are applied on every dump, and serializers are looked up on every use, as both
   registries can change at runtime.
+- `core.internal.FieldValidation` applies `@Min`, `@Max` and custom annotation validators to a read
+  value. Every path that sets a value uses it: config fields and `@ConfigObject` sections
+  (`AnnotatedConfigResolver#setFields`), the fields of custom data types (also of a type with one
+  field, read from the bare value) and record components (`DefaultSerializer`).
+- Records are created with their canonical constructor, found by and filled in the order of
+  `Class#getRecordComponents()`; constructor parameter names are not used, as tools like
+  obfuscators strip them.
+- `AnnotatedConfigResolver#dump(Path)` creates missing directories and follows symbolic links to
+  the file they point to. A new file is written in place; an existing one is replaced by a
+  temporary file (owner-only on POSIX) that first gets the old file's POSIX permissions.
 - An immutable `DataObject` made from a map wraps it lazily, and `DataObject#mapView()`
   (package-private) gives `DefaultSerializer` the map without `getAsMap()`'s deep copy. Loading
   used to wrap and copy each value once per level of nesting.
@@ -45,6 +72,10 @@ Java 25, Maven multi-module build.
   `double` / `float` field is converted with `doubleValue()` / `floatValue()`, which are correctly
   rounded since Java 21 and were checked to equal parsing the text; other numbers go through their
   text (so `3.11f` stays `3.11` in a `double` field).
+- `.properties` splits every value that holds a comma into an array when reading
+  (`PropertyConfig#parseValue`), as 3.0.x did, so a string with a comma does not read back. This
+  is kept on purpose: telling them apart needs the field's type, which the reader doesn't have,
+  and a setting for the default serializer was tried and dropped.
 - Writing: `.properties` by `PropertiesDumper`, YAML by `YamlHandler` (a SnakeYAML node tree; for
   the default `Yaml` instance numbers and booleans are built by hand exactly as SnakeYAML's
   representer would, guarded by `TestYamlScalars`), JSON by Gson, TOML by `TomlValueWriter`
@@ -76,7 +107,8 @@ Java 25, Maven multi-module build.
 - Map helpers go in `MapUtils` (public, in `utils`), not as private copies in the classes that
   use them.
 - Every writer ends lines with `'\n'`, never `println()` or `System.lineSeparator()`, and so does
-  the class comment written by `AnnotatedConfigResolver`. Mixing them gave files with CRLF and LF
+  the class comment written by `AnnotatedConfigResolver`. Every format's file ends with a line
+  break, JSON and JSON5 included. Mixing them gave files with CRLF and LF
   on Windows. `TestLineEndings` (core) and `TestYamlLineEndings`, `TestJsonLineEndings` and
   `TestTomlLineEndings` compare output without normalizing line endings; they can only catch a
   regression when run on Windows.
@@ -147,7 +179,9 @@ Java 25, Maven multi-module build.
   their subject with `[ci skip]`.
 - Commit only when asked, and as one commit unless asked otherwise. Don't push.
 - `// <editor-fold ...>` / `// </editor-fold>` comments are the IDE layout the maintainer uses: keep
-  them, and keep code added next to a fold inside or outside it as fits.
+  them, and keep code added next to a fold inside or outside it as fits. Test classes put their
+  tests first and their subject classes after them (the IDE's rearrange order, enums first); a
+  topic has a fold around its tests and a `"<topic>: subjects"` fold around its subject classes.
 - `CHANGELOG.md` has one section per version; user-visible and breaking changes go there.
 - Public API: `annotations`, `resolver`, `serialization`, `settings` and `utils` in `core`, plus the
   format entry points (`YamlConfig`, `JsonConfig`, ...). The `core.internal` package and classes
@@ -167,6 +201,11 @@ Java 25, Maven multi-module build.
 - Surefire only runs classes named `Test*`, `*Test`, `*Tests` or `*TestCase`; other names are
   silently skipped.
 - Use `@TempDir` for files, never the working directory.
+- `TestConfigFiles` (core) checks POSIX permissions and symbolic links; those tests skip where the
+  file system has no POSIX view or links can't be created, as on Windows without developer mode.
+  They run on CI (Ubuntu).
+- Expected output of a writer ends with a line break: in a text block, the closing `"""` goes on
+  its own line, not after a `\` that would drop the final line break.
 - Test classes run in parallel (JUnit configuration parameters in the surefire config of
   `pom.xml`); the methods of one class run one after another. A class may change global state
   (registries, static fields) only under keys and types no other class uses, or it must be

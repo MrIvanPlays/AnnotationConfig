@@ -69,6 +69,11 @@ final class MinMaxValidator {
               + (min != null ? "Min" : "Max")
               + " annotation placed on invalid field type");
     }
+    if ((compared instanceof Double d && d.isNaN()) || (compared instanceof Float f && f.isNaN())) {
+      // NaN is in no range; Double.compare puts it above every number, so it passed any @Min
+      throw new IllegalArgumentException(
+          where(field, key) + " ; deserialized value is not a number (NaN)");
+    }
     if (min != null) {
       Number bound = minBound(field, key, min);
       if (compare(compared, bound) < 0) {

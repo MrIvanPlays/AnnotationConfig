@@ -272,6 +272,8 @@ public final class Json5ValueWriter implements ValueWriter {
     Comments comments = new Comments(fieldComments);
     // without comments there is nothing to look up, so no dotted paths are built
     appendObject(out, values, 0, comments.byPath().isEmpty() ? null : "", comments);
+    // a text file ends with a line break, as the files of the other formats do
+    out.append('\n');
     writer.append(out);
   }
 

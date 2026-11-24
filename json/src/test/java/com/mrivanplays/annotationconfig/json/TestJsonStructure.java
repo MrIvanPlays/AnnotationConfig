@@ -73,7 +73,7 @@ class TestJsonStructure {
             }
           },
           "name": "Ivan"
-        }\
+        }
         """;
     Assertions.assertEquals(expected, dump(new Sections()));
   }
@@ -87,7 +87,7 @@ class TestJsonStructure {
             {
               "server": {"ip": "example.org", "port": 25577, "limits": {"players": 50}},
               "name": "Pekov"
-            }\
+            }
             """);
     Assertions.assertEquals("example.org", config.server.host);
     Assertions.assertEquals(25577, config.server.port);
@@ -115,7 +115,7 @@ class TestJsonStructure {
               }
             }
           }
-        }\
+        }
         """;
     Assertions.assertEquals(expected, dump(new DottedKeys()));
   }
@@ -174,7 +174,7 @@ class TestJsonStructure {
             }
           ],
           "empty": []
-        }\
+        }
         """;
     Assertions.assertEquals(expected, dump(new Arrays()));
   }
@@ -192,7 +192,7 @@ class TestJsonStructure {
               "names": [],
               "itemList": [{"name": "y", "amount": 8}, {"name": "z", "amount": 9}],
               "empty": ["now", "filled"]
-            }\
+            }
             """);
     Assertions.assertArrayEquals(new int[] {3, 4, 5}, config.numbers);
     Assertions.assertArrayEquals(
@@ -239,7 +239,7 @@ class TestJsonStructure {
               }
             ]
           }
-        }\
+        }
         """;
     Assertions.assertEquals(expected, dump(new Maps()));
   }
@@ -253,7 +253,7 @@ class TestJsonStructure {
             "foo": 2,
             "bar": "baz"
           }
-        }\
+        }
         """,
         dump(new DataObjectField()));
 
@@ -284,7 +284,7 @@ class TestJsonStructure {
             "y": 64,
             "z": 3.0
           }
-        }\
+        }
         """;
     Assertions.assertEquals(expected, dump(new Records()));
   }
@@ -298,7 +298,7 @@ class TestJsonStructure {
             {
               "spawn": {"world-name": "end", "x": 1, "y": 2, "z": 3.5},
               "home": {"world-name": "overworld", "x": 4, "y": 5, "z": 6.0}
-            }\
+            }
             """);
     Assertions.assertEquals(new Location("end", 1, 2, 3.5), config.spawn);
     Assertions.assertEquals(new Location("overworld", 4, 5, 6.0), config.home);

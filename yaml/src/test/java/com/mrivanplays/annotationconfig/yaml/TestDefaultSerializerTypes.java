@@ -66,6 +66,19 @@ class TestDefaultSerializerTypes {
   }
 
   @Test
+  void nullElementsOfAnObjectArrayAreKept() {
+    StringWriter writer = new StringWriter();
+    RESOLVER.dump(new NullElement(), writer);
+    NullElement read = new NullElement();
+    read.items = new Item[0];
+    RESOLVER.load(read, new StringReader(writer.toString()));
+    // the null was left out, so the array came back with 2 elements, as lists keep their nulls
+    Assertions.assertEquals(3, read.items.length);
+    Assertions.assertNull(read.items[1]);
+    Assertions.assertEquals("b", read.items[2].name);
+  }
+
+  @Test
   void enumsRoundTripByName() {
     StringWriter writer = new StringWriter();
     RESOLVER.dump(new EnumSubject(), writer);
@@ -89,6 +102,8 @@ class TestDefaultSerializerTypes {
       cause = cause.getCause();
     }
     Assertions.assertTrue(cause.getMessage().contains("Mode"), cause.getMessage());
+    // the constants are listed as they are written, not by toString(), which SPECIAL overrides
+    Assertions.assertTrue(cause.getMessage().contains("[fastmode, special]"), cause.getMessage());
   }
 
   @Test
@@ -153,6 +168,18 @@ class TestDefaultSerializerTypes {
     public int whole;
     public String text = "default";
     public List<String> texts;
+  }
+
+  static class NullElement {
+
+    Item[] items = {item("a", 1), null, item("b", 2)};
+
+    private static Item item(String name, int amount) {
+      Item item = new Item();
+      item.name = name;
+      item.amount = amount;
+      return item;
+    }
   }
 
   static class EnumSubject {

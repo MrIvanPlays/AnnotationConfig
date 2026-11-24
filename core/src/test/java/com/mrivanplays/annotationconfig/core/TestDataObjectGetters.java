@@ -26,6 +26,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import com.mrivanplays.annotationconfig.core.serialization.DataObject;
+import java.io.StringReader;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.util.Arrays;
@@ -55,6 +56,44 @@ class TestDataObjectGetters {
     assertEquals(new BigDecimal(decimal), new DataObject(decimal).getAsBigDecimal());
     String integer = "123456789012345678901234567890";
     assertEquals(new BigInteger(integer), new DataObject(integer).getAsBigInteger());
+  }
+
+  @Test
+  void getAsBooleanReadsYesAndOn() {
+    assertEquals(true, new DataObject(true).getAsBoolean());
+    assertEquals(true, new DataObject("TRUE").getAsBoolean());
+    // yes and on were read as false before
+    assertEquals(true, new DataObject("yes").getAsBoolean());
+    assertEquals(true, new DataObject("On").getAsBoolean());
+    assertEquals(false, new DataObject("no").getAsBoolean());
+    assertEquals(false, new DataObject("off").getAsBoolean());
+    // anything else is false, as it was
+    assertEquals(false, new DataObject("ture").getAsBoolean());
+  }
+
+  @Test
+  void aBooleanOptionReadsYesAndNo() {
+    Flags flags = new Flags();
+    PropertyConfig.getConfigResolver().load(flags, new StringReader("enabled=no"));
+    assertEquals(false, flags.enabled);
+    // enabled=yes turned the option off before
+    PropertyConfig.getConfigResolver().load(flags, new StringReader("enabled=yes"));
+    assertEquals(true, flags.enabled);
+  }
+
+  static class Flags {
+
+    boolean enabled = false;
+  }
+
+  @Test
+  void anEmptyDataObjectIsAnEmptyMap() {
+    DataObject empty = new DataObject();
+    // it was a single value, null, and not empty before
+    assertEquals(false, empty.isSingleValue());
+    assertEquals(true, empty.isEmpty());
+    assertEquals(Map.of(), empty.getAsMap());
+    assertEquals(new DataObject(Map.of()), empty);
   }
 
   @Test

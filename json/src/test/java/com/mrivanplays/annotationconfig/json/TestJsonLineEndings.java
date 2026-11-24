@@ -43,13 +43,14 @@ class TestJsonLineEndings {
 
   @Test
   void jsonUsesLineFeeds() {
-    Assertions.assertEquals("{\n  \"a\": 1,\n  \"b\": 2\n}", dump(JsonConfig.getConfigResolver()));
+    Assertions.assertEquals(
+        "{\n  \"a\": 1,\n  \"b\": 2\n}\n", dump(JsonConfig.getConfigResolver()));
   }
 
   @Test
   void json5UsesLineFeeds() {
     Assertions.assertEquals(
-        "// Class comment\n\n{\n  // field comment\n  a: 1,\n  b: 2\n}",
+        "// Class comment\n\n{\n  // field comment\n  a: 1,\n  b: 2\n}\n",
         dump(JsonConfig.getJson5ConfigResolver()));
   }
 

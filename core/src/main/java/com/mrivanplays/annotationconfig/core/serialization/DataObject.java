@@ -53,9 +53,13 @@ public final class DataObject {
   // first use (see entries()). Volatile, as that can happen on any thread.
   private volatile @Nullable Map<String, DataObject> serialize;
 
-  /** Constructs an empty data object. */
+  /**
+   * Constructs an empty data object: a map without entries, to {@link #put(String, String) put}
+   * values into. It is {@link #isEmpty() empty} and not a {@link #isSingleValue() single value}.
+   */
   public DataObject() {
-    this.serialize = null;
+    // it used to hold no map until a value was put, so it was a single value (null) and not empty
+    this.serialize = new LinkedHashMap<>();
     this.source = null;
     this.data = null;
     this.immutable = false;
@@ -408,13 +412,29 @@ public final class DataObject {
   }
 
   /**
-   * Returns the held value by this data object as a {@link Boolean}.
+   * Returns the held value by this data object as a {@link Boolean}. {@code true}, {@code yes} and
+   * {@code on} are {@code true}, in any case, as YAML 1.1 reads them; anything else is {@code
+   * false}.
    *
    * @return held boolean
    * @see #getAsObject()
    */
   public boolean getAsBoolean() {
-    return Boolean.parseBoolean(getAsString());
+    if (data instanceof Boolean bool) {
+      return bool;
+    }
+    return parseBoolean(getAsString());
+  }
+
+  /**
+   * {@code true}, {@code yes} and {@code on}, in any case, are {@code true}; anything else is
+   * {@code false}, as {@code Boolean.parseBoolean} reads it. YAML already reads {@code yes} and
+   * {@code on} as booleans; this lets the other formats read them too.
+   */
+  static boolean parseBoolean(String text) {
+    return text.equalsIgnoreCase("true")
+        || text.equalsIgnoreCase("yes")
+        || text.equalsIgnoreCase("on");
   }
 
   /**

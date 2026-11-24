@@ -135,7 +135,9 @@ public final class JsonConfig {
           Map<String, List<String>> fieldComments,
           PrintWriter writer,
           Settings settings) {
-        writer.print(settings.get(GSON_INSTANCE).orElse(GSON).toJson(unwrapMultiline(values)));
+        // one write, as the other writers do; a text file ends with a line break
+        writer.print(
+            settings.get(GSON_INSTANCE).orElse(GSON).toJson(unwrapMultiline(values)) + '\n');
       }
 
       // JSON has no comments, so they aren't collected

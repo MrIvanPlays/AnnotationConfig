@@ -73,7 +73,8 @@ public interface ConfigResolver {
 
   /**
    * Dumps the specified {@code annotatedConfig} to the specified {@link File} {@code file}. An
-   * existing file is replaced.
+   * existing file is replaced once the new one is written, and keeps its permissions; missing
+   * directories are created.
    *
    * <p>To write the defaults only when the file doesn't exist yet and load it otherwise, use {@link
    * #loadOrDump(Object, File)}.
@@ -85,7 +86,8 @@ public interface ConfigResolver {
 
   /**
    * Dumps the specified {@code annotatedConfig} to the specified {@link File file}, using the
-   * specified {@link Settings settings}. An existing file is replaced.
+   * specified {@link Settings settings}. An existing file is replaced once the new one is written,
+   * and keeps its permissions; missing directories are created.
    *
    * <p>To write the defaults only when the file doesn't exist yet and load it otherwise, use {@link
    * #loadOrDump(Object, File, Settings)}.
@@ -103,7 +105,8 @@ public interface ConfigResolver {
 
   /**
    * Dumps the specified {@code annotatedConfig} to the specified {@link Path} {@code path}. An
-   * existing file is replaced.
+   * existing file is replaced once the new one is written, and keeps its permissions; missing
+   * directories are created.
    *
    * <p>To write the defaults only when the file doesn't exist yet and load it otherwise, use {@link
    * #loadOrDump(Object, Path)}.
@@ -115,7 +118,8 @@ public interface ConfigResolver {
 
   /**
    * Dumps the specified {@code annotatedConfig} to the specified {@link Path path}, using the
-   * specified {@link Settings settings}. An existing file is replaced.
+   * specified {@link Settings settings}. An existing file is replaced once the new one is written,
+   * and keeps its permissions; missing directories are created.
    *
    * <p>To write the defaults only when the file doesn't exist yet and load it otherwise, use {@link
    * #loadOrDump(Object, Path, Settings)}.
