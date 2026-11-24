@@ -402,13 +402,28 @@ public final class DataObject {
   }
 
   /**
-   * Returns the held value by this data object as an {@code int}.
+   * Returns the held value by this data object as an {@code int}, read as an {@code int} field
+   * reads it: a decimal, such as a {@code 1.0} read by YAML, is cut at its decimal point.
    *
    * @return held int
+   * @throws NumberFormatException if the held value is no number
    * @see #getAsObject()
    */
   public int getAsInt() {
-    return Integer.parseInt(getAsString());
+    return (Integer) number(int.class);
+  }
+
+  /**
+   * The held value as a field of {@code type} reads it. The getters used to parse its text, so a
+   * {@code 1.0} that a field read as {@code 1} failed in {@link #getAsInt()}.
+   */
+  private Object number(Class<?> type) {
+    Object data = this.data;
+    Object number = data == null ? null : DefaultSerializer.forcePrimitive(data, type);
+    if (number == null) {
+      throw new NumberFormatException("Expected a number, got: " + data);
+    }
+    return number;
   }
 
   /**
@@ -438,13 +453,15 @@ public final class DataObject {
   }
 
   /**
-   * Returns the held value by this data object as a {@link Byte}.
+   * Returns the held value by this data object as a {@link Byte}, read as a {@code byte} field
+   * reads it: a decimal is cut at its decimal point.
    *
    * @return held byte
+   * @throws NumberFormatException if the held value is no number or out of range
    * @see #getAsObject()
    */
   public byte getAsByte() {
-    return Byte.parseByte(getAsString());
+    return (Byte) number(byte.class);
   }
 
   /**
@@ -467,43 +484,51 @@ public final class DataObject {
   }
 
   /**
-   * Returns the held value by this data object as a {@link Double}.
+   * Returns the held value by this data object as a {@link Double}, read as a {@code double} field
+   * reads it.
    *
    * @return held double
+   * @throws NumberFormatException if the held value is no number
    * @see #getAsObject()
    */
   public double getAsDouble() {
-    return Double.parseDouble(getAsString());
+    return (Double) number(double.class);
   }
 
   /**
-   * Returns the held value by this data object as a {@link Float}.
+   * Returns the held value by this data object as a {@link Float}, read as a {@code float} field
+   * reads it.
    *
    * @return held float
+   * @throws NumberFormatException if the held value is no number
    * @see #getAsObject()
    */
   public float getAsFloat() {
-    return Float.parseFloat(getAsString());
+    return (Float) number(float.class);
   }
 
   /**
-   * Returns the held value by this data object as a {@link Long}.
+   * Returns the held value by this data object as a {@link Long}, read as a {@code long} field
+   * reads it: a decimal is cut at its decimal point.
    *
    * @return held long
+   * @throws NumberFormatException if the held value is no number or out of range
    * @see #getAsObject()
    */
   public long getAsLong() {
-    return Long.parseLong(getAsString());
+    return (Long) number(long.class);
   }
 
   /**
-   * Returns the held value by this data object as a {@link Short}.
+   * Returns the held value by this data object as a {@link Short}, read as a {@code short} field
+   * reads it: a decimal is cut at its decimal point.
    *
    * @return held short
+   * @throws NumberFormatException if the held value is no number or out of range
    * @see #getAsObject()
    */
   public short getAsShort() {
-    return Short.parseShort(getAsString());
+    return (Short) number(short.class);
   }
 
   /**
@@ -520,16 +545,15 @@ public final class DataObject {
   }
 
   /**
-   * Returns the held value by this data object as a {@link BigInteger}.
+   * Returns the held value by this data object as a {@link BigInteger}, read as a {@code
+   * BigInteger} field reads it: a decimal is cut at its decimal point.
    *
    * @return held big integer
+   * @throws NumberFormatException if the held value is no number
    * @see #getAsObject()
    */
   public BigInteger getAsBigInteger() {
-    if (data instanceof BigInteger integer) {
-      return integer;
-    }
-    return new BigInteger(getAsString());
+    return (BigInteger) number(BigInteger.class);
   }
 
   /**

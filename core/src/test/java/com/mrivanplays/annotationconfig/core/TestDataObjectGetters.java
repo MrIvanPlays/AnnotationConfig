@@ -59,6 +59,23 @@ class TestDataObjectGetters {
   }
 
   @Test
+  void numberGettersReadNumbersAsFieldsDo() {
+    // a whole number that a format read as a decimal; the getters failed to parse "1.0" before
+    assertEquals(1, new DataObject(1.0).getAsInt());
+    assertEquals(2L, new DataObject(new BigDecimal("2.0")).getAsLong());
+    assertEquals((short) 3, new DataObject("3.9").getAsShort());
+    assertEquals((byte) 4, new DataObject(4.0f).getAsByte());
+    assertEquals(BigInteger.valueOf(5), new DataObject(5.5).getAsBigInteger());
+    assertEquals(2_000_000_000, new DataObject(2.0E9).getAsInt());
+    assertEquals(0.1, new DataObject(new BigDecimal("0.1")).getAsDouble());
+    assertEquals(3.11f, new DataObject(3.11f).getAsFloat());
+    // no number is still an error
+    assertThrows(NumberFormatException.class, () -> new DataObject("abc").getAsInt());
+    assertThrows(NumberFormatException.class, () -> new DataObject("").getAsLong());
+    assertThrows(NumberFormatException.class, () -> new DataObject((Object) null).getAsDouble());
+  }
+
+  @Test
   void getAsBooleanReadsYesAndOn() {
     assertEquals(true, new DataObject(true).getAsBoolean());
     assertEquals(true, new DataObject("TRUE").getAsBoolean());

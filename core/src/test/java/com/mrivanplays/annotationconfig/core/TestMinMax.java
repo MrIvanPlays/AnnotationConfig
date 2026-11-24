@@ -29,6 +29,7 @@ import com.mrivanplays.annotationconfig.core.serialization.DataObject;
 import com.mrivanplays.annotationconfig.core.serialization.SerializationContext;
 import com.mrivanplays.annotationconfig.core.serialization.SerializerRegistry;
 import java.io.StringReader;
+import java.util.List;
 import java.util.Map;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
@@ -46,6 +47,15 @@ class TestMinMax {
   private static void assertRejected(Object config, String properties) {
     Assertions.assertThrows(
         IllegalArgumentException.class, () -> load(config, properties), properties);
+  }
+
+  private static Object deserialize(Class<?> type, Map<String, ?> values) {
+    return SerializerRegistry.INSTANCE
+        .getDefaultSerializer()
+        .deserialize(
+            new DataObject((Object) values, true),
+            SerializationContext.of(type, type, null),
+            AnnotationAccessor.EMPTY);
   }
 
   @Test
@@ -77,7 +87,7 @@ class TestMinMax {
     assertRejected(new MisplacedSubject(), "value=false");
   }
 
-  // Before, @Min and @Max were only checked for the fields of a config and its config objects.
+  // In custom data types and records, as for the fields of a config and its config objects.
 
   @Test
   void theFieldOfAOneFieldDataTypeIsChecked() {
@@ -103,13 +113,40 @@ class TestMinMax {
         new Bounds(0, 10), deserialize(Bounds.class, Map.of("min", 0, "max", 10)));
   }
 
-  private static Object deserialize(Class<?> type, Map<String, ?> values) {
-    return SerializerRegistry.INSTANCE
-        .getDefaultSerializer()
-        .deserialize(
-            new DataObject((Object) values, true),
-            SerializationContext.of(type, type, null),
-            AnnotationAccessor.EMPTY);
+  // Bounds on element types, new in 3.1.0.
+
+  @Test
+  void theElementsOfAnArrayAreChecked() {
+    Weights config = new Weights();
+    load(config, "weights=1, 10");
+    Assertions.assertArrayEquals(new int[] {1, 10}, config.weights);
+    // an @Max on an array field failed with "annotation placed on invalid field type" before
+    IllegalArgumentException error =
+        Assertions.assertThrows(
+            IllegalArgumentException.class, () -> load(new Weights(), "weights=1, 11"));
+    Assertions.assertTrue(error.getMessage().contains("weights[1]"), error.getMessage());
+  }
+
+  @Test
+  void theElementsOfAListAreChecked() {
+    Assertions.assertEquals(
+        List.of(1, 2),
+        ((Ports) deserialize(Ports.class, Map.of("ports", List.of(1, 2)))).ports);
+    IllegalArgumentException error =
+        Assertions.assertThrows(
+            IllegalArgumentException.class,
+            () -> deserialize(Ports.class, Map.of("ports", List.of(1, 70_000))));
+    Assertions.assertTrue(error.getMessage().contains("ports[1]"), error.getMessage());
+  }
+
+  @Test
+  void aBoundOnTheListItselfPointsToTheElementType() {
+    IllegalArgumentException error =
+        Assertions.assertThrows(
+            IllegalArgumentException.class,
+            () -> deserialize(OnTheList.class, Map.of("values", List.of(1))));
+    Assertions.assertTrue(
+        error.getMessage().contains("List<@Max(...) Integer>"), error.getMessage());
   }
 
   static class WithLimit {
@@ -132,6 +169,27 @@ class TestMinMax {
   }
 
   record Bounds(@Min(minInt = 0) int min, int max) {}
+
+  static class Weights {
+
+    @Max(maxInt = 10)
+    int[] weights = {1};
+  }
+
+  static class Ports {
+
+    List<@Max(maxInt = 65535) Integer> ports = List.of(25565);
+
+    Ports() {}
+  }
+
+  static class OnTheList {
+
+    @Max(maxInt = 3)
+    List<Integer> values = List.of(1);
+
+    OnTheList() {}
+  }
 
   static class NumberSubject {
 

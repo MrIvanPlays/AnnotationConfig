@@ -29,7 +29,7 @@ import java.util.Properties;
 import org.jspecify.annotations.NullMarked;
 
 /**
- * Represents configuration, utilising the .properties configuration type (also as .conf files).
+ * Represents configuration, utilising the .properties configuration type.
  *
  * @since 1.0.0
  * @author Ivan Pekov
@@ -55,7 +55,6 @@ public final class PropertyConfig {
   private static ConfigResolver createConfigResolver() {
     return ConfigResolver.newBuilder()
         .withCommentPrefix("# ")
-        .withFileExtension(".conf")
         .withFileExtension(".properties")
         .withValueReader((reader, _) -> {
           Properties properties = new Properties();

@@ -147,7 +147,7 @@ final class DefaultSerializer implements FieldTypeSerializer<Object> {
     toSerialize.add(serialized.isSingleValue() ? serialized.getAsObject() : serialized.getAsMap());
   }
 
-  private static Object forcePrimitive(Object val, Class<?> fieldType) {
+  static @Nullable Object forcePrimitive(Object val, Class<?> fieldType) {
     Function<Object, ?> mapper = PrimitiveSerializers.getMapper(fieldType);
     if (mapper != null) {
       return mapper.apply(val);

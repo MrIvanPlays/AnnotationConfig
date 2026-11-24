@@ -137,7 +137,7 @@ public interface ConfigResolver {
 
   /**
    * Dumps the specified {@code annotatedConfig} to the specified {@link OutputStream} {@code os},
-   * written as UTF-8.
+   * written as UTF-8. The stream is closed afterwards.
    *
    * @param annotatedConfig the annotated config you want to dump
    * @param os the output stream to dump the annotated config to
@@ -148,7 +148,8 @@ public interface ConfigResolver {
 
   /**
    * Dumps the specified {@code annotatedConfig} to the specified {@link OutputStream output
-   * stream}, written as UTF-8, using the specified {@link Settings settings}.
+   * stream}, written as UTF-8, using the specified {@link Settings settings}. The stream is closed
+   * afterwards.
    *
    * <p>The provided settings must be <i>mutable</i> as AnnotationConfig will fill them with
    * defaults if they are missing.
@@ -165,7 +166,7 @@ public interface ConfigResolver {
 
   /**
    * Dumps the specified {@code annotatedConfig} to the specified {@link WritableObject writable
-   * object}.
+   * object}. Its writer is closed afterwards.
    *
    * @param annotatedConfig the annotated config to dump
    * @param writableObject the writable object to dump to
@@ -177,7 +178,7 @@ public interface ConfigResolver {
 
   /**
    * Dumps the specified {@code annotatedConfig} to the specified {@link WritableObject writable
-   * object} using the specified {@link Settings settings}.
+   * object} using the specified {@link Settings settings}. Its writer is closed afterwards.
    *
    * <p>The provided settings must be <i>mutable</i> as AnnotationConfig will fill them with
    * defaults if they are missing.
@@ -193,7 +194,8 @@ public interface ConfigResolver {
   }
 
   /**
-   * Dumps the specified {@code annotatedConfig} to the specified {@link Writer} {@code writer}.
+   * Dumps the specified {@code annotatedConfig} to the specified {@link Writer} {@code writer}. The
+   * writer is closed afterwards.
    *
    * @param annotatedConfig the annotated config you want to dump
    * @param writer the writer to dump the annotated config to
@@ -202,7 +204,7 @@ public interface ConfigResolver {
 
   /**
    * Dumps the specified {@code annotatedConfig} to the specified {@link Writer writer}, using the
-   * provided {@link Settings settings}.
+   * provided {@link Settings settings}. The writer is closed afterwards.
    *
    * <p>The provided settings must be <i>mutable</i> as AnnotationConfig will fill them with
    * defaults if they are missing.
@@ -302,7 +304,7 @@ public interface ConfigResolver {
   /**
    * Loads the specified {@code annotatedConfig} from the specified {@link InputStream} {@code in},
    * read as UTF-8, using the default {@link Settings} from the builder of this config resolver, or
-   * {@link ACDefaultSettings#getDefault()}.
+   * {@link ACDefaultSettings#getDefault()}. The stream is closed afterwards.
    *
    * <p>If you have a {@link File} or {@link Path}, consider using {@link #load(Object, File)} or
    * {@link #load(Object, Path)}. This way AnnotationConfig can add missing options to the file if
@@ -319,9 +321,10 @@ public interface ConfigResolver {
    * Loads the specified {@code annotatedConfig} from the specified {@link InputStream} {@code in}
    * using the {@link Settings} {@code settings} specified.
    *
-   * <p>The stream is read as UTF-8. If you have a {@link File} or {@link Path}, consider using
-   * {@link #load(Object, File, Settings)} or {@link #load(Object, Path, Settings)}. This way
-   * AnnotationConfig can add missing options to the file if the load settings allow it.
+   * <p>The stream is read as UTF-8 and closed afterwards. If you have a {@link File} or {@link
+   * Path}, consider using {@link #load(Object, File, Settings)} or {@link #load(Object, Path,
+   * Settings)}. This way AnnotationConfig can add missing options to the file if the load settings
+   * allow it.
    *
    * <p>The provided settings must be <i>mutable</i> as AnnotationConfig will fill them with
    * defaults if they are missing.
@@ -338,7 +341,7 @@ public interface ConfigResolver {
   /**
    * Loads the specified {@code annotatedConfig} from the specified {@link Reader} {@code reader}
    * using the default {@link Settings} from the builder of this config resolver, or {@link
-   * ACDefaultSettings#getDefault()}.
+   * ACDefaultSettings#getDefault()}. The reader is closed afterwards.
    *
    * <p>If you have a {@link File} or {@link Path}, consider using {@link #load(Object, File)} or
    * {@link #load(Object, Path)}. This way AnnotationConfig can add missing options to the file if
@@ -351,7 +354,7 @@ public interface ConfigResolver {
 
   /**
    * Loads the specified {@code annotatedConfig} from the specified {@link Reader} {@code reader}
-   * using the {@link Settings} {@code settings} specified.
+   * using the {@link Settings} {@code settings} specified. The reader is closed afterwards.
    *
    * <p>If you have a {@link File} or {@link Path}, consider using {@link #load(Object, File,
    * Settings)} or {@link #load(Object, Path, Settings)}. This way AnnotationConfig can add missing

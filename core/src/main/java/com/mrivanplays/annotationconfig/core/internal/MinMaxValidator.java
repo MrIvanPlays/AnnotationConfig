@@ -24,14 +24,27 @@ package com.mrivanplays.annotationconfig.core.internal;
 
 import com.mrivanplays.annotationconfig.core.annotations.Max;
 import com.mrivanplays.annotationconfig.core.annotations.Min;
+import java.lang.reflect.AnnotatedArrayType;
+import java.lang.reflect.AnnotatedParameterizedType;
+import java.lang.reflect.AnnotatedType;
+import java.lang.reflect.AnnotatedWildcardType;
+import java.lang.reflect.Array;
 import java.math.BigDecimal;
 import java.math.BigInteger;
+import java.util.Collection;
+import java.util.Map;
 import org.jspecify.annotations.NullMarked;
 import org.jspecify.annotations.Nullable;
 
 /**
  * Validates a deserialized value against the {@link Min} and {@link Max} annotations of its field.
  * Numbers are checked by value, strings by their length.
+ *
+ * <p>The annotations can also be put on the element types of the field's type: {@code
+ * List<@Max(maxInt = 10) Integer>}, {@code Map<String, @Min(minInt = 0) Integer>}, nested ones
+ * ({@code List<List<@Max(...) Integer>>}) and arrays. On an array field, {@code @Max(...) int[]}
+ * bounds the elements: Java puts such an annotation on the field and on the element type {@code
+ * int}, not on the array type.
  *
  * @hidden
  */
@@ -43,17 +56,103 @@ final class MinMaxValidator {
   }
 
   /**
-   * Validates {@code value}, the deserialized value of {@code field} read from {@code key}.
+   * Validates {@code value}, the deserialized value of {@code field} read from {@code key}, and,
+   * for a field with bounds on its element types, the elements of the value.
    *
-   * @throws IllegalArgumentException if the value is out of bounds, or an annotation is invalid
+   * @throws IllegalArgumentException if a value is out of bounds, or an annotation is invalid
    */
   static void validate(FieldInfo field, String key, @Nullable Object value) {
-    Min min = field.min();
-    Max max = field.max();
-    if ((min == null && max == null) || value == null) {
+    if (value == null) {
       // a value read as null has nothing to compare; it used to be reported as a misplaced @Min
       return;
     }
+    String where = field.genericType().getTypeName() + " " + key;
+    Min min = field.min();
+    Max max = field.max();
+    // On an array field the annotation is the elements' too, and checked with them.
+    boolean forElements = field.elementBounds() && value.getClass().isArray();
+    if ((min != null || max != null) && !forElements) {
+      check(min, max, where, value);
+    }
+    if (field.elementBounds()) {
+      checkElements(field.field().getAnnotatedType(), value, where);
+    }
+  }
+
+  /** Whether {@code type} has {@code @Min} or {@code @Max} on an element type, at any depth. */
+  static boolean hasElementBounds(AnnotatedType type) {
+    for (AnnotatedType element : elementTypes(type)) {
+      if (hasBounds(element) || hasElementBounds(element)) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  /** The element types of an array, a parameterized type or a wildcard's bounds. */
+  private static AnnotatedType[] elementTypes(AnnotatedType type) {
+    if (type instanceof AnnotatedArrayType array) {
+      return new AnnotatedType[] {array.getAnnotatedGenericComponentType()};
+    }
+    if (type instanceof AnnotatedParameterizedType parameterized) {
+      return parameterized.getAnnotatedActualTypeArguments();
+    }
+    if (type instanceof AnnotatedWildcardType wildcard) {
+      return wildcard.getAnnotatedUpperBounds();
+    }
+    return new AnnotatedType[0];
+  }
+
+  private static boolean hasBounds(AnnotatedType type) {
+    return type.isAnnotationPresent(Min.class) || type.isAnnotationPresent(Max.class);
+  }
+
+  /** Checks the elements of {@code value}, whose type is {@code type}, against their bounds. */
+  private static void checkElements(AnnotatedType type, Object value, String where) {
+    if (type instanceof AnnotatedArrayType array && value.getClass().isArray()) {
+      AnnotatedType component = array.getAnnotatedGenericComponentType();
+      int length = Array.getLength(value);
+      for (int i = 0; i < length; i++) {
+        checkElement(component, Array.get(value, i), where + "[" + i + "]");
+      }
+    } else if (type instanceof AnnotatedParameterizedType parameterized) {
+      AnnotatedType[] arguments = parameterized.getAnnotatedActualTypeArguments();
+      if (value instanceof Collection<?> collection && arguments.length == 1) {
+        int index = 0;
+        for (Object element : collection) {
+          checkElement(arguments[0], element, where + "[" + index + "]");
+          index++;
+        }
+      } else if (value instanceof Map<?, ?> map && arguments.length == 2) {
+        for (Map.Entry<?, ?> entry : map.entrySet()) {
+          checkElement(arguments[0], entry.getKey(), where + " key '" + entry.getKey() + "'");
+          checkElement(arguments[1], entry.getValue(), where + "." + entry.getKey());
+        }
+      }
+    }
+  }
+
+  private static void checkElement(AnnotatedType type, @Nullable Object element, String where) {
+    if (element == null) {
+      return;
+    }
+    // List<? extends @Max(...) Integer>: the bounds are on the wildcard's bound
+    AnnotatedType bounded = type;
+    if (!hasBounds(type)
+        && type instanceof AnnotatedWildcardType wildcard
+        && wildcard.getAnnotatedUpperBounds().length > 0) {
+      bounded = wildcard.getAnnotatedUpperBounds()[0];
+    }
+    Min min = bounded.getAnnotation(Min.class);
+    Max max = bounded.getAnnotation(Max.class);
+    if (min != null || max != null) {
+      check(min, max, where, element);
+    }
+    checkElements(bounded, element, where);
+  }
+
+  /** Checks one value, a number or a string, against the bounds; {@code where} names it. */
+  private static void check(@Nullable Min min, @Nullable Max max, String where, Object value) {
     Number compared;
     String subject;
     if (value instanceof Number number) {
@@ -63,22 +162,25 @@ final class MinMaxValidator {
       compared = string.length();
       subject = "String's length";
     } else {
+      String annotation = min != null ? "Min" : "Max";
+      String hint =
+          value instanceof Collection<?> || value instanceof Map<?, ?>
+              ? " ; to bound the elements, put it on the element type, e.g. List<@"
+                  + annotation
+                  + "(...) Integer>"
+              : "";
       throw new IllegalArgumentException(
-          where(field, key)
-              + " ; @"
-              + (min != null ? "Min" : "Max")
-              + " annotation placed on invalid field type");
+          where + " ; @" + annotation + " annotation placed on invalid field type" + hint);
     }
     if ((compared instanceof Double d && d.isNaN()) || (compared instanceof Float f && f.isNaN())) {
       // NaN is in no range; Double.compare puts it above every number, so it passed any @Min
-      throw new IllegalArgumentException(
-          where(field, key) + " ; deserialized value is not a number (NaN)");
+      throw new IllegalArgumentException(where + " ; deserialized value is not a number (NaN)");
     }
     if (min != null) {
-      Number bound = minBound(field, key, min);
+      Number bound = minBound(where, min);
       if (compare(compared, bound) < 0) {
         throw new IllegalArgumentException(
-            where(field, key)
+            where
                 + " ; deserialized "
                 + subject
                 + " is under the minimum allowed ("
@@ -88,10 +190,10 @@ final class MinMaxValidator {
       }
     }
     if (max != null) {
-      Number bound = maxBound(field, key, max);
+      Number bound = maxBound(where, max);
       if (compare(compared, bound) > 0) {
         throw new IllegalArgumentException(
-            where(field, key)
+            where
                 + " ; deserialized "
                 + subject
                 + " is above the maximum allowed ("
@@ -104,15 +206,9 @@ final class MinMaxValidator {
 
   // A member left at its default (the type's lowest value for @Min, highest for @Max) is not set.
 
-  /** The start of every error message, only built when one is thrown. */
-  private static String where(FieldInfo field, String key) {
-    return field.genericType().getTypeName() + " " + key;
-  }
-
-  private static Number minBound(FieldInfo field, String key, Min min) {
+  private static Number minBound(String where, Min min) {
     return singleBound(
-        field,
-        key,
+        where,
         "@Min",
         "@Min(minInt = 1)",
         min.minByte() != Byte.MIN_VALUE ? min.minByte() : null,
@@ -123,10 +219,9 @@ final class MinMaxValidator {
         min.minDouble() != Double.NEGATIVE_INFINITY ? min.minDouble() : null);
   }
 
-  private static Number maxBound(FieldInfo field, String key, Max max) {
+  private static Number maxBound(String where, Max max) {
     return singleBound(
-        field,
-        key,
+        where,
         "@Max",
         "@Max(maxInt = 3)",
         max.maxByte() != Byte.MAX_VALUE ? max.maxByte() : null,
@@ -138,7 +233,7 @@ final class MinMaxValidator {
   }
 
   private static Number singleBound(
-      FieldInfo field, String key, String annotation, String example, @Nullable Number... members) {
+      String where, String annotation, String example, @Nullable Number... members) {
     Number bound = null;
     for (Number member : members) {
       if (member == null) {
@@ -146,7 +241,7 @@ final class MinMaxValidator {
       }
       if (bound != null) {
         throw new IllegalArgumentException(
-            where(field, key)
+            where
                 + " ; invalid "
                 + annotation
                 + " specified - it should set only one annotation member");
@@ -155,7 +250,7 @@ final class MinMaxValidator {
     }
     if (bound == null) {
       throw new IllegalArgumentException(
-          where(field, key)
+          where
               + " ; invalid "
               + annotation
               + " specified - it should set an annotation member (e.g. "

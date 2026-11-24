@@ -35,8 +35,11 @@ Java 25, Maven multi-module build.
     use; they write native TOML date-times when the settings hold `MAPPER_KEY`, strings otherwise.
   - Kept as they are: the name `SHOULD_REVERSE_FIELDS` (`true` means declaration order),
     `DefaultSerializer`'s `PRIMITIVE_CLASS` check, its `System.err` warning and `printStackTrace()`,
-    `DataObject#putAll`, `@author claude, Ivan Pekov`, the "DO NOT TOUCH" comment of the record
-    code in `DefaultSerializer`, and `.conf` as a `.properties` extension (documented since 1.0.0).
+    `DataObject#putAll`, `@author claude, Ivan Pekov`, and the "DO NOT TOUCH" comment of the
+    record code in `DefaultSerializer`.
+  - `.properties` files have only the `.properties` extension: `.conf` usually means HOCON, so
+    `resolveMultiple` would read other `.conf` files as `.properties`. 3.0.3 didn't register it
+    either.
 
 ## Modules
 
@@ -52,7 +55,11 @@ Java 25, Maven multi-module build.
 - `core.internal.FieldValidation` applies `@Min`, `@Max` and custom annotation validators to a read
   value. Every path that sets a value uses it: config fields and `@ConfigObject` sections
   (`AnnotatedConfigResolver#setFields`), the fields of custom data types (also of a type with one
-  field, read from the bare value) and record components (`DefaultSerializer`).
+  field, read from the bare value) and record components (`DefaultSerializer`). `@Min` / `@Max`
+  also target `TYPE_USE`: `MinMaxValidator` walks the field's `AnnotatedType` next to the value
+  for bounds on element types (`List<@Max(...) Integer>`, map keys and values, nested types,
+  wildcard bounds). On an array field Java puts `@Max(...) int[]` on the element type, so there
+  it bounds the elements, not the array.
 - Records are created with their canonical constructor, found by and filled in the order of
   `Class#getRecordComponents()`; constructor parameter names are not used, as tools like
   obfuscators strip them.

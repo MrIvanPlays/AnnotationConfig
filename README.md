@@ -137,7 +137,7 @@ Maven:
 <dependency>
   <groupId>com.mrivanplays</groupId>
   <!-- Types: toml, yaml, json -->
-  <!-- For .properties (or .conf) files, or a format of your own, set the type to core -->
+  <!-- For .properties files, or a format of your own, set the type to core -->
   <artifactId>annotationconfig-(type)</artifactId> <!-- Replace type -->
   <version>3.1.0</version>
   <scope>compile</scope>

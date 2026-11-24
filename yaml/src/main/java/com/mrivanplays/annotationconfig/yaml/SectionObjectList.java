@@ -160,6 +160,48 @@ public final class SectionObjectList<T> implements Iterable<Entry<String, T>> {
   }
 
   /**
+   * Whether {@code o} is a {@code SectionObjectList} of the same {@link #getObjectsType() objects
+   * type} with the same entries. As with {@link Map#equals(Object)}, the order of the entries is
+   * not compared.
+   *
+   * @param o the object to compare with
+   * @return whether they are equal
+   * @since 3.1.0
+   */
+  @Override
+  public boolean equals(@Nullable Object o) {
+    if (this == o) {
+      return true;
+    }
+    return o instanceof SectionObjectList<?> other
+        && this.clazz.equals(other.clazz)
+        && this.values.equals(other.values);
+  }
+
+  /**
+   * A hash code consistent with {@link #equals(Object)}. As with a map, it changes when the list is
+   * {@link #update(String, Object) updated}.
+   *
+   * @return hash code
+   * @since 3.1.0
+   */
+  @Override
+  public int hashCode() {
+    return 31 * this.clazz.hashCode() + this.values.hashCode();
+  }
+
+  /**
+   * The objects type and the entries, for messages and debugging.
+   *
+   * @return text form
+   * @since 3.1.0
+   */
+  @Override
+  public String toString() {
+    return "SectionObjectList{type=" + this.clazz.getName() + ", values=" + this.values + "}";
+  }
+
+  /**
    * Represents a builder of {@link SectionObjectList}.
    *
    * @param <T> object type

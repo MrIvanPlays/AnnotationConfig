@@ -36,12 +36,21 @@ import java.lang.annotation.Target;
  * ({@code Integer.MAX_VALUE}, {@code Double.POSITIVE_INFINITY}, ...), which means "not set"; any
  * other value, including {@code -1}, is a bound.
  *
+ * <p>Since 3.1.0 it also bounds the elements of lists, maps and arrays when it is put on their
+ * element type, at any depth:
+ *
+ * <pre>{@code
+ * private List<@Max(maxInt = 65535) Integer> ports = List.of(25565);
+ * private Map<String, @Max(maxInt = 16) String> names = Map.of("admin", "Ivan");
+ * private @Max(maxInt = 10) int[] weights = {1, 2}; // an array's annotation bounds its elements
+ * }</pre>
+ *
  * @since 2.0.0
  * @author Ivan Pekov
  */
 @Documented
 @Retention(RetentionPolicy.RUNTIME)
-@Target(ElementType.FIELD)
+@Target({ElementType.FIELD, ElementType.TYPE_USE})
 public @interface Max {
 
   /**

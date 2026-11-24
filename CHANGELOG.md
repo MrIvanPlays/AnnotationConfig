@@ -145,7 +145,7 @@ can hold `null` are set to `null`.
 
 #### `.properties` reading
 
-Empty trailing array elements are kept, and `.conf` files are configs too. See
+Empty trailing array elements are kept. See
 [Breaking changes in `.properties`](#breaking-changes-in-properties).
 
 #### Empty config files get the defaults
@@ -270,6 +270,25 @@ class Limits {
 
 A value out of bounds fails to load. A custom validator that fails silently keeps the value the
 field had. For record components, see [Support for records](#support-for-records).
+
+#### `@Min` and `@Max` on the elements of lists, maps and arrays
+
+`@Min` and `@Max` can be put on the element types of a field's type, to bound every element:
+
+```java
+private List<@Max(maxInt = 65535) Integer> ports = List.of(25565);
+private Map<String, @Min(minInt = 3) String> names = Map.of("admin", "Ivan");
+private List<List<@Max(maxInt = 10) Integer>> grid = List.of(List.of(1));
+private @Max(maxInt = 10) int[] weights = {1, 2};
+```
+
+- Lists and other collections, the values and keys of maps, nested types, the bound of a wildcard
+  (`List<? extends @Max(...) Number>`) and record components are checked, in every format.
+- On an array field, the annotation bounds the elements: Java puts `@Max(...) int[]` on the
+  field and on the element type `int`. It failed with "annotation placed on invalid field type".
+- On a `List` or `Map` field itself, the annotation still fails with that error, which now
+  points to the element type.
+- An error names the element: `ports[1]`, `grid[1][0]`, `names.admin`, or the key of a map.
 
 #### Booleans accept `yes`, `no`, `on` and `off`
 
@@ -415,8 +434,6 @@ reads back exactly.
 - Empty trailing elements of an array are kept: `a,b,` is read as three elements, the last one
   empty, where 3.0.x read two. An empty element fails to load in a primitive number array
   (`int[]`, ...) and is `null` in an `Integer[]` and the like.
-- `PropertyConfig`'s resolver also treats `.conf` files as configs, so `resolveMultiple` loads
-  them from a directory too.
 
 #### Other changes in `.properties`
 
@@ -518,6 +535,8 @@ array that holds a comma, do not read back as they were written.
   an option. Both were, and dumping failed with a duplicate key.
 - The `InputStream` and `OutputStream` overloads of `load` and `dump` read and write UTF-8, as the
   `File` and `Path` overloads do. They used the default charset of the JVM.
+- The Javadoc of the `Reader`, `Writer`, `InputStream`, `OutputStream` and `WritableObject`
+  overloads of `load` and `dump` says that they close what they are given, as they always did.
 - `ConfigResolver.Builder#copy()` and the copy constructor copy the settings and file extensions.
   The copy shared them, so setting a value on the copy changed the original builder too.
 - When a custom annotation's `writeValue` returns a value of another type, the
@@ -589,6 +608,12 @@ CommentPlaceholderRegistry.INSTANCE.registerPlaceholder(
   characters. It used to throw a `ClassCastException` for anything but a `Character`.
 - `DataObject#getAsBigDecimal` and `getAsBigInteger` parse the value's text exactly. They went
   through `double` and `long`, which lost precision and overflowed.
+- The number getters of `DataObject` (`getAsInt`, `getAsLong`, `getAsShort`, `getAsByte`,
+  `getAsDouble`, `getAsFloat`, `getAsBigInteger`) read a value as a field of their type does. A
+  whole number that a format read as a decimal, such as a `1.0` read by YAML, failed with a
+  `NumberFormatException` in `getAsInt` while an `int` field read it; a decimal is now cut at its
+  decimal point for the whole-number getters, as for fields. A value that is no number still
+  throws a `NumberFormatException`.
 - `DataObject#getAsMap` returns a new mutable map for a data object that holds a single value, as
   it does otherwise. It returned an immutable empty map.
 - `new DataObject()` is an empty map: `isEmpty()` is `true` and `isSingleValue()` is `false`. It
@@ -602,6 +627,9 @@ CommentPlaceholderRegistry.INSTANCE.registerPlaceholder(
 - `SectionObjectList#iterator()` entries can't be changed with `setValue`, and every
   `SectionObjectListBuilder#build()` returns a list with its own values.
   `SectionObjectListBuilder#defaultValue` rejects `null`.
+- `SectionObjectList` has `equals` and `hashCode`: two lists are equal when they hold the same
+  objects type and the same entries, in any order, as maps are. They were only equal to
+  themselves. `toString` shows the type and the entries.
 
 - `AnnotationAccessor#hasAnnotation` and `getAnnotation` both look at the declared annotations
   only. For a class, `hasAnnotation` also found inherited annotations that `getAnnotation` did not

@@ -54,6 +54,8 @@ public final class FieldInfo {
   private final boolean isStatic;
   @Nullable private final Min min;
   @Nullable private final Max max;
+  // @Min or @Max on an element type: List<@Max(...) Integer>, or @Max(...) int[]
+  private final boolean elementBounds;
   @Nullable private final Multiline multiline;
   private final Annotation[] annotations;
   private final AnnotationAccessor accessor;
@@ -72,6 +74,7 @@ public final class FieldInfo {
     this.isStatic = Modifier.isStatic(field.getModifiers());
     this.min = field.getDeclaredAnnotation(Min.class);
     this.max = field.getDeclaredAnnotation(Max.class);
+    this.elementBounds = MinMaxValidator.hasElementBounds(field.getAnnotatedType());
     this.multiline = field.getDeclaredAnnotation(Multiline.class);
     this.annotations = field.getDeclaredAnnotations();
     this.accessor = AnnotationAccessor.createFromField(field);
@@ -122,9 +125,17 @@ public final class FieldInfo {
     return this.isStatic;
   }
 
-  /** Whether the field has {@code @Min} or {@code @Max}, so its value has to be validated. */
+  /**
+   * Whether the field has {@code @Min} or {@code @Max}, on itself or on an element type, so its
+   * value has to be validated.
+   */
   public boolean minOrMax() {
-    return this.min != null || this.max != null;
+    return this.min != null || this.max != null || this.elementBounds;
+  }
+
+  /** Whether {@code @Min} or {@code @Max} is on an element type of the field's type. */
+  public boolean elementBounds() {
+    return this.elementBounds;
   }
 
   public @Nullable Min min() {
