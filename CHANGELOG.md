@@ -679,6 +679,9 @@ CommentPlaceholderRegistry.INSTANCE.registerPlaceholder(
   its keys as text, `withStringKeys` does so only when a key is not a string, and `parentPaths`
   returns the dotted paths of the parents of a map's keys. `MapUtils#getLastCommonMap` is
   deprecated, as AnnotationConfig doesn't use it anymore.
+- `LinesHelper#split` (in `core.utils`) splits text, such as a comment, into its lines at every
+  line break, for a `ValueWriter` that writes a comment marker in front of every line. The YAML,
+  JSON5 and TOML writers use it.
 - An immutable `DataObject` created from a map reads the map when it is accessed instead of
   wrapping all of it up front, so the map should not be changed afterwards. Loading wrapped every
   value of the file this way, once for each level of nesting.

@@ -66,7 +66,7 @@ import org.jspecify.annotations.Nullable;
  */
 @SuppressWarnings({"unchecked", "rawtypes", "ConstantValue"})
 @NullMarked
-public final class AnnotatedConfigResolver {
+final class AnnotatedConfigResolver {
 
   private static final String INACCESSIBLE = "A field became inaccessible";
 
@@ -305,8 +305,7 @@ public final class AnnotatedConfigResolver {
     } catch (IllegalAccessException e) {
       throw new IllegalArgumentException(INACCESSIBLE, e);
     }
-    Class<?> type =
-        polymorphic.typeOf(section, current, () -> describe(info, annotatedConfig));
+    Class<?> type = polymorphic.typeOf(section, current, () -> describe(info, annotatedConfig));
     boolean missingOptions = polymorphic.lacksDiscriminator(section);
     boolean sameType = current != null && current.getClass() == type;
     if (type.isRecord()) {

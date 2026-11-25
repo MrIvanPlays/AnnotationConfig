@@ -20,17 +20,23 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.mrivanplays.annotationconfig.core.internal;
+package com.mrivanplays.annotationconfig.core.utils;
 
 import java.util.regex.Pattern;
 import org.jspecify.annotations.NullMarked;
 
 /**
- * Splits comments into lines, for the writers that write a comment marker on every line (YAML,
- * JSON5, TOML). {@code .properties} only treats {@code \r} and {@code \n} as line breaks, so its
- * writer splits on its own.
+ * Splits text, such as a comment, into its lines. Useful for a {@link
+ * com.mrivanplays.annotationconfig.core.resolver.ValueWriter} that writes a comment marker in front
+ * of every line of a comment, as the YAML, JSON5 and TOML writers do.
  *
- * @hidden
+ * <p>A line break is anything the regex {@code \R} matches: {@code \r\n}, {@code \n}, {@code \r},
+ * vertical tab, form feed, next line ({@code U+0085}) and the line and paragraph separators
+ * ({@code U+2028}, {@code U+2029}). A writer for a format that knows fewer line breaks, such as
+ * {@code .properties}, which only knows {@code \r} and {@code \n}, splits on its own.
+ *
+ * @author Ivan Pekov
+ * @since 3.1.0
  */
 @NullMarked
 public final class LinesHelper {
@@ -42,8 +48,15 @@ public final class LinesHelper {
   }
 
   /**
-   * The lines of {@code text}, split at every line break {@code \R} matches. Nearly every comment
-   * is one line, which is returned as it is, without a regex.
+   * Splits {@code text} into its lines, at every line break (see {@link LinesHelper}). The line
+   * breaks are not part of the lines, and {@code \r\n} is one line break.
+   *
+   * <p>Empty lines are kept, also at the end: {@code "a\n\nb\n"} gives {@code ["a", "", "b", ""]}.
+   * Text without a line break, as most comments are, gives a one element array of {@code text}
+   * itself, without running a regex. An empty {@code text} gives {@code [""]}.
+   *
+   * @param text the text to split
+   * @return the lines of {@code text}, in a new array that the caller may modify
    */
   public static String[] split(String text) {
     return hasLineBreak(text) ? LINE_BREAK.split(text, -1) : new String[] {text};

@@ -34,7 +34,7 @@ import org.jspecify.annotations.Nullable;
  * @hidden
  */
 @NullMarked
-public final class AnnotationHolder implements Comparable<AnnotationHolder> {
+final class AnnotationHolder implements Comparable<AnnotationHolder> {
   @Nullable private final FieldInfo info;
   private final int fieldOrder;
   @Nullable private final Class<?> clazz;

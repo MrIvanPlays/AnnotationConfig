@@ -22,11 +22,11 @@
 
 package com.mrivanplays.annotationconfig.json;
 
-import com.mrivanplays.annotationconfig.core.internal.LinesHelper;
 import com.mrivanplays.annotationconfig.core.resolver.MultilineString;
 import com.mrivanplays.annotationconfig.core.resolver.ValueWriter;
 import com.mrivanplays.annotationconfig.core.resolver.settings.Settings;
 import com.mrivanplays.annotationconfig.core.serialization.DataObject;
+import com.mrivanplays.annotationconfig.core.utils.LinesHelper;
 import com.mrivanplays.annotationconfig.core.utils.MapUtils;
 import java.io.PrintWriter;
 import java.lang.reflect.Array;

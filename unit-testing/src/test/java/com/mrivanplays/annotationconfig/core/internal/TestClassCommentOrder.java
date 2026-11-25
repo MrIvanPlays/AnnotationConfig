@@ -20,11 +20,9 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.mrivanplays.annotationconfig.core;
+package com.mrivanplays.annotationconfig.core.internal;
 
 import com.mrivanplays.annotationconfig.core.annotations.comment.Comment;
-import com.mrivanplays.annotationconfig.core.internal.AnnotatedConfigResolver;
-import com.mrivanplays.annotationconfig.core.internal.AnnotationHolder;
 import com.mrivanplays.annotationconfig.core.resolver.settings.ACDefaultSettings;
 import com.mrivanplays.annotationconfig.core.resolver.settings.Settings;
 import java.util.List;
@@ -34,8 +32,8 @@ import org.junit.jupiter.api.Test;
 /**
  * With {@code FIND_PARENT_FIELDS}, the holders of the classes in the hierarchy come first, the
  * class a config extends before the config's class, in a consistent {@link Comparable} order, not
- * one that depends on how a {@code TreeSet} inserts. The written comments are checked by the
- * {@code fields} scenarios.
+ * one that depends on how a {@code TreeSet} inserts. The written comments are checked by the {@code
+ * fields} scenarios.
  */
 class TestClassCommentOrder {
 

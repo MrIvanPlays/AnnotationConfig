@@ -119,7 +119,7 @@ Java 25, Maven multi-module build.
   `TomlValueWriter` builds the whole file in one `StringBuilder` too. Buffering centrally in
   `AnnotatedConfigResolver` instead was benchmarked and was slower (an extra copy of the output,
   and SnakeYAML's writes still go through a `PrintWriter`), so each writer buffers on its own.
-- TOML, JSON5 and YAML split comments with `core.internal.LinesHelper` (a regex only when a
+- TOML, JSON5 and YAML split comments with `core.utils.LinesHelper` (public API; a regex only when a
   comment has a line break), and build the dotted paths of keys only in maps that hold a commented
   key (`MapUtils#parentPaths`). YAML still looks up a key that holds a map by its plain key everywhere
   (the `commentpaths` scenarios). `.properties` splits only at `\r` and `\n`, in `PropertiesDumper`.

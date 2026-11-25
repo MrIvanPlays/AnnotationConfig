@@ -23,11 +23,11 @@
 package com.mrivanplays.annotationconfig.toml;
 
 import com.fasterxml.jackson.dataformat.toml.TomlMapper;
-import com.mrivanplays.annotationconfig.core.internal.LinesHelper;
 import com.mrivanplays.annotationconfig.core.resolver.MultilineString;
 import com.mrivanplays.annotationconfig.core.resolver.ValueWriter;
 import com.mrivanplays.annotationconfig.core.resolver.settings.Settings;
 import com.mrivanplays.annotationconfig.core.serialization.DataObject;
+import com.mrivanplays.annotationconfig.core.utils.LinesHelper;
 import com.mrivanplays.annotationconfig.core.utils.MapUtils;
 import java.io.PrintWriter;
 import java.lang.reflect.Array;
@@ -535,5 +535,4 @@ public final class TomlValueWriter implements ValueWriter {
       return comments == null || comments.isEmpty() ? null : comments;
     }
   }
-
 }
