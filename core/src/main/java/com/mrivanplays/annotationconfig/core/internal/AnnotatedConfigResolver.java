@@ -32,6 +32,7 @@ import com.mrivanplays.annotationconfig.core.resolver.key.KeyResolver;
 import com.mrivanplays.annotationconfig.core.resolver.settings.ACDefaultSettings;
 import com.mrivanplays.annotationconfig.core.resolver.settings.NullReadHandleOption;
 import com.mrivanplays.annotationconfig.core.resolver.settings.Settings;
+import com.mrivanplays.annotationconfig.core.serialization.AnnotationAccessor;
 import com.mrivanplays.annotationconfig.core.serialization.DataObject;
 import com.mrivanplays.annotationconfig.core.serialization.FieldTypeSerializer;
 import com.mrivanplays.annotationconfig.core.serialization.SerializationContext;
@@ -273,6 +274,66 @@ public final class AnnotatedConfigResolver {
     setField(field, annotatedConfig, new DataObject(values, true));
   }
 
+  /** The section of {@code info} in {@code annotatedConfig}, for error messages. */
+  private static String describe(FieldInfo info, Object annotatedConfig) {
+    return "the section '"
+        + info.key()
+        + "' (field "
+        + info.name()
+        + " of "
+        + annotatedConfig.getClass().getName()
+        + ")";
+  }
+
+  /**
+   * Reads the {@code @Polymorphic} section {@code section} into {@code field}: the value it holds
+   * is filled when the section names its class, and otherwise replaced by a new instance of the
+   * class the section names.
+   *
+   * @return whether options are missing, the discriminator included
+   */
+  private static boolean setPolymorphic(
+      FieldInfo info,
+      PolymorphicInfo polymorphic,
+      Object annotatedConfig,
+      Map<String, Object> section,
+      Settings settings) {
+    Field field = info.field();
+    Object current;
+    try {
+      current = field.get(annotatedConfig);
+    } catch (IllegalAccessException e) {
+      throw new IllegalArgumentException(INACCESSIBLE, e);
+    }
+    Class<?> type =
+        polymorphic.typeOf(section, current, () -> describe(info, annotatedConfig));
+    boolean missingOptions = polymorphic.lacksDiscriminator(section);
+    boolean sameType = current != null && current.getClass() == type;
+    if (type.isRecord()) {
+      // as a record @ConfigObject: read whole, the components missing from the section taking
+      // their values from the record the field holds if it is of that type
+      Object read =
+          serializerFor(type)
+              .deserialize(
+                  new DataObject(section, true),
+                  SerializationContext.of(
+                      sameType ? current : null, type, type, annotatedConfig, settings),
+                  AnnotationAccessor.EMPTY);
+      if (read != null) {
+        setField(field, annotatedConfig, read);
+      }
+      return missingOptions;
+    }
+    Object value = sameType ? current : ClassInfo.newInstance(type);
+    missingOptions |=
+        setFields(value, section, resolveAnnotationHolders(value, settings), settings);
+    if (!sameType) {
+      // set once it is read, so a failure leaves the field as it was
+      setField(field, annotatedConfig, value);
+    }
+    return missingOptions;
+  }
+
   /**
    * Serializes {@code field} of {@code annotatedConfig} into {@code toWrite}, the values of the
    * section it is in, and its comments into the context under {@code commentPath} + its key.
@@ -300,6 +361,13 @@ public final class AnnotatedConfigResolver {
                 + "'");
       }
       Map<String, Object> sectionValues = new LinkedHashMap<>();
+      PolymorphicInfo polymorphic = info.polymorphic();
+      if (polymorphic != null) {
+        // first, so that it is the first key of the section
+        sectionValues.put(
+            polymorphic.discriminator(),
+            polymorphic.nameOf(cfgObject.getClass(), () -> describe(info, annotatedConfig)));
+      }
       // the comments of the section's classes, used when the field itself has none
       List<String> classComments = null;
       String sectionPath = allComments == null ? "" : commentPath + keyName + ".";
@@ -471,6 +539,16 @@ public final class AnnotatedConfigResolver {
       boolean thisMissingOption = value == null;
       missingOptions |= thisMissingOption;
       if (info.configObject()) {
+        PolymorphicInfo polymorphic = info.polymorphic();
+        if (polymorphic != null) {
+          // as for @ConfigObject: a value that is no section keeps the field's value
+          if (value instanceof Map) {
+            missingOptions |=
+                setPolymorphic(
+                    info, polymorphic, annotatedConfig, (Map<String, Object>) value, settings);
+          }
+          continue;
+        }
         Object section;
         try {
           section = field.get(annotatedConfig);

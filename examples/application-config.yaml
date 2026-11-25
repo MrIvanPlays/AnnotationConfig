@@ -79,3 +79,17 @@ sectionObjectList:
   pepepepepe:
     aabb: 2
     ccdd: "ipsum"
+
+# The 'type' key chooses the implementation of this section
+storage:
+  type: "sqlite"
+  # The database file
+  file: "data.db"
+
+# @Polymorphic on a sealed type applies wherever the type is used, lists included
+rewards:
+  - kind: "MoneyReward"
+    amount: 100
+  - kind: "item"
+    item: "diamond"
+    count: 3

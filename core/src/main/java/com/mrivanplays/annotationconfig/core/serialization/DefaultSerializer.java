@@ -22,9 +22,11 @@
 
 package com.mrivanplays.annotationconfig.core.serialization;
 
+import com.mrivanplays.annotationconfig.core.annotations.Polymorphic;
 import com.mrivanplays.annotationconfig.core.internal.ClassInfo;
 import com.mrivanplays.annotationconfig.core.internal.FieldInfo;
 import com.mrivanplays.annotationconfig.core.internal.FieldValidation;
+import com.mrivanplays.annotationconfig.core.internal.PolymorphicInfo;
 import com.mrivanplays.annotationconfig.core.resolver.settings.ACDefaultSettings;
 import com.mrivanplays.annotationconfig.core.resolver.settings.NullReadHandleOption;
 import java.lang.reflect.Array;
@@ -109,23 +111,66 @@ final class DefaultSerializer implements FieldTypeSerializer<Object> {
     return context.getSettings().get(ACDefaultSettings.FIND_STATIC_FIELDS).orElse(false);
   }
 
-  private static Object createFieldTypeInstance(Class<?> fieldType) {
+  private static boolean isListOrArray(Class<?> type) {
+    return type.isArray() || List.class.isAssignableFrom(type);
+  }
+
+  /**
+   * The {@code @Polymorphic} that applies to a value of {@code type}: the one on the field ({@code
+   * annotations}), else the one on the declaration of {@code type}. On a list or array field, the
+   * field's annotation applies to the elements, see {@link #elementAnnotations}.
+   */
+  private static @Nullable PolymorphicInfo polymorphic(
+      Class<?> type, AnnotationAccessor annotations) {
+    if (isListOrArray(type)) {
+      return null;
+    }
+    Optional<Polymorphic> onField = annotations.getAnnotation(Polymorphic.class);
+    return onField.isPresent()
+        ? PolymorphicInfo.of(onField.get(), type)
+        : PolymorphicInfo.ofType(type);
+  }
+
+  /**
+   * What the elements of a list or array read of the field's annotations: only its {@link
+   * Polymorphic}, which applies to them. Writing passes the elements all of them.
+   */
+  private static AnnotationAccessor elementAnnotations(AnnotationAccessor annotations) {
+    Optional<Polymorphic> polymorphic = annotations.getAnnotation(Polymorphic.class);
+    return polymorphic.isPresent()
+        ? AnnotationAccessorImpl.only(polymorphic.get())
+        : AnnotationAccessor.EMPTY;
+  }
+
+  /** The value's place in the config, for error messages. */
+  private static String describe(SerializationContext<?> context) {
+    return context
+        .getName()
+        .map(name -> "the field '" + name + "'")
+        .orElseGet(() -> "an element of type " + context.getClassType().getName());
+  }
+
+  /**
+   * The value the context's field holds: its default value, or the field of the annotated config
+   * the context names; {@code null} if there is none.
+   */
+  private static @Nullable Object currentValue(SerializationContext<Object> context) {
+    Optional<Object> defaultValue = context.getDefaultValue();
+    if (defaultValue.isPresent()) {
+      return defaultValue.get();
+    }
+    Object annotatedConfig = context.getAnnotatedConfig();
+    if (annotatedConfig == null || context.getName().isEmpty()) {
+      return null;
+    }
+    FieldInfo orig = tryFindField(annotatedConfig, context.getName().get());
+    if (orig == null) {
+      return null;
+    }
     try {
-      Constructor<?> constructor = fieldType.getDeclaredConstructor();
-      if (!constructor.trySetAccessible()) {
-        throw new RuntimeException("Could not set constructor accessible: " + fieldType.getName());
-      }
-      return constructor.newInstance();
-    } catch (InstantiationException e) {
-      throw new RuntimeException("Cannot instantiate " + fieldType.getName(), e);
-    } catch (InvocationTargetException e) {
-      throw new RuntimeException("Cannot invoke constructor of " + fieldType.getName(), e);
+      return orig.ensureAccessible().get(annotatedConfig);
     } catch (IllegalAccessException e) {
-      throw new RuntimeException(
-          "Constructor of " + fieldType.getName() + " became inaccessible", e);
-    } catch (NoSuchMethodException e) {
-      throw new RuntimeException(
-          "Type " + fieldType.getName() + " does not have an empty constructor", e);
+      return null;
     }
   }
 
@@ -285,6 +330,18 @@ final class DefaultSerializer implements FieldTypeSerializer<Object> {
       @NonNull DataObject data,
       @NonNull SerializationContext<Object> context,
       @NonNull AnnotationAccessor annotations) {
+    return this.deserialize(data, context, annotations, true);
+  }
+
+  /**
+   * @param checkPolymorphic false once {@code @Polymorphic} chose the context's type, so that an
+   *     implementation that is a {@code @Polymorphic} base type itself is not chosen again
+   */
+  private Object deserialize(
+      DataObject data,
+      SerializationContext<Object> context,
+      AnnotationAccessor annotations,
+      boolean checkPolymorphic) {
     Class<?> fieldType = context.getClassType();
     Object dataRaw = data.getAsObject();
     if (data.isSingleValue() && dataRaw == null) {
@@ -319,6 +376,7 @@ final class DefaultSerializer implements FieldTypeSerializer<Object> {
       FieldTypeSerializer serializer = serializerRegistry.getSerializer(type).orElse(this);
       SerializationContext serializationContext =
           SerializationContext.of(type, type, context.getAnnotatedConfig(), context.getSettings());
+      AnnotationAccessor elementAnnotations = elementAnnotations(annotations);
       for (int i = 0; i < read.size(); i++) {
         Object o = read.get(i);
         if (o != null && isPrimitive(o, false) && isPrimitiveClass(type)) {
@@ -326,7 +384,7 @@ final class DefaultSerializer implements FieldTypeSerializer<Object> {
         } else {
           Object deserialized =
               serializer.deserialize(
-                  new DataObject(o, true), serializationContext, AnnotationAccessor.EMPTY);
+                  new DataObject(o, true), serializationContext, elementAnnotations);
           Array.set(arr, i, deserialized);
         }
       }
@@ -343,6 +401,7 @@ final class DefaultSerializer implements FieldTypeSerializer<Object> {
         SerializationContext serializationContext =
             SerializationContext.of(
                 neededType, neededType, context.getAnnotatedConfig(), context.getSettings());
+        AnnotationAccessor elementAnnotations = elementAnnotations(annotations);
         for (Object o : read) {
           if (o == null) {
             ret.add(null);
@@ -352,7 +411,7 @@ final class DefaultSerializer implements FieldTypeSerializer<Object> {
           } else {
             ret.add(
                 serializer.deserialize(
-                    new DataObject(o, true), serializationContext, AnnotationAccessor.EMPTY));
+                    new DataObject(o, true), serializationContext, elementAnnotations));
           }
         }
         return ret;
@@ -366,6 +425,12 @@ final class DefaultSerializer implements FieldTypeSerializer<Object> {
       } else {
         throw new IllegalArgumentException(
             "Can't read " + data + " as a list of the non-primitive " + listValueNeeded.getName());
+      }
+    }
+    if (checkPolymorphic) {
+      PolymorphicInfo polymorphic = polymorphic(fieldType, annotations);
+      if (polymorphic != null) {
+        return this.deserializePolymorphic(polymorphic, data, context);
       }
     }
     // read only: the maps in it are the read maps themselves, not copies
@@ -590,24 +655,48 @@ final class DefaultSerializer implements FieldTypeSerializer<Object> {
   }
 
   private Object tryGetFieldTypeInstance(Class<?> fieldType, SerializationContext<Object> context) {
-    Optional<Object> defaultValue = context.getDefaultValue();
-    if (defaultValue.isPresent()) {
-      return defaultValue.get();
+    Object current = currentValue(context);
+    return current != null ? current : ClassInfo.newInstance(fieldType);
+  }
+
+  /**
+   * Reads the section {@code data} as the implementation its discriminator names. The value the
+   * field holds is filled when it is of that implementation; otherwise a new one is created.
+   */
+  private Object deserializePolymorphic(
+      PolymorphicInfo polymorphic, DataObject data, SerializationContext<Object> context) {
+    if (data.isSingleValue()) {
+      throw new IllegalArgumentException(
+          "Can't read "
+              + describe(context)
+              + " from "
+              + data
+              + ": it is @Polymorphic, so it needs a section with a '"
+              + polymorphic.discriminator()
+              + "' key naming its type");
     }
-    Object annotatedConfig = context.getAnnotatedConfig();
-    if (annotatedConfig == null || context.getName().isEmpty()) {
-      return createFieldTypeInstance(fieldType);
+    Map<String, Object> section = data.mapView();
+    Object current = currentValue(context);
+    Class<?> type = polymorphic.typeOf(section, current, () -> describe(context));
+    if (section.isEmpty()) {
+      // an empty section, so typeOf took the type of the value the field holds: it keeps it
+      return current;
     }
-    FieldInfo orig = tryFindField(annotatedConfig, context.getName().get());
-    if (orig == null) {
-      return createFieldTypeInstance(fieldType);
-    }
-    try {
-      Object current = orig.ensureAccessible().get(annotatedConfig);
-      return current != null ? current : createFieldTypeInstance(fieldType);
-    } catch (IllegalAccessException e) {
-      return createFieldTypeInstance(fieldType);
-    }
+    // only a value of the same type is filled; the context of a new one has no name, so nothing
+    // reads the field's value of the other type
+    SerializationContext<Object> typed =
+        current != null && current.getClass() == type
+            ? SerializationContext.of(
+                context.getName().orElse(null),
+                current,
+                type,
+                type,
+                context.getAnnotatedConfig(),
+                context.getSettings())
+            : SerializationContext.of(
+                type, type, context.getAnnotatedConfig(), context.getSettings());
+    // the discriminator stays in the data: no field has its key, so it is not read
+    return this.deserialize(data, typed, AnnotationAccessor.EMPTY, false);
   }
 
   @Override
@@ -679,6 +768,17 @@ final class DefaultSerializer implements FieldTypeSerializer<Object> {
     // static fields only with FIND_STATIC_FIELDS, and never synthetic ones: a class with one field
     // and a constant is written as that one field's value, as a class with only the field is
     List<FieldInfo> fields = ClassInfo.of(value.getClass()).dataFields(findStaticFields(context));
+    PolymorphicInfo polymorphic = polymorphic(fieldType, annotations);
+    if (polymorphic != null) {
+      // always a section, also for a class with one field or none: the discriminator, first, and
+      // the fields
+      DataObject object = new DataObject();
+      object.put(
+          polymorphic.discriminator(),
+          polymorphic.nameOf(value.getClass(), () -> describe(context)));
+      this.serializeFields(value, fields, context, object);
+      return object;
+    }
     if (fields.isEmpty()) {
       throw new IllegalArgumentException(
           "Can't serialize a " + value.getClass().getName() + ": it has no fields");
@@ -713,6 +813,17 @@ final class DefaultSerializer implements FieldTypeSerializer<Object> {
       }
     }
     DataObject object = new DataObject();
+    this.serializeFields(value, fields, context, object);
+    return object;
+  }
+
+  /** Puts the serialized values of {@code value}'s {@code fields} into {@code object}. */
+  private void serializeFields(
+      Object value,
+      List<FieldInfo> fields,
+      SerializationContext<Object> context,
+      DataObject object) {
+    SerializerRegistry serializerRegistry = SerializerRegistry.INSTANCE;
     for (FieldInfo info : fields) {
       if (info.ignored()) {
         continue;
@@ -752,7 +863,6 @@ final class DefaultSerializer implements FieldTypeSerializer<Object> {
         throw new IllegalArgumentException(INACCESSIBLE, e);
       }
     }
-    return object;
   }
 
   private static final class PrimitiveSerializers {

@@ -26,6 +26,7 @@ import com.mrivanplays.annotationconfig.core.serialization.AnnotationAccessor;
 import com.mrivanplays.annotationconfig.core.utils.AnnotationUtils;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
+import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.RecordComponent;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -94,6 +95,30 @@ public final class ClassInfo {
   /** The info of {@code type}, created on first use. */
   public static ClassInfo of(Class<?> type) {
     return CACHE.get(type);
+  }
+
+  /**
+   * Creates an instance of {@code type} with its declared empty constructor, which may be private.
+   *
+   * @throws RuntimeException if there is none, or it fails
+   */
+  public static Object newInstance(Class<?> type) {
+    try {
+      Constructor<?> constructor = type.getDeclaredConstructor();
+      if (!constructor.trySetAccessible()) {
+        throw new RuntimeException("Could not set constructor accessible: " + type.getName());
+      }
+      return constructor.newInstance();
+    } catch (InstantiationException e) {
+      throw new RuntimeException("Cannot instantiate " + type.getName(), e);
+    } catch (InvocationTargetException e) {
+      throw new RuntimeException("Cannot invoke constructor of " + type.getName(), e);
+    } catch (IllegalAccessException e) {
+      throw new RuntimeException("Constructor of " + type.getName() + " became inaccessible", e);
+    } catch (NoSuchMethodException e) {
+      throw new RuntimeException(
+          "Type " + type.getName() + " does not have an empty constructor", e);
+    }
   }
 
   /** Every declared field that isn't synthetic, in declaration order. */

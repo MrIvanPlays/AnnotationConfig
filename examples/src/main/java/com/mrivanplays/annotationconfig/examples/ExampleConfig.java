@@ -27,6 +27,7 @@ import com.mrivanplays.annotationconfig.core.annotations.Ignore;
 import com.mrivanplays.annotationconfig.core.annotations.Key;
 import com.mrivanplays.annotationconfig.core.annotations.Max;
 import com.mrivanplays.annotationconfig.core.annotations.Min;
+import com.mrivanplays.annotationconfig.core.annotations.Polymorphic;
 import com.mrivanplays.annotationconfig.core.annotations.comment.Comment;
 import com.mrivanplays.annotationconfig.core.serialization.AnnotationAccessor;
 import com.mrivanplays.annotationconfig.core.serialization.DataObject;
@@ -101,6 +102,16 @@ public class ExampleConfig {
           .defaultValue("asdfp", new SectionObject(1, "lorem"))
           .defaultValue("pepepepepe", new SectionObject(2, "ipsum"))
           .build();
+
+  @Comment("The 'type' key chooses the implementation of this section")
+  @Polymorphic({
+    @Polymorphic.Subtype(name = "sqlite", type = SqliteStorage.class),
+    @Polymorphic.Subtype(name = "mysql", type = MysqlStorage.class)
+  })
+  private Storage storage = new SqliteStorage();
+
+  @Comment("@Polymorphic on a sealed type applies wherever the type is used, lists included")
+  private List<Reward> rewards = List.of(new MoneyReward(100), new ItemReward("diamond", 3));
 
   private static Map<String, Object> defaultFooMap() {
     // a LinkedHashMap keeps the order of the entries in the file
@@ -210,6 +221,41 @@ public class ExampleConfig {
 
   /** An element of the section object list; see {@link ExampleLoadConfig} for its serializer. */
   public record SectionObject(int aabb, String ccdd) {}
+
+  /** Where the application stores its data; the config chooses the implementation. */
+  public interface Storage {}
+
+  /** A storage in a file. */
+  public static final class SqliteStorage implements Storage {
+
+    @Comment("The database file")
+    private String file = "data.db";
+
+    // getters would go here
+  }
+
+  /** A storage on a database server. */
+  public static final class MysqlStorage implements Storage {
+
+    private String host = "localhost";
+    private int port = 3306;
+
+    // getters would go here
+  }
+
+  /**
+   * A reward. Its permitted subclasses are its implementations, so {@link Polymorphic} doesn't list
+   * them; the 'kind' key names them.
+   */
+  @Polymorphic(discriminator = "kind")
+  public sealed interface Reward permits MoneyReward, ItemReward {}
+
+  /** Named "MoneyReward" in the config, after its simple class name. */
+  public record MoneyReward(int amount) implements Reward {}
+
+  /** Named "item" in the config: the name stays the same if the class is renamed or obfuscated. */
+  @Polymorphic.Name("item")
+  public record ItemReward(String item, int count) implements Reward {}
 
   // getters would go here
 }

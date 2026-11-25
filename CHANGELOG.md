@@ -301,6 +301,73 @@ before. In `.properties`, TOML and JSON, `enabled=yes` used to turn the option o
 enabled=yes
 ```
 
+#### Polymorphic values with `@Polymorphic`
+
+`@Polymorphic` lets the config choose the implementation of an interface, abstract class or sealed
+type. The section names it under a discriminator key, `type` by default:
+
+```java
+class MyConfig {
+
+  @Polymorphic({
+    @Polymorphic.Subtype(name = "sqlite", type = SqliteStorage.class),
+    @Polymorphic.Subtype(name = "mysql", type = MysqlStorage.class)
+  })
+  private Storage storage = new SqliteStorage();
+}
+```
+
+```yaml
+storage:
+  type: "mysql"
+  host: "localhost"
+  port: 3306
+```
+
+- On a field, it applies to the field's value; a config field or a field of a `@ConfigObject`
+  section becomes a section, without `@ConfigObject`. On a `List` or array field, it applies to
+  the elements.
+- On the declaration of a type, it applies to every value of that type: config fields, sections,
+  lists, arrays, the fields of custom data types and record components.
+- On a `sealed` type, the subtypes can be left out: the permitted subclasses are used, named by
+  `@Polymorphic.Name` or by their simple class name. Use `@Polymorphic.Name` where classes can be
+  renamed or obfuscated, as the simple name changes with them:
+
+  ```java
+  @Polymorphic(discriminator = "kind")
+  sealed interface Shape permits Circle, Square {}
+
+  record Circle(double radius) implements Shape {} // named "Circle"
+
+  @Polymorphic.Name("box")
+  record Square(int side) implements Shape {}
+
+  class MyConfig {
+
+    private List<Shape> shapes = List.of(new Circle(1.5), new Square(2));
+  }
+  ```
+
+  ```yaml
+  shapes:
+    - kind: "Circle"
+      radius: 1.5
+    - kind: "box"
+      side: 2
+  ```
+- The implementations are classes with an empty constructor, or records. A value of the
+  implementation the field already holds is filled in place, as a `@ConfigObject` section is;
+  otherwise a new one is created.
+- A section without the discriminator keeps the implementation of the field's value and counts as
+  a missing option, so `GENERATE_NEW_OPTIONS` writes it. Without such a value, for example in a
+  list, it is an error, as are unknown names and classes that are not listed (also subclasses of
+  listed ones). Errors name the field and the names that are allowed.
+- The annotation is checked the first time it is used: implementations must be concrete subtypes
+  with unique names, the discriminator must not be blank or hold a dot, and no implementation may
+  have a field with the discriminator's key.
+- Not supported: the values of maps, which are read and written as they are for every custom data
+  type, and `.properties` files, which have no sections.
+
 #### `FIND_STATIC_FIELDS` setting
 
 `ACDefaultSettings.FIND_STATIC_FIELDS` (default `false`) controls whether static fields are config

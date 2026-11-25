@@ -25,6 +25,7 @@ package com.mrivanplays.annotationconfig.core.internal;
 import com.mrivanplays.annotationconfig.core.annotations.Max;
 import com.mrivanplays.annotationconfig.core.annotations.Min;
 import com.mrivanplays.annotationconfig.core.annotations.Multiline;
+import com.mrivanplays.annotationconfig.core.annotations.Polymorphic;
 import com.mrivanplays.annotationconfig.core.resolver.CommentPlaceholderRegistry;
 import com.mrivanplays.annotationconfig.core.serialization.AnnotationAccessor;
 import com.mrivanplays.annotationconfig.core.utils.AnnotationUtils;
@@ -50,6 +51,10 @@ public final class FieldInfo {
   private final Type genericType;
   private final boolean ignored;
   private final boolean configObject;
+  // @Polymorphic on the field, else on the declaration of its type; null on a List or array field,
+  // whose elements DefaultSerializer reads. Checked on first use, see polymorphic()
+  @Nullable private final Polymorphic polymorphic;
+  @Nullable private volatile PolymorphicInfo polymorphicInfo;
   private final boolean rawConfig;
   private final boolean isStatic;
   @Nullable private final Min min;
@@ -69,7 +74,15 @@ public final class FieldInfo {
     this.key = AnnotationUtils.getKey(field);
     this.genericType = field.getGenericType();
     this.ignored = AnnotationUtils.isIgnored(field);
-    this.configObject = AnnotationUtils.isConfigObject(field);
+    Class<?> type = field.getType();
+    if (type.isArray() || List.class.isAssignableFrom(type)) {
+      this.polymorphic = null;
+    } else {
+      Polymorphic polymorphic = field.getDeclaredAnnotation(Polymorphic.class);
+      this.polymorphic =
+          polymorphic != null ? polymorphic : type.getDeclaredAnnotation(Polymorphic.class);
+    }
+    this.configObject = AnnotationUtils.isConfigObject(field) || this.polymorphic != null;
     this.rawConfig = AnnotationUtils.isRawConfigAccess(field);
     this.isStatic = Modifier.isStatic(field.getModifiers());
     this.min = field.getDeclaredAnnotation(Min.class);
@@ -115,6 +128,37 @@ public final class FieldInfo {
 
   public boolean configObject() {
     return this.configObject;
+  }
+
+  /**
+   * The implementations the field's value can have, if it is a {@code @Polymorphic} section: the
+   * annotation is on the field, or on the declaration of its type.
+   *
+   * @throws IllegalArgumentException if the annotation is invalid
+   */
+  public @Nullable PolymorphicInfo polymorphic() {
+    Polymorphic annotation = this.polymorphic;
+    if (annotation == null) {
+      return null;
+    }
+    PolymorphicInfo info = this.polymorphicInfo;
+    if (info == null) {
+      try {
+        info = PolymorphicInfo.of(annotation, this.field.getType());
+      } catch (IllegalArgumentException e) {
+        throw new IllegalArgumentException(
+            "Field '"
+                + this.field.getName()
+                + "' of "
+                + this.field.getDeclaringClass().getName()
+                + ": "
+                + e.getMessage(),
+            e);
+      }
+      // two threads may both compute it; the results are equal
+      this.polymorphicInfo = info;
+    }
+    return info;
   }
 
   public boolean rawConfig() {

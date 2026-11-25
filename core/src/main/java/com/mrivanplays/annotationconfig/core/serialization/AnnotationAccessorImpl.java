@@ -55,6 +55,12 @@ final class AnnotationAccessorImpl implements AnnotationAccessor {
     this(Objects.requireNonNull(clazz, "clazz")::getDeclaredAnnotation);
   }
 
+  /** An accessor that holds only {@code annotation}. */
+  static AnnotationAccessorImpl only(Annotation annotation) {
+    Class<? extends Annotation> type = annotation.annotationType();
+    return new AnnotationAccessorImpl(requested -> requested == type ? annotation : null);
+  }
+
   @Override
   public boolean hasAnnotation(Class<? extends Annotation> annotationClass) {
     Objects.requireNonNull(annotationClass, "annotationClass");

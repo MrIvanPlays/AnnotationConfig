@@ -60,6 +60,13 @@ Java 25, Maven multi-module build.
   for bounds on element types (`List<@Max(...) Integer>`, map keys and values, nested types,
   wildcard bounds). On an array field Java puts `@Max(...) int[]` on the element type, so there
   it bounds the elements, not the array.
+- `@Polymorphic` is handled in two places: `AnnotatedConfigResolver` for config fields and
+  sections (`FieldInfo#polymorphic()`, the annotation on the field or its type's declaration), and
+  `DefaultSerializer` for everything else (list and array elements, fields of custom data types,
+  record components). `core.internal.PolymorphicInfo` checks an annotation on first use, not when
+  `ClassInfo` reads the class, so an invalid one on an ignored field breaks nothing. On a `List`
+  or array field, the annotation applies to the elements: reading passes the elements only the
+  field's `@Polymorphic` (writing already passed them all its annotations).
 - Records are created with their canonical constructor, found by and filled in the order of
   `Class#getRecordComponents()`; constructor parameter names are not used, as tools like
   obfuscators strip them.
