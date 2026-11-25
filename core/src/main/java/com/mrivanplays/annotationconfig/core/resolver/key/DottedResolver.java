@@ -76,22 +76,22 @@ public final class DottedResolver implements KeyResolver {
   @Override
   @Nullable
   public Object unbox(String key, Map<String, Object> values) {
-    if (!key.contains(".")) {
+    int end = key.indexOf('.');
+
+    if (end == -1) {
       return values.get(key);
     }
 
     Map<String, Object> currentMap = values;
     int start = 0;
-    int end;
 
-    while ((end = key.indexOf('.', start)) != -1) {
+    do {
       String part = key.substring(start, end);
+      Object next = currentMap.get(part);
 
-      if (!currentMap.containsKey(part)) {
+      if (next == null && !currentMap.containsKey(part)) {
         return null;
       }
-
-      Object next = currentMap.get(part);
 
       if (!(next instanceof Map)) {
         throw new IllegalArgumentException(
@@ -105,7 +105,8 @@ public final class DottedResolver implements KeyResolver {
 
       currentMap = (Map<String, Object>) next;
       start = end + 1;
-    }
+      end = key.indexOf('.', start);
+    } while (end != -1);
 
     return currentMap.get(key.substring(start));
   }
@@ -113,16 +114,17 @@ public final class DottedResolver implements KeyResolver {
   /** {@inheritDoc} */
   @Override
   public void boxTo(String key, Object value, Map<String, Object> values) {
-    if (!key.contains(".")) {
+    int end = key.indexOf('.');
+
+    if (end == -1) {
       values.put(key, value);
       return;
     }
 
     Map<String, Object> currentMap = values;
     int start = 0;
-    int end;
 
-    while ((end = key.indexOf('.', start)) != -1) {
+    do {
       String part = key.substring(start, end);
       Object next = currentMap.get(part);
 
@@ -138,7 +140,8 @@ public final class DottedResolver implements KeyResolver {
       }
 
       start = end + 1;
-    }
+      end = key.indexOf('.', start);
+    } while (end != -1);
 
     String lastPart = key.substring(start);
 
