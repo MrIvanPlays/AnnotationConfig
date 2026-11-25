@@ -1,0 +1,17 @@
+{
+  "server": {
+    "ip": "localhost",
+    "port": 25565,
+    "limits": {
+      "players": 20
+    }
+  },
+  "second": {
+    "ip": "localhost",
+    "port": 25565,
+    "limits": {
+      "players": 20
+    }
+  },
+  "name": "Ivan"
+}

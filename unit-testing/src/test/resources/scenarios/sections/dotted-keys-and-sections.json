@@ -1,0 +1,15 @@
+{
+  "bar": {
+    "baz": {
+      "foo": "bar",
+      "bar": "foo"
+    }
+  },
+  "kappa": {
+    "baz": {
+      "foo": "bar",
+      "bar": "foo"
+    }
+  },
+  "control-field": -1
+}

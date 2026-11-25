@@ -1,0 +1,3 @@
+[execution]
+type = 'parallel'
+threads = 8

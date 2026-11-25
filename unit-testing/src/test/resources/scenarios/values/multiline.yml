@@ -1,0 +1,3 @@
+text: "first line\nsecond line\n"
+
+tricky: "\"\"\" quotes \\ backslash\r\nend\""

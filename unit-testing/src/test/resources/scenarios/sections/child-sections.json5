@@ -1,0 +1,14 @@
+// Subject comment
+
+{
+  // This is top section comment
+  foo: {
+    // Control field comment
+    control: "asd",
+    // Child section comment
+    barSect: {
+      // Bar comment
+      bar: "aabb"
+    }
+  }
+}

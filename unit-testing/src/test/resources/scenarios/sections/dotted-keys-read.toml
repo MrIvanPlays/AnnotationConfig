@@ -1,0 +1,6 @@
+[commands.subcommands.help]
+foo = 'pepega'
+
+[commands.subcommands.this]
+bar = 'baz'
+baz = 69420

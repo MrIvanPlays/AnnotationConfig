@@ -136,8 +136,9 @@ match nothing, are read as `ACCEPT_ALL_TRUE` and `DENY_ALL_TRUE`.
 
 The fields of a custom data type (a field whose type has its own fields, read by the default
 serializer) kept their value when the file had them without a value, as if `USE_DEFAULT_VALUE` was
-set. They now follow the null read handler as the fields of a config do: with the default
-`SET_NULL` such a field becomes `null`. A field missing from the file still keeps its value.
+set. They now follow the null read handler as the options of a config do: with the default
+`SET_NULL`, a field read as an empty value (`amount=`) becomes `null`. A field missing from the
+file or read as `null` (`amount: null`) still keeps its value, as an option of a config does.
 
 A primitive field (`int`, `boolean`, ...) read as `null` used to fail to load with `SET_NULL`, in a
 config and in a custom data type. It now keeps its value; `Integer`, `Boolean` and other fields that
@@ -165,7 +166,8 @@ Jackson's TOML parser reads every float as a `BigDecimal`, so a float in a TOML
 `Map<String, Object>` field, or in a map read through `getAsMap()` in a custom serializer, is now a
 `BigDecimal` instead of a `Double`. Code that casts such a value to `Double` fails with a
 `ClassCastException`; read it as a `Number` instead (`((Number) map.get("ratio")).doubleValue()`).
-YAML is not affected, as SnakeYAML reads floats as `Double`.
+In YAML, only a decimal that a `double` can't hold exactly is a `BigDecimal`, see
+[SnakeYAML-backed YAML writer](#snakeyaml-backed-yaml-writer).
 
 Integers beyond the `long` range in a YAML map, which SnakeYAML reads as `BigInteger`, used to throw
 an `ArithmeticException` and are now read. Lists are written the same way: `BigDecimal`s
@@ -447,6 +449,11 @@ comments attached to their keys, so SnakeYAML takes care of indentation, quoting
   ```
 
 - Comments of keys inside list elements are not written.
+- Decimals are read exactly. SnakeYAML reads every decimal as a `double`, so a `BigDecimal` such
+  as `0.12345678901234567890` was written exactly but read back as `0.12345678901234568`. A decimal
+  that a `double` can't hold exactly is now read as a `BigDecimal`, also in a
+  `Map<String, Object>`; other decimals are still `Double`s. A `Yaml` instance passed through
+  `YamlConfig.YAML_INSTANCE` reads decimals as SnakeYAML does.
 
 ### TOML writer
 
@@ -526,8 +533,16 @@ array that holds a comma, do not read back as they were written.
 - `List<Long>`, `List<Short>` and similar lists hold the declared element type. Numbers used to be
   added as the type the format read (e.g. `Integer`), which caused a `ClassCastException` later.
 - Lists of lists, wildcard lists (`List<? extends Number>`) and lists of generic types no longer
-  fail with a `ClassCastException`.
-- `null` elements in lists are kept instead of throwing a `NullPointerException`. `null` elements
+  fail with a `ClassCastException`. The elements of nested lists get their declared type too: a
+  `List<List<Integer>>` read from JSON held `BigDecimal`s.
+- The values of a map field with a declared value type, such as `Map<String, Long>` or
+  `Map<String, List<Integer>>`, are converted to that type, as list elements are. They were kept as
+  the format read them: `BigDecimal`s from JSON, and floats from TOML, where 3.0.x turned them into
+  `Double`. A value that can't be converted, such as text in a `Map<String, Integer>`, is still kept
+  as it was read, so that no config that loaded before fails now. Maps of other objects are read as
+  before.
+- `null` elements in lists are kept, when writing and reading, instead of throwing a
+  `NullPointerException`. `null` elements
   of arrays of custom data types are kept too; they were left out, so the array was read back
   shorter. TOML, which has no null, rejects them with an error, as it does in lists.
 - Arrays of custom data types are created with their declared component type (e.g. `Item[]`

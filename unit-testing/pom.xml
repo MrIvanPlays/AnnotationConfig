@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+  <parent>
+    <groupId>com.mrivanplays</groupId>
+    <artifactId>annotationconfig-parent</artifactId>
+    <version>3.1.0-SNAPSHOT</version>
+  </parent>
+
+  <artifactId>annotationconfig-unit-testing</artifactId>
+
+  <!-- Only tests: nothing is published, installed or packaged -->
+  <properties>
+    <maven.deploy.skip>true</maven.deploy.skip>
+    <maven.install.skip>true</maven.install.skip>
+    <maven.javadoc.skip>true</maven.javadoc.skip>
+  </properties>
+
+  <description>The tests of every AnnotationConfig module. Scenarios that every format supports are
+    written once and run for each format
+  </description>
+
+  <dependencies>
+    <dependency>
+      <groupId>com.mrivanplays</groupId>
+      <artifactId>annotationconfig-core</artifactId>
+      <version>${project.version}</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>com.mrivanplays</groupId>
+      <artifactId>annotationconfig-yaml</artifactId>
+      <version>${project.version}</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>com.mrivanplays</groupId>
+      <artifactId>annotationconfig-json</artifactId>
+      <version>${project.version}</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>com.mrivanplays</groupId>
+      <artifactId>annotationconfig-toml</artifactId>
+      <version>${project.version}</version>
+      <scope>test</scope>
+    </dependency>
+  </dependencies>
+
+  <build>
+    <plugins>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-jar-plugin</artifactId>
+        <version>3.5.0</version>
+        <configuration>
+          <!-- there are no main classes -->
+          <skipIfEmpty>true</skipIfEmpty>
+        </configuration>
+      </plugin>
+    </plugins>
+  </build>
+
+</project>

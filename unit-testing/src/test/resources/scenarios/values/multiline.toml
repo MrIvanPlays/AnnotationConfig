@@ -1,0 +1,8 @@
+text = """
+first line
+second line
+"""
+
+tricky = """
+""\" quotes \\ backslash\r
+end""""

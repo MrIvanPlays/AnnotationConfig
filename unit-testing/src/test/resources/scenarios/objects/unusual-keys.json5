@@ -1,0 +1,10 @@
+{
+  "bare_key-1": 1,
+  "has space": 2,
+  "quo'te": 4,
+  table: {
+    "dotted.key": {
+      x: 1
+    }
+  }
+}

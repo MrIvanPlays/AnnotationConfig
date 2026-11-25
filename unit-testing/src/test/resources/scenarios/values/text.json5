@@ -1,0 +1,13 @@
+{
+  plain: "Hello world",
+  symbols: "a=b & c<d> 'e' #f :g",
+  backslash: "C:\\path\\to",
+  apostrophe: "it's",
+  quotes: "say \"hi\"",
+  newline: "line1\nline2",
+  tab: "a\tb",
+  control: "bell\u0007",
+  unicode: "café ☃",
+  empty: "",
+  character: "x"
+}

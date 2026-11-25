@@ -1,0 +1,9 @@
+[commands.subcommands.help]
+# Foo comment
+foo = 'bar'
+
+[commands.subcommands.this]
+# Bar comment
+bar = 'aaa'
+# baz
+baz = -1

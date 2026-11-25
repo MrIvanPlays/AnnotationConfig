@@ -1,0 +1,8 @@
+{
+  "foo": {
+    "control": "asd",
+    "barSect": {
+      "bar": "aabb"
+    }
+  }
+}

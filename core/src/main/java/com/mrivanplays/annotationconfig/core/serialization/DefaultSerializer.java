@@ -244,10 +244,59 @@ final class DefaultSerializer implements FieldTypeSerializer<Object> {
 
   /** Element class of a {@code List<X>} field; {@code Object} when the list is raw. */
   private static Class<?> listElementType(SerializationContext<?> context) {
+    return rawClass(listElementGenericType(context));
+  }
+
+  /**
+   * Element type of a {@code List<X>} field with its own type arguments, so that the elements of a
+   * {@code List<List<Integer>>} are read as lists of integers; {@code Object} when the list is raw.
+   */
+  private static Type listElementGenericType(SerializationContext<?> context) {
     if (context.getGenericType() instanceof ParameterizedType parameterized) {
-      return rawClass(parameterized.getActualTypeArguments()[0]);
+      return parameterized.getActualTypeArguments()[0];
     }
     return Object.class;
+  }
+
+  /**
+   * Converts the values of {@code map}, read for a {@code Map<K, V>} field, to {@code V}: numbers
+   * and text to its type, lists and maps by their own type arguments. A value that can't be
+   * converted is kept as it was read, as all values were before 3.1.0.
+   */
+  private void convertMapValues(Map<String, Object> map, SerializationContext<?> context) {
+    if (!(context.getGenericType() instanceof ParameterizedType parameterized)
+        || parameterized.getActualTypeArguments().length != 2) {
+      return;
+    }
+    Type valueType = parameterized.getActualTypeArguments()[1];
+    Class<?> valueClass = rawClass(valueType);
+    if (valueClass == Object.class) {
+      return;
+    }
+    boolean primitive = isPrimitiveClass(valueClass);
+    boolean container =
+        List.class.isAssignableFrom(valueClass) || Map.class.isAssignableFrom(valueClass);
+    if (!primitive && !container) {
+      // other objects are not supported as values of maps
+      return;
+    }
+    SerializationContext<Object> valueContext =
+        SerializationContext.of(
+            valueClass, valueType, context.getAnnotatedConfig(), context.getSettings());
+    for (Map.Entry<String, Object> entry : map.entrySet()) {
+      Object value = entry.getValue();
+      try {
+        if (primitive && value != null && isPrimitive(value, false)) {
+          entry.setValue(forcePrimitive(value, valueClass));
+        } else if (container && (value instanceof List || value instanceof Map)) {
+          entry.setValue(
+              this.deserialize(
+                  new DataObject(value, true), valueContext, AnnotationAccessor.EMPTY));
+        }
+      } catch (RuntimeException e) {
+        // kept as read
+      }
+    }
   }
 
   // getActualTypeArguments() is not always a Class: List<List<String>>, List<? extends Foo>, ...
@@ -400,7 +449,10 @@ final class DefaultSerializer implements FieldTypeSerializer<Object> {
         FieldTypeSerializer serializer = serializerRegistry.getSerializer(neededType).orElse(this);
         SerializationContext serializationContext =
             SerializationContext.of(
-                neededType, neededType, context.getAnnotatedConfig(), context.getSettings());
+                neededType,
+                listElementGenericType(context),
+                context.getAnnotatedConfig(),
+                context.getSettings());
         AnnotationAccessor elementAnnotations = elementAnnotations(annotations);
         for (Object o : read) {
           if (o == null) {
@@ -476,7 +528,9 @@ final class DefaultSerializer implements FieldTypeSerializer<Object> {
     } else {
       if (fieldType.isAssignableFrom(Map.class)) {
         // the field gets its own copy, as it did before dataMap was a view
-        return data.getAsMap();
+        Map<String, Object> map = data.getAsMap();
+        this.convertMapValues(map, context);
+        return map;
       }
       Class<?> neededInstanceAllocation = fieldType;
       if (fieldType.isAssignableFrom(List.class)) {
@@ -580,9 +634,9 @@ final class DefaultSerializer implements FieldTypeSerializer<Object> {
             continue;
           }
           Object val = dataMap.get(info.key());
-          // as for the fields of the config itself: a missing option keeps its value, and so
-          // does one read as null, unless SET_NULL is set and the field can hold null
-          if (val == null && !dataMap.containsKey(info.key())) {
+          // as for the options of a config: a field missing from the file keeps its value, and
+          // so does one read as null; an empty value is no value, which SET_NULL sets below
+          if (val == null) {
             continue;
           }
           Field desField = info.ensureAccessible();
@@ -731,9 +785,15 @@ final class DefaultSerializer implements FieldTypeSerializer<Object> {
         FieldTypeSerializer serializer = serializerRegistry.getSerializer(neededType).orElse(this);
         SerializationContext serializationContext =
             SerializationContext.of(
-                neededType, neededType, context.getAnnotatedConfig(), context.getSettings());
+                neededType,
+                listElementGenericType(context),
+                context.getAnnotatedConfig(),
+                context.getSettings());
         for (Object val : values) {
-          if (isPrimitive(val)) {
+          if (val == null) {
+            // kept, as in arrays; it threw a NullPointerException
+            toSerialize.add(null);
+          } else if (isPrimitive(val)) {
             // BigDecimal and BigInteger are kept as they are: every writer writes them exactly
             toSerialize.add(val);
           } else {

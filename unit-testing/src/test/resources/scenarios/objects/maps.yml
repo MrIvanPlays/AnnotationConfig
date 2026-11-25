@@ -1,0 +1,13 @@
+map:
+  key: "value"
+  nested:
+    deep: true
+  empty: {}
+  list:
+    - {}
+    - x: 1
+
+tablesOnly:
+  inner:
+    deeper:
+      value: 2

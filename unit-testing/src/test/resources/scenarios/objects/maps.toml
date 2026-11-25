@@ -1,0 +1,10 @@
+[map]
+key = 'value'
+empty = {}
+list = [{}, {x = 1}]
+
+[map.nested]
+deep = true
+
+[tablesOnly.inner.deeper]
+value = 2

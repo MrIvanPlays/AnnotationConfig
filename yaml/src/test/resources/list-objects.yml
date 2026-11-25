@@ -1,8 +1,0 @@
-objects:
-  - name: "asdfp"
-    value: false
-  - name: "baz"
-    value: "bar"
-  - name: "faraday"
-    value: "electricity"
-

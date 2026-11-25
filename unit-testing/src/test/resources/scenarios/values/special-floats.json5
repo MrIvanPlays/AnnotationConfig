@@ -1,0 +1,6 @@
+{
+  notANumber: NaN,
+  positiveInfinity: Infinity,
+  negativeInfinity: -Infinity,
+  floatInfinity: Infinity
+}

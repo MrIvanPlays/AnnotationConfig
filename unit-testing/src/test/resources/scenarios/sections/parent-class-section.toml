@@ -1,0 +1,5 @@
+# parent comment
+# child comment
+[section]
+childValue = 2
+parentValue = 1

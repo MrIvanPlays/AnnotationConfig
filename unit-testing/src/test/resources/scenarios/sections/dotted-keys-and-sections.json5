@@ -1,0 +1,23 @@
+// Generated using AnnotationConfig
+
+{
+  // This is a test comment on top of a section
+  bar: {
+    baz: {
+      // Foo comment
+      foo: "bar",
+      // Bar comment
+      bar: "foo"
+    }
+  },
+  kappa: {
+    baz: {
+      // Foo comment
+      foo: "bar",
+      // Bar comment
+      bar: "foo"
+    }
+  },
+  // This is a control field
+  "control-field": -1
+}

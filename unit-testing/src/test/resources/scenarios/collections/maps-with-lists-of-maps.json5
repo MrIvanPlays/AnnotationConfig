@@ -1,0 +1,22 @@
+{
+  values: {
+    entries: [
+      {
+        foo: 1,
+        bar: 2,
+        baz: [
+          "baba",
+          "yaga"
+        ]
+      },
+      {
+        foo: 3,
+        bar: 4,
+        baz: {
+          baba: "yaga",
+          lorem: "ipsum"
+        }
+      }
+    ]
+  }
+}

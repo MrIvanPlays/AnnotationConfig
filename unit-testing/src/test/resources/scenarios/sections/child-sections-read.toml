@@ -1,0 +1,5 @@
+[foo]
+control = 'fff'
+
+[foo.barSect]
+bar = 'foo'

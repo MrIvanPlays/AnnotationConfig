@@ -32,6 +32,7 @@ import java.io.PrintWriter;
 import java.io.Reader;
 import java.io.Writer;
 import java.lang.reflect.Array;
+import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -47,15 +48,18 @@ import org.jspecify.annotations.Nullable;
 import org.yaml.snakeyaml.DumperOptions;
 import org.yaml.snakeyaml.DumperOptions.FlowStyle;
 import org.yaml.snakeyaml.DumperOptions.ScalarStyle;
+import org.yaml.snakeyaml.LoaderOptions;
 import org.yaml.snakeyaml.Yaml;
 import org.yaml.snakeyaml.comments.CommentLine;
 import org.yaml.snakeyaml.comments.CommentType;
+import org.yaml.snakeyaml.constructor.Constructor;
 import org.yaml.snakeyaml.nodes.MappingNode;
 import org.yaml.snakeyaml.nodes.Node;
 import org.yaml.snakeyaml.nodes.NodeTuple;
 import org.yaml.snakeyaml.nodes.ScalarNode;
 import org.yaml.snakeyaml.nodes.SequenceNode;
 import org.yaml.snakeyaml.nodes.Tag;
+import org.yaml.snakeyaml.representer.Representer;
 
 /**
  * Writes values as YAML using SnakeYAML (2.x). The values are converted into a SnakeYAML node tree,
@@ -135,10 +139,51 @@ public final class YamlHandler implements ValueReader, ValueWriter {
       options.setIndentWithIndicator(true);
       // don't wrap long strings
       options.setSplitLines(false);
-      yaml = new Yaml(options);
+      // what new Yaml(options) creates, but decimals are read exactly
+      LoaderOptions loaderOptions = new LoaderOptions();
+      yaml =
+          new Yaml(
+              new ExactDecimalConstructor(loaderOptions),
+              new Representer(options),
+              options,
+              loaderOptions);
       this.defaultYaml = yaml;
     }
     return yaml;
+  }
+
+  /**
+   * SnakeYAML's default constructor, except that a decimal a {@code double} can't hold exactly,
+   * such as {@code 0.12345678901234567890}, is read as a {@code BigDecimal}: SnakeYAML reads every
+   * decimal as a {@code double}, so a {@code BigDecimal} field didn't read back what was written.
+   * Other decimals are still read as {@code Double}.
+   */
+  private static final class ExactDecimalConstructor extends Constructor {
+
+    ExactDecimalConstructor(LoaderOptions options) {
+      super(options);
+      this.yamlConstructors.put(Tag.FLOAT, new ExactFloat());
+    }
+
+    private final class ExactFloat extends ConstructYamlFloat {
+
+      @Override
+      public Object construct(Node node) {
+        Object value = super.construct(node);
+        if (!(value instanceof Double read) || read.isNaN() || read.isInfinite()) {
+          return value;
+        }
+        BigDecimal exact;
+        try {
+          exact = new BigDecimal(constructScalar((ScalarNode) node).replace("_", ""));
+        } catch (NumberFormatException e) {
+          // a YAML 1.1 form BigDecimal doesn't read, such as 190:20:30.15
+          return value;
+        }
+        // BigDecimal.valueOf gives the shortest decimal that is the double
+        return exact.compareTo(BigDecimal.valueOf(read)) == 0 ? value : exact;
+      }
+    }
   }
 
   /**

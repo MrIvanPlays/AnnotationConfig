@@ -1,0 +1,9 @@
+// Comments should also be kept!
+
+{
+  // This is test subject comment
+  test: {
+    foo: "foo",
+    bar: "bar"
+  }
+}

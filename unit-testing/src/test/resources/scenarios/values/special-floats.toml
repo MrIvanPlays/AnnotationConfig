@@ -1,0 +1,7 @@
+notANumber = nan
+
+positiveInfinity = inf
+
+negativeInfinity = -inf
+
+floatInfinity = inf

@@ -1,0 +1,4 @@
+execution:
+  type: "sequential"
+  # milliseconds between tasks
+  delay: 3

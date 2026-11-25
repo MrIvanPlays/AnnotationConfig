@@ -1,0 +1,17 @@
+numbers = [1, 2]
+
+doubles = [1.1, 2.2]
+
+decimals = [1111.2222, 3333.4444]
+
+items = [{name = 'a', amount = 1}, {name = 'b', amount = 2}]
+
+names = ['Hello', 'bla bla']
+
+itemList = [{name = 'c', amount = 3}]
+
+nested = [[1, 2], [3]]
+
+empty = []
+
+units = ['seconds', 'minutes']

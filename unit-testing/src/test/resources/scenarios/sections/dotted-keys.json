@@ -1,0 +1,13 @@
+{
+  "commands": {
+    "subcommands": {
+      "help": {
+        "foo": "bar"
+      },
+      "this": {
+        "bar": "aaa",
+        "baz": -1
+      }
+    }
+  }
+}

@@ -1,0 +1,31 @@
+{
+  "custom-name": "Ivan",
+  "foo": "bar",
+  "messages": {
+    "no-console": "No console!",
+    "console-only": "This command is console only!"
+  },
+  "list": [
+    "Hello",
+    "bla bla"
+  ],
+  "a": 1,
+  "location": {
+    "world": "world",
+    "x": 20,
+    "y": 2,
+    "z": 1
+  },
+  "other-location": {
+    "world": "world_the_end",
+    "x": 200,
+    "y": 22,
+    "z": 333
+  },
+  "new-section": {
+    "foo": "foo",
+    "bar": 2,
+    "baz": 2.0,
+    "enabled": true
+  }
+}

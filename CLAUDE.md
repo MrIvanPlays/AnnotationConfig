@@ -47,6 +47,7 @@ Java 25, Maven multi-module build.
   serialization, settings and the `.properties` format (`PropertyConfig`)
 - `yaml`, `json`, `toml`: one module per format, each depending on `core`
 - `examples`: usage examples, compiled as part of the build
+- `unit-testing`: the tests of every module, see [Tests](#tests)
 - Reflection is read once per class: `core.internal.ClassInfo` (a `ClassValue`) holds each class's
   `FieldInfo`s (key, annotations, generic type, raw comments) and the annotation holders per
   combination of settings, and `AnnotatedConfigResolver` and `DefaultSerializer` use it. Comment
@@ -79,6 +80,9 @@ Java 25, Maven multi-module build.
 
 ## Formats
 
+- YAML is read by SnakeYAML with `YamlHandler`'s default `Yaml`, whose constructor reads a decimal
+  that a `double` can't hold exactly as a `BigDecimal` (`ExactDecimalConstructor`); other decimals
+  stay `Double`. A `Yaml` passed through `YAML_INSTANCE` reads every decimal as a `double`.
 - Reading goes through each format's library: `java.util.Properties`, SnakeYAML, Gson (numbers
   read as `BigDecimal`), Jackson's `TomlMapper` (floats read as `BigDecimal`, also in 2.15.2, the
   version 3.0.x used). `DataObject#getAsMap()` hands numbers on as read, so these `BigDecimal`s
@@ -100,7 +104,8 @@ Java 25, Maven multi-module build.
   TOML. It only uses JSON5 features that Gson's lenient reader understands (`//` comments,
   unquoted identifier keys, `NaN` / `Infinity`), so JSON5 is read with the same Gson settings as
   JSON; keep it that way, or reading needs a JSON5 parser. No JSON5 validator is available
-  offline, so `TestJson5ValueWriter` checks exact output and reads it back with Gson.
+  offline, so the scenarios check the exact JSON5 output and read it back with Gson, and
+  `TestJson5ValueWriter` checks the syntax only JSON5 has.
 - Gson's lenient reader (2.15) does not read all of JSON5: a trailing comma fails in an object and
   adds a `null` element in an array; hex numbers, a leading `+` and a leading or trailing decimal
   point are read as strings (number fields parse all but hex); the `\x`, `\v` and `\0` escapes fail;
@@ -117,19 +122,18 @@ Java 25, Maven multi-module build.
 - TOML, JSON5 and YAML split comments with `core.internal.LinesHelper` (a regex only when a
   comment has a line break), and build the dotted paths of keys only in maps that hold a commented
   key (`MapUtils#parentPaths`). YAML still looks up a key that holds a map by its plain key everywhere
-  (`TestYamlCommentPaths`). `.properties` splits only at `\r` and `\n`, in `PropertiesDumper`.
+  (the `commentpaths` scenarios). `.properties` splits only at `\r` and `\n`, in `PropertiesDumper`.
 - Map helpers go in `MapUtils` (public, in `utils`), not as private copies in the classes that
   use them.
 - Every writer ends lines with `'\n'`, never `println()` or `System.lineSeparator()`, and so does
   the class comment written by `AnnotatedConfigResolver`. Every format's file ends with a line
   break, JSON and JSON5 included. Mixing them gave files with CRLF and LF
-  on Windows. `TestLineEndings` (core) and `TestYamlLineEndings`, `TestJsonLineEndings` and
-  `TestTomlLineEndings` compare output without normalizing line endings; they can only catch a
-  regression when run on Windows.
+  on Windows. The `lineendings` scenarios compare the output of every format without normalizing
+  line endings; they can only catch a regression when run on Windows.
 - Field order: `.properties` writes fields in reverse declaration order; YAML, JSON and TOML set
   `SHOULD_REVERSE_FIELDS`, so they write them in declaration order.
 - Jackson's TOML parser before 2.23 misreads 19-digit integers (drops the first 9 digits);
-  `TestTomlValues#nineteenDigitIntegersAreReadExactly` catches a regression.
+  `TestValues#numbersAreReadExactly` (the `values` scenarios) catches a regression.
 
 ## Build and test
 
@@ -138,9 +142,11 @@ Java 25, Maven multi-module build.
   interleaves), and `.mvn/jvm.config` plus the `argLine` property in `pom.xml` run Maven and the
   test JVMs with C1 only (`-XX:TieredStopAtLevel=1`). Together they made `install` ~35% faster and
   `clean install` ~40% faster. `-T 2C` and `-XX:+UseSerialGC` were measured and gave nothing more.
-- One test: `mvn -o test -pl yaml -Dtest=TestStaticFields`
-- Testing a format module against changed `core` code: run `mvn -o install -DskipTests -pl core`
-  first. With `-pl`, the module uses the installed core jar, not the sources.
+- Every test is in the `unit-testing` module. One test:
+  `mvn -o test -pl unit-testing -am -Dtest=TestPolymorphic -Dsurefire.failIfNoSpecifiedTests=false`
+  (`-am` builds the changed sources of the other modules; the flag stops it from failing in them,
+  as they have no tests). Without `-am`, `unit-testing` uses the installed jars of the other
+  modules, so run `mvn -o install -DskipTests` after changing them.
 - Checkstyle (Google style, `checkstyle.xml`) runs during `process-classes` on main and test
   sources, and any violation fails the build: `checkstyle.xml` reports them as warnings, and
   `violationSeverity` in `pom.xml` makes warnings fail. It caches the files that passed in
@@ -203,8 +209,35 @@ Java 25, Maven multi-module build.
 
 ## Tests
 
-- `core` tests mostly go through `PropertyConfig.getConfigResolver()`; format module tests use
-  e.g. `YamlConfig.getConfigResolver()` with a `StringReader` / `StringWriter`.
+- Every test is in the `unit-testing` module, which is never installed or published (excluded from
+  the Central bundle like `examples`). Tests keep the package of the module they test (`core`,
+  `yaml`, `json`, `toml`), so they reach its package-private classes; there are no JPMS modules.
+- What the formats share is tested once, by the scenarios in `scenarios`: one package per topic
+  (`sections`, `collections`, `values`, `objects`, `comments`, `bounds`, `validation`, `fields`,
+  `files`, `fullconfig`, `polymorphic`, `resolver`, `lineendings`, `commentpaths`,
+  `threadsafety`). Every test that loads or dumps a config goes there, also when it tests `core`
+  logic: each parser hands values on as types of its own, which a test through `.properties` alone
+  doesn't see. A scenario class is a
+  `@ParameterizedClass` that extends `Scenario` and runs once per format that has the features it
+  needs: its `@MethodSource` is one of `Sources` (`ALL`, `WITH_SECTIONS`, ...). A check that only
+  some formats can pass goes in a class with a narrower source (`TestNulls`, `TestSpecialFloats`,
+  `TestUntypedNumbers`), or branches on `format.has(...)` when it differs in one assertion.
+- `scenarios.Format` is the list of formats: each constant has its resolver, file extension, entry
+  point and `Feature`s (sections, comments, generating new options, nulls, integers beyond 64 bits,
+  NaN and infinities), and `Format` has its commenting writer and parser. A new
+  format is a constant there plus its scenario texts; no scenario changes.
+- The text of a scenario in each format is a resource, `scenarios/<topic>/<name>.<extension>`:
+  the inputs it loads and the exact outputs it expects (`Scenario#load`, `Scenario#assertDump`). A
+  JSON5 scenario without a `.json5` file reads the `.json` one, as JSON5 reads JSON; outputs have
+  their own file. Inputs are written by hand. Outputs are recorded:
+  `mvn -o test -pl unit-testing -Dscenarios.record=<directory>` writes them to that directory
+  instead of comparing them; review every file there before copying it to the resources.
+- Scenarios compare values whose number type depends on the parser with
+  `Scenario#numbersAsDecimals`. Where they work around a limit of a format, a comment says so.
+- Tests of one format's own syntax stay in its package (`TestYamlScalars`, `TestTomlStructure`,
+  `TestJson5ValueWriter`, `TestProperties`, ...). The `core` tests are of logic no file reaches:
+  registries, `DataObject`, the default serializer called with Java maps, annotation checks, the
+  file system (`TestConfigFiles`).
 - `dump` requires every non-ignored field to have a value; a `null` field fails with
   "No default value for field".
 - Non-default behaviour is enabled per call with a `Settings` passthrough, e.g.
@@ -221,12 +254,15 @@ Java 25, Maven multi-module build.
 - Expected output of a writer ends with a line break: in a text block, the closing `"""` goes on
   its own line, not after a `\` that would drop the final line break.
 - Test classes run in parallel (JUnit configuration parameters in the surefire config of
-  `pom.xml`); the methods of one class run one after another. A class may change global state
-  (registries, static fields) only under keys and types no other class uses, or it must be
-  annotated `@Isolated`.
+  `pom.xml`), all in one JVM; the methods of one class run one after another. A class may change
+  global state (registries, static fields) only under keys and types no other class uses, or it
+  must be annotated `@Isolated`. The formats of a scenario class run in parallel and share its
+  subjects, so a scenario that changes a static field or a registry locks it with `@ResourceLock`
+  (`TestFields`, `TestCollections`, `TestValidation`).
 - The shared resolvers are created in holder classes (`ResolverHolder`, ...): the JVM initializes a
-  class once, so concurrent first calls get one instance. `TestResolverThreadSafety` in each module
-  loads the entry point in a fresh class loader to check that.
-- Writer tests compare the exact output (Java text blocks, which always use `\n`) without
-  normalizing line endings, and also read it back. A test for a fixed bug should fail on the old
-  code: check that by running it against the previous commit's version of the class.
+  class once, so concurrent first calls get one instance. The `threadsafety` scenarios load each
+  entry point in a fresh class loader to check that.
+- Writer tests compare the exact output (Java text blocks, or the resource files of scenarios;
+  both use `\n`) without normalizing line endings, and also read it back. A test for a fixed bug
+  should fail on the old code: check that by running it against the previous commit's version of
+  the class.

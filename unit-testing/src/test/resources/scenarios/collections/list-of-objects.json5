@@ -1,0 +1,12 @@
+{
+  objects: [
+    {
+      name: "foo",
+      value: true
+    },
+    {
+      name: "bar",
+      value: "baz"
+    }
+  ]
+}

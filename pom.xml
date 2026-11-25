@@ -12,6 +12,7 @@
     <module>toml</module>
     <module>yaml</module>
     <module>json</module>
+    <module>unit-testing</module>
     <module>examples</module>
   </modules>
   <packaging>pom</packaging>
@@ -196,6 +197,7 @@
               <!-- The bundle holds every module of the build; maven.deploy.skip doesn't apply -->
               <excludeArtifacts>
                 <excludeArtifact>annotationconfig-examples</excludeArtifact>
+                <excludeArtifact>annotationconfig-unit-testing</excludeArtifact>
               </excludeArtifacts>
             </configuration>
           </plugin>
