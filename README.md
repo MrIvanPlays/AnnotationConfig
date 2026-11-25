@@ -60,6 +60,12 @@ in the changelog.
 
 [Example config output (YAML)](examples/application-config.yaml)
 
+[Example config output (TOML)](examples/application-config.toml)
+
+[Example config output (JSON)](examples/application-config.json)
+
+[Example config output (JSON5)](examples/application-config.json5)
+
 ### About configuration resolvers
 
 `ConfigResolver` is the abstraction layer between AnnotationConfig internals and a specific

@@ -33,17 +33,19 @@ import com.mrivanplays.annotationconfig.core.serialization.AnnotationAccessor;
 import com.mrivanplays.annotationconfig.core.serialization.DataObject;
 import com.mrivanplays.annotationconfig.core.serialization.FieldTypeSerializer;
 import com.mrivanplays.annotationconfig.core.serialization.SerializationContext;
-import com.mrivanplays.annotationconfig.yaml.SectionObjectList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import org.jspecify.annotations.NullMarked;
 
-/** An example config, written to {@code examples/application-config.yaml}. */
+/** An example config, written to {@code examples/application-config.(file format)}. */
 @SuppressWarnings({"FieldMayBeFinal", "FieldCanBeLocal", "unused"})
 @Comment("Generated using AnnotationConfig v%version%")
 @NullMarked
 public class ExampleConfig {
+
+  @Comment("A boolean value, whether to allow stuff")
+  private boolean allowOption = true;
 
   @Comment("This value can only be between 1 and 3 (1 and 3 included)")
   @Min(minInt = 1)
@@ -95,13 +97,6 @@ public class ExampleConfig {
   @ConfigObject
   @Key("section-inside-section")
   private SectionInsideSection insideSection = new SectionInsideSection();
-
-  @Comment("This is a section object list")
-  private SectionObjectList<SectionObject> sectionObjectList =
-      SectionObjectList.newBuilderForType(SectionObject.class)
-          .defaultValue("asdfp", new SectionObject(1, "lorem"))
-          .defaultValue("pepepepepe", new SectionObject(2, "ipsum"))
-          .build();
 
   @Comment("The 'type' key chooses the implementation of this section")
   @Polymorphic({
@@ -183,8 +178,8 @@ public class ExampleConfig {
   record Foo(String bar, int baz) {}
 
   /**
-   * A class without a serializer of its own, read and written by the default serializer. It
-   * needs an empty constructor.
+   * A class without a serializer of its own, read and written by the default serializer. It needs
+   * an empty constructor.
    */
   public static final class DefaultSerializationExample {
 

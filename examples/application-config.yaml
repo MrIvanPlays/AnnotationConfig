@@ -1,5 +1,17 @@
 # Generated using AnnotationConfig v3.1.0
 
+# This is a section object list
+sectionObjectList:
+  asdfp:
+    aabb: 1
+    ccdd: "lorem"
+  pepepepepe:
+    aabb: 2
+    ccdd: "ipsum"
+
+# A boolean value, whether to allow stuff
+allowOption: true
+
 # This value can only be between 1 and 3 (1 and 3 included)
 foo: 2
 
@@ -70,15 +82,6 @@ section-inside-section:
     baz: 69420
     # And here!
     foo: 3.3
-
-# This is a section object list
-sectionObjectList:
-  asdfp:
-    aabb: 1
-    ccdd: "lorem"
-  pepepepepe:
-    aabb: 2
-    ccdd: "ipsum"
 
 # The 'type' key chooses the implementation of this section
 storage:

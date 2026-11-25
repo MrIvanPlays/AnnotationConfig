@@ -22,50 +22,21 @@
 
 package com.mrivanplays.annotationconfig.examples;
 
-import com.mrivanplays.annotationconfig.core.annotations.ConfigObject;
-import com.mrivanplays.annotationconfig.core.annotations.Key;
-import com.mrivanplays.annotationconfig.core.annotations.Max;
-import com.mrivanplays.annotationconfig.core.annotations.Min;
 import com.mrivanplays.annotationconfig.core.annotations.comment.Comment;
-import java.util.List;
+import com.mrivanplays.annotationconfig.yaml.SectionObjectList;
+import org.jspecify.annotations.NullMarked;
 
-/**
- * A config stored as JSON5, which is JSON with comments. {@link ExampleLoadJson5Config} loads it,
- * and {@code examples/server.json5} is the file it writes with these defaults.
- */
+/** An example config, written to {@code examples/application-config.yaml}. */
 @SuppressWarnings({"FieldMayBeFinal", "FieldCanBeLocal", "unused"})
-@Comment("Server settings")
-public class ExampleJson5Config {
+@NullMarked
+public class ExampleConfigYaml extends ExampleConfig {
 
-  @Comment("The address to bind to")
-  private String host = "0.0.0.0";
-
-  @Comment("Must be between 1 and 65535")
-  @Min(minInt = 1)
-  @Max(maxInt = 65535)
-  private int port = 25565;
-
-  @Comment("A dotted key is written as a nested object")
-  @Key("motd.text")
-  private String motd = "Welcome!";
-
-  // not a JavaScript identifier, so this key is written in quotes
-  @Key("allowed-worlds")
-  private List<String> allowedWorlds = List.of("world", "world_nether");
-
-  @ConfigObject private Database database = new Database();
-
-  /** A config object, written as a nested JSON5 object. */
-  @Comment("Database connection")
-  public static final class Database {
-
-    private String url = "jdbc:mysql://localhost/server";
-
-    @Comment("In seconds")
-    private int timeout = 30;
-
-    // getters would go here
-  }
+  @Comment("This is a section object list")
+  private SectionObjectList<SectionObject> sectionObjectList =
+      SectionObjectList.newBuilderForType(SectionObject.class)
+          .defaultValue("asdfp", new SectionObject(1, "lorem"))
+          .defaultValue("pepepepepe", new SectionObject(2, "ipsum"))
+          .build();
 
   // getters would go here
 }

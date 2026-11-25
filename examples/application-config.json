@@ -1,0 +1,73 @@
+{
+  "allowOption": true,
+  "foo": 2,
+  "bar": "This is some string",
+  "messages": {
+    "no-permission": "You don't have permission to perform this command",
+    "no-spamming": "You can't spam this"
+  },
+  "serialize": {
+    "foo": "foo",
+    "bar": 1,
+    "baz": 2
+  },
+  "barxtwo": 0.2,
+  "foo-list": [
+    "This is",
+    "a lore",
+    "as an example",
+    "for list"
+  ],
+  "bar-list": [
+    1,
+    2,
+    3,
+    4
+  ],
+  "foosList": [
+    {
+      "bar": "baz",
+      "baz": 1
+    },
+    {
+      "bar": "lorem",
+      "baz": 3
+    }
+  ],
+  "foo-map": {
+    "foo": 1,
+    "bar": "This is a section value",
+    "baz": 3
+  },
+  "default-serializer-example": {
+    "foo": "bar",
+    "bar": 1,
+    "baz": 5.6
+  },
+  "inside": {
+    "section": {
+      "foo": "foo"
+    }
+  },
+  "section-inside-section": {
+    "pp": {
+      "baz": 69420,
+      "foo": 3.3
+    }
+  },
+  "storage": {
+    "type": "sqlite",
+    "file": "data.db"
+  },
+  "rewards": [
+    {
+      "kind": "MoneyReward",
+      "amount": 100
+    },
+    {
+      "kind": "item",
+      "item": "diamond",
+      "count": 3
+    }
+  ]
+}
