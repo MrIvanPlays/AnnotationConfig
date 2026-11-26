@@ -22,6 +22,7 @@
 
 package com.mrivanplays.annotationconfig.core.internal;
 
+import com.mrivanplays.annotationconfig.core.annotations.ConfigVersion;
 import com.mrivanplays.annotationconfig.core.serialization.AnnotationAccessor;
 import com.mrivanplays.annotationconfig.core.utils.AnnotationUtils;
 import java.lang.reflect.Constructor;
@@ -66,6 +67,9 @@ public final class ClassInfo {
   private final AtomicReferenceArray<@Nullable Set<AnnotationHolder>> holders =
       new AtomicReferenceArray<>(8);
   @Nullable private volatile RecordInfo record;
+  // the @ConfigVersion of the class, also one it inherits, and the class that declares it
+  @Nullable private final ConfigVersion version;
+  @Nullable private final Class<?> versionClass;
 
   private ClassInfo(Class<?> type) {
     this.type = type;
@@ -90,6 +94,15 @@ public final class ClassInfo {
         List.copyOf(AnnotationUtils.getComments(AnnotationAccessor.createFromClass(type), false));
     this.hasDeclaredAnnotations = type.getDeclaredAnnotations().length > 0;
     this.hasAnnotations = type.getAnnotations().length > 0;
+    this.version = type.getAnnotation(ConfigVersion.class);
+    Class<?> versionClass = null;
+    if (this.version != null) {
+      versionClass = type;
+      while (versionClass.getDeclaredAnnotation(ConfigVersion.class) == null) {
+        versionClass = versionClass.getSuperclass();
+      }
+    }
+    this.versionClass = versionClass;
   }
 
   /** The info of {@code type}, created on first use. */
@@ -132,6 +145,19 @@ public final class ClassInfo {
    */
   public List<FieldInfo> dataFields(boolean findStaticFields) {
     return findStaticFields ? this.fields : this.instanceFields;
+  }
+
+  /** The {@code @ConfigVersion} of the class, also an inherited one; {@code null} if none. */
+  public @Nullable ConfigVersion version() {
+    return this.version;
+  }
+
+  /**
+   * The class that declares {@link #version()}, which its migration strategies are registered
+   * for; {@code null} if the class has no version.
+   */
+  public @Nullable Class<?> versionClass() {
+    return this.versionClass;
   }
 
   /** The class comments with the registered placeholders applied. */

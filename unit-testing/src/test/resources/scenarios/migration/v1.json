@@ -1,0 +1,5 @@
+{
+  "motd": "Hello",
+  "port": 25565,
+  "timeout": 10
+}

@@ -22,6 +22,7 @@
 
 package com.mrivanplays.annotationconfig.core.internal;
 
+import com.mrivanplays.annotationconfig.core.annotations.ConfigVersion;
 import com.mrivanplays.annotationconfig.core.annotations.Multiline;
 import com.mrivanplays.annotationconfig.core.annotations.custom.AnnotationValidator;
 import com.mrivanplays.annotationconfig.core.annotations.custom.CustomAnnotationRegistry;
@@ -205,6 +206,17 @@ final class AnnotatedConfigResolver {
             // a writer without comments gets none, so they aren't collected
             valueWriter.writesComments() ? new LinkedHashMap<>() : null);
     Map<String, Object> toWrite = new LinkedHashMap<>();
+    // the version first, so that a reader sees it before the options; a field with the same key
+    // fails as a duplicate key
+    ConfigVersion version = ConfigMigrator.versionOf(annotatedConfig.getClass());
+    if (version != null) {
+      toWrite.put(version.key(), version.value());
+      if (version.comments().length > 0 && context.comments() != null) {
+        context
+            .comments()
+            .put(version.key(), FieldInfo.applyPlaceholders(List.of(version.comments())));
+      }
+    }
     FieldInfo rawConfigField = null;
     for (AnnotationHolder holder : holders) {
       if (holder.isClass()) {

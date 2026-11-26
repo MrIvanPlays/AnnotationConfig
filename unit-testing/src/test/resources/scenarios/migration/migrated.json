@@ -1,0 +1,6 @@
+{
+  "config-version": 3,
+  "motd": "Hello",
+  "server-port": 25565,
+  "timeout": "10s"
+}

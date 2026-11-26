@@ -71,6 +71,12 @@ Java 25, Maven multi-module build.
 - Records are created with their canonical constructor, found by and filled in the order of
   `Class#getRecordComponents()`; constructor parameter names are not used, as tools like
   obfuscators strip them.
+- `@ConfigVersion` (on the config class, inherited) is handled by `core.internal.ConfigMigrator`:
+  `ConfigResolverImpl` passes the values every `load` read through it before `setFields`, and
+  `AnnotatedConfigResolver` writes the version as the first key. Strategies are in the global
+  `MigrationStrategies` registry, keyed by the class that declares the annotation
+  (`ClassInfo#versionClass()`). A migrated file loaded from a path is copied to
+  `<name>.v<version>.bak` and rewritten; loads from a reader or map don't write.
 - `AnnotatedConfigResolver#dump(Path)` creates missing directories and follows symbolic links to
   the file they point to. A new file is written in place; an existing one is replaced by a
   temporary file (owner-only on POSIX) that first gets the old file's POSIX permissions.
@@ -215,7 +221,7 @@ Java 25, Maven multi-module build.
 - What the formats share is tested once, by the scenarios in `scenarios`: one package per topic
   (`sections`, `collections`, `values`, `objects`, `comments`, `bounds`, `validation`, `fields`,
   `files`, `fullconfig`, `polymorphic`, `resolver`, `lineendings`, `commentpaths`,
-  `threadsafety`). Every test that loads or dumps a config goes there, also when it tests `core`
+  `threadsafety`, `migration`). Every test that loads or dumps a config goes there, also when it tests `core`
   logic: each parser hands values on as types of its own, which a test through `.properties` alone
   doesn't see. A scenario class is a
   `@ParameterizedClass` that extends `Scenario` and runs once per format that has the features it

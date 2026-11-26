@@ -23,6 +23,7 @@
 package com.mrivanplays.annotationconfig.core.annotations.type;
 
 import com.mrivanplays.annotationconfig.core.annotations.ConfigObject;
+import com.mrivanplays.annotationconfig.core.annotations.ConfigVersion;
 import com.mrivanplays.annotationconfig.core.annotations.Ignore;
 import com.mrivanplays.annotationconfig.core.annotations.Key;
 import com.mrivanplays.annotationconfig.core.annotations.Max;
@@ -56,7 +57,8 @@ public enum AnnotationType {
   MIN(Min.class),
   RAW_CONFIG(RawConfig.class),
   MULTILINE(Multiline.class),
-  POLYMORPHIC(Polymorphic.class);
+  POLYMORPHIC(Polymorphic.class),
+  CONFIG_VERSION(ConfigVersion.class);
 
   private static final Map<Class<? extends Annotation>, AnnotationType> BY_ANNOTATION_CLASS =
       new HashMap<>();

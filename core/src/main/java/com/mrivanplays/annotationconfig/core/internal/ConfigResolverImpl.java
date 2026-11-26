@@ -194,7 +194,7 @@ public final class ConfigResolverImpl implements ConfigResolver {
     Settings passed = this.passSettings(settings);
     AnnotatedConfigResolver.setFields(
         annotatedConfig,
-        values,
+        ConfigMigrator.migrate(annotatedConfig, values, passed, "the configuration").values(),
         AnnotatedConfigResolver.resolveAnnotationHolders(annotatedConfig, passed),
         passed);
   }
@@ -216,9 +216,10 @@ public final class ConfigResolverImpl implements ConfigResolver {
     } catch (IOException e) {
       throw new RuntimeException("Could not read the configuration", e);
     }
+    // migrated, but not written back: there is no file to write to
     AnnotatedConfigResolver.setFields(
         annotatedConfig,
-        values,
+        ConfigMigrator.migrate(annotatedConfig, values, passed, "the configuration").values(),
         AnnotatedConfigResolver.resolveAnnotationHolders(annotatedConfig, passed),
         passed);
   }
@@ -342,11 +343,21 @@ public final class ConfigResolverImpl implements ConfigResolver {
     } catch (IOException e) {
       throw new RuntimeException("Could not read the configuration " + path, e);
     }
+    ConfigMigrator.Result migration =
+        ConfigMigrator.migrate(annotatedConfig, values, settings, "the configuration " + path);
     // an empty file misses every option, so with GENERATE_NEW_OPTIONS it gets them written; it
     // used to be left empty, also by loadOrDump
     boolean missingOptions =
-        AnnotatedConfigResolver.setFields(annotatedConfig, values, holders, settings);
-    if (missingOptions && settings.get(ACDefaultSettings.GENERATE_NEW_OPTIONS).orElseThrow()) {
+        AnnotatedConfigResolver.setFields(annotatedConfig, migration.values(), holders, settings)
+            || migration.versionMissing();
+    if (migration.migrated()) {
+      // a migrated file is always rewritten in the current version, also in formats that keep
+      // GENERATE_NEW_OPTIONS off, once the old one is copied
+      ConfigMigrator.backup(path, migration.fromVersion());
+      AnnotatedConfigResolver.dump(
+          annotatedConfig, holders, path, settings, this.commentPrefix, this.valueWriter);
+    } else if (missingOptions
+        && settings.get(ACDefaultSettings.GENERATE_NEW_OPTIONS).orElseThrow()) {
       AnnotatedConfigResolver.dump(
           annotatedConfig, holders, path, settings, this.commentPrefix, this.valueWriter);
     }

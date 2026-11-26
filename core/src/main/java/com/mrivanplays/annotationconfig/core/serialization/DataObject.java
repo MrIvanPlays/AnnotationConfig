@@ -22,10 +22,12 @@
 
 package com.mrivanplays.annotationconfig.core.serialization;
 
+import com.mrivanplays.annotationconfig.core.resolver.key.KeyResolver;
 import com.mrivanplays.annotationconfig.core.utils.MapUtils;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -292,6 +294,174 @@ public final class DataObject {
     Objects.requireNonNull(key, "key");
     Objects.requireNonNull(object, "object");
     mutableEntries("putAll").put(key, object);
+  }
+
+  /**
+   * Moves the value of the key {@code from} to the key {@code to}, as a migration of a config
+   * renames an option. If {@code to} has a value already, it is kept and the value of {@code from}
+   * is dropped. The moved value comes after the other keys.
+   *
+   * <p>Like {@link #get(String)}, this works on the keys of this data object only: a dotted key
+   * such as {@code server.port} is one key in {@code .properties}, but a key {@code port} in the
+   * data object of the key {@code server} in YAML, JSON and TOML.
+   *
+   * @param from the key whose value to move, not empty
+   * @param to the key to move the value to, not empty
+   * @return whether {@code from} had a value
+   * @throws UnsupportedOperationException if this data object is immutable
+   * @throws IllegalArgumentException if {@code from} or {@code to} is empty, checked first, or if
+   *     this data object holds a single value
+   * @since 3.1.0
+   */
+  public boolean renameKey(String from, String to) {
+    Objects.requireNonNull(from, "from");
+    Objects.requireNonNull(to, "to");
+    if (from.isEmpty() || to.isEmpty()) {
+      throw new IllegalArgumentException(
+          "The key '" + (from.isEmpty() ? "from" : "to") + "' of renameKey is empty");
+    }
+    Map<String, DataObject> entries = mutableEntries("renameKey");
+    if (from.equals(to)) {
+      return entries.containsKey(from);
+    }
+    // never null for a key that is present: a null value is held by a data object too
+    DataObject value = entries.remove(from);
+    if (value == null) {
+      return false;
+    }
+    entries.putIfAbsent(to, value);
+    return true;
+  }
+
+  /**
+   * Moves the value of the key {@code from} to the key {@code to}, both read and written the way
+   * {@code keyResolver} reads and writes the keys of options, so that a migration of a config can
+   * move an option between sections in any format. Pass the key resolver the values were read
+   * with: in a {@link com.mrivanplays.annotationconfig.core.resolver.versioning.MigrationStrategy
+   * MigrationStrategy}, the one it gets. It is {@link KeyResolver#DEFAULT} for {@code
+   * .properties}, which keeps {@code server.port} as one key, and {@link
+   * com.mrivanplays.annotationconfig.core.resolver.key.DottedResolver DottedResolver} for YAML and
+   * JSON, which read it as the key {@code port} of the section {@code server}.
+   *
+   * <p>As with {@link #renameKey(String, String)}, if {@code to} has a value already, it is kept
+   * and the value of {@code from} is dropped. A section that the move leaves empty is removed. A
+   * key that holds {@code null} counts as missing, as key resolvers read it the same way, and so
+   * does a key whose section is a value ({@code server: 5} for {@code server.port}).
+   *
+   * <p>The values are copied, moved and wrapped again: data objects got from this one before are
+   * no longer part of it once a value was moved.
+   *
+   * @param from the key whose value to move, not empty
+   * @param to the key to move the value to, not empty
+   * @param keyResolver the key resolver that reads and writes the keys
+   * @return whether {@code from} had a value
+   * @throws UnsupportedOperationException if this data object is immutable
+   * @throws IllegalArgumentException if {@code from} or {@code to} is empty, checked first, if this
+   *     data object holds a single value, or if {@code keyResolver} can't write {@code to}, e.g.
+   *     as a part of it is a value and not a section; nothing is changed then
+   * @since 3.1.0
+   */
+  public boolean renameDottedKey(String from, String to, KeyResolver keyResolver) {
+    Objects.requireNonNull(from, "from");
+    Objects.requireNonNull(to, "to");
+    Objects.requireNonNull(keyResolver, "keyResolver");
+    if (from.isEmpty() || to.isEmpty()) {
+      throw new IllegalArgumentException(
+          "The key '" + (from.isEmpty() ? "from" : "to") + "' of renameDottedKey is empty");
+    }
+    // first, so that an immutable data object fails before anything is read
+    final Map<String, DataObject> entries = mutableEntries("renameDottedKey");
+    // a copy: if writing the new key fails, this data object is left as it was
+    Map<String, Object> values = getAsMap();
+    Object value;
+    try {
+      value = keyResolver.unbox(from, values);
+    } catch (IllegalArgumentException e) {
+      // DottedResolver fails when a part of the key is a value: then there is nothing to move
+      return false;
+    }
+    if (value == null) {
+      return false;
+    }
+    if (from.equals(to)) {
+      return true;
+    }
+    removeRead(from, value, values, keyResolver);
+    // a value under the new key is kept, as by renameKey
+    if (keyResolver.unbox(to, values) == null) {
+      keyResolver.boxTo(to, value, values);
+    }
+    entries.clear();
+    entries.putAll(wrap(values, false));
+    return true;
+  }
+
+  /**
+   * Removes {@code value}, which {@code keyResolver} read for {@code key}, from {@code values}:
+   * from the key {@code key} itself if the resolver reads a dotted key as one key and the value is
+   * stored that way, and otherwise from the sections the parts of the key name. Sections left
+   * empty are removed.
+   *
+   * @throws IllegalArgumentException if the value is in neither place, as for a key resolver that
+   *     stores values another way
+   */
+  @SuppressWarnings("unchecked")
+  private static void removeRead(
+      String key, Object value, Map<String, Object> values, KeyResolver keyResolver) {
+    if (values.get(key) == value && readsWholeKey(key, keyResolver)) {
+      values.remove(key);
+      return;
+    }
+    // the maps from the top down to the one that holds the last part, and the parts of the key
+    List<Map<String, Object>> maps = new ArrayList<>();
+    List<String> parts = new ArrayList<>();
+    Map<String, Object> current = values;
+    int start = 0;
+    int end = key.indexOf('.');
+    while (end != -1) {
+      String part = key.substring(start, end);
+      if (!(current.get(part) instanceof Map<?, ?> next)) {
+        throw cannotRemove(key);
+      }
+      maps.add(current);
+      parts.add(part);
+      current = (Map<String, Object>) next;
+      start = end + 1;
+      end = key.indexOf('.', start);
+    }
+    String last = key.substring(start);
+    if (current.get(last) != value) {
+      throw cannotRemove(key);
+    }
+    current.remove(last);
+    // the sections on the way held the key, so the ones that are empty now were emptied by it
+    for (int i = maps.size() - 1; i >= 0 && current.isEmpty(); i--) {
+      current = maps.get(i);
+      current.remove(parts.get(i));
+    }
+  }
+
+  /** Whether {@code keyResolver} reads {@code key} as one key of the top level. */
+  private static boolean readsWholeKey(String key, KeyResolver keyResolver) {
+    if (key.indexOf('.') == -1) {
+      return true;
+    }
+    Object probe = new Object();
+    Map<String, Object> probed = new HashMap<>();
+    probed.put(key, probe);
+    try {
+      return keyResolver.unbox(key, probed) == probe;
+    } catch (RuntimeException e) {
+      return false;
+    }
+  }
+
+  private static IllegalArgumentException cannotRemove(String key) {
+    return new IllegalArgumentException(
+        "The key resolver read '"
+            + key
+            + "' from neither the key itself nor the sections its parts name, so it can't be"
+            + " moved");
   }
 
   /**

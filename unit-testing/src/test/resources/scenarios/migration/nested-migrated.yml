@@ -1,0 +1,7 @@
+config-version: 2
+
+server:
+  host: "example.org"
+
+network:
+  port: 25565

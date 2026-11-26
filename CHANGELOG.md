@@ -370,6 +370,78 @@ storage:
 - Not supported: the values of maps, which are read and written as they are for every custom data
   type, and `.properties` files, which have no sections.
 
+#### Config versions and migrations with `@ConfigVersion`
+
+A config class can have a version, and strategies that migrate older files to it when they are
+loaded:
+
+```java
+@ConfigVersion(2)
+public class MyConfig {
+
+  @Key("server-port")
+  private int port = 8080;
+}
+
+// version 2 renamed "port" to "server-port"
+MigrationStrategies.INSTANCE.registerStrategyFor(
+    MyConfig.class,
+    MigrationVersionRange.of(1, 2),
+    (values, keyResolver) -> {
+      values.renameKey("port", "server-port");
+      return values;
+    });
+```
+
+- The version is written as the first option of the file, under the key `config-version` (set
+  another with `@ConfigVersion(value = 2, key = "version")`; it can't hold a dot).
+- The version can have comments, written above it like the comments of an option:
+  `@ConfigVersion(value = 2, comments = {"Don't change this", "Used to migrate the file"})`. As
+  with `@Comment`, a line break starts a new comment line and registered comment placeholders are
+  applied. Formats without comments (JSON) write the version without them.
+- A file without the version is version 1, so files written before the class had a version are
+  migrated from version 1. A file of the current version that lacks it counts as missing an option,
+  and gets it written with `GENERATE_NEW_OPTIONS`. An empty file is not migrated.
+- A strategy gets the values of the file, without the version, as a mutable `DataObject`, and the
+  `KeyResolver` the config is read with (the `KEY_RESOLVER` setting of the load, so the format's
+  unless one is passed), and returns the values of the version it migrates to. Keys are as the
+  format read them: sections are nested in YAML, JSON and TOML, while `.properties` keeps dotted
+  keys flat. Values are of the types the format's parser reads, so the `DataObject` getters
+  (`getAsInt()`, ...) are the way to read them. Keys a strategy leaves behind are dropped when the
+  file is rewritten.
+- `DataObject#renameKey(from, to)` moves the value of an option to a new key and returns whether
+  there was one. If the new key has a value already, that value is kept and the old key is dropped.
+  Neither key may be empty: an empty one fails with an `IllegalArgumentException`.
+  It works on the keys of that data object only, so a dotted key is renamed in `.properties` but has
+  to be found in its section in YAML, JSON and TOML.
+- `DataObject#renameDottedKey(from, to, keyResolver)` moves a value the way a format's key resolver
+  reads and writes keys, so it can move an option between sections in any format:
+  `values.renameDottedKey("server.port", "network.port", keyResolver)`, with the key resolver the
+  strategy gets, makes one strategy work for every format (`KeyResolver.DEFAULT` keeps dotted keys
+  flat in `.properties`, `DottedResolver` nests them in YAML and JSON). It keeps a value under the new key as `renameKey` does,
+  removes sections the move leaves empty, and fails without changes if the new key can't be
+  written, e.g. because a part of it is a value. TOML reads a dotted key as one quoted key first, as
+  3.0.x wrote it, so such keys are moved too and written back as tables.
+- Strategies are registered in `MigrationStrategies` for the class that carries `@ConfigVersion`
+  (subclasses inherit it), one per version they migrate from. A step may skip versions
+  (`MigrationVersionRange.of(1, 3)`); the chain follows the steps from the file's version.
+- A file loaded from a path that is migrated is copied to `<name>.v<version>.bak` next to it
+  (`<name>.v<version>.bak.2`, ... if that exists), then rewritten in the current version, also in
+  TOML, which keeps `GENERATE_NEW_OPTIONS` off. The copy doesn't end with the config's extension,
+  so `resolveMultiple` doesn't read it. Loading from a reader or a map migrates the values without
+  writing anything.
+- If no strategy is registered for the class at all, an older file is read as it is: it is not
+  migrated, copied or rewritten, and a warning is logged on every load through the JDK's
+  `System.Logger`, named `com.mrivanplays.annotationconfig.migration` (by default it goes to
+  `java.util.logging`). Register the strategies before the first load: a dump, or a load that
+  writes missing options with `GENERATE_NEW_OPTIONS`, replaces such a file in the current version
+  without migrating it or making a backup, so its values that a migration would have moved are
+  lost, and later loads count the file as current.
+- Loading fails, without changing the file or any field, if the file is of a newer version than the
+  class, its version is not a whole number, strategies are registered but a step on the way has
+  none, or a strategy fails.
+- Only the config's class is versioned: `@ConfigVersion` has no effect on `@ConfigObject` sections.
+
 #### `FIND_STATIC_FIELDS` setting
 
 `ACDefaultSettings.FIND_STATIC_FIELDS` (default `false`) controls whether static fields are config
