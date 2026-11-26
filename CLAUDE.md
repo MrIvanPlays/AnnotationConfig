@@ -5,13 +5,11 @@ Java 25, Maven multi-module build.
 
 ## Project state
 
-- The version is `3.1.0-SNAPSHOT` and not released yet. The last release is 3.0.3 (on Maven
-  Central). Breaking changes are allowed in
-  3.1.0, but every user-visible one goes into the 3.1.0 section of `CHANGELOG.md`, under
-  "Breaking changes" when it can change what existing configs do. Changes are compared with
-  3.0.3 (`git show 3.0.3:<path>`), not with earlier 3.1.0 commits: what something new in 3.1.0
-  (records, JSON, JSON5, the TOML and `.properties` writers, writing through a temporary file)
-  does is described in its own section, not as a change or a fix.
+- The version is `3.1.1-SNAPSHOT` and not released yet. The last release is 3.1.0 (on Maven
+  Central, tag `3.1.0`). 3.1.1 is a patch release: no breaking changes. Every user-visible change
+  goes into a 3.1.1 section of `CHANGELOG.md` (add it with the first one). Changes are compared
+  with 3.1.0 (`git show 3.1.0:<path>`), not with earlier 3.1.1 commits: what something new in
+  3.1.1 does is described in its own section, not as a change or a fix.
 - Decisions made on purpose, don't change them without asking:
   - An empty string in a config is read as `""`, not as no value; empty numbers are no value.
   - Static fields are skipped unless `ACDefaultSettings.FIND_STATIC_FIELDS` is set.
