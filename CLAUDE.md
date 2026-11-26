@@ -169,6 +169,11 @@ Java 25, Maven multi-module build.
   from `LocalVariableName`, and a Javadoc may be
   only tags (such as `@deprecated`): XPath filters can't exempt `@Deprecated` code from Javadoc
   checks, so that is allowed everywhere.
+- A release is `mvn deploy -P deployment`. To check it without publishing, add `-DskipUpload=true`:
+  it signs and builds the Central bundle (`target/central-publishing/central-bundle.zip`) but
+  doesn't upload it. It must be run online; offline the publish goal skips itself and checks
+  nothing. `unit-testing` builds an empty jar on purpose: `gpg:sign` and the Central plugin fail
+  on a module without one (`excludeArtifacts` applies only after the artifacts are collected).
 - Building an older commit for comparison: `git archive <commit> | tar -x -C <dir>` and
   `mvn -o package -Dmaven.test.skip=true` there. `package` leaves `~/.m2` alone, and `git archive`
   leaves the repository untouched.
