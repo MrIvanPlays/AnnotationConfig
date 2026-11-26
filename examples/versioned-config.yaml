@@ -1,0 +1,11 @@
+# The version of this file, used to update it. Don't change it.
+config-version: 3
+
+network:
+  # The address to bind to
+  host: "0.0.0.0"
+  # The port to bind to
+  port: 25565
+
+# How long to wait for a client, e.g. 30s or 2m
+timeout: "30s"
