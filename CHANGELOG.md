@@ -251,8 +251,9 @@ public class MyConfig {
   fields: `record Bounds(@Min(minInt = 0) int min, int max) {}` fails to load a negative `min`. A
   custom validator that fails silently makes the component take its value from the record the
   field held, as a missing component does.
-- `@Ignore` and `@RawConfig` are not supported on record components. AnnotationConfig prints a
-  warning the first time it finds them on a record.
+- `@Ignore` and `@RawConfig` are not supported on record components. AnnotationConfig logs a
+  warning through `System.Logger` (logger `com.mrivanplays.annotationconfig.serialization`) the
+  first time it finds them on a record.
 
 #### `@Min`, `@Max` and custom annotations in custom data types
 
