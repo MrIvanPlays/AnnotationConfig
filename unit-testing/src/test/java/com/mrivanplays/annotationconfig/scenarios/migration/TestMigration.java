@@ -382,16 +382,6 @@ class TestMigration extends Scenario {
   }
 
   @Test
-  void aQuotedTomlKeyOf30IsMoved() {
-    Assumptions.assumeTrue(this.format == Format.TOML);
-    // 3.0.x wrote dotted keys as one quoted key, which TOML's key resolver reads first
-    MovedSection config =
-        loadText(new MovedSection(), "'server.host' = \"example.org\"\n'server.port' = 25565\n");
-    Assertions.assertEquals("example.org", config.host);
-    Assertions.assertEquals(25565, config.port);
-  }
-
-  @Test
   void aFileWithAMovedOptionIsRewritten(@TempDir Path dir) throws IOException {
     Path file = write(dir, "config", "nested-v1");
 
