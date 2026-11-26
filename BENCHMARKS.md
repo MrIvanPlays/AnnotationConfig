@@ -1,8 +1,7 @@
 # Benchmarks
 
-Dump and load times of AnnotationConfig 3.1.0 (commit `6951903`, which reads the
-reflection of a class once and no longer wraps and copies loaded values once per level of
-nesting), and a comparison with commit `6207cbc` (3.0.4-SNAPSHOT, right after the 3.0.3 release).
+Dump and load times of AnnotationConfig 3.1.0 (commit `da8cace`), and a comparison with commit
+`6207cbc` (3.0.4-SNAPSHOT, right after the 3.0.3 release).
 Lower is better.
 
 ## Setup
@@ -44,57 +43,57 @@ module did not exist at `6207cbc`.
 
 | Format | Dump | Load | Parser | Allocated (dump / load) | Output |
 |---|---|---|---|---|---|
-| Properties | 1.87 µs | 3.96 µs | 2.70 µs | 5.6 / 22.5 KB | 206 chars |
-| YAML | 13.94 µs | 15.39 µs | 14.62 µs | 28.8 / 34.4 KB | 226 chars |
-| JSON | 1.98 µs | 2.04 µs | 1.04 µs | 4.4 / 6.0 KB | 255 chars |
-| JSON5 | 1.92 µs | 2.13 µs | 1.14 µs | 5.7 / 6.0 KB | 259 chars |
-| TOML | 1.75 µs | 3.08 µs | 2.07 µs | 4.6 / 4.6 KB | 238 chars |
+| Properties | 1.85 µs | 3.98 µs | 2.60 µs | 5.5 / 22.4 KB | 206 chars |
+| YAML | 13.73 µs | 15.58 µs | 13.78 µs | 28.6 / 34.6 KB | 226 chars |
+| JSON | 1.79 µs | 2.06 µs | 1.02 µs | 4.6 / 5.9 KB | 256 chars |
+| JSON5 | 1.83 µs | 2.23 µs | 1.16 µs | 5.6 / 5.9 KB | 260 chars |
+| TOML | 1.65 µs | 3.03 µs | 2.05 µs | 4.5 / 4.5 KB | 238 chars |
 
 ### Nested config
 
 | Format | Dump | Load | Parser | Allocated (dump / load) | Output |
 |---|---|---|---|---|---|
-| YAML | 53.38 µs | 62.39 µs | 56.20 µs | 97.6 / 122.2 KB | 851 chars |
-| JSON | 7.88 µs | 8.16 µs | 3.89 µs | 18.3 / 18.8 KB | 1,085 chars |
-| JSON5 | 7.29 µs | 8.04 µs | 4.15 µs | 21.9 / 18.8 KB | 1,104 chars |
-| TOML | 6.61 µs | 11.54 µs | 7.98 µs | 18.6 / 20.4 KB | 771 chars |
+| YAML | 52.72 µs | 62.04 µs | 56.75 µs | 97.2 / 120.1 KB | 851 chars |
+| JSON | 7.98 µs | 8.01 µs | 3.74 µs | 19.2 / 18.7 KB | 1,086 chars |
+| JSON5 | 7.57 µs | 8.25 µs | 4.08 µs | 21.5 / 18.6 KB | 1,105 chars |
+| TOML | 6.44 µs | 11.59 µs | 8.12 µs | 18.1 / 20.1 KB | 771 chars |
 
 ### Large config
 
 | Format | Dump | Load | Parser | Allocated (dump / load) | Output |
 |---|---|---|---|---|---|
-| YAML | 5.23 ms | 8.74 ms | 7.19 ms | 9.0 / 12.0 MB | 82,819 chars |
-| JSON | 0.85 ms | 0.84 ms | 0.40 ms | 2.0 / 1.6 MB | 119,848 chars |
-| JSON5 | 0.64 ms | 0.87 ms | 0.44 ms | 1.7 / 1.6 MB | 111,442 chars |
-| TOML | 0.46 ms | 1.18 ms | 0.83 ms | 1.5 / 2.0 MB | 76,623 chars |
+| YAML | 5.30 ms | 7.52 ms | 7.80 ms | 9.0 / 12.1 MB | 82,819 chars |
+| JSON | 0.86 ms | 0.85 ms | 0.42 ms | 2.1 / 1.6 MB | 119,849 chars |
+| JSON5 | 0.66 ms | 0.89 ms | 0.46 ms | 1.7 / 1.6 MB | 111,443 chars |
+| TOML | 0.46 ms | 1.14 ms | 0.84 ms | 1.5 / 2.0 MB | 76,623 chars |
 
 ### Dotted config
 
 | Format | Dump | Load | Parser | Allocated (dump / load) | Output |
 |---|---|---|---|---|---|
-| YAML | 16.79 µs | 19.48 µs | 17.91 µs | 37.7 / 41.2 KB | 270 chars |
-| JSON | 3.09 µs | 2.82 µs | 1.26 µs | 9.0 / 8.8 KB | 352 chars |
-| JSON5 | 3.29 µs | 2.87 µs | 1.38 µs | 10.1 / 8.8 KB | 352 chars |
-| TOML | 2.97 µs | 4.40 µs | 2.72 µs | 9.9 / 8.6 KB | 265 chars |
+| YAML | 16.66 µs | 20.20 µs | 17.29 µs | 37.3 / 41.1 KB | 270 chars |
+| JSON | 2.91 µs | 2.73 µs | 1.20 µs | 9.4 / 8.7 KB | 353 chars |
+| JSON5 | 3.00 µs | 2.96 µs | 1.39 µs | 9.8 / 8.7 KB | 353 chars |
+| TOML | 2.76 µs | 4.20 µs | 2.72 µs | 9.6 / 8.4 KB | 265 chars |
 
 ## Compared with `6207cbc`
 
 | Benchmark | `6207cbc` | 3.1.0 | Change |
 |---|---|---|---|
-| Properties dump, flat | 3.18 µs | 1.87 µs | −41% |
-| Properties load, flat | 4.23 µs | 3.96 µs | −6% |
-| YAML dump, flat | 3.44 µs | 13.94 µs | 4.1× slower |
-| YAML dump, nested | 11.19 µs | 53.38 µs | 4.8× slower |
-| YAML dump, large | 0.75 ms | 5.23 ms | 7.0× slower |
-| YAML load, flat | 16.20 µs | 15.39 µs | −5% |
-| YAML load, nested | 63.79 µs | 62.39 µs | −2% |
-| YAML load, large | 8.87 ms | 8.74 ms | −1% |
-| TOML dump, flat | 4.83 µs | 1.75 µs | −64% |
-| TOML dump, nested | 9.77 µs | 6.61 µs | −32% |
+| Properties dump, flat | 3.18 µs | 1.85 µs | −42% |
+| Properties load, flat | 4.23 µs | 3.98 µs | −6% |
+| YAML dump, flat | 3.44 µs | 13.73 µs | 4.0× slower |
+| YAML dump, nested | 11.19 µs | 52.72 µs | 4.7× slower |
+| YAML dump, large | 0.75 ms | 5.30 ms | 7.1× slower |
+| YAML load, flat | 16.20 µs | 15.58 µs | −4% |
+| YAML load, nested | 63.79 µs | 62.04 µs | −3% |
+| YAML load, large | 8.87 ms | 7.52 ms | −15% |
+| TOML dump, flat | 4.83 µs | 1.65 µs | −66% |
+| TOML dump, nested | 9.77 µs | 6.44 µs | −34% |
 | TOML dump, large | 0.63 ms | 0.46 ms | −27% |
-| TOML load, flat | 3.98 µs | 3.08 µs | −23% |
-| TOML load, nested | 15.27 µs | 11.54 µs | −24% |
-| TOML load, large | 1.55 ms | 1.18 ms | −24% |
+| TOML load, flat | 3.98 µs | 3.03 µs | −24% |
+| TOML load, nested | 15.27 µs | 11.59 µs | −24% |
+| TOML load, large | 1.55 ms | 1.14 ms | −26% |
 
 The output differs between the versions: `6207cbc` wrote 220 chars of `.properties`, 241, 920 and
 87,023 chars of YAML and 253, 869 and 78,217 chars of TOML (flat, nested, large).
@@ -104,7 +103,12 @@ The output differs between the versions: `6207cbc` wrote 220 chars of `.properti
 - **YAML dumping** is the one regression. `6207cbc` wrote YAML with a hand-written writer; 3.1.0
   builds a SnakeYAML node tree and lets SnakeYAML emit it, which handles quoting, escaping and
   indentation correctly but is slower, increasingly so for large configs.
-- **YAML loading** is almost entirely SnakeYAML's parser (the parser column).
+- **YAML loading** is almost entirely SnakeYAML's parser (the parser column). The large config's
+  load measured 4% faster than the parser alone in both passes (7.46 and 7.58 against 7.62 and
+  7.99 ms): the two do not run the same code, as the parser column is a default
+  `new Yaml().load(...)` and a load reads with `YamlHandler`'s own `Yaml`
+  (`ExactDecimalConstructor`, `loadAs`). Its −15% against `6207cbc` is within the noise of the
+  large YAML config.
 - **Reflection** is read once per class: the fields of a config class and of the data types in it,
   their keys, annotations and comments are cached, so a dump or load only reads and sets values.
   Loading reads the maps a parser returns without wrapping and copying them once per level of
@@ -114,19 +118,19 @@ The output differs between the versions: `6207cbc` wrote 220 chars of `.properti
   file before writing it. Config objects and maps are written as tables, so the nested config's
   output is 11% smaller than `6207cbc`'s.
 - **`.properties`** dumping escapes keys and values completely in 3.1.0, which `6207cbc` did not,
-  and is still 41% faster.
-- **JSON** loading takes 2.0 to 2.2 times the parser's time: Gson is fast, so the reflection and
+  and is still 42% faster.
+- **JSON** loading takes 2.0 to 2.3 times the parser's time: Gson is fast, so the reflection and
   value conversion of AnnotationConfig make up about half of a load.
-- **JSON5** is written by `Json5ValueWriter` and dumps as fast as JSON, the large config 25% faster
-  (0.64 against 0.85 ms) with 7% less output, as identifier keys are written without quotes. It is
-  read by Gson in lenient mode, whose parser is up to 10% slower than for JSON (large config);
-  loads are within 5% of JSON's.
-- **Dotted keys**: the dotted config's dump and load take 1.35 to 1.7 times as long as the flat
-  config's, which has as many options, in JSON, JSON5 and TOML (TOML: 2.97 against 1.75 µs dump,
-  4.40 against 3.08 µs load), and allocate 45-115% more. Dumping pays for `DottedResolver#boxTo`
+- **JSON5** is written by `Json5ValueWriter` and dumps as fast as JSON, the large config 23% faster
+  (0.66 against 0.86 ms) with 7% less output, as identifier keys are written without quotes. It is
+  read by Gson in lenient mode, whose parser is 9 to 16% slower than for JSON; loads are within 8%
+  of JSON's.
+- **Dotted keys**: the dotted config's dump and load take 1.3 to 1.7 times as long as the flat
+  config's, which has as many options, in JSON, JSON5 and TOML (TOML: 2.76 against 1.65 µs dump,
+  4.20 against 3.03 µs load), and allocate 47-113% more. Dumping pays for `DottedResolver#boxTo`
   and the merging of boxed keys in core, loading for `DottedResolver#unbox` and for the parser
-  building nested maps instead of one flat one (TOML's parser: 2.72 against 2.07 µs). In YAML both
-  take 1.2 to 1.3 times as long, mostly in SnakeYAML (its parser alone: 17.91 against 14.62 µs).
+  building nested maps instead of one flat one (TOML's parser: 2.72 against 2.05 µs). In YAML both
+  take 1.2 to 1.3 times as long, mostly in SnakeYAML (its parser alone: 17.29 against 13.78 µs).
 - **Big numbers in maps and lists** are kept exact instead of being turned into `double` and `int`.
   Gson and Jackson's TOML parser read decimals as `BigDecimal`; for `double` / `float` fields it is
   converted with `doubleValue()` / `floatValue()` rather than through its text, which kept the

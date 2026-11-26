@@ -51,15 +51,9 @@ final class PropertiesDumper {
    * @param values entries are written in iteration order, so pass a LinkedHashMap to keep order
    * @param fieldComments comment lines per key. Comments that contain line breaks are split so that
    *     every line gets its own "#" prefix
-   * @param escapeUnicode true: non-ASCII characters are written as unicode escapes, which is safe
-   *     for Properties.load(InputStream) (ISO-8859-1). false: written as-is, so the file must be
-   *     read back with a Reader using the same charset as the writer (e.g. UTF-8)
    */
   static void dump(
-      PrintWriter writer,
-      Map<String, Object> values,
-      Map<String, List<String>> fieldComments,
-      boolean escapeUnicode) {
+      PrintWriter writer, Map<String, Object> values, Map<String, List<String>> fieldComments) {
     // The file is built first and written once, instead of several writes per entry through the
     // PrintWriter. An unsupported value therefore fails before anything is written.
     StringBuilder out = new StringBuilder(64 * values.size() + 16);
@@ -77,9 +71,9 @@ final class PropertiesDumper {
           appendComment(out, comment);
         }
       }
-      appendEscaped(out, key, true, false, escapeUnicode);
+      appendEscaped(out, key, true, false);
       out.append('=');
-      appendValue(out, key, entry.getValue(), escapeUnicode);
+      appendValue(out, key, entry.getValue());
       out.append(EOL);
     }
     writer.append(out);
@@ -101,8 +95,7 @@ final class PropertiesDumper {
     out.append(line.isEmpty() ? "#" : "# ").append(line).append(EOL);
   }
 
-  private static void appendValue(
-      StringBuilder out, String key, Object value, boolean escapeUnicode) {
+  private static void appendValue(StringBuilder out, String key, Object value) {
     switch (value) {
       case null -> {
         // .properties has no null; an empty value is the closest thing
@@ -112,11 +105,11 @@ final class PropertiesDumper {
       case List<?> _ ->
           throw new IllegalArgumentException("'" + key + "': .properties does not support lists");
       case MultilineString multilineString ->
-          appendEscaped(out, multilineString.getString(), false, true, escapeUnicode);
+          appendEscaped(out, multilineString.getString(), false, true);
       default -> {
         String text =
             value.getClass().isArray() ? arrayToString(key, value) : String.valueOf(value);
-        appendEscaped(out, text, false, false, escapeUnicode);
+        appendEscaped(out, text, false, false);
       }
     }
   }
@@ -148,10 +141,9 @@ final class PropertiesDumper {
    * @param isKey keys also escape spaces and the separator/comment characters '=', ':', '#', '!'
    * @param multiline write line breaks as "\n" plus a continuation line instead of one long line
    */
-  private static void appendEscaped(
-      StringBuilder out, String s, boolean isKey, boolean multiline, boolean escapeUnicode) {
+  private static void appendEscaped(StringBuilder out, String s, boolean isKey, boolean multiline) {
     // most keys and values need no escaping: append them as they are
-    if (!needsEscaping(s, isKey, escapeUnicode)) {
+    if (!needsEscaping(s, isKey)) {
       out.append(s);
       return;
     }
@@ -190,7 +182,7 @@ final class PropertiesDumper {
           out.append(c);
         }
         default -> {
-          if (c < 0x20 || c == 0x7f || (escapeUnicode && c > 0x7e)) {
+          if (c < 0x20 || c > 0x7e) {
             out.append("\\u")
                 .append(HEX[(c >> 12) & 0xF])
                 .append(HEX[(c >> 8) & 0xF])
@@ -209,10 +201,10 @@ final class PropertiesDumper {
    * Whether {@link #appendEscaped} would change {@code s}: when this is false, every character is
    * written as it is.
    */
-  private static boolean needsEscaping(String s, boolean isKey, boolean escapeUnicode) {
+  private static boolean needsEscaping(String s, boolean isKey) {
     for (int i = 0; i < s.length(); i++) {
       char c = s.charAt(i);
-      if (c == '\\' || c < 0x20 || c == 0x7f || (escapeUnicode && c > 0x7e)) {
+      if (c == '\\' || c < 0x20 || c > 0x7e) {
         return true;
       }
       if (isKey) {

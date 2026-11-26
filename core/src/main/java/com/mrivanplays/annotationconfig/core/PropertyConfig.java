@@ -66,7 +66,7 @@ public final class PropertyConfig {
           return ret;
         })
         .withValueWriter((values, fieldComments, writer, _) ->
-            PropertiesDumper.dump(writer, values, fieldComments, true))
+            PropertiesDumper.dump(writer, values, fieldComments))
         .build();
   }
 
