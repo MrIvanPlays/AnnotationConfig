@@ -34,7 +34,7 @@ Java 25, Maven multi-module build.
   - `TomlConfig` registers the `java.time` serializers in the shared `SerializerRegistry` on first
     use; they write native TOML date-times when the settings hold `MAPPER_KEY`, strings otherwise.
   - Kept as they are: the name `SHOULD_REVERSE_FIELDS` (`true` means declaration order),
-    `DefaultSerializer`'s `PRIMITIVE_CLASS` check, its `System.err` warning and `printStackTrace()`,
+    `DefaultSerializer`'s `PRIMITIVE_CLASS` check, its `LOGGER` warning and `printStackTrace()`,
     `DataObject#putAll`, `@author claude, Ivan Pekov`, and the "DO NOT TOUCH" comment of the
     record code in `DefaultSerializer`.
   - `.properties` files have only the `.properties` extension: `.conf` usually means HOCON, so

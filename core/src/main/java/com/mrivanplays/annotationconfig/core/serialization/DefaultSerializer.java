@@ -65,6 +65,9 @@ final class DefaultSerializer implements FieldTypeSerializer<Object> {
 
   private static final String INACCESSIBLE = "A field became inaccessible";
 
+  private static final System.Logger LOGGER =
+      System.getLogger("com.mrivanplays.annotationconfig.serialization");
+
   // records whose unsupported annotations have been reported, so it happens once per record
   private static final Set<Class<?>> NAGGED_RECORDS = ConcurrentHashMap.newKeySet();
 
@@ -562,13 +565,13 @@ final class DefaultSerializer implements FieldTypeSerializer<Object> {
           Object val = dataMap.get(component.key());
           if ((component.ignored() || component.rawConfig())
               && NAGGED_RECORDS.add(neededInstanceAllocation)) {
-            System.err.println(
-                "[AnnotationConfig] Warning: @Ignore and @RawConfig are not supported on record"
-                    + " components and are ignored, which may become an error in a future release."
-                    + " Record: "
-                    + neededInstanceAllocation.getName()
-                    + ", component: "
-                    + f.getName());
+            LOGGER.log(
+                System.Logger.Level.WARNING,
+                "@Ignore and @RawConfig are not supported on record components and are"
+                    + " ignored, which may become an error in a future release. Record: {0}, "
+                    + "component: {1}",
+                neededInstanceAllocation.getName(),
+                f.getName());
           }
           if (val == null) {
             // a primitive component can't be null: it takes its value from the default record,
