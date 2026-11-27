@@ -23,7 +23,10 @@
 package com.mrivanplays.annotationconfig.core;
 
 import com.mrivanplays.annotationconfig.core.utils.MapUtils;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
@@ -85,5 +88,55 @@ class TestMapUtils {
     MapUtils.populateFirst(first, second);
 
     Assertions.assertEquals(Map.of("a", Map.of("x", 1), "only", "first", "new", 3), first);
+  }
+
+  @Test
+  void unmodifiableDeepCopyCopiesEveryMapAndList() {
+    List<Object> list = new ArrayList<>(List.of("a"));
+    Map<String, Object> inner = new LinkedHashMap<>();
+    inner.put("list", list);
+    Map<String, Object> map = new LinkedHashMap<>();
+    map.put("inner", inner);
+    map.put("none", null);
+
+    // taken before the originals change
+    final Map<String, Object> copy = MapUtils.unmodifiableDeepCopy(map, value -> value);
+    list.add("b");
+    inner.put("added", 1);
+
+    Map<String, Object> expected = new LinkedHashMap<>();
+    expected.put("inner", Map.of("list", List.of("a")));
+    expected.put("none", null);
+    Assertions.assertEquals(expected, copy);
+    Map<?, ?> copiedInner = (Map<?, ?>) copy.get("inner");
+    Assertions.assertThrows(UnsupportedOperationException.class, () -> copy.put("b", 2));
+    Assertions.assertThrows(UnsupportedOperationException.class, copiedInner::clear);
+    Assertions.assertThrows(
+        UnsupportedOperationException.class, () -> ((List<?>) copiedInner.get("list")).clear());
+  }
+
+  @Test
+  void unmodifiableDeepCopyReplacesTheOtherValues() {
+    Map<String, Object> copy =
+        MapUtils.unmodifiableDeepCopy(
+            Map.of("a", List.of(1, Map.of("b", 2))),
+            value -> value instanceof Integer i ? i * 10 : value);
+
+    Assertions.assertEquals(Map.of("a", List.of(10, Map.of("b", 20))), copy);
+    Assertions.assertThrows(
+        IllegalStateException.class,
+        () ->
+            MapUtils.unmodifiableDeepCopy(
+                Map.of("a", 1),
+                _ -> {
+                  throw new IllegalStateException("rejected");
+                }));
+  }
+
+  @Test
+  void unmodifiableDeepCopyRejectsKeysThatAreNotStrings() {
+    Assertions.assertThrows(
+        IllegalArgumentException.class,
+        () -> MapUtils.unmodifiableDeepCopy(Map.of("a", Map.of(1, "b")), value -> value));
   }
 }

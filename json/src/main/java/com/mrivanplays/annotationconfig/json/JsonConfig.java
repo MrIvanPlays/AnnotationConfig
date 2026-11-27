@@ -145,6 +145,11 @@ public final class JsonConfig {
       public boolean writesComments() {
         return false;
       }
+
+      @Override
+      public boolean writesSchemaKey() {
+        return true;
+      }
     };
   }
 

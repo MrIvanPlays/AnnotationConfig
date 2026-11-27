@@ -18,6 +18,39 @@ doubleValue: -33.9
 # --- double-below-min
 doubleValue: -34.6
 
+# --- errors-none
+port: 8080
+mode: creative
+level: hard
+players: 20
+motd: welcome
+
+# --- errors-polymorphic
+shape:
+  type: circle
+  radius: 0
+  label: square
+
+# --- errors-port
+port: 0
+
+# --- errors-sections
+limits:
+  players: 11
+  inner:
+    level: nope
+    retries: 3
+shape:
+  type: square
+name: c
+
+# --- errors-three
+port: 70000
+mode: hardcore
+level: impossible
+players: 20
+motd: welcome
+
 # --- greeting-invalid
 greeting: "Bye"
 

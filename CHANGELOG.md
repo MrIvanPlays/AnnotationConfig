@@ -29,6 +29,101 @@ private String gamemode = "survival";
 - Prefer an enum when the values mean something to your code; use `@OneOf` when the option stays
   a `String`.
 
+#### Report every option that can't be read
+
+By default, loading stops at the first option it can't read. With the new
+`ACDefaultSettings.REPORT_ALL_ERRORS` setting, it reads every option and then throws one
+`ConfigLoadException` that lists all of them:
+
+```java
+try {
+  resolver.load(config, path, new Settings().put(ACDefaultSettings.REPORT_ALL_ERRORS, true));
+} catch (ConfigLoadException e) {
+  for (ConfigLoadException.Problem problem : e.problems()) {
+    logger.warn(problem.key() + ": " + problem.cause().getMessage());
+  }
+}
+```
+
+```
+3 options of the configuration config.yml could not be read:
+- 'port': int port ; deserialized value is above the maximum allowed (65535) ; got: 70000
+- 'server.mode': java.lang.String mode ; deserialized value is not one of the allowed values [survival, creative] ; got: 'hardcore'
+- 'level': Unknown value 'impossible' for enum com.example.Level; expected one of [easy, hard]
+```
+
+- Every reason loading fails on a value is collected: `@Min`, `@Max` and `@OneOf`, custom
+  annotation validators, unknown enum constants, values that aren't numbers, unknown
+  `@Polymorphic` types, ...
+- A problem's key is the option's path: `server.port` for an option of the section `server`. The
+  options of a section, also of a `@Polymorphic` one, are reported one by one. A list, map,
+  record or custom data type is one option: its first failing element is the problem.
+- The options that can be read get their values; the ones that fail keep theirs.
+- `ConfigLoadException` is an `IllegalArgumentException`, as the first failure is without the
+  setting, and each problem's exception is also a suppressed exception of it.
+- A file with options that can't be read is not written again, also not with
+  `GENERATE_NEW_OPTIONS` or after a migration, as without the setting.
+- The setting is off by default: loading still stops at the first failure.
+
+#### JSON Schema of a config
+
+`ConfigResolver#schema(config)` generates a [JSON Schema](https://json-schema.org/) (draft-07) of
+the files the resolver writes for `config`. Editors use it to complete and check a config while
+it is edited: VS Code for JSON, and with extensions YAML (`# yaml-language-server: $schema=...`)
+and TOML (Even Better TOML, `#:schema ...`).
+
+```java
+ConfigSchema schema = YamlConfig.getConfigResolver().schema(new MyConfig());
+schema.write(Path.of("config.schema.json"));
+```
+
+- Each option gets the type of its field, its comments as its `description`, and the value the
+  config holds as its `default`.
+- `@Min` and `@Max` become `minimum` and `maximum`, on a `String` `minLength` and `maxLength`.
+  `@OneOf` and enums become `enum` (enum constants lower case, as they are written; they are read
+  ignoring case). With `@OneOf(ignoreCase = true)` the values are only `examples`. Annotations on
+  element types (`List<@Max(...) Integer>`, map keys and values, arrays) apply to the elements.
+- Sections, records, custom data types (a type with one field as its field's value), lists,
+  arrays and maps are described down to their values. A `@Polymorphic` value is `anyOf` its
+  implementations, each chosen by its discriminator.
+- The schema follows the resolver's settings as a dump does: dotted keys are nested in YAML, JSON
+  and TOML and stay flat in `.properties`, and fields are in the order they are written.
+  `schema(config, settings)` takes settings, as `dump` does.
+- No option is required, as a config loads without them, and keys the schema doesn't describe
+  are allowed, as loading ignores them.
+- A type with a serializer in the `SerializerRegistry` can be anything: only the serializer knows
+  what it writes. Custom annotation validators are not described.
+- `ConfigSchema` holds the schema: `asMap()`, `toJson()`, `write(...)` to a `Path`, `File` or
+  `Writer`, and `writeIfMissing(...)` to a `Path` or `File`, which leaves an existing file as it
+  is, also an outdated one.
+
+The new `ACDefaultSettings.SCHEMA_REFERENCE` setting makes a dump reference the schema, so an
+editor finds it without being configured, also after the file is written again:
+
+```java
+resolver.loadOrDump(
+    config, path, new Settings().put(ACDefaultSettings.SCHEMA_REFERENCE, "config.schema.json"));
+```
+
+| Format        | Written first                                       |
+|---------------|-----------------------------------------------------|
+| JSON, JSON5   | a `"$schema": "config.schema.json"` key             |
+| YAML          | `# yaml-language-server: $schema=config.schema.json` |
+| TOML          | `#:schema config.schema.json`                       |
+| `.properties` | nothing: no editor checks it against a schema       |
+
+- It isn't set by default, so dumps are unchanged.
+- Loading ignores the reference. In JSON, an option with the key `$schema` fails the dump as a
+  duplicate key, and a reference with a line break is rejected.
+- `ValueWriter` has two new default methods for this, `schemaComment(String)` and
+  `writesSchemaKey()`, so a custom format can reference a schema too.
+
+#### `MapUtils#unmodifiableDeepCopy`
+
+`MapUtils.unmodifiableDeepCopy(map, values)` copies a map and every map and list in it, at any
+depth, into ones that can't be modified, replacing every other value by what `values` returns for
+it (which can throw to reject it). A key that is not a `String` is rejected. `ConfigSchema` uses it.
+
 ### Fixes
 
 - `.properties` does not support lists, and writing one already failed. Reading a value with a

@@ -49,4 +49,9 @@ public final class YamlValueWriter implements ValueWriter {
       Settings settings) {
     YamlConfig.HANDLER.write(values, fieldComments, writer, settings);
   }
+
+  @Override
+  public String schemaComment(String schema) {
+    return YamlConfig.HANDLER.schemaComment(schema);
+  }
 }

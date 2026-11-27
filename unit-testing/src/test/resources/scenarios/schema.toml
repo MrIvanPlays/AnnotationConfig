@@ -1,0 +1,401 @@
+# --- flat
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "description": "The server's settings",
+  "type": "object",
+  "properties": {
+    "config-version": {
+      "description": "Don't change this",
+      "type": "integer",
+      "default": 2
+    },
+    "port": {
+      "description": "The port to listen on\nbetween 1 and 65535",
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 65535,
+      "default": 25565
+    },
+    "mode": {
+      "type": "string",
+      "enum": [
+        "survival",
+        "creative"
+      ],
+      "default": "survival"
+    },
+    "difficulty": {
+      "type": "string",
+      "examples": [
+        "easy",
+        "hard"
+      ],
+      "default": "easy"
+    },
+    "name": {
+      "description": "Quotes \"and\" a back\\slash",
+      "type": "string",
+      "minLength": 3,
+      "maxLength": 16,
+      "default": "server"
+    },
+    "level": {
+      "type": "string",
+      "enum": [
+        "easy",
+        "hard"
+      ],
+      "default": "hard"
+    },
+    "whitelist": {
+      "type": "boolean",
+      "default": true
+    },
+    "ratio": {
+      "type": "number",
+      "minimum": 0.5,
+      "default": 1.5
+    },
+    "speed": {
+      "type": "number",
+      "maximum": 0.9,
+      "default": 0.25
+    },
+    "seed": {
+      "type": "integer",
+      "default": 42
+    },
+    "big": {
+      "type": "integer",
+      "default": 7
+    },
+    "marker": {
+      "type": "string",
+      "default": "#"
+    },
+    "levels": {
+      "type": "array",
+      "items": {
+        "type": "integer",
+        "maximum": 5
+      },
+      "default": [
+        1,
+        2
+      ]
+    },
+    "dotted": {
+      "type": "object",
+      "properties": {
+        "key": {
+          "type": "string",
+          "default": "value"
+        }
+      }
+    }
+  }
+}
+
+# --- objects
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "type": "object",
+  "properties": {
+    "spawn": {
+      "type": "object",
+      "properties": {
+        "x": {
+          "type": "integer",
+          "default": 0
+        },
+        "y": {
+          "type": "integer",
+          "maximum": 255,
+          "default": 64
+        }
+      }
+    },
+    "single": {
+      "type": "string",
+      "default": "one"
+    },
+    "wrapper": {
+      "type": "string",
+      "default": "wrapped"
+    },
+    "item": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "description": "The item's id",
+          "type": "string",
+          "default": "stone"
+        },
+        "amount": {
+          "type": "integer",
+          "default": 1
+        },
+        "next": {}
+      }
+    },
+    "points": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "x": {
+            "type": "integer"
+          },
+          "y": {
+            "type": "integer",
+            "maximum": 255
+          }
+        }
+      },
+      "default": [
+        {
+          "x": 1,
+          "y": 2
+        }
+      ]
+    }
+  }
+}
+
+# --- polymorphic
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "type": "object",
+  "properties": {
+    "shape": {
+      "type": "object",
+      "properties": {
+        "type": {
+          "type": "string",
+          "enum": [
+            "circle",
+            "square"
+          ]
+        }
+      },
+      "anyOf": [
+        {
+          "description": "A circle",
+          "properties": {
+            "type": {
+              "const": "circle"
+            },
+            "radius": {
+              "type": "integer",
+              "minimum": 1,
+              "default": 1
+            }
+          }
+        },
+        {
+          "properties": {
+            "type": {
+              "const": "square"
+            },
+            "side": {
+              "type": "integer"
+            }
+          }
+        }
+      ]
+    },
+    "shapes": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "kind": {
+            "type": "string",
+            "enum": [
+              "circle",
+              "square"
+            ]
+          }
+        },
+        "anyOf": [
+          {
+            "description": "A circle",
+            "properties": {
+              "kind": {
+                "const": "circle"
+              },
+              "radius": {
+                "type": "integer",
+                "minimum": 1
+              }
+            }
+          },
+          {
+            "properties": {
+              "kind": {
+                "const": "square"
+              },
+              "side": {
+                "type": "integer"
+              }
+            }
+          }
+        ]
+      },
+      "default": [
+        {
+          "kind": "square",
+          "side": 2
+        }
+      ]
+    }
+  }
+}
+
+# --- sections
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "type": "object",
+  "properties": {
+    "network": {
+      "description": "Where to connect",
+      "type": "object",
+      "properties": {
+        "host": {
+          "type": "string",
+          "default": "localhost"
+        },
+        "port": {
+          "type": "integer",
+          "minimum": 1,
+          "default": 80
+        }
+      }
+    },
+    "limits": {
+      "type": "object",
+      "properties": {
+        "rate": {
+          "type": "integer",
+          "default": 5
+        },
+        "players": {
+          "type": "integer",
+          "maximum": 100,
+          "default": 20
+        }
+      }
+    },
+    "a": {
+      "type": "object",
+      "properties": {
+        "b": {
+          "type": "object",
+          "properties": {
+            "c": {
+              "type": "string",
+              "default": "deep"
+            }
+          }
+        }
+      }
+    }
+  }
+}
+
+# --- collections
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "type": "object",
+  "properties": {
+    "scores": {
+      "type": "array",
+      "items": {
+        "type": "integer",
+        "maximum": 100
+      },
+      "default": [
+        1,
+        2
+      ]
+    },
+    "teams": {
+      "type": "object",
+      "propertyNames": {
+        "type": "string",
+        "enum": [
+          "red",
+          "blue"
+        ]
+      },
+      "additionalProperties": {
+        "type": "integer"
+      },
+      "default": {
+        "red": 1
+      }
+    },
+    "groups": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "array",
+        "items": {
+          "type": "string"
+        }
+      },
+      "default": {
+        "admins": [
+          "ivan"
+        ]
+      }
+    },
+    "wildcard": {
+      "type": "array",
+      "items": {
+        "type": "integer",
+        "minimum": 0
+      },
+      "default": [
+        3
+      ]
+    },
+    "grid": {
+      "type": "array",
+      "items": {
+        "type": "array",
+        "items": {
+          "type": "string"
+        }
+      },
+      "default": [
+        [
+          "a",
+          "b"
+        ]
+      ]
+    },
+    "anything": {
+      "default": "text"
+    }
+  }
+}
+
+# --- no-reference
+# The server's settings
+
+config-version = 1
+
+port = 25565
+
+motd = 'hi'
+
+# --- reference
+#:schema config.schema.json
+# The server's settings
+
+config-version = 1
+
+port = 25565
+
+motd = 'hi'
+

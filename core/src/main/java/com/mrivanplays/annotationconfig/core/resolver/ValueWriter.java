@@ -22,12 +22,14 @@
 
 package com.mrivanplays.annotationconfig.core.resolver;
 
+import com.mrivanplays.annotationconfig.core.resolver.settings.ACDefaultSettings;
 import com.mrivanplays.annotationconfig.core.resolver.settings.Settings;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.util.List;
 import java.util.Map;
 import org.jspecify.annotations.NullMarked;
+import org.jspecify.annotations.Nullable;
 
 /**
  * Represents a value writer.
@@ -70,5 +72,32 @@ public interface ValueWriter {
    */
   default boolean writesComments() {
     return true;
+  }
+
+  /**
+   * The comment that references the JSON Schema {@code schema} in a file of this format, written
+   * as its first line when {@link ACDefaultSettings#SCHEMA_REFERENCE} is set: {@code #
+   * yaml-language-server: $schema=config.schema.json} in YAML, for example. AnnotationConfig ends
+   * the line.
+   *
+   * @param schema the value of {@link ACDefaultSettings#SCHEMA_REFERENCE}
+   * @return the comment, or {@code null} if the format references a schema in no comment; {@code
+   *     null} unless overridden
+   * @since 3.1.1
+   */
+  default @Nullable String schemaComment(String schema) {
+    return null;
+  }
+
+  /**
+   * Returns whether a file of this format references the JSON Schema with a {@code "$schema"} key,
+   * as JSON does. When {@link ACDefaultSettings#SCHEMA_REFERENCE} is set, the key is then the first
+   * of the values {@link #write(Map, Map, PrintWriter, Settings) write} gets.
+   *
+   * @return whether the reference is a {@code "$schema"} key; {@code false} unless overridden
+   * @since 3.1.1
+   */
+  default boolean writesSchemaKey() {
+    return false;
   }
 }

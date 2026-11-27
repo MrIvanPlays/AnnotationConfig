@@ -71,6 +71,9 @@ final class AnnotatedConfigResolver {
 
   private static final String INACCESSIBLE = "A field became inaccessible";
 
+  // the key a JSON Schema reference has in JSON
+  private static final String SCHEMA_KEY = "$schema";
+
   private AnnotatedConfigResolver() {
     throw new IllegalStateException("Instantiation of utility-type class");
   }
@@ -205,6 +208,78 @@ final class AnnotatedConfigResolver {
             settings.get(ACDefaultSettings.KEY_RESOLVER).orElseThrow(),
             // a writer without comments gets none, so they aren't collected
             valueWriter.writesComments() ? new LinkedHashMap<>() : null);
+    Map<String, Object> toWrite = values(annotatedConfig, holders, context, true);
+    // first, as editors look for it at the start of the file
+    String schema = settings.get(ACDefaultSettings.SCHEMA_REFERENCE).orElse(null);
+    if (schema != null) {
+      if (schema.indexOf('\n') != -1 || schema.indexOf('\r') != -1) {
+        throw new IllegalArgumentException(
+            "The schema reference must not hold a line break: '" + schema + "'");
+      }
+      String comment = valueWriter.schemaComment(schema);
+      if (comment != null) {
+        writer.print(comment);
+        writer.append('\n');
+      }
+      if (valueWriter.writesSchemaKey()) {
+        toWrite = withSchemaKey(toWrite, schema);
+      }
+    }
+    // the blank line separates the comments from the values; without comments (e.g. JSON, which
+    // has none) it would be a stray leading line
+    if (commentChar != null) {
+      for (AnnotationHolder holder : holders) {
+        if (!holder.isClass()) {
+          continue;
+        }
+        List<String> comments = ClassInfo.of(holder.getClazz()).comments();
+        if (!comments.isEmpty()) {
+          for (String comment : comments) {
+            writer.print(commentChar + comment);
+            writer.append('\n');
+          }
+          writer.append('\n');
+        }
+      }
+    }
+    Map<String, List<String>> fieldComments =
+        context.comments() == null ? Collections.emptyMap() : context.comments();
+    valueWriter.write(toWrite, fieldComments, writer, settings);
+  }
+
+  /** {@code values} after a {@code "$schema"} key holding {@code schema}. */
+  private static Map<String, Object> withSchemaKey(Map<String, Object> values, String schema) {
+    if (values.containsKey(SCHEMA_KEY)) {
+      // as for any duplicate key; a config field may not take the key the reference needs
+      throw new IllegalArgumentException(
+          "Duplicate key '" + SCHEMA_KEY + "': it holds the schema reference");
+    }
+    Map<String, Object> withKey = LinkedHashMap.newLinkedHashMap(values.size() + 1);
+    withKey.put(SCHEMA_KEY, schema);
+    withKey.putAll(values);
+    return withKey;
+  }
+
+  /**
+   * The values a dump of {@code annotatedConfig} with {@code settings} writes, as the map the
+   * {@link ValueWriter} gets. The {@code @RawConfig} field is left as it is.
+   */
+  public static Map<String, Object> values(
+      Object annotatedConfig, Set<AnnotationHolder> holders, Settings settings) {
+    KeyResolver keyResolver = settings.get(ACDefaultSettings.KEY_RESOLVER).orElseThrow();
+    return values(annotatedConfig, holders, new WriteContext(settings, keyResolver, null), false);
+  }
+
+  /**
+   * The values to write, and their comments into the context.
+   *
+   * @param setRawConfig whether the {@code @RawConfig} field gets the values, as a dump does
+   */
+  private static Map<String, Object> values(
+      Object annotatedConfig,
+      Set<AnnotationHolder> holders,
+      WriteContext context,
+      boolean setRawConfig) {
     Map<String, Object> toWrite = new LinkedHashMap<>();
     // the version first, so that a reader sees it before the options; a field with the same key
     // fails as a duplicate key
@@ -220,18 +295,6 @@ final class AnnotatedConfigResolver {
     FieldInfo rawConfigField = null;
     for (AnnotationHolder holder : holders) {
       if (holder.isClass()) {
-        // the blank line separates the comments from the values; without comments (e.g. JSON,
-        // which has none) it would be a stray leading line
-        if (commentChar != null) {
-          List<String> comments = ClassInfo.of(holder.getClazz()).comments();
-          if (!comments.isEmpty()) {
-            for (String comment : comments) {
-              writer.print(commentChar + comment);
-              writer.append('\n');
-            }
-            writer.append('\n');
-          }
-        }
         continue;
       }
       FieldInfo field = holder.getInfo();
@@ -245,12 +308,10 @@ final class AnnotatedConfigResolver {
         throw new IllegalArgumentException(INACCESSIBLE, e);
       }
     }
-    if (rawConfigField != null) {
+    if (rawConfigField != null && setRawConfig) {
       setRawConfig(rawConfigField, annotatedConfig, toWrite);
     }
-    Map<String, List<String>> fieldComments =
-        context.comments() == null ? Collections.emptyMap() : context.comments();
-    valueWriter.write(toWrite, fieldComments, writer, settings);
+    return toWrite;
   }
 
   /** The written form of a serialized value: the value itself, a list, or a map for a section. */
@@ -302,6 +363,8 @@ final class AnnotatedConfigResolver {
    * is filled when the section names its class, and otherwise replaced by a new instance of the
    * class the section names.
    *
+   * @param errors as for {@link #setFields}
+   * @param path the dotted path of the section followed by a dot
    * @return whether options are missing, the discriminator included
    */
   private static boolean setPolymorphic(
@@ -309,7 +372,9 @@ final class AnnotatedConfigResolver {
       PolymorphicInfo polymorphic,
       Object annotatedConfig,
       Map<String, Object> section,
-      Settings settings) {
+      Settings settings,
+      @Nullable LoadErrors errors,
+      String path) {
     Field field = info.field();
     Object current;
     try {
@@ -337,7 +402,8 @@ final class AnnotatedConfigResolver {
     }
     Object value = sameType ? current : ClassInfo.newInstance(type);
     missingOptions |=
-        setFields(value, section, resolveAnnotationHolders(value, settings), settings);
+        setFields(
+            value, section, resolveAnnotationHolders(value, settings), settings, errors, path);
     if (!sameType) {
       // set once it is read, so a failure leaves the field as it was
       setField(field, annotatedConfig, value);
@@ -525,12 +591,21 @@ final class AnnotatedConfigResolver {
     MapUtils.populateFirst((Map<String, Object>) stored, (Map<String, Object>) value);
   }
 
-  // returns whether it's missing options
+  /**
+   * Reads {@code values} into the fields of {@code annotatedConfig}.
+   *
+   * @param errors where the options that can't be read go; {@code null} to throw the first
+   * @param path the dotted path of the section followed by a dot, "" at the top level; for {@code
+   *     errors}
+   * @return whether options are missing
+   */
   public static boolean setFields(
       Object annotatedConfig,
       Map<String, Object> values,
       Set<AnnotationHolder> holders,
-      Settings settings) {
+      Settings settings,
+      @Nullable LoadErrors errors,
+      String path) {
     KeyResolver keyResolver = settings.get(ACDefaultSettings.KEY_RESOLVER).orElseThrow();
     NullReadHandleOption nullReadHandler =
         settings.get(ACDefaultSettings.NULL_READ_HANDLER).orElseThrow();
@@ -554,9 +629,20 @@ final class AnnotatedConfigResolver {
         if (polymorphic != null) {
           // as for @ConfigObject: a value that is no section keeps the field's value
           if (value instanceof Map) {
-            missingOptions |=
-                setPolymorphic(
-                    info, polymorphic, annotatedConfig, (Map<String, Object>) value, settings);
+            try {
+              missingOptions |=
+                  setPolymorphic(
+                      info,
+                      polymorphic,
+                      annotatedConfig,
+                      (Map<String, Object>) value,
+                      settings,
+                      errors,
+                      path + keyName + ".");
+            } catch (RuntimeException e) {
+              // an unknown discriminator; the options of the section report themselves
+              LoadErrors.report(errors, path + keyName, e);
+            }
           }
           continue;
         }
@@ -583,18 +669,24 @@ final class AnnotatedConfigResolver {
         if (field.getType().isRecord()) {
           // directly deserialize the value and set the field, do NOT try to set record fields
           Type fieldType = info.genericType();
-          Object deserialized =
-              serializerFor(fieldType)
-                  .deserialize(
-                      new DataObject(value, true),
-                      SerializationContext.of(
-                          field.getName(),
-                          section,
-                          field.getType(),
-                          fieldType,
-                          annotatedConfig,
-                          settings),
-                      info.accessor());
+          Object deserialized;
+          try {
+            deserialized =
+                serializerFor(fieldType)
+                    .deserialize(
+                        new DataObject(value, true),
+                        SerializationContext.of(
+                            field.getName(),
+                            section,
+                            field.getType(),
+                            fieldType,
+                            annotatedConfig,
+                            settings),
+                        info.accessor());
+          } catch (RuntimeException e) {
+            LoadErrors.report(errors, path + keyName, e);
+            continue;
+          }
           if (!skipNull(deserialized, thisMissingOption, nullReadHandler)) {
             setField(field, annotatedConfig, deserialized);
           }
@@ -605,7 +697,9 @@ final class AnnotatedConfigResolver {
                 section,
                 (Map<String, Object>) value,
                 resolveAnnotationHolders(section, settings),
-                settings);
+                settings,
+                errors,
+                path + keyName + ".");
         continue;
       }
       Object deserialized;
@@ -618,6 +712,9 @@ final class AnnotatedConfigResolver {
                     info.accessor());
       } catch (IllegalAccessException e) {
         throw new IllegalArgumentException(INACCESSIBLE, e);
+      } catch (RuntimeException e) {
+        LoadErrors.report(errors, path + keyName, e);
+        continue;
       }
       if (skipNull(deserialized, thisMissingOption, nullReadHandler)
           || (deserialized == null && field.getType().isPrimitive())) {
@@ -625,7 +722,12 @@ final class AnnotatedConfigResolver {
         continue;
       }
       // @Min, @Max and custom annotations; a validator that fails silently keeps the field's value
-      if (!FieldValidation.validate(info, keyName, deserialized, settings)) {
+      try {
+        if (!FieldValidation.validate(info, keyName, deserialized, settings)) {
+          continue;
+        }
+      } catch (RuntimeException e) {
+        LoadErrors.report(errors, path + keyName, e);
         continue;
       }
       setField(field, annotatedConfig, deserialized);

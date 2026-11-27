@@ -109,6 +109,47 @@ public final class ACDefaultSettings {
   public static final Setting<Boolean> FIND_STATIC_FIELDS =
       Setting.of("find_static_fields", Boolean.class);
 
+  /**
+   * Whether loading reads every option before it reports the options that could not be read. With
+   * it on, a load that finds a value it can't read (out of the bounds of {@code @Min} or {@code
+   * Max}, not one of {@code @OneOf}, an unknown enum constant, a number that isn't one, ...) reads
+   * the other options and then throws one {@link
+   * com.mrivanplays.annotationconfig.core.resolver.ConfigLoadException} that lists them all. With
+   * it off, loading stops at the first one. Defaults to {@code false}.
+   *
+   * <p>With it on, every option that could be read gets its value and the ones that failed keep
+   * theirs; with it off, so do the options read before the failure, and the ones after it are not
+   * read. Either way a file that misses options is not written again.
+   *
+   * @since 3.1.1
+   */
+  public static final Setting<Boolean> REPORT_ALL_ERRORS =
+      Setting.of("report_all_errors", Boolean.class);
+
+  /**
+   * The JSON Schema a dumped file references, so that an editor completes and checks the file
+   * with it: a path, relative to the file, or a URL, such as {@code config.schema.json}. The
+   * schema itself comes from {@link
+   * com.mrivanplays.annotationconfig.core.resolver.ConfigResolver#schema(Object)}.
+   *
+   * <p>Not set by default: a dump references no schema. When it is set, each format references it
+   * the way its editors read it (see {@link
+   * com.mrivanplays.annotationconfig.core.resolver.ValueWriter#schemaComment(String)}):
+   *
+   * <ul>
+   *   <li>JSON and JSON5: a {@code "$schema"} key, the first key of the file
+   *   <li>YAML: a {@code # yaml-language-server: $schema=...} comment, the first line
+   *   <li>TOML: a {@code #:schema ...} comment, the first line
+   *   <li>{@code .properties}: nothing, as no editor checks it against a schema
+   * </ul>
+   *
+   * <p>Loading ignores the reference. It must not hold a line break.
+   *
+   * @since 3.1.1
+   */
+  public static final Setting<String> SCHEMA_REFERENCE =
+      Setting.of("schema_reference", String.class);
+
   private ACDefaultSettings() {
     throw new IllegalStateException("Instantiation of utility-type class");
   }
@@ -130,6 +171,7 @@ public final class ACDefaultSettings {
         .put(GENERATE_NEW_OPTIONS, true)
         .put(FIND_PARENT_FIELDS, false)
         .put(FIND_STATIC_FIELDS, false)
+        .put(REPORT_ALL_ERRORS, false)
         .put(KEY_RESOLVER, KeyResolver.DEFAULT)
         .copy(true);
   }

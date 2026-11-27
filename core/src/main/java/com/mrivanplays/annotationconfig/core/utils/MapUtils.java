@@ -22,9 +22,12 @@
 
 package com.mrivanplays.annotationconfig.core.utils;
 
+import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.Function;
@@ -43,6 +46,8 @@ import org.jspecify.annotations.Nullable;
  *   <li>copying maps with their keys as text, as values read from a file can have keys that are not
  *       strings, such as numbers in YAML ({@link #copyWithStringKeys(Map, Function)} and the
  *       methods built on it);
+ *   <li>copying maps and the maps and lists in them into ones that can't be modified ({@link
+ *       #unmodifiableDeepCopy(Map, Function)});
  *   <li>finding the sections that hold a key of a map by dotted path ({@link #parentPaths(Map)}).
  * </ul>
  *
@@ -142,6 +147,47 @@ public final class MapUtils {
   public static Map<String, Object> deepCopyWithStringKeys(Map<?, ?> map) {
     return copyWithStringKeys(
         map, value -> value instanceof Map<?, ?> inner ? deepCopyWithStringKeys(inner) : value);
+  }
+
+  /**
+   * Copies {@code map} and every map and list in it, at any depth, into maps and lists that can't
+   * be modified, in their iteration order. Every other value, {@code null} included, is replaced
+   * by what {@code values} returns for it, which can throw to reject it.
+   *
+   * <p>Unlike {@link #deepCopyWithStringKeys(Map)}, keys are not turned into text: a map with a key
+   * that is not a {@code String} is rejected.
+   *
+   * @param map the map to copy
+   * @param values what each value that is neither a map nor a list is replaced with
+   * @return a new map that can't be modified, nor can the maps and lists in it
+   * @throws IllegalArgumentException if a map has a key that is not a {@code String}
+   * @since 3.1.1
+   */
+  public static Map<String, Object> unmodifiableDeepCopy(
+      Map<?, ?> map, Function<@Nullable Object, @Nullable Object> values) {
+    Map<String, @Nullable Object> copy = LinkedHashMap.newLinkedHashMap(map.size());
+    for (Map.Entry<?, ?> entry : map.entrySet()) {
+      if (!(entry.getKey() instanceof String key)) {
+        throw new IllegalArgumentException("Not a String key: " + entry.getKey());
+      }
+      copy.put(key, unmodifiableDeepCopyOf(entry.getValue(), values));
+    }
+    return Collections.unmodifiableMap(copy);
+  }
+
+  private static @Nullable Object unmodifiableDeepCopyOf(
+      @Nullable Object value, Function<@Nullable Object, @Nullable Object> values) {
+    if (value instanceof Map<?, ?> map) {
+      return unmodifiableDeepCopy(map, values);
+    }
+    if (value instanceof List<?> list) {
+      List<@Nullable Object> copy = new ArrayList<>(list.size());
+      for (Object element : list) {
+        copy.add(unmodifiableDeepCopyOf(element, values));
+      }
+      return Collections.unmodifiableList(copy);
+    }
+    return values.apply(value);
   }
 
   /**

@@ -25,6 +25,7 @@ package com.mrivanplays.annotationconfig.core.internal;
 import com.mrivanplays.annotationconfig.core.annotations.Polymorphic;
 import java.lang.reflect.Modifier;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -230,6 +231,11 @@ public final class PolymorphicInfo {
   /** The key that names the implementation. */
   public String discriminator() {
     return this.discriminator;
+  }
+
+  /** The implementations by their names, in the order they are declared. */
+  public Map<String, Class<?>> types() {
+    return Collections.unmodifiableMap(this.types);
   }
 
   /**

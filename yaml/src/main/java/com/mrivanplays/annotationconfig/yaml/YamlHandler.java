@@ -94,6 +94,12 @@ public final class YamlHandler implements ValueReader, ValueWriter {
     }
   }
 
+  /** The modeline of the YAML language server, which VS Code's YAML extension and others use. */
+  @Override
+  public String schemaComment(String schema) {
+    return "# yaml-language-server: $schema=" + schema;
+  }
+
   @Override
   public void write(
       Map<String, Object> values,

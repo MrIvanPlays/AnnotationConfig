@@ -70,6 +70,9 @@ in the changelog.
 and [its migrations](/examples/src/main/java/com/mrivanplays/annotationconfig/examples/ExampleMigrateConfig.java)
 ([output (YAML)](examples/versioned-config.yaml))
 
+[Example JSON Schema of a config](/examples/src/main/java/com/mrivanplays/annotationconfig/examples/ExampleSchema.java)
+([output](examples/application-config.schema.json)), which editors use to complete and check it
+
 ### About configuration resolvers
 
 `ConfigResolver` is the abstraction layer between AnnotationConfig internals and a specific

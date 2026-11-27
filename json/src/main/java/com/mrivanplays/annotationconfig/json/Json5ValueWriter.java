@@ -262,6 +262,12 @@ public final class Json5ValueWriter implements ValueWriter {
     out.repeat(INDENT, depth);
   }
 
+  /** As in JSON: a {@code "$schema"} key. */
+  @Override
+  public boolean writesSchemaKey() {
+    return true;
+  }
+
   @Override
   public void write(
       Map<String, Object> values,

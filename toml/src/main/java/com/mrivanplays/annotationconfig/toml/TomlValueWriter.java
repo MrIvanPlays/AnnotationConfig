@@ -498,6 +498,12 @@ public final class TomlValueWriter implements ValueWriter {
 
   // </editor-fold>
 
+  /** The schema directive of Taplo, which Even Better TOML and other editors use. */
+  @Override
+  public String schemaComment(String schema) {
+    return "#:schema " + schema;
+  }
+
   @Override
   public void write(
       Map<String, Object> values,

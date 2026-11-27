@@ -35,6 +35,10 @@ Java 25, Maven multi-module build.
     `DefaultSerializer`'s `PRIMITIVE_CLASS` check, its `LOGGER` warning and `printStackTrace()`,
     `DataObject#putAll`, `@author claude, Ivan Pekov`, and the "DO NOT TOUCH" comment of the
     record code in `DefaultSerializer`.
+  - `ConfigResolver` is not meant to be implemented (its Javadoc and the README say so): resolvers
+    are created with its builder. Adding abstract methods to it is not a breaking change, also in
+    a patch release; `ValueWriter` and `ValueReader`, which users do implement, get default
+    methods.
   - `.properties` files have only the `.properties` extension: `.conf` usually means HOCON, so
     `resolveMultiple` would read other `.conf` files as `.properties`. 3.0.3 didn't register it
     either.
@@ -77,6 +81,24 @@ Java 25, Maven multi-module build.
   `MigrationStrategies` registry, keyed by the class that declares the annotation
   (`ClassInfo#versionClass()`). A migrated file loaded from a path is copied to
   `<name>.v<version>.bak` and rewritten; loads from a reader or map don't write.
+- `ACDefaultSettings.REPORT_ALL_ERRORS`: `AnnotatedConfigResolver#setFields` hands each option's
+  failure (deserializing, validating, an unknown `@Polymorphic` type) to `core.internal.LoadErrors`
+  with the option's dotted path, which rethrows it when the setting is off. `ConfigResolverImpl`
+  throws the collected `ConfigLoadException` right after `setFields`, before a migrated or
+  incomplete file would be written. Only what reading and validating a value throws is collected;
+  `setFields`' own checks (an uninitialized section, an invalid `@Polymorphic`) throw as before.
+- `ConfigResolver#schema` (JSON Schema draft-07) is built by `core.internal.SchemaGenerator`
+  from the holders and settings a dump uses: config fields and sections as
+  `AnnotatedConfigResolver` writes them (dotted keys placed where the key resolver boxes them),
+  values as `DefaultSerializer` writes them (records, custom data types, a one-field type as its
+  field's value, `@Polymorphic` as `anyOf` with a `const` discriminator). The defaults are what a
+  dump writes (`AnnotatedConfigResolver#values`, which leaves `@RawConfig` alone). `ConfigSchema`
+  writes the JSON by hand: `core` has no JSON library. Keep the generator in step with what the
+  writers and `DefaultSerializer` write.
+- `ACDefaultSettings.SCHEMA_REFERENCE` has no default on purpose: a dump writes a reference only
+  when it is set. `AnnotatedConfigResolver#toWriter` asks the `ValueWriter`: `schemaComment`
+  (YAML's `yaml-language-server` modeline, Taplo's `#:schema`) is written as the first line,
+  `writesSchemaKey` (JSON, JSON5) puts `"$schema"` first in the values. `.properties` writes none.
 - `AnnotatedConfigResolver#dump(Path)` creates missing directories and follows symbolic links to
   the file they point to. A new file is written in place; an existing one is replaced by a
   temporary file (owner-only on POSIX) that first gets the old file's POSIX permissions.
@@ -226,7 +248,7 @@ Java 25, Maven multi-module build.
 - What the formats share is tested once, by the scenarios in `scenarios`: one package per topic
   (`sections`, `collections`, `values`, `objects`, `comments`, `bounds`, `validation`, `fields`,
   `files`, `fullconfig`, `polymorphic`, `resolver`, `lineendings`, `commentpaths`,
-  `threadsafety`, `migration`). Every test that loads or dumps a config goes there, also when it tests `core`
+  `threadsafety`, `migration`, `schema`). Every test that loads or dumps a config goes there, also when it tests `core`
   logic: each parser hands values on as types of its own, which a test through `.properties` alone
   doesn't see. A scenario class is a
   `@ParameterizedClass` that extends `Scenario` and runs once per format that has the features it

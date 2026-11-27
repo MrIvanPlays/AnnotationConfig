@@ -46,7 +46,13 @@ import org.jspecify.annotations.Nullable;
 /**
  * Represents a resolver of configurations.
  *
- * <p>Should be used for implementing new configuration types
+ * <p>Should be used for implementing new configuration types: a new type is a resolver created
+ * with {@link #newBuilder()}, given the {@link ValueWriter} and {@link ValueReader} of the format.
+ *
+ * <p>This interface is not meant to be implemented: create resolvers only with {@link
+ * #newBuilder()}. Methods may be added to it in any version, also in a patch release, without a
+ * default implementation. A class that implements it anyway depends on internals that may change
+ * without notice, and its author deals with the consequences.
  *
  * @since 2.0.0
  * @author Ivan Pekov
@@ -503,6 +509,47 @@ public interface ConfigResolver {
    */
   <T> Map<String, T> resolveMultiple(
       Path dir, Supplier<T> configToResolveTo, WritableObject dumpFile, Settings settings);
+
+  /**
+   * Generates a <a href="https://json-schema.org/">JSON Schema</a> of the files this resolver
+   * writes for {@code annotatedConfig}, using the default {@link Settings} from the builder of this
+   * config resolver, or {@link ACDefaultSettings#getDefault()} if none were specified. See {@link
+   * #schema(Object, Settings)}.
+   *
+   * @param annotatedConfig the config to describe; its values are the defaults of the schema
+   * @return the schema
+   * @since 3.1.1
+   */
+  ConfigSchema schema(Object annotatedConfig);
+
+  /**
+   * Generates a <a href="https://json-schema.org/">JSON Schema</a> (draft-07) of the files this
+   * resolver writes for {@code annotatedConfig}. Editors use it to complete and check a config as
+   * it is typed: VS Code for JSON and, with an extension, YAML, and Taplo for TOML. It describes
+   * the file, so it follows the settings as a dump does: dotted keys are nested where the key
+   * resolver nests them, and fields come in the order they are written.
+   *
+   * <p>Each option gets the type of its field, its comments as its description, and the value
+   * {@code annotatedConfig} holds as its default. {@code @Min} and {@code @Max} become {@code
+   * minimum} and {@code maximum} (on strings, {@code minLength} and {@code maxLength}), and
+   * {@code @OneOf} and enums become {@code enum} (with {@code ignoreCase}, the values are only
+   * {@code examples}), also on element types. Sections, records, custom data types, lists, arrays
+   * and maps are described down to their values, and a {@code @Polymorphic} value as one of its
+   * implementations, chosen by the discriminator.
+   *
+   * <p>The schema doesn't require any option, as a config loads without them, and allows keys it
+   * doesn't describe, as loading ignores them. A value of a type with a serializer in the {@link
+   * com.mrivanplays.annotationconfig.core.serialization.SerializerRegistry} can be anything: only
+   * the serializer knows what it writes. Custom annotation validators are not described.
+   *
+   * @param annotatedConfig the config to describe; its values are the defaults of the schema
+   * @param settings the settings to describe the files of; mutable, as for {@link #dump(Object,
+   *     Path, Settings)}
+   * @return the schema
+   * @throws IllegalArgumentException if the provided settings are immutable
+   * @since 3.1.1
+   */
+  ConfigSchema schema(Object annotatedConfig, Settings settings);
 
   /**
    * Represents a builder of a {@link ConfigResolver}.

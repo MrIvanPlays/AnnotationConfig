@@ -23,6 +23,7 @@
 package com.mrivanplays.annotationconfig.core.internal;
 
 import com.mrivanplays.annotationconfig.core.resolver.ConfigResolver;
+import com.mrivanplays.annotationconfig.core.resolver.ConfigSchema;
 import com.mrivanplays.annotationconfig.core.resolver.ValueReader;
 import com.mrivanplays.annotationconfig.core.resolver.ValueWriter;
 import com.mrivanplays.annotationconfig.core.resolver.WritableObject;
@@ -192,11 +193,12 @@ public final class ConfigResolverImpl implements ConfigResolver {
     Objects.requireNonNull(settings, "settings");
     // empty values are read as every option missing, as from a file or a reader
     Settings passed = this.passSettings(settings);
-    AnnotatedConfigResolver.setFields(
+    setFields(
         annotatedConfig,
         ConfigMigrator.migrate(annotatedConfig, values, passed, "the configuration").values(),
         AnnotatedConfigResolver.resolveAnnotationHolders(annotatedConfig, passed),
-        passed);
+        passed,
+        "the configuration");
   }
 
   @Override
@@ -217,11 +219,12 @@ public final class ConfigResolverImpl implements ConfigResolver {
       throw new RuntimeException("Could not read the configuration", e);
     }
     // migrated, but not written back: there is no file to write to
-    AnnotatedConfigResolver.setFields(
+    setFields(
         annotatedConfig,
         ConfigMigrator.migrate(annotatedConfig, values, passed, "the configuration").values(),
         AnnotatedConfigResolver.resolveAnnotationHolders(annotatedConfig, passed),
-        passed);
+        passed,
+        "the configuration");
   }
 
   @Override
@@ -343,12 +346,14 @@ public final class ConfigResolverImpl implements ConfigResolver {
     } catch (IOException e) {
       throw new RuntimeException("Could not read the configuration " + path, e);
     }
+    String source = "the configuration " + path;
     ConfigMigrator.Result migration =
-        ConfigMigrator.migrate(annotatedConfig, values, settings, "the configuration " + path);
+        ConfigMigrator.migrate(annotatedConfig, values, settings, source);
     // an empty file misses every option, so with GENERATE_NEW_OPTIONS it gets them written; it
-    // used to be left empty, also by loadOrDump
+    // used to be left empty, also by loadOrDump. A file with options that can't be read is not
+    // written: setFields throws first
     boolean missingOptions =
-        AnnotatedConfigResolver.setFields(annotatedConfig, migration.values(), holders, settings)
+        setFields(annotatedConfig, migration.values(), holders, settings, source)
             || migration.versionMissing();
     if (migration.migrated()) {
       // a migrated file is always rewritten in the current version, also in formats that keep
@@ -361,6 +366,43 @@ public final class ConfigResolverImpl implements ConfigResolver {
       AnnotatedConfigResolver.dump(
           annotatedConfig, holders, path, settings, this.commentPrefix, this.valueWriter);
     }
+  }
+
+  /**
+   * Reads {@code values} into {@code annotatedConfig}; with {@code REPORT_ALL_ERRORS}, throws the
+   * options that could not be read once every option is read.
+   *
+   * @param source what is loaded, for the error message
+   * @return whether options are missing
+   */
+  private static boolean setFields(
+      Object annotatedConfig,
+      Map<String, Object> values,
+      Set<AnnotationHolder> holders,
+      Settings settings,
+      String source) {
+    LoadErrors errors = LoadErrors.of(settings);
+    boolean missingOptions =
+        AnnotatedConfigResolver.setFields(annotatedConfig, values, holders, settings, errors, "");
+    LoadErrors.throwIfAny(errors, source);
+    return missingOptions;
+  }
+
+  @Override
+  public ConfigSchema schema(Object annotatedConfig) {
+    return this.schema(annotatedConfig, this.settings);
+  }
+
+  @Override
+  public ConfigSchema schema(Object annotatedConfig, Settings settings) {
+    Objects.requireNonNull(annotatedConfig, "annotatedConfig");
+    Objects.requireNonNull(settings, "settings");
+    Settings passed = this.passSettings(settings);
+    return new ConfigSchema(
+        SchemaGenerator.generate(
+            annotatedConfig,
+            AnnotatedConfigResolver.resolveAnnotationHolders(annotatedConfig, passed),
+            passed));
   }
 
   private Settings passSettings(Settings passed) {

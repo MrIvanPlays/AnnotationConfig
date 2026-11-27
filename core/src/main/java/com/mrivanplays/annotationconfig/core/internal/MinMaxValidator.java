@@ -149,7 +149,7 @@ final class MinMaxValidator {
 
   // A member left at its default (the type's lowest value for @Min, highest for @Max) is not set.
 
-  private static Number minBound(String where, Min min) {
+  static Number minBound(String where, Min min) {
     return singleBound(
         where,
         "@Min",
@@ -162,7 +162,7 @@ final class MinMaxValidator {
         min.minDouble() != Double.NEGATIVE_INFINITY ? min.minDouble() : null);
   }
 
-  private static Number maxBound(String where, Max max) {
+  static Number maxBound(String where, Max max) {
     return singleBound(
         where,
         "@Max",

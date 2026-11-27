@@ -24,6 +24,7 @@ package com.mrivanplays.annotationconfig.examples;
 
 import com.mrivanplays.annotationconfig.core.resolver.CommentPlaceholder;
 import com.mrivanplays.annotationconfig.core.resolver.CommentPlaceholderRegistry;
+import com.mrivanplays.annotationconfig.core.resolver.ConfigLoadException;
 import com.mrivanplays.annotationconfig.core.resolver.settings.ACDefaultSettings;
 import com.mrivanplays.annotationconfig.core.resolver.settings.Settings;
 import com.mrivanplays.annotationconfig.core.serialization.SerializerRegistry;
@@ -72,7 +73,19 @@ public class ExampleLoadConfig {
   }
 
   private static void loadJson(ExampleConfig cfg) {
-    JsonConfig.getConfigResolver().loadOrDump(cfg, new File("examples/application-config.json"));
+    // with REPORT_ALL_ERRORS, loading reads every option, then throws one exception that lists
+    // every option it couldn't read, instead of stopping at the first
+    try {
+      JsonConfig.getConfigResolver()
+          .loadOrDump(
+              cfg,
+              new File("examples/application-config.json"),
+              new Settings().put(ACDefaultSettings.REPORT_ALL_ERRORS, true));
+    } catch (ConfigLoadException e) {
+      for (ConfigLoadException.Problem problem : e.problems()) {
+        System.err.println(problem.key() + ": " + problem.cause().getMessage());
+      }
+    }
   }
 
   private static void loadToml(ExampleConfig cfg) {
