@@ -51,14 +51,16 @@ Java 25, Maven multi-module build.
   combination of settings, and `AnnotatedConfigResolver` and `DefaultSerializer` use it. Comment
   placeholders are applied on every dump, and serializers are looked up on every use, as both
   registries can change at runtime.
-- `core.internal.FieldValidation` applies `@Min`, `@Max` and custom annotation validators to a read
-  value. Every path that sets a value uses it: config fields and `@ConfigObject` sections
+- `core.internal.FieldValidation` applies `@Min`, `@Max`, `@OneOf` and custom annotation
+  validators to a read value. Every path that sets a value uses it: config fields and `@ConfigObject` sections
   (`AnnotatedConfigResolver#setFields`), the fields of custom data types (also of a type with one
   field, read from the bare value) and record components (`DefaultSerializer`). `@Min` / `@Max`
   also target `TYPE_USE`: `MinMaxValidator` walks the field's `AnnotatedType` next to the value
   for bounds on element types (`List<@Max(...) Integer>`, map keys and values, nested types,
   wildcard bounds). On an array field Java puts `@Max(...) int[]` on the element type, so there
-  it bounds the elements, not the array.
+  it bounds the elements, not the array. `@OneOf` works the same way (`OneOfValidator`); both walk
+  element types with `ElementTypes`. It is checked when a value is validated, not when `ClassInfo`
+  reads the class.
 - `@Polymorphic` is handled in two places: `AnnotatedConfigResolver` for config fields and
   sections (`FieldInfo#polymorphic()`, the annotation on the field or its type's declaration), and
   `DefaultSerializer` for everything else (list and array elements, fields of custom data types,

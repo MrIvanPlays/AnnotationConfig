@@ -25,6 +25,7 @@ package com.mrivanplays.annotationconfig.core.internal;
 import com.mrivanplays.annotationconfig.core.annotations.Max;
 import com.mrivanplays.annotationconfig.core.annotations.Min;
 import com.mrivanplays.annotationconfig.core.annotations.Multiline;
+import com.mrivanplays.annotationconfig.core.annotations.OneOf;
 import com.mrivanplays.annotationconfig.core.annotations.Polymorphic;
 import com.mrivanplays.annotationconfig.core.resolver.CommentPlaceholderRegistry;
 import com.mrivanplays.annotationconfig.core.serialization.AnnotationAccessor;
@@ -62,6 +63,9 @@ public final class FieldInfo {
   // @Min or @Max on an element type: List<@Max(...) Integer>, or @Max(...) int[]
   private final boolean elementBounds;
   @Nullable private final Multiline multiline;
+  @Nullable private final OneOf oneOf;
+  // @OneOf on an element type: List<@OneOf(...) String>, or @OneOf(...) String[]
+  private final boolean elementOneOf;
   private final Annotation[] annotations;
   private final AnnotationAccessor accessor;
   // without placeholders: the placeholders that are registered can change between dumps
@@ -88,6 +92,9 @@ public final class FieldInfo {
     this.min = field.getDeclaredAnnotation(Min.class);
     this.max = field.getDeclaredAnnotation(Max.class);
     this.elementBounds = MinMaxValidator.hasElementBounds(field.getAnnotatedType());
+    // checked by OneOfValidator when a value is validated, so an invalid one breaks nothing else
+    this.oneOf = field.getDeclaredAnnotation(OneOf.class);
+    this.elementOneOf = OneOfValidator.hasElementOneOf(field.getAnnotatedType());
     this.multiline = field.getDeclaredAnnotation(Multiline.class);
     this.annotations = field.getDeclaredAnnotations();
     this.accessor = AnnotationAccessor.createFromField(field);
@@ -215,5 +222,19 @@ public final class FieldInfo {
       this.accessible = true;
     }
     return this.field;
+  }
+
+  /** Whether the field has {@code @OneOf}, on itself or on an element type. */
+  public boolean hasOneOf() {
+    return this.oneOf != null || this.elementOneOf;
+  }
+
+  /** Whether {@code @OneOf} is on an element type of the field's type. */
+  public boolean elementOneOf() {
+    return this.elementOneOf;
+  }
+
+  public @Nullable OneOf oneOf() {
+    return this.oneOf;
   }
 }

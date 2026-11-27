@@ -33,9 +33,9 @@ import org.jspecify.annotations.NullMarked;
 import org.jspecify.annotations.Nullable;
 
 /**
- * Checks a read value against the {@code @Min} and {@code @Max} annotations and the validators of
- * the custom annotations of its field. Used for the fields of a config and its config objects, the
- * fields of custom data types and the components of records alike.
+ * Checks a read value against the {@code @Min}, {@code @Max} and {@code @OneOf} annotations and
+ * the validators of the custom annotations of its field. Used for the fields of a config and its
+ * config objects, the fields of custom data types and the components of records alike.
  *
  * @hidden
  */
@@ -52,7 +52,7 @@ public final class FieldValidation {
    * @return {@code false} if a custom validator failed silently: the value is not set, and the
    *     field keeps its value
    * @throws IllegalArgumentException if the value is out of the bounds of {@code @Min} or {@code
-   *     Max}
+   *     Max}, or not one of the values of {@code @OneOf}
    * @throws RuntimeException wrapping the error a custom validator reported
    */
   @SuppressWarnings({"unchecked", "rawtypes"})
@@ -60,6 +60,9 @@ public final class FieldValidation {
       FieldInfo field, String key, @Nullable Object value, Settings settings) {
     if (field.minOrMax()) {
       MinMaxValidator.validate(field, key, value);
+    }
+    if (field.hasOneOf()) {
+      OneOfValidator.validate(field, key, value);
     }
     CustomAnnotationRegistry registry = CustomAnnotationRegistry.INSTANCE;
     if (registry.isEmpty()) {

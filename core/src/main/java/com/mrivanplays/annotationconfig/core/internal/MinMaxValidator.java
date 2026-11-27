@@ -24,11 +24,7 @@ package com.mrivanplays.annotationconfig.core.internal;
 
 import com.mrivanplays.annotationconfig.core.annotations.Max;
 import com.mrivanplays.annotationconfig.core.annotations.Min;
-import java.lang.reflect.AnnotatedArrayType;
-import java.lang.reflect.AnnotatedParameterizedType;
 import java.lang.reflect.AnnotatedType;
-import java.lang.reflect.AnnotatedWildcardType;
-import java.lang.reflect.Array;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.util.Collection;
@@ -75,80 +71,27 @@ final class MinMaxValidator {
       check(min, max, where, value);
     }
     if (field.elementBounds()) {
-      checkElements(field.field().getAnnotatedType(), value, where);
+      ElementTypes.forEachAnnotated(
+          field.field().getAnnotatedType(),
+          value,
+          where,
+          MinMaxValidator::hasBounds,
+          (type, element, elementWhere) ->
+              check(
+                  type.getAnnotation(Min.class),
+                  type.getAnnotation(Max.class),
+                  elementWhere,
+                  element));
     }
   }
 
   /** Whether {@code type} has {@code @Min} or {@code @Max} on an element type, at any depth. */
   static boolean hasElementBounds(AnnotatedType type) {
-    for (AnnotatedType element : elementTypes(type)) {
-      if (hasBounds(element) || hasElementBounds(element)) {
-        return true;
-      }
-    }
-    return false;
-  }
-
-  /** The element types of an array, a parameterized type or a wildcard's bounds. */
-  private static AnnotatedType[] elementTypes(AnnotatedType type) {
-    if (type instanceof AnnotatedArrayType array) {
-      return new AnnotatedType[] {array.getAnnotatedGenericComponentType()};
-    }
-    if (type instanceof AnnotatedParameterizedType parameterized) {
-      return parameterized.getAnnotatedActualTypeArguments();
-    }
-    if (type instanceof AnnotatedWildcardType wildcard) {
-      return wildcard.getAnnotatedUpperBounds();
-    }
-    return new AnnotatedType[0];
+    return ElementTypes.hasAnnotatedElement(type, MinMaxValidator::hasBounds);
   }
 
   private static boolean hasBounds(AnnotatedType type) {
     return type.isAnnotationPresent(Min.class) || type.isAnnotationPresent(Max.class);
-  }
-
-  /** Checks the elements of {@code value}, whose type is {@code type}, against their bounds. */
-  private static void checkElements(AnnotatedType type, Object value, String where) {
-    if (type instanceof AnnotatedArrayType array && value.getClass().isArray()) {
-      AnnotatedType component = array.getAnnotatedGenericComponentType();
-      int length = Array.getLength(value);
-      for (int i = 0; i < length; i++) {
-        checkElement(component, Array.get(value, i), where + "[" + i + "]");
-      }
-    } else if (type instanceof AnnotatedParameterizedType parameterized) {
-      AnnotatedType[] arguments = parameterized.getAnnotatedActualTypeArguments();
-      if (value instanceof Collection<?> collection && arguments.length == 1) {
-        int index = 0;
-        for (Object element : collection) {
-          checkElement(arguments[0], element, where + "[" + index + "]");
-          index++;
-        }
-      } else if (value instanceof Map<?, ?> map && arguments.length == 2) {
-        for (Map.Entry<?, ?> entry : map.entrySet()) {
-          checkElement(arguments[0], entry.getKey(), where + " key '" + entry.getKey() + "'");
-          checkElement(arguments[1], entry.getValue(), where + "." + entry.getKey());
-        }
-      }
-    }
-  }
-
-  private static void checkElement(AnnotatedType type, @Nullable Object element, String where) {
-    if (element == null) {
-      return;
-    }
-    // List<? extends @Max(...) Integer>: the bounds are on the wildcard's bound
-    AnnotatedType bounded = type;
-    if (!hasBounds(type)
-        && type instanceof AnnotatedWildcardType wildcard
-        && wildcard.getAnnotatedUpperBounds().length > 0) {
-      bounded = wildcard.getAnnotatedUpperBounds()[0];
-    }
-    Min min = bounded.getAnnotation(Min.class);
-    Max max = bounded.getAnnotation(Max.class);
-    if (min != null || max != null) {
-      check(min, max, where, element);
-    }
-    checkElements(bounded, element, where);
   }
 
   /** Checks one value, a number or a string, against the bounds; {@code where} names it. */

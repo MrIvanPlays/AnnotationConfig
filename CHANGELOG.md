@@ -2,6 +2,41 @@
 
 This file summarises the notable changes of each version.
 
+## Version 3.1.1
+
+### New features
+
+#### `@OneOf`
+
+`@OneOf` restricts a `String` option to a fixed set of values. Loading a value that is not one of
+them fails with an `IllegalArgumentException` naming the option and the allowed values:
+
+```java
+@OneOf({"survival", "creative", "adventure"})
+private String gamemode = "survival";
+```
+
+- Values are compared with case; `@OneOf(value = {...}, ignoreCase = true)` ignores it, and the
+  field keeps the value as written in the config.
+- Values are compared as the field receives them: a number or boolean in the file (`mode: 1`, or
+  YAML's `mode: yes`) is compared as `"1"` or `"true"`.
+- Like `@Min` and `@Max`, it can be put on element types: `List<@OneOf({...}) String>`, the keys
+  and values of maps, nested types, the bound of a wildcard, record components, and arrays
+  (`@OneOf({...}) String[]` restricts the elements).
+- It applies to the fields of a config, its config objects, custom data types and records, in
+  every format.
+- On a type other than `String`, or without values, loading a value for the field fails.
+- Prefer an enum when the values mean something to your code; use `@OneOf` when the option stays
+  a `String`.
+
+### Fixes
+
+- `.properties` does not support lists, and writing one already failed. Reading a value with a
+  comma into a `List` field now fails the same way, `'<key>': .properties does not support lists;
+  use an array, such as String[]`. A `List<String>` used to get one element holding the array's
+  text (`[Ljava.lang.Object;@...`), and a list of numbers failed with an unrelated error. A value
+  without a comma is still read as a list with that one element.
+
 ## Version 3.1.0
 
 This version was developed as 3.0.4, which was never released. Because it contains breaking

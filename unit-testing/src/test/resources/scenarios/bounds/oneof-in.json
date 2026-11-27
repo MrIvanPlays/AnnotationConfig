@@ -1,0 +1,5 @@
+{
+  "servers": {"eu": "small", "us": "large"},
+  "grid": [["a"], ["a", "b"]],
+  "region": {"zones": ["eu"]}
+}

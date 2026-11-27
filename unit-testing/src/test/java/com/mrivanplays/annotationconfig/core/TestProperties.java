@@ -23,8 +23,11 @@
 package com.mrivanplays.annotationconfig.core;
 
 import com.mrivanplays.annotationconfig.core.PropertiesTestSubject.MessageType;
+import com.mrivanplays.annotationconfig.core.annotations.Key;
 import com.mrivanplays.annotationconfig.core.resolver.ConfigResolver;
+import java.io.StringReader;
 import java.io.StringWriter;
+import java.util.List;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
@@ -61,4 +64,59 @@ class TestProperties {
 
     Assertions.assertEquals(expected, writer.toString());
   }
+
+  // <editor-fold desc="Lists">
+
+  @Test
+  void aListFailsToLoadAsItFailsToDump() {
+    // the array read from a value with a comma used to become one element, "[Ljava.lang...@..."
+    IllegalArgumentException load =
+        Assertions.assertThrows(
+            IllegalArgumentException.class,
+            () -> resolver.load(new WithList(), new StringReader("allowed-users=a, b\n")));
+    Assertions.assertEquals(
+        "'allowed-users': .properties does not support lists; use an array, such as String[]",
+        load.getMessage());
+    IllegalArgumentException dump =
+        Assertions.assertThrows(
+            IllegalArgumentException.class,
+            () -> resolver.dump(new WithList(), new StringWriter()));
+    Assertions.assertEquals(
+        "'allowed-users': .properties does not support lists", dump.getMessage());
+  }
+
+  @Test
+  void aListOfNumbersFailsToLoad() {
+    IllegalArgumentException e =
+        Assertions.assertThrows(
+            IllegalArgumentException.class,
+            () -> resolver.load(new WithNumbers(), new StringReader("ports=1, 2\n")));
+    Assertions.assertEquals(
+        "'ports': .properties does not support lists; use an array, such as Integer[]",
+        e.getMessage());
+  }
+
+  @Test
+  void aSingleValueStillLoadsIntoAList() {
+    WithList read = new WithList();
+    resolver.load(read, new StringReader("allowed-users=a\n"));
+    Assertions.assertEquals(List.of("a"), read.users);
+  }
+
+  // </editor-fold>
+
+  // <editor-fold desc="Lists: subjects">
+
+  static class WithList {
+
+    @Key("allowed-users")
+    List<String> users = List.of("x");
+  }
+
+  static class WithNumbers {
+
+    List<Integer> ports = List.of(1);
+  }
+
+  // </editor-fold>
 }

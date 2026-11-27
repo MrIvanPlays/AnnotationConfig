@@ -110,6 +110,17 @@ final class DefaultSerializer implements FieldTypeSerializer<Object> {
     return null;
   }
 
+  /** {@code "'key': "} for the field the context is for, as errors of the writers name it. */
+  private static String keyPrefix(SerializationContext<?> context) {
+    Optional<String> name = context.getName();
+    if (name.isEmpty()) {
+      return "";
+    }
+    Object annotatedConfig = context.getAnnotatedConfig();
+    FieldInfo info = annotatedConfig != null ? tryFindField(annotatedConfig, name.get()) : null;
+    return "'" + (info != null ? info.key() : name.get()) + "': ";
+  }
+
   private static boolean findStaticFields(SerializationContext<?> context) {
     return context.getSettings().get(ACDefaultSettings.FIND_STATIC_FIELDS).orElse(false);
   }
@@ -475,6 +486,15 @@ final class DefaultSerializer implements FieldTypeSerializer<Object> {
     // a single value read for a list field is read as a list with that one element
     if (data.isSingleValue() && fieldType.isAssignableFrom(List.class)) {
       Class<?> listValueNeeded = listElementType(context);
+      if (dataRaw.getClass().isArray()) {
+        // Of the built-in formats only .properties reads arrays (a value with a comma), and it
+        // writes no lists. The array used to become one element, "[Ljava.lang.Object;@...".
+        throw new IllegalArgumentException(
+            keyPrefix(context)
+                + ".properties does not support lists; use an array, such as "
+                + listValueNeeded.getSimpleName()
+                + "[]");
+      }
       if (isPrimitiveClass(listValueNeeded)) {
         return Collections.singletonList(forcePrimitive(dataRaw, listValueNeeded));
       } else {
