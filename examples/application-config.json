@@ -2,6 +2,11 @@
   "allowOption": true,
   "foo": 2,
   "bar": "This is some string",
+  "gamemode": "survival",
+  "permissions": [
+    "read",
+    "write"
+  ],
   "messages": {
     "no-permission": "You don't have permission to perform this command",
     "no-spamming": "You can't spam this"

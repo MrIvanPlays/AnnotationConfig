@@ -7,6 +7,14 @@
   foo: 2,
   // This string cannot be longer than 20 characters (spaces are included)
   bar: "This is some string",
+  // This can only be one of: survival, creative, adventure
+  // An enum field works too; @OneOf keeps the option a plain String
+  gamemode: "survival",
+  // @OneOf on an element type restricts every element of a list, map or array
+  permissions: [
+    "read",
+    "write"
+  ],
   // All configurable messages
   messages: {
     // The no permission message

@@ -27,6 +27,7 @@ import com.mrivanplays.annotationconfig.core.annotations.Ignore;
 import com.mrivanplays.annotationconfig.core.annotations.Key;
 import com.mrivanplays.annotationconfig.core.annotations.Max;
 import com.mrivanplays.annotationconfig.core.annotations.Min;
+import com.mrivanplays.annotationconfig.core.annotations.OneOf;
 import com.mrivanplays.annotationconfig.core.annotations.Polymorphic;
 import com.mrivanplays.annotationconfig.core.annotations.comment.Comment;
 import com.mrivanplays.annotationconfig.core.serialization.AnnotationAccessor;
@@ -55,6 +56,14 @@ public class ExampleConfig {
   @Comment("This string cannot be longer than 20 characters (spaces are included)")
   @Max(maxInt = 20)
   private String bar = "This is some string";
+
+  @Comment("This can only be one of: survival, creative, adventure")
+  @Comment("An enum field works too; @OneOf keeps the option a plain String")
+  @OneOf({"survival", "creative", "adventure"})
+  private String gamemode = "survival";
+
+  @Comment("@OneOf on an element type restricts every element of a list, map or array")
+  private List<@OneOf({"read", "write", "execute"}) String> permissions = List.of("read", "write");
 
   @ConfigObject private MessagesSection messages = new MessagesSection();
   @Ignore private String importantClass = "com.mrivanplays.something.Important"; // this is ignored
