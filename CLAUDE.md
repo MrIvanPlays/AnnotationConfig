@@ -237,12 +237,15 @@ Java 25, Maven multi-module build.
   point and `Feature`s (sections, comments, generating new options, nulls, integers beyond 64 bits,
   NaN and infinities), and `Format` has its commenting writer and parser. A new
   format is a constant there plus its scenario texts; no scenario changes.
-- The text of a scenario in each format is a resource, `scenarios/<topic>/<name>.<extension>`:
-  the inputs it loads and the exact outputs it expects (`Scenario#load`, `Scenario#assertDump`). A
-  JSON5 scenario without a `.json5` file reads the `.json` one, as JSON5 reads JSON; outputs have
-  their own file. Inputs are written by hand. Outputs are recorded:
-  `mvn -o test -pl unit-testing -Dscenarios.record=<directory>` writes them to that directory
-  instead of comparing them; review every file there before copying it to the resources.
+- The texts of a topic in one format are one resource, `scenarios/<topic>.<extension>`: the inputs
+  its scenarios load and the exact outputs they expect (`Scenario#load`, `Scenario#assertDump`).
+  Each text is a section that starts with a `# --- <name>` line (`// --- <name>` in JSON and
+  JSON5) and ends with a blank line, which is not part of it; `Format#parseSections` reads them.
+  A JSON5 scenario without a section in `.json5` reads the `.json` one, as JSON5 reads JSON;
+  outputs have their own section. Inputs are written by hand. Outputs are recorded:
+  `mvn -o test -pl unit-testing -Dscenarios.record=<directory>` writes each resource with its
+  recorded outputs replaced or added to that directory instead of comparing them; review every
+  file there before copying it to the resources.
 - Scenarios compare values whose number type depends on the parser with
   `Scenario#numbersAsDecimals`. Where they work around a limit of a format, a comment says so.
 - Tests of one format's own syntax stay in its package (`TestYamlScalars`, `TestTomlStructure`,

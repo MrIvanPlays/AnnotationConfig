@@ -1,0 +1,72 @@
+# --- hidden-parent-field-read
+foo: "changed"
+
+# --- hidden-parent-field
+# Test comment foo
+
+foo: "child"
+
+# --- hierarchy
+# grandparent comment
+
+# parent comment
+
+# child comment
+
+c1: 5
+
+c2: 6
+
+p1: 3
+
+p2: 4
+
+g1: 1
+
+g2: 2
+
+# --- ignored
+# This is on the top
+
+# Hello my name is Ivan
+name: "Ivan"
+
+# --- only-static
+holder: 9
+
+# --- parent-fields-ignored
+bar: "baz"
+
+# --- parent-fields-read
+foo: 2
+bar: "aaa"
+
+# --- parent-fields
+# Test comment foo
+
+bar: "baz"
+
+foo: 1
+
+# --- raw-config-read
+foo: "bar"
+baz: 2.5
+
+# --- single-field-with-constant-read
+port: 8080
+
+# --- single-field-with-constant
+port: 25565
+
+# --- static-fields-ignored
+own: "own"
+
+# --- static-fields-read
+counter: 9
+own: "x"
+
+# --- static-fields
+counter: 5
+
+own: "own"
+

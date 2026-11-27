@@ -1,0 +1,19 @@
+# --- output
+top = 1
+
+[plain.x]
+y = 2
+
+[plain.pool]
+z = 5
+
+[commented]
+# flat comment
+# two
+# lines
+flat = 4
+
+[commented.inner]
+# deep comment
+deep = 3
+

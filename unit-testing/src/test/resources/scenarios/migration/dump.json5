@@ -1,6 +1,0 @@
-{
-  "config-version": 3,
-  motd: "A server",
-  "server-port": 8080,
-  timeout: "30s"
-}

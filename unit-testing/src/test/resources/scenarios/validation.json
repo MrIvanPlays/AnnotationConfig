@@ -1,0 +1,75 @@
+// --- custom-invalid
+{"foo": "Foo bar baz", "bar": "MrIvanPlays is cool"}
+
+// --- custom-valid
+{"foo": "Hello mama", "bar": "MrIvanPlays is cool"}
+
+// --- double-above-max
+{"doubleValue": 45.2}
+
+// --- double-at-max
+{"doubleValue": 44.4}
+
+// --- double-at-min
+{"doubleValue": -33.9}
+
+// --- double-below-min
+{"doubleValue": -34.6}
+
+// --- greeting-invalid
+{"greeting": "Bye"}
+
+// --- greeting-valid
+{"greeting": "Hello there"}
+
+// --- limit-above-max
+{"limit": 50}
+
+// --- limit-in-range
+{"limit": 5}
+
+// --- misplaced
+{"value": false}
+
+// --- oneof-ignore-case
+{"difficulty": "HARD"}
+
+// --- oneof-letters-listed
+{"letters": ["a", "b"]}
+
+// --- oneof-letters-unlisted
+{"letters": ["a", "c"]}
+
+// --- oneof-listed
+{"mode": "creative"}
+
+// --- oneof-typed
+{"version": 2, "enabled": true}
+
+// --- oneof-unlisted
+{"mode": "hardcore"}
+
+// --- oneof-value
+{"value": "a"}
+
+// --- oneof-values
+{"values": ["a"]}
+
+// --- oneof-wrong-case
+{"mode": "Creative"}
+
+// --- string-in-range
+{"value": "abc"}
+
+// --- string-too-long
+{"value": "This exceeds the max limit set"}
+
+// --- string-too-short
+{"value": "a"}
+
+// --- weights-above-max
+{"weights": [1, 11]}
+
+// --- weights-in-range
+{"weights": [1, 10]}
+

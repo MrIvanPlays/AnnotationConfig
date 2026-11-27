@@ -1,7 +1,0 @@
-longs: [1, 2]
-nested: [[a, b], [c]]
-wildcard: [1, 2.5]
-texts: ["", "a"]
-counts: {a: 1, b: 2}
-groups: {odd: [1, 3], even: [2]}
-amounts: {x: many}

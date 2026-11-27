@@ -1,0 +1,125 @@
+# --- choices-read
+enabled: false
+mode: SPECIAL
+special: FastMode
+
+# --- choices
+enabled: true
+
+mode: "fastmode"
+
+special: "special"
+
+# --- decimal-template
+decimal: %s
+single: %s
+
+# --- empty-string
+plain: ""
+
+# --- empty-values
+number: ""
+flag: ""
+boxed: ""
+text: ""
+
+# --- enabled-no
+enabled: no
+
+# --- enabled-yes
+enabled: yes
+
+# --- exact-numbers
+integer: 2000000000
+longValue: 9007199254740993
+s: -32768
+max: 9223372036854775807
+min: -1000000000000000000
+exact: 0.12345678901234567890
+huge: 123456789012345678901234567890
+
+# --- exponent
+whole: 2.0e9
+
+# --- multiline
+text: "first line\nsecond line\n"
+
+tricky: "\"\"\" quotes \\ backslash\r\nend\""
+
+# --- numbers
+b: 1
+
+s: 5
+
+integer: -42
+
+longValue: 1234567890123
+
+max: 9223372036854775807
+
+min: -9223372036854775808
+
+single: 3.11
+
+decimal: 2.5
+
+big: 1.0E300
+
+exact: 0.12345678901234567890
+
+huge: 123456789012345678901234567890
+
+# --- special-floats
+notANumber: .NaN
+
+positiveInfinity: .inf
+
+negativeInfinity: -.inf
+
+floatInfinity: !!float 'Infinity'
+
+# --- text
+plain: "Hello world"
+
+symbols: "a=b & c<d> 'e' #f :g"
+
+backslash: "C:\\path\\to"
+
+apostrophe: "it's"
+
+quotes: "say \"hi\""
+
+newline: "line1\nline2"
+
+tab: "a\tb"
+
+control: "bell\a"
+
+unicode: "café ☃"
+
+empty: ""
+
+character: x
+
+# --- unknown-enum
+mode: nope
+
+# --- untyped-numbers-read
+map:
+  big: 123456789012345678901234567890
+  small: 1
+
+# --- untyped-numbers
+map:
+  whole: 1
+  decimal: 2.5
+  exact: 0.12345678901234567890
+  big: 123456789012345678901234567890
+
+objects:
+  - 1
+  - 2.5
+
+integers:
+  - 123456789012345678901234567890
+

@@ -1,0 +1,20 @@
+// --- null-elements
+{
+  items: [
+    {
+      name: "a",
+      amount: 1
+    },
+    null,
+    {
+      name: "b",
+      amount: 2
+    }
+  ],
+  names: [
+    "a",
+    null,
+    "b"
+  ]
+}
+

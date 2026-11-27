@@ -1,0 +1,109 @@
+# --- choose-fixed
+execution: {type: fixed, every: 3, unit: m}
+
+# --- choose-parallel
+execution: {type: parallel, threads: 8}
+
+# --- discriminator-section
+execution: {type: {a: 1}}
+
+# --- element-without-discriminator
+shapes: [{radius: 1.0}]
+
+# --- missing-discriminator-written
+execution:
+  type: "sequential"
+  # milliseconds between tasks
+  delay: 3
+
+# --- missing-discriminator
+execution:
+  delay: 3
+
+# --- missing-section
+other: 1
+
+# --- no-fields
+execution:
+  type: "none"
+
+# --- numbered
+value: {type: 2, threads: 6}
+
+# --- other-implementation
+execution: {type: parallel}
+
+# --- record-missing-component
+execution: {type: fixed, every: 9}
+
+# --- same-implementation
+execution: {type: sequential}
+
+# --- shapes-read
+shapes:
+- {kind: box, side: 7}
+- {kind: Triangle, a: 1, b: 1, c: 1}
+array:
+- {kind: Circle, radius: 0.5}
+single: {kind: box, side: 8}
+drawing:
+  main: {kind: Circle, radius: 3.0}
+  extra: [{kind: box, side: 9}]
+canvas:
+  background: {kind: box, side: 10}
+
+# --- shapes
+shapes:
+  - kind: "Circle"
+    radius: 1.5
+  - kind: "box"
+    side: 2
+  - kind: "Triangle"
+    a: 3
+    b: 4
+    c: 5
+
+array:
+  - kind: "box"
+    side: 3
+
+single:
+  kind: "Circle"
+  radius: 2.0
+
+drawing:
+  main:
+    kind: "box"
+    side: 4
+  extra:
+    - kind: "Circle"
+      radius: 1.0
+
+canvas:
+  background:
+    kind: "Circle"
+    radius: 9.0
+  name: "c"
+
+# --- subject
+execution:
+  type: "sequential"
+  # milliseconds between tasks
+  delay: 100
+
+# --- tasks-read
+strategies: [{type: parallel, threads: 2}]
+
+# --- tasks
+strategies:
+  - type: "sequential"
+    delay: 100
+  - type: "parallel"
+    threads: 4
+
+# --- unknown
+execution: {type: random}
+
+# --- value-not-a-section
+drawing: {main: 5}
+

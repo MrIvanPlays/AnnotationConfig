@@ -1,0 +1,149 @@
+# --- assertion-flag
+c = 'z'
+
+# --- child-sections-read
+[foo]
+control = 'fff'
+
+[foo.barSect]
+bar = 'foo'
+
+# --- child-sections
+# Subject comment
+
+# This is top section comment
+[foo]
+# Control field comment
+control = 'asd'
+
+# Child section comment
+[foo.barSect]
+# Bar comment
+bar = 'aabb'
+
+# --- config-objects-read
+name = 'Pekov'
+
+[server]
+ip = 'example.org'
+port = 25577
+limits.players = 50
+
+# --- config-objects
+# Class comment
+
+# Plain field comment
+name = 'Ivan'
+
+# Section comment
+[server]
+# ip comment
+ip = 'localhost'
+port = 25565
+
+[server.limits]
+# players comment
+players = 20
+
+# Server class comment
+[second]
+# ip comment
+ip = 'localhost'
+port = 25565
+
+[second.limits]
+# players comment
+players = 20
+
+# --- deep-dotted-keys-read
+[a.b.c.d]
+x = 10
+y = 20
+
+# --- deep-dotted-keys
+[a.b.c.d]
+x = 1
+y = 2
+
+# --- dotted-key-joins-section
+name = 'Ivan'
+
+[server]
+# ip comment
+ip = 'localhost'
+# players comment
+players = 20
+
+[other]
+port = 25565
+
+[limits.players]
+max = 100
+
+# --- dotted-keys-and-sections
+# Generated using AnnotationConfig
+
+# This is a control field
+control-field = -1
+
+# This is a test comment on top of a section
+[bar]
+
+[bar.baz]
+# Foo comment
+foo = 'bar'
+# Bar comment
+bar = 'foo'
+
+[kappa.baz]
+# Foo comment
+foo = 'bar'
+# Bar comment
+bar = 'foo'
+
+# --- dotted-keys-read
+[commands.subcommands.help]
+foo = 'pepega'
+
+[commands.subcommands.this]
+bar = 'baz'
+baz = 69420
+
+# --- dotted-keys
+[commands.subcommands.help]
+# Foo comment
+foo = 'bar'
+
+[commands.subcommands.this]
+# Bar comment
+bar = 'aaa'
+# baz
+baz = -1
+
+# --- inner-section-read
+a = 'read'
+
+[inner]
+b = 'read too'
+
+# --- inner-section
+a = 'y'
+
+[inner]
+b = 'x'
+
+# --- missing-section-options
+# Comments should also be kept!
+
+# This is test subject comment
+[test]
+foo = 'foo'
+bar = 'bar'
+
+# --- parent-class-section
+# parent comment
+# child comment
+[section]
+childValue = 2
+parentValue = 1
+

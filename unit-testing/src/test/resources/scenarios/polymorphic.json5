@@ -1,0 +1,88 @@
+// --- missing-discriminator-written
+{
+  execution: {
+    type: "sequential",
+    // milliseconds between tasks
+    delay: 3
+  }
+}
+
+// --- no-fields
+{
+  execution: {
+    type: "none"
+  }
+}
+
+// --- shapes
+{
+  shapes: [
+    {
+      kind: "Circle",
+      radius: 1.5
+    },
+    {
+      kind: "box",
+      side: 2
+    },
+    {
+      kind: "Triangle",
+      a: 3,
+      b: 4,
+      c: 5
+    }
+  ],
+  array: [
+    {
+      kind: "box",
+      side: 3
+    }
+  ],
+  single: {
+    kind: "Circle",
+    radius: 2.0
+  },
+  drawing: {
+    main: {
+      kind: "box",
+      side: 4
+    },
+    extra: [
+      {
+        kind: "Circle",
+        radius: 1.0
+      }
+    ]
+  },
+  canvas: {
+    background: {
+      kind: "Circle",
+      radius: 9.0
+    },
+    name: "c"
+  }
+}
+
+// --- subject
+{
+  execution: {
+    type: "sequential",
+    // milliseconds between tasks
+    delay: 100
+  }
+}
+
+// --- tasks
+{
+  strategies: [
+    {
+      type: "sequential",
+      delay: 100
+    },
+    {
+      type: "parallel",
+      threads: 4
+    }
+  ]
+}
+

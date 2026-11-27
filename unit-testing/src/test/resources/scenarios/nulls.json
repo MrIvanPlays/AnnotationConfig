@@ -1,0 +1,23 @@
+// --- null-elements
+{
+  "items": [
+    {
+      "name": "a",
+      "amount": 1
+    },
+    null,
+    {
+      "name": "b",
+      "amount": 2
+    }
+  ],
+  "names": [
+    "a",
+    null,
+    "b"
+  ]
+}
+
+// --- null-values
+{"number": null, "flag": null, "boxed": null, "text": null, "holder": {"boxed": null, "text": null}}
+

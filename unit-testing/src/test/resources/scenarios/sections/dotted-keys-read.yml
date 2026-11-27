@@ -1,7 +1,0 @@
-commands:
-  subcommands:
-    help:
-      foo: "pepega"
-    this:
-      bar: "baz"
-      baz: 69420

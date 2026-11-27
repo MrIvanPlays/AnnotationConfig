@@ -1,0 +1,75 @@
+# --- commented-version
+# The server's config
+
+# Don't change this
+# It is how old the file is,
+# used to migrate it
+config-version: 2
+
+# Don't change this
+# It is how old the file is,
+# used to migrate it
+motd: "A server"
+
+# --- dump
+config-version: 3
+
+motd: "A server"
+
+server-port: 8080
+
+timeout: "30s"
+
+# --- invalid-version
+config-version: two
+motd: Hello
+
+# --- migrated
+config-version: 3
+
+motd: "Hello"
+
+server-port: 25565
+
+timeout: "10s"
+
+# --- nested-migrated
+config-version: 2
+
+server:
+  host: "example.org"
+
+network:
+  port: 25565
+
+# --- nested-v1
+server:
+  host: example.org
+  port: 25565
+
+# --- v1
+motd: Hello
+port: 25565
+timeout: 10
+
+# --- v2
+config-version: 2
+motd: Hello
+server-port: 25566
+timeout: 20
+
+# --- v3
+config-version: 3
+motd: Hello
+server-port: 25567
+timeout: 40s
+
+# --- v4
+config-version: 4
+motd: Hello
+
+# --- version-added
+config-version: 1
+
+motd: "Hello"
+

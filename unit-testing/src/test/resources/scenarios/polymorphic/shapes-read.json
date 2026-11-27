@@ -1,7 +1,0 @@
-{
-  "shapes": [{"kind": "box", "side": 7}, {"kind": "Triangle", "a": 1, "b": 1, "c": 1}],
-  "array": [{"kind": "Circle", "radius": 0.5}],
-  "single": {"kind": "box", "side": 8},
-  "drawing": {"main": {"kind": "Circle", "radius": 3.0}, "extra": [{"kind": "box", "side": 9}]},
-  "canvas": {"background": {"kind": "box", "side": 10}}
-}

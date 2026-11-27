@@ -1,5 +1,0 @@
-strategies:
-  - type: "sequential"
-    delay: 100
-  - type: "parallel"
-    threads: 4

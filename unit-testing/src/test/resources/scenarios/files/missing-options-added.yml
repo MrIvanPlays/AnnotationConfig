@@ -1,7 +1,0 @@
-# Comments should be kept even after regeneration!
-
-# Foo comment kept
-foo: "foo"
-
-# Bar comment kept
-bar: "bar"

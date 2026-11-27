@@ -1,0 +1,142 @@
+// --- assertion-flag
+{
+  "c": "z"
+}
+
+// --- child-sections-read
+{"foo": {"barSect": {"bar": "foo"}, "control": "fff"}}
+
+// --- child-sections
+{
+  "foo": {
+    "control": "asd",
+    "barSect": {
+      "bar": "aabb"
+    }
+  }
+}
+
+// --- config-objects-read
+{
+  "server": {"ip": "example.org", "port": 25577, "limits": {"players": 50}},
+  "name": "Pekov"
+}
+
+// --- config-objects
+{
+  "server": {
+    "ip": "localhost",
+    "port": 25565,
+    "limits": {
+      "players": 20
+    }
+  },
+  "second": {
+    "ip": "localhost",
+    "port": 25565,
+    "limits": {
+      "players": 20
+    }
+  },
+  "name": "Ivan"
+}
+
+// --- deep-dotted-keys-read
+{"a": {"b": {"c": {"d": {"x": 10, "y": 20}}}}}
+
+// --- deep-dotted-keys
+{
+  "a": {
+    "b": {
+      "c": {
+        "d": {
+          "x": 1,
+          "y": 2
+        }
+      }
+    }
+  }
+}
+
+// --- dotted-key-joins-section
+{
+  "name": "Ivan",
+  "server": {
+    "ip": "localhost",
+    "players": 20
+  },
+  "other": {
+    "port": 25565
+  },
+  "limits": {
+    "players": {
+      "max": 100
+    }
+  }
+}
+
+// --- dotted-keys-and-sections
+{
+  "bar": {
+    "baz": {
+      "foo": "bar",
+      "bar": "foo"
+    }
+  },
+  "kappa": {
+    "baz": {
+      "foo": "bar",
+      "bar": "foo"
+    }
+  },
+  "control-field": -1
+}
+
+// --- dotted-keys-read
+{"commands": {"subcommands": {
+  "help": {"foo": "pepega"},
+  "this": {"bar": "baz", "baz": 69420}
+}}}
+
+// --- dotted-keys
+{
+  "commands": {
+    "subcommands": {
+      "help": {
+        "foo": "bar"
+      },
+      "this": {
+        "bar": "aaa",
+        "baz": -1
+      }
+    }
+  }
+}
+
+// --- inner-section-read
+{"a": "read", "inner": {"b": "read too"}}
+
+// --- inner-section
+{
+  "a": "y",
+  "inner": {
+    "b": "x"
+  }
+}
+
+// --- missing-section-options
+{
+  "test": {
+    "foo": "foo",
+    "bar": "bar"
+  }
+}
+
+// --- parent-class-section
+{
+  "section": {
+    "childValue": 2,
+    "parentValue": 1
+  }
+}
+

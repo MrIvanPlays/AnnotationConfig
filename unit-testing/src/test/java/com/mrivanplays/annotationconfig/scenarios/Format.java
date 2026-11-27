@@ -44,8 +44,10 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.EnumSet;
+import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.Assertions;
 import org.yaml.snakeyaml.Yaml;
@@ -59,11 +61,14 @@ import org.yaml.snakeyaml.Yaml;
  * {@link #withSections()}. A new format is a constant here, with its features, and the texts of the
  * scenarios it runs.
  *
- * <p>The text of a scenario is the resource {@code scenarios/<topic>/<name>.<extension>}: the input
- * a scenario loads, or the exact output it expects from {@code dump}. JSON5 reads JSON, so a JSON5
- * scenario without a {@code .json5} file uses the {@code .json} one; outputs differ, so each has
- * its own file. Run the tests with {@code -Dscenarios.record=<directory>} to write the outputs to
- * that directory instead of comparing them: review them there, then copy them to the resources.
+ * <p>The texts of a topic in one format are the resource {@code scenarios/<topic>.<extension>}:
+ * the inputs its scenarios load and the exact outputs they expect from {@code dump}. Each text is a
+ * section that starts with a line {@code # --- <name>} ({@code // --- <name>} in JSON and JSON5)
+ * and ends with a blank line, which is not part of the text. JSON5 reads JSON, so a JSON5 scenario
+ * without a section in {@code .json5} uses the {@code .json} one; outputs differ, so each has its
+ * own. Run the tests with {@code -Dscenarios.record=<directory>} to write the outputs to that
+ * directory instead of comparing them: each file there is the resource with the recorded outputs
+ * replaced or added. Review them there, then copy them to the resources.
  */
 public enum Format {
   PROPERTIES(
@@ -88,6 +93,12 @@ public enum Format {
   private final Class<?> entryPoint;
   private final String resolverGetter;
   private final Set<Feature> features;
+
+  /** The sections of each resource read so far, by {@code <topic>.<extension>}. */
+  private static final Map<String, Map<String, String>> SECTIONS = new ConcurrentHashMap<>();
+
+  /** The sections of each file recorded so far, by {@code <topic>.<extension>}. */
+  private static final Map<String, Map<String, String>> RECORDED = new LinkedHashMap<>();
 
   Format(String extension, Class<?> entryPoint, String resolverGetter, Feature... features) {
     this.extension = extension;
@@ -215,21 +226,22 @@ public enum Format {
   }
 
   /**
-   * The text of scenario {@code name} of {@code topic} in this format.
+   * The text of scenario {@code name} of {@code topic} in this format: its section of the resource
+   * {@code scenarios/<topic>.<extension>}.
    *
    * @throws AssertionError if the format has no text for it
    */
   public String text(String topic, String name) {
-    String found = this.read(topic, name, this.extension);
+    String found = sections(topic, this.extension).get(name);
     if (found == null && this == JSON5) {
-      found = this.read(topic, name, JSON.extension);
+      found = sections(topic, JSON.extension).get(name);
     }
     if (found == null) {
       throw new AssertionError(
-          "No resource scenarios/"
-              + topic
-              + "/"
+          "No section "
               + name
+              + " in resource scenarios/"
+              + topic
               + "."
               + this.extension
               + "; run with -Dscenarios.record=<directory> to record the outputs");
@@ -239,29 +251,107 @@ public enum Format {
 
   /**
    * Asserts that {@code actual}, the output of a dump, is the text of scenario {@code name}. With
-   * {@code -Dscenarios.record=<directory>}, writes it to that directory instead.
+   * {@code -Dscenarios.record=<directory>}, records it instead: see {@link #record}.
    */
   public void assertText(String topic, String name, String actual) {
     String recordTo = System.getProperty("scenarios.record");
     if (recordTo != null) {
-      try {
-        Path file = Path.of(recordTo, topic, name + "." + this.extension);
-        Files.createDirectories(file.getParent());
-        Files.writeString(file, actual);
-      } catch (IOException e) {
-        throw new UncheckedIOException(e);
-      }
+      record(Path.of(recordTo), topic, this.extension, name, actual);
       return;
     }
     // not normalized: the line endings are part of what is tested
     Assertions.assertEquals(
-        this.text(topic, name), actual, this + ": scenarios/" + topic + "/" + name);
+        this.text(topic, name),
+        actual,
+        "section " + name + " of scenarios/" + topic + "." + this.extension);
   }
 
-  private String read(String topic, String name, String extension) {
-    String path = "scenarios/" + topic + "/" + name + "." + extension;
-    try (InputStream in = Format.class.getClassLoader().getResourceAsStream(path)) {
-      return in == null ? null : new String(in.readAllBytes(), StandardCharsets.UTF_8);
+  /** The line that starts a section, followed by its name, in a file with {@code extension}. */
+  private static String marker(String extension) {
+    return extension.startsWith("json") ? "// --- " : "# --- ";
+  }
+
+  /** The sections of resource {@code scenarios/<topic>.<extension>} by name; empty if none. */
+  private static Map<String, String> sections(String topic, String extension) {
+    return SECTIONS.computeIfAbsent(
+        topic + "." + extension,
+        file -> {
+          String path = "scenarios/" + file;
+          try (InputStream in = Format.class.getClassLoader().getResourceAsStream(path)) {
+            return in == null
+                ? Map.of()
+                : parseSections(
+                    path, new String(in.readAllBytes(), StandardCharsets.UTF_8), marker(extension));
+          } catch (IOException e) {
+            throw new UncheckedIOException(e);
+          }
+        });
+  }
+
+  /**
+   * Splits {@code text} into its sections. Each starts with a line of {@code marker} and its name,
+   * and ends with the blank line that separates it from the next one, which is not part of it.
+   */
+  static Map<String, String> parseSections(String path, String text, String marker) {
+    Map<String, String> sections = new LinkedHashMap<>();
+    String name = null;
+    int start = 0;
+    int line = 0;
+    while (line < text.length()) {
+      int next = text.indexOf('\n', line) + 1;
+      if (next == 0) {
+        next = text.length();
+      }
+      if (text.startsWith(marker, line)) {
+        if (name != null) {
+          addSection(sections, path, name, text.substring(start, line));
+        }
+        name = text.substring(line + marker.length(), next).strip();
+        start = next;
+      } else if (name == null) {
+        throw new AssertionError(path + ": text before the first '" + marker + "<name>' line");
+      }
+      line = next;
+    }
+    if (name != null) {
+      addSection(sections, path, name, text.substring(start));
+    }
+    return sections;
+  }
+
+  private static void addSection(
+      Map<String, String> sections, String path, String name, String text) {
+    if (!text.endsWith("\n")) {
+      throw new AssertionError(path + ": section " + name + " doesn't end with a blank line");
+    }
+    if (sections.put(name, text.substring(0, text.length() - 1)) != null) {
+      throw new AssertionError(path + ": section " + name + " appears twice");
+    }
+  }
+
+  /** {@code sections} as the text of a resource, the reverse of {@link #parseSections}. */
+  static String joinSections(Map<String, String> sections, String marker) {
+    StringBuilder text = new StringBuilder();
+    sections.forEach(
+        (name, section) ->
+            text.append(marker).append(name).append('\n').append(section).append('\n'));
+    return text.toString();
+  }
+
+  /**
+   * Writes {@code directory/<topic>.<extension>}: the resource with the section {@code name} set to
+   * {@code actual}, and every section recorded before in this run. Review it there, then copy it
+   * to the resources.
+   */
+  private static synchronized void record(
+      Path directory, String topic, String extension, String name, String actual) {
+    String file = topic + "." + extension;
+    Map<String, String> sections =
+        RECORDED.computeIfAbsent(file, _ -> new LinkedHashMap<>(sections(topic, extension)));
+    sections.put(name, actual);
+    try {
+      Files.createDirectories(directory);
+      Files.writeString(directory.resolve(file), joinSections(sections, marker(extension)));
     } catch (IOException e) {
       throw new UncheckedIOException(e);
     }

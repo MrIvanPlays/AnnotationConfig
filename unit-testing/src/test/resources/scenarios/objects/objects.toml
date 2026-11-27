@@ -1,8 +1,0 @@
-[plain]
-foo = 'foo string'
-bar = 1
-baz = 0.555
-
-[without-empty-constructor]
-world = 'world'
-x = 20

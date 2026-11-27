@@ -1,0 +1,9 @@
+// --- output
+// Class comment
+
+{
+  // field comment
+  a: 1,
+  b: 2
+}
+

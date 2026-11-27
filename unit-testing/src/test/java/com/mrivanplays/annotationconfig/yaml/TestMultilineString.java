@@ -24,6 +24,7 @@ package com.mrivanplays.annotationconfig.yaml;
 
 import com.mrivanplays.annotationconfig.core.annotations.Key;
 import com.mrivanplays.annotationconfig.core.annotations.Multiline;
+import java.io.StringReader;
 import java.io.StringWriter;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
@@ -54,8 +55,17 @@ class TestMultilineString {
   @Test
   void testLoad() {
     Subject config = new Subject();
-    YamlConfig.getConfigResolver()
-        .load(config, getClass().getClassLoader().getResourceAsStream("multiline-string.yml"));
+    String yaml =
+        """
+        multiline: "
+        Hello! \\n
+        My name is Ivan! \\n
+        I like to code! \\n
+        "
+
+        control-field: -2
+        """;
+    YamlConfig.getConfigResolver().load(config, new StringReader(yaml));
 
     String expected = " Hello! \n" + " My name is Ivan! \n" + " I like to code! \n ";
 

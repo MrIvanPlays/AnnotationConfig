@@ -1,0 +1,19 @@
+# --- output
+top: 1
+
+plain:
+  x:
+    y: 2
+  # pool comment
+  pool:
+    z: 5
+
+commented:
+  inner:
+    # deep comment
+    deep: 3
+  # flat comment
+  # two
+  # lines
+  flat: 4
+

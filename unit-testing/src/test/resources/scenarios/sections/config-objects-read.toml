@@ -1,6 +1,0 @@
-name = 'Pekov'
-
-[server]
-ip = 'example.org'
-port = 25577
-limits.players = 50

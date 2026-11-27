@@ -1,5 +1,0 @@
-ports = [25565, 25566]
-names = {admin = 'Ivan'}
-grid = [[1, 2], [3]]
-weights = [0.5]
-server = {ports = [80]}

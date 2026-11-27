@@ -1,0 +1,51 @@
+# --- grid-out-of-bounds
+grid: [[1], [2, 11]]
+
+# --- in-bounds
+ports: [25565, 25566]
+names: {admin: Ivan}
+grid: [[1, 2], [3]]
+weights: [0.5]
+server: {ports: [80]}
+
+# --- key-in-bounds
+values: {ab: 1}
+
+# --- key-out-of-bounds
+values: {abcdef: 1}
+
+# --- name-too-short
+names: {admin: Iv}
+
+# --- oneof-grid-unlisted
+grid: [[a], [a, c]]
+
+# --- oneof-in
+servers: {eu: small, us: large}
+grid: [[a], [a, b]]
+region: {zones: [eu]}
+
+# --- oneof-key-unlisted
+servers: {asia: small}
+
+# --- oneof-permissions-listed
+permissions: [read, write]
+
+# --- oneof-permissions-unlisted
+permissions: [read, delete]
+
+# --- oneof-record-unlisted
+region: {zones: [eu, mars]}
+
+# --- oneof-value-unlisted
+servers: {eu: medium}
+
+# --- port-out-of-bounds
+ports: [1, 70000]
+
+# --- record-port-out-of-bounds
+server: {ports: [0]}
+
+# --- weight-out-of-bounds
+weights: [2.5]
+

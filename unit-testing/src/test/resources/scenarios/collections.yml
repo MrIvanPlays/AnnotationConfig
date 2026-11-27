@@ -1,0 +1,120 @@
+# --- arrays-and-lists-read
+numbers: [3, 4, 5]
+doubles: []
+decimals: [2222.3333, 4444.5555]
+items:
+  - name: x
+    amount: 7
+names: []
+itemList:
+  - {name: y, amount: 8}
+  - {name: z, amount: 9}
+nested: [[9]]
+empty: [now, filled]
+units: [minutes, Hours]
+
+# --- arrays-and-lists
+numbers: [1, 2]
+
+doubles: [1.1, 2.2]
+
+decimals: [1111.2222, 3333.4444]
+
+items:
+  - name: "a"
+    amount: 1
+  - name: "b"
+    amount: 2
+
+names:
+  - "Hello"
+  - "bla bla"
+
+itemList:
+  - name: "c"
+    amount: 3
+
+nested:
+  -   - 1
+      - 2
+  -   - 3
+
+empty: []
+
+units:
+  - "seconds"
+  - "minutes"
+
+# --- list-of-objects-read
+objects:
+  - name: "asdfp"
+    value: false
+  - name: "baz"
+    value: "bar"
+  - name: "faraday"
+    value: "electricity"
+
+# --- list-of-objects
+objects:
+  - name: "foo"
+    value: true
+  - name: "bar"
+    value: "baz"
+
+# --- maps-with-lists-of-maps
+values:
+  entries:
+    - foo: 1
+      bar: 2
+      baz:
+        - "baba"
+        - "yaga"
+    - foo: 3
+      bar: 4
+      baz:
+        baba: "yaga"
+        lorem: "ipsum"
+
+# --- single-field-objects-read
+objects:
+  - "baz"
+  - "aabb"
+
+# --- single-field-objects
+objects:
+  - "foo"
+  - "bar"
+
+# --- single-value-list
+foo: "aabb"
+
+# --- typed-elements
+longs: [1, 2]
+nested: [[a, b], [c]]
+wildcard: [1, 2.5]
+texts: ["", "a"]
+counts: {a: 1, b: 2}
+groups: {odd: [1, 3], even: [2]}
+amounts: {x: many}
+
+# --- arrays-read
+intArray: [1, 2, 3, 4, 5, 6]
+stringArray: [europe, is, peaceful]
+charArray: [d, e, f]
+boolArray: [false, true, false]
+bigInteger: [3, 4]
+bigDecimal: [5.6, 7.8]
+
+# --- arrays
+charArray: [a, b, c]
+
+boolArray: [true, false, true]
+
+intArray: [7, 8, 9, 10, 11, 12]
+
+bigInteger: [1, 2]
+
+bigDecimal: [1.2, 3.4]
+
+stringArray: ["make", "america", "great", "again"]
+

@@ -1,7 +1,0 @@
-notANumber: .NaN
-
-positiveInfinity: .inf
-
-negativeInfinity: -.inf
-
-floatInfinity: !!float 'Infinity'

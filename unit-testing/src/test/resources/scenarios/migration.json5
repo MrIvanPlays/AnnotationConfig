@@ -1,0 +1,47 @@
+// --- commented-version
+// The server's config
+
+{
+  // Don't change this
+  // It is how old the file is,
+  // used to migrate it
+  "config-version": 2,
+  // Don't change this
+  // It is how old the file is,
+  // used to migrate it
+  motd: "A server"
+}
+
+// --- dump
+{
+  "config-version": 3,
+  motd: "A server",
+  "server-port": 8080,
+  timeout: "30s"
+}
+
+// --- migrated
+{
+  "config-version": 3,
+  motd: "Hello",
+  "server-port": 25565,
+  timeout: "10s"
+}
+
+// --- nested-migrated
+{
+  "config-version": 2,
+  server: {
+    host: "example.org"
+  },
+  network: {
+    port: 25565
+  }
+}
+
+// --- version-added
+{
+  "config-version": 1,
+  motd: "Hello"
+}
+

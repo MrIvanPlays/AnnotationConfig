@@ -1,0 +1,11 @@
+// --- missing-options-added
+{
+  foo: "foo",
+  // added comment
+  added: true,
+  section: {
+    a: 1,
+    b: 3
+  }
+}
+

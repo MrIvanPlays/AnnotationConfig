@@ -41,7 +41,7 @@ import org.junit.jupiter.params.provider.MethodSource;
  * Comments are looked up by dotted path only in the maps that hold a commented key; the others are
  * written the same way without building the paths of their keys. YAML also looks up a key that
  * holds a map by its plain key, in every map: "pool" gets the comments of "pool" there, and nowhere
- * else. The expected outputs are the resources in {@code scenarios/comment-paths}.
+ * else. The expected outputs are in the resources {@code scenarios/comment-paths.<extension>}.
  */
 @ParameterizedClass(name = "{0}")
 @MethodSource(Sources.WITH_COMMENTED_SECTIONS)

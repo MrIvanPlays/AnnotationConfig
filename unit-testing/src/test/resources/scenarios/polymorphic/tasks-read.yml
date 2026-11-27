@@ -1,1 +1,0 @@
-strategies: [{type: parallel, threads: 2}]

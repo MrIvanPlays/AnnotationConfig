@@ -1,0 +1,14 @@
+// --- defaults
+{
+  "foo": 2000
+}
+
+// --- foo-template
+{"foo": %s}
+
+// --- missing-options-added
+{
+  "foo": "foo",
+  "bar": "bar"
+}
+

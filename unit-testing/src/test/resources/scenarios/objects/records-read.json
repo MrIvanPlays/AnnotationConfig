@@ -1,4 +1,0 @@
-{
-  "spawn": {"world-name": "end", "x": 1, "y": 2, "z": 3.5, "safe": false},
-  "home": {"world-name": "overworld", "x": 4, "y": 5, "z": 6.0, "safe": true}
-}
