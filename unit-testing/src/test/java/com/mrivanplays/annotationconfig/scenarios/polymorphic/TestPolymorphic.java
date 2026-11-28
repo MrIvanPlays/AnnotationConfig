@@ -173,8 +173,7 @@ class TestPolymorphic extends Scenario {
     // a subclass of a listed class, as an anonymous class is, is not listed itself
     subject.execution = new SequentialStrategy(1) {};
     String message =
-        Assertions.assertThrows(IllegalArgumentException.class, () -> dump(subject))
-            .getMessage();
+        Assertions.assertThrows(IllegalArgumentException.class, () -> dump(subject)).getMessage();
     Assertions.assertTrue(message.contains("'execution'"), message);
     Assertions.assertTrue(message.contains("is not listed"), message);
   }
@@ -229,6 +228,11 @@ class TestPolymorphic extends Scenario {
   // <editor-fold desc="A @Polymorphic field: subjects">
 
   interface ExecutionStrategy {}
+
+  @Polymorphic(discriminator = "kind")
+  sealed interface Shape permits Circle, Square, Polygon {}
+
+  sealed interface Polygon extends Shape permits Triangle {}
 
   static class Subject {
 
@@ -303,6 +307,10 @@ class TestPolymorphic extends Scenario {
     }
   }
 
+  // </editor-fold>
+
+  // <editor-fold desc="A @Polymorphic type: subjects">
+
   record FixedStrategy(int every, String unit) implements ExecutionStrategy {}
 
   static final class NoStrategy implements ExecutionStrategy {
@@ -317,15 +325,6 @@ class TestPolymorphic extends Scenario {
       return 0;
     }
   }
-
-  // </editor-fold>
-
-  // <editor-fold desc="A @Polymorphic type: subjects">
-
-  @Polymorphic(discriminator = "kind")
-  sealed interface Shape permits Circle, Square, Polygon {}
-
-  sealed interface Polygon extends Shape permits Triangle {}
 
   static class Shapes {
 

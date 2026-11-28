@@ -32,7 +32,7 @@ Java 25, Maven multi-module build.
   - `TomlConfig` registers the `java.time` serializers in the shared `SerializerRegistry` on first
     use; they write native TOML date-times when the settings hold `MAPPER_KEY`, strings otherwise.
   - Kept as they are: the name `SHOULD_REVERSE_FIELDS` (`true` means declaration order),
-    `DefaultSerializer`'s `PRIMITIVE_CLASS` check, its `LOGGER` warning and `printStackTrace()`,
+    `DefaultSerializer`'s `LOGGER` warning and `printStackTrace()`,
     `DataObject#putAll`, `@author claude, Ivan Pekov`, and the "DO NOT TOUCH" comment of the
     record code in `DefaultSerializer`.
   - `ConfigResolver` is not meant to be implemented (its Javadoc and the README say so): resolvers
@@ -105,6 +105,13 @@ Java 25, Maven multi-module build.
 - An immutable `DataObject` made from a map wraps it lazily, and `DataObject#mapView()`
   (package-private) gives `DefaultSerializer` the map without `getAsMap()`'s deep copy. Loading
   used to wrap and copy each value once per level of nesting.
+- Scalars (text, booleans, characters, numbers) are one table, `DefaultSerializer.Scalars`: each
+  boxed type with its primitive and its reader. Their values go to the writers as they are
+  (`writesAsIs`), and every place that reads one (fields, array and list elements, map values,
+  `DataObject`'s number getters) converts it with `readScalar`. A field of a supertype of a scalar
+  (`Object`, `Number`, ...) counts as scalar and gets the value as read. Only add a type there
+  that every writer writes itself; others, such as `UUID` and `Duration`, get a serializer in
+  `serialization.helpers` (`UuidToStringSerializer`, `DurationSerializer`) that users register.
 
 ## Formats
 

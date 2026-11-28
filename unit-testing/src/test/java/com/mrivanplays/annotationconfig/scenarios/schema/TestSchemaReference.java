@@ -69,8 +69,7 @@ class TestSchemaReference extends Scenario {
   void loadingIgnoresTheReference() {
     Referenced written = new Referenced();
     written.port = 8080;
-    Referenced read =
-        loadText(new Referenced(), dump(written, reference("config.schema.json")));
+    Referenced read = loadText(new Referenced(), dump(written, reference("config.schema.json")));
 
     Assertions.assertEquals(8080, read.port);
   }

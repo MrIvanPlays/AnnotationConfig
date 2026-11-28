@@ -112,9 +112,208 @@ final class SchemaGenerator {
 
   // <editor-fold desc="Config fields and sections" defaultstate="collapsed">
 
+  /** The value of {@code info} in {@code instance}. */
+  private static @Nullable Object fieldValue(FieldInfo info, Object instance) {
+    try {
+      return info.ensureAccessible().get(instance);
+    } catch (IllegalAccessException e) {
+      throw new IllegalArgumentException("A field became inaccessible", e);
+    }
+  }
+
+  /** The comments of the classes among {@code holders}, as a dump writes them. */
+  private static List<String> classComments(Set<AnnotationHolder> holders) {
+    List<String> comments = new ArrayList<>();
+    for (AnnotationHolder holder : holders) {
+      if (holder.isClass()) {
+        comments.addAll(ClassInfo.of(holder.getClazz()).comments());
+      }
+    }
+    return comments;
+  }
+
+  @SuppressWarnings("unchecked")
+  private static void place(
+      Map<String, Object> properties, Map<String, Object> boxed, Map<String, Object> node) {
+    for (Map.Entry<String, Object> entry : boxed.entrySet()) {
+      if (entry.getValue() instanceof Map<?, ?> nested) {
+        // a dotted key: the parts before the last are sections
+        Map<String, Object> section = new LinkedHashMap<>();
+        section.put("type", "object");
+        section.put("properties", new LinkedHashMap<String, Object>());
+        section = (Map<String, Object>) merge(properties, entry.getKey(), section);
+        place((Map<String, Object>) section.get("properties"), (Map<String, Object>) nested, node);
+      } else {
+        merge(properties, entry.getKey(), node);
+      }
+    }
+  }
+
   /**
-   * Puts the schemas of the fields {@code holders} of a config or section into {@code
-   * properties}.
+   * Puts {@code node} under {@code key}; when both it and the schema there have properties, as a
+   * section and a dotted key into it do, they are merged into the one there.
+   *
+   * @return the schema under {@code key}
+   */
+  @SuppressWarnings("unchecked")
+  private static Map<String, Object> merge(
+      Map<String, Object> properties, String key, Map<String, Object> node) {
+    Object existing = properties.get(key);
+    if (existing instanceof Map<?, ?> map
+        && map.get("properties") instanceof Map<?, ?> existingProperties
+        && node.get("properties") instanceof Map<?, ?> nodeProperties) {
+      ((Map<String, Object>) existingProperties).putAll((Map<String, Object>) nodeProperties);
+      return (Map<String, Object>) map;
+    }
+    properties.put(key, node);
+    return node;
+  }
+
+  /** {@code @OneOf} on a String: its values, which only suggest when case is ignored. */
+  private static void oneOf(Map<String, Object> node, AnnotatedType annotated) {
+    OneOf oneOf = annotated.getAnnotation(OneOf.class);
+    if (oneOf == null || oneOf.value().length == 0) {
+      // without values loading fails, whatever the schema says
+      return;
+    }
+    List<Object> values = new ArrayList<>(List.of(oneOf.value()));
+    node.put(oneOf.ignoreCase() ? "examples" : "enum", values);
+  }
+
+  /** {@code @Min} and {@code @Max}: the bounds of a number, or of a String's length. */
+  private static void bounds(Map<String, Object> node, AnnotatedType annotated, boolean length) {
+    String where = annotated.getType().getTypeName();
+    Min min = annotated.getAnnotation(Min.class);
+    if (min != null) {
+      Number bound = MinMaxValidator.minBound(where, min);
+      if (length) {
+        long minLength = (long) Math.ceil(bound.doubleValue());
+        if (minLength > 0) {
+          node.put("minLength", minLength);
+        }
+      } else {
+        node.put("minimum", bound);
+      }
+    }
+    Max max = annotated.getAnnotation(Max.class);
+    if (max != null) {
+      Number bound = MinMaxValidator.maxBound(where, max);
+      if (length) {
+        // a negative maximum length accepts no String; JSON Schema doesn't allow one
+        node.put("maxLength", Math.max(0, (long) Math.floor(bound.doubleValue())));
+      } else {
+        node.put("maximum", bound);
+      }
+    }
+  }
+
+  private static void describe(Map<String, Object> node, List<String> comments) {
+    StringBuilder description = new StringBuilder();
+    for (String comment : comments) {
+      if (!description.isEmpty()) {
+        description.append('\n');
+      }
+      description.append(comment.strip());
+    }
+    String text = description.toString().strip();
+    if (!text.isEmpty()) {
+      node.put("description", text);
+    }
+  }
+
+  private static Map<String, Object> withDefault(
+      Map<String, Object> node, @Nullable Object written) {
+    Object value = json(written);
+    if (value != null) {
+      node.put("default", value);
+    }
+    return node;
+  }
+
+  // </editor-fold>
+
+  // <editor-fold desc="Values" defaultstate="collapsed">
+
+  /** {@code written} as a JSON value; {@code null} for what JSON can't hold. */
+  private static @Nullable Object json(@Nullable Object written) {
+    return switch (written) {
+      case null -> null;
+      case String string -> string;
+      case Boolean bool -> bool;
+      case MultilineString multiline -> multiline.getString();
+      case Character character -> character.toString();
+      case Double d when !Double.isFinite(d) -> null;
+      case Float f when !Float.isFinite(f) -> null;
+      case Number number -> number;
+      case Map<?, ?> map -> {
+        Map<String, Object> converted = new LinkedHashMap<>();
+        map.forEach((key, value) -> converted.put(String.valueOf(key), json(value)));
+        yield converted;
+      }
+      case Collection<?> collection -> {
+        List<Object> converted = new ArrayList<>(collection.size());
+        collection.forEach(element -> converted.add(json(element)));
+        yield converted;
+      }
+      default -> {
+        if (written.getClass().isArray()) {
+          int length = Array.getLength(written);
+          List<Object> converted = new ArrayList<>(length);
+          for (int i = 0; i < length; i++) {
+            converted.add(json(Array.get(written, i)));
+          }
+          yield converted;
+        }
+        // such as a java.time value a registered serializer writes
+        yield written.toString();
+      }
+    };
+  }
+
+  @SuppressWarnings("unchecked")
+  private static @Nullable Map<String, Object> asMap(@Nullable Object value) {
+    return value instanceof Map<?, ?> map ? (Map<String, Object>) map : null;
+  }
+
+  private static boolean isInteger(Class<?> type) {
+    return type == int.class
+        || type == Integer.class
+        || type == long.class
+        || type == Long.class
+        || type == short.class
+        || type == Short.class
+        || type == byte.class
+        || type == Byte.class
+        || type == BigInteger.class;
+  }
+
+  private static boolean isNumber(Class<?> type) {
+    return type == double.class
+        || type == Double.class
+        || type == float.class
+        || type == Float.class
+        || type == BigDecimal.class
+        || type == Number.class;
+  }
+
+  private static Class<?> rawClass(Type type) {
+    return switch (type) {
+      case Class<?> c -> c;
+      case ParameterizedType parameterized -> rawClass(parameterized.getRawType());
+      case GenericArrayType array ->
+          Array.newInstance(rawClass(array.getGenericComponentType()), 0).getClass();
+      case WildcardType wildcard ->
+          wildcard.getUpperBounds().length == 0
+              ? Object.class
+              : rawClass(wildcard.getUpperBounds()[0]);
+      case TypeVariable<?> variable ->
+          variable.getBounds().length == 0 ? Object.class : rawClass(variable.getBounds()[0]);
+      default -> Object.class;
+    };
+  }
+
+  /**
+   * Puts the schemas of the fields {@code holders} of a config or section into {@code properties}.
    *
    * @param instance the config or section, if there is one: it tells the classes of sections
    * @param values what a dump writes for it, for the defaults
@@ -168,6 +367,10 @@ final class SchemaGenerator {
             this.findStaticFields);
   }
 
+  // </editor-fold>
+
+  // <editor-fold desc="Annotations" defaultstate="collapsed">
+
   /** The schema of a section whose fields are {@code holders}, as a dump writes it. */
   private Map<String, Object> sectionSchema(
       @Nullable Object instance,
@@ -181,26 +384,6 @@ final class SchemaGenerator {
     return node;
   }
 
-  /** The value of {@code info} in {@code instance}. */
-  private static @Nullable Object fieldValue(FieldInfo info, Object instance) {
-    try {
-      return info.ensureAccessible().get(instance);
-    } catch (IllegalAccessException e) {
-      throw new IllegalArgumentException("A field became inaccessible", e);
-    }
-  }
-
-  /** The comments of the classes among {@code holders}, as a dump writes them. */
-  private static List<String> classComments(Set<AnnotationHolder> holders) {
-    List<String> comments = new ArrayList<>();
-    for (AnnotationHolder holder : holders) {
-      if (holder.isClass()) {
-        comments.addAll(ClassInfo.of(holder.getClazz()).comments());
-      }
-    }
-    return comments;
-  }
-
   /** Puts {@code node} where the key resolver puts the value of {@code key}. */
   private void box(Map<String, Object> properties, String key, Map<String, Object> node) {
     Map<String, Object> boxed = new LinkedHashMap<>();
@@ -208,47 +391,9 @@ final class SchemaGenerator {
     place(properties, boxed, node);
   }
 
-  @SuppressWarnings("unchecked")
-  private static void place(
-      Map<String, Object> properties, Map<String, Object> boxed, Map<String, Object> node) {
-    for (Map.Entry<String, Object> entry : boxed.entrySet()) {
-      if (entry.getValue() instanceof Map<?, ?> nested) {
-        // a dotted key: the parts before the last are sections
-        Map<String, Object> section = new LinkedHashMap<>();
-        section.put("type", "object");
-        section.put("properties", new LinkedHashMap<String, Object>());
-        section = (Map<String, Object>) merge(properties, entry.getKey(), section);
-        place(
-            (Map<String, Object>) section.get("properties"), (Map<String, Object>) nested, node);
-      } else {
-        merge(properties, entry.getKey(), node);
-      }
-    }
-  }
-
-  /**
-   * Puts {@code node} under {@code key}; when both it and the schema there have properties, as a
-   * section and a dotted key into it do, they are merged into the one there.
-   *
-   * @return the schema under {@code key}
-   */
-  @SuppressWarnings("unchecked")
-  private static Map<String, Object> merge(
-      Map<String, Object> properties, String key, Map<String, Object> node) {
-    Object existing = properties.get(key);
-    if (existing instanceof Map<?, ?> map
-        && map.get("properties") instanceof Map<?, ?> existingProperties
-        && node.get("properties") instanceof Map<?, ?> nodeProperties) {
-      ((Map<String, Object>) existingProperties).putAll((Map<String, Object>) nodeProperties);
-      return (Map<String, Object>) map;
-    }
-    properties.put(key, node);
-    return node;
-  }
-
   // </editor-fold>
 
-  // <editor-fold desc="Values" defaultstate="collapsed">
+  // <editor-fold desc="Helpers" defaultstate="collapsed">
 
   /** The schema of the value of a field that isn't a section, with its default. */
   private Map<String, Object> fieldSchema(FieldInfo info, @Nullable Object written) {
@@ -267,9 +412,7 @@ final class SchemaGenerator {
    * @param elementPolymorphic the {@code @Polymorphic} of a list or array field, for its elements
    */
   private Map<String, Object> valueSchema(
-      AnnotatedType annotated,
-      @Nullable Object written,
-      @Nullable Polymorphic elementPolymorphic) {
+      AnnotatedType annotated, @Nullable Object written, @Nullable Polymorphic elementPolymorphic) {
     if (annotated instanceof AnnotatedWildcardType wildcard) {
       AnnotatedType[] bounds = wildcard.getAnnotatedUpperBounds();
       return bounds.length == 0
@@ -421,8 +564,8 @@ final class SchemaGenerator {
    * defaults.
    *
    * @param current the class of the value a section holds, if any
-   * @param section whether it is a config section, written as sections are, or a value written
-   *     by the default serializer
+   * @param section whether it is a config section, written as sections are, or a value written by
+   *     the default serializer
    */
   private Map<String, Object> polymorphicSchema(
       PolymorphicInfo polymorphic,
@@ -471,153 +614,6 @@ final class SchemaGenerator {
     }
     node.put("anyOf", anyOf);
     return node;
-  }
-
-  // </editor-fold>
-
-  // <editor-fold desc="Annotations" defaultstate="collapsed">
-
-  /** {@code @OneOf} on a String: its values, which only suggest when case is ignored. */
-  private static void oneOf(Map<String, Object> node, AnnotatedType annotated) {
-    OneOf oneOf = annotated.getAnnotation(OneOf.class);
-    if (oneOf == null || oneOf.value().length == 0) {
-      // without values loading fails, whatever the schema says
-      return;
-    }
-    List<Object> values = new ArrayList<>(List.of(oneOf.value()));
-    node.put(oneOf.ignoreCase() ? "examples" : "enum", values);
-  }
-
-  /** {@code @Min} and {@code @Max}: the bounds of a number, or of a String's length. */
-  private static void bounds(Map<String, Object> node, AnnotatedType annotated, boolean length) {
-    String where = annotated.getType().getTypeName();
-    Min min = annotated.getAnnotation(Min.class);
-    if (min != null) {
-      Number bound = MinMaxValidator.minBound(where, min);
-      if (length) {
-        long minLength = (long) Math.ceil(bound.doubleValue());
-        if (minLength > 0) {
-          node.put("minLength", minLength);
-        }
-      } else {
-        node.put("minimum", bound);
-      }
-    }
-    Max max = annotated.getAnnotation(Max.class);
-    if (max != null) {
-      Number bound = MinMaxValidator.maxBound(where, max);
-      if (length) {
-        // a negative maximum length accepts no String; JSON Schema doesn't allow one
-        node.put("maxLength", Math.max(0, (long) Math.floor(bound.doubleValue())));
-      } else {
-        node.put("maximum", bound);
-      }
-    }
-  }
-
-  // </editor-fold>
-
-  // <editor-fold desc="Helpers" defaultstate="collapsed">
-
-  private static void describe(Map<String, Object> node, List<String> comments) {
-    StringBuilder description = new StringBuilder();
-    for (String comment : comments) {
-      if (!description.isEmpty()) {
-        description.append('\n');
-      }
-      description.append(comment.strip());
-    }
-    String text = description.toString().strip();
-    if (!text.isEmpty()) {
-      node.put("description", text);
-    }
-  }
-
-  private static Map<String, Object> withDefault(
-      Map<String, Object> node, @Nullable Object written) {
-    Object value = json(written);
-    if (value != null) {
-      node.put("default", value);
-    }
-    return node;
-  }
-
-  /** {@code written} as a JSON value; {@code null} for what JSON can't hold. */
-  private static @Nullable Object json(@Nullable Object written) {
-    return switch (written) {
-      case null -> null;
-      case String string -> string;
-      case Boolean bool -> bool;
-      case MultilineString multiline -> multiline.getString();
-      case Character character -> character.toString();
-      case Double d when !Double.isFinite(d) -> null;
-      case Float f when !Float.isFinite(f) -> null;
-      case Number number -> number;
-      case Map<?, ?> map -> {
-        Map<String, Object> converted = new LinkedHashMap<>();
-        map.forEach((key, value) -> converted.put(String.valueOf(key), json(value)));
-        yield converted;
-      }
-      case Collection<?> collection -> {
-        List<Object> converted = new ArrayList<>(collection.size());
-        collection.forEach(element -> converted.add(json(element)));
-        yield converted;
-      }
-      default -> {
-        if (written.getClass().isArray()) {
-          int length = Array.getLength(written);
-          List<Object> converted = new ArrayList<>(length);
-          for (int i = 0; i < length; i++) {
-            converted.add(json(Array.get(written, i)));
-          }
-          yield converted;
-        }
-        // such as a java.time value a registered serializer writes
-        yield written.toString();
-      }
-    };
-  }
-
-  @SuppressWarnings("unchecked")
-  private static @Nullable Map<String, Object> asMap(@Nullable Object value) {
-    return value instanceof Map<?, ?> map ? (Map<String, Object>) map : null;
-  }
-
-  private static boolean isInteger(Class<?> type) {
-    return type == int.class
-        || type == Integer.class
-        || type == long.class
-        || type == Long.class
-        || type == short.class
-        || type == Short.class
-        || type == byte.class
-        || type == Byte.class
-        || type == BigInteger.class;
-  }
-
-  private static boolean isNumber(Class<?> type) {
-    return type == double.class
-        || type == Double.class
-        || type == float.class
-        || type == Float.class
-        || type == BigDecimal.class
-        || type == Number.class;
-  }
-
-  private static Class<?> rawClass(Type type) {
-    return switch (type) {
-      case Class<?> c -> c;
-      case ParameterizedType parameterized -> rawClass(parameterized.getRawType());
-      case GenericArrayType array ->
-          Array.newInstance(rawClass(array.getGenericComponentType()), 0).getClass();
-      case WildcardType wildcard ->
-          wildcard.getUpperBounds().length == 0
-              ? Object.class
-              : rawClass(wildcard.getUpperBounds()[0]);
-      case TypeVariable<?> variable ->
-          variable.getBounds().length == 0 ? Object.class : rawClass(variable.getBounds()[0]);
-      default -> Object.class;
-    };
   }
 
   // </editor-fold>

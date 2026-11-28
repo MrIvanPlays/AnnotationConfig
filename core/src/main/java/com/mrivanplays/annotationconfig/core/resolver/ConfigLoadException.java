@@ -59,8 +59,7 @@ public final class ConfigLoadException extends IllegalArgumentException {
   /**
    * Creates a new exception for {@code problems}.
    *
-   * @param source what was loaded, for the message, such as {@code "the configuration
-   *     config.yml"}
+   * @param source what was loaded, for the message, such as {@code "the configuration config.yml"}
    * @param problems the options that could not be read; at least one
    */
   public ConfigLoadException(String source, List<Problem> problems) {

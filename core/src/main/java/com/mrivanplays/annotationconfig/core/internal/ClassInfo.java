@@ -66,10 +66,10 @@ public final class ClassInfo {
   // one set per combination of the three settings resolveAnnotationHolders depends on
   private final AtomicReferenceArray<@Nullable Set<AnnotationHolder>> holders =
       new AtomicReferenceArray<>(8);
-  @Nullable private volatile RecordInfo record;
   // the @ConfigVersion of the class, also one it inherits, and the class that declares it
   @Nullable private final ConfigVersion version;
   @Nullable private final Class<?> versionClass;
+  @Nullable private volatile RecordInfo record;
 
   private ClassInfo(Class<?> type) {
     this.type = type;
@@ -153,8 +153,8 @@ public final class ClassInfo {
   }
 
   /**
-   * The class that declares {@link #version()}, which its migration strategies are registered
-   * for; {@code null} if the class has no version.
+   * The class that declares {@link #version()}, which its migration strategies are registered for;
+   * {@code null} if the class has no version.
    */
   public @Nullable Class<?> versionClass() {
     return this.versionClass;
@@ -295,8 +295,8 @@ public final class ClassInfo {
     }
 
     /**
-     * The names of the record's components, in the order the constructor takes them. Shared:
-     * don't modify the array.
+     * The names of the record's components, in the order the constructor takes them. Shared: don't
+     * modify the array.
      */
     public String[] parameterNames() {
       return this.parameterNames;

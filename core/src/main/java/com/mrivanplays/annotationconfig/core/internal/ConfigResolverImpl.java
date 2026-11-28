@@ -87,6 +87,26 @@ public final class ConfigResolverImpl implements ConfigResolver {
     }
   }
 
+  /**
+   * Reads {@code values} into {@code annotatedConfig}; with {@code REPORT_ALL_ERRORS}, throws the
+   * options that could not be read once every option is read.
+   *
+   * @param source what is loaded, for the error message
+   * @return whether options are missing
+   */
+  private static boolean setFields(
+      Object annotatedConfig,
+      Map<String, Object> values,
+      Set<AnnotationHolder> holders,
+      Settings settings,
+      String source) {
+    LoadErrors errors = LoadErrors.of(settings);
+    boolean missingOptions =
+        AnnotatedConfigResolver.setFields(annotatedConfig, values, holders, settings, errors, "");
+    LoadErrors.throwIfAny(errors, source);
+    return missingOptions;
+  }
+
   @Override
   public Settings settings() {
     return this.settings;
@@ -366,26 +386,6 @@ public final class ConfigResolverImpl implements ConfigResolver {
       AnnotatedConfigResolver.dump(
           annotatedConfig, holders, path, settings, this.commentPrefix, this.valueWriter);
     }
-  }
-
-  /**
-   * Reads {@code values} into {@code annotatedConfig}; with {@code REPORT_ALL_ERRORS}, throws the
-   * options that could not be read once every option is read.
-   *
-   * @param source what is loaded, for the error message
-   * @return whether options are missing
-   */
-  private static boolean setFields(
-      Object annotatedConfig,
-      Map<String, Object> values,
-      Set<AnnotationHolder> holders,
-      Settings settings,
-      String source) {
-    LoadErrors errors = LoadErrors.of(settings);
-    boolean missingOptions =
-        AnnotatedConfigResolver.setFields(annotatedConfig, values, holders, settings, errors, "");
-    LoadErrors.throwIfAny(errors, source);
-    return missingOptions;
   }
 
   @Override

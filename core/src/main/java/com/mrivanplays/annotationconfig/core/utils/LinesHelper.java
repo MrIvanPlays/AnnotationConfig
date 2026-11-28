@@ -31,9 +31,9 @@ import org.jspecify.annotations.NullMarked;
  * of every line of a comment, as the YAML, JSON5 and TOML writers do.
  *
  * <p>A line break is anything the regex {@code \R} matches: {@code \r\n}, {@code \n}, {@code \r},
- * vertical tab, form feed, next line ({@code U+0085}) and the line and paragraph separators
- * ({@code U+2028}, {@code U+2029}). A writer for a format that knows fewer line breaks, such as
- * {@code .properties}, which only knows {@code \r} and {@code \n}, splits on its own.
+ * vertical tab, form feed, next line ({@code U+0085}) and the line and paragraph separators ({@code
+ * U+2028}, {@code U+2029}). A writer for a format that knows fewer line breaks, such as {@code
+ * .properties}, which only knows {@code \r} and {@code \n}, splits on its own.
  *
  * @author Ivan Pekov
  * @since 3.1.0

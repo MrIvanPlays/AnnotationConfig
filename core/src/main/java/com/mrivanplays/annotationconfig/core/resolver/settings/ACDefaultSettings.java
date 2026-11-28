@@ -127,9 +127,9 @@ public final class ACDefaultSettings {
       Setting.of("report_all_errors", Boolean.class);
 
   /**
-   * The JSON Schema a dumped file references, so that an editor completes and checks the file
-   * with it: a path, relative to the file, or a URL, such as {@code config.schema.json}. The
-   * schema itself comes from {@link
+   * The JSON Schema a dumped file references, so that an editor completes and checks the file with
+   * it: a path, relative to the file, or a URL, such as {@code config.schema.json}. The schema
+   * itself comes from {@link
    * com.mrivanplays.annotationconfig.core.resolver.ConfigResolver#schema(Object)}.
    *
    * <p>Not set by default: a dump references no schema. When it is set, each format references it

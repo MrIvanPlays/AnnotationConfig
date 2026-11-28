@@ -30,8 +30,8 @@ import org.junit.jupiter.api.Test;
 
 /**
  * SnakeYAML reads every decimal as a {@code double}; the YAML resolver reads one that a double
- * can't hold exactly as a {@code BigDecimal}, so that it reads back what was written. That a
- * {@code BigDecimal} field reads back is in the {@code values} scenarios.
+ * can't hold exactly as a {@code BigDecimal}, so that it reads back what was written. That a {@code
+ * BigDecimal} field reads back is in the {@code values} scenarios.
  */
 class TestYamlDecimals {
 
@@ -57,8 +57,7 @@ class TestYamlDecimals {
     // a YAML 1.1 form that BigDecimal doesn't read
     Assertions.assertEquals(685230.15, subject.values.get("sexagesimal"));
     // read as the double 0.12345678901234568 before
-    Assertions.assertEquals(
-        new BigDecimal("0.12345678901234567890"), subject.values.get("exact"));
+    Assertions.assertEquals(new BigDecimal("0.12345678901234567890"), subject.values.get("exact"));
   }
 
   static class Subject {

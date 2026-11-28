@@ -36,8 +36,8 @@ import org.jspecify.annotations.Nullable;
  * elements: Java puts such an annotation on the field and on the element type {@code String}, not
  * on the array type.
  *
- * <p>The annotation is checked here, when a value is validated, and not when the field is read:
- * an invalid one on a field that is never loaded breaks nothing.
+ * <p>The annotation is checked here, when a value is validated, and not when the field is read: an
+ * invalid one on a field that is never loaded breaks nothing.
  *
  * @hidden
  */

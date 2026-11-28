@@ -133,16 +133,6 @@ class TestMigration extends Scenario {
     MigrationStrategies.INSTANCE.unregisterStrategiesFor(MissingStep.class);
   }
 
-  /** A file name with the format's extension. */
-  private String file(String name) {
-    return name + "." + this.format.extension();
-  }
-
-  /** Writes the input {@code name} to the file {@code fileName} in {@code dir}. */
-  private Path write(Path dir, String fileName, String name) throws IOException {
-    return Files.writeString(dir.resolve(file(fileName)), text(name));
-  }
-
   /** The names of the files in {@code dir}, sorted. */
   private static List<String> filesIn(Path dir) throws IOException {
     try (Stream<Path> files = Files.list(dir)) {
@@ -150,7 +140,43 @@ class TestMigration extends Scenario {
     }
   }
 
+  /**
+   * The comment lines right above the line that writes {@code key}, in a format with comments: the
+   * lines before it that start with the format's comment marker.
+   */
+  private static List<String> commentsAbove(String written, String key) {
+    List<String> lines = written.lines().toList();
+    int at = -1;
+    for (int i = 0; i < lines.size(); i++) {
+      String line = lines.get(i).strip();
+      if (line.startsWith(key) || line.startsWith("\"" + key + "\"")) {
+        at = i;
+        break;
+      }
+    }
+    Assertions.assertNotEquals(-1, at, () -> "no line for " + key + " in:\n" + written);
+    List<String> comments = new ArrayList<>();
+    for (int i = at - 1; i >= 0; i--) {
+      String line = lines.get(i).strip();
+      if (!line.startsWith("#") && !line.startsWith("//")) {
+        break;
+      }
+      comments.addFirst(lines.get(i));
+    }
+    return comments;
+  }
+
+  /** A file name with the format's extension. */
+  private String file(String name) {
+    return name + "." + this.format.extension();
+  }
+
   // <editor-fold desc="Reading">
+
+  /** Writes the input {@code name} to the file {@code fileName} in {@code dir}. */
+  private Path write(Path dir, String fileName, String name) throws IOException {
+    return Files.writeString(dir.resolve(file(fileName)), text(name));
+  }
 
   @Test
   void aFileWithoutAVersionIsMigratedFromVersion1() {
@@ -178,10 +204,7 @@ class TestMigration extends Scenario {
   void aSubclassIsMigratedWithTheStrategiesOfTheVersionedClass() {
     // the fields are Server's, which a subclass reads only with FIND_PARENT_FIELDS
     Server config =
-        load(
-            new Server() {},
-            "v1",
-            new Settings().put(ACDefaultSettings.FIND_PARENT_FIELDS, true));
+        load(new Server() {}, "v1", new Settings().put(ACDefaultSettings.FIND_PARENT_FIELDS, true));
     Assertions.assertEquals(25565, config.port);
     Assertions.assertEquals("10s", config.timeout);
   }
@@ -275,17 +298,16 @@ class TestMigration extends Scenario {
         warnings.getFirst());
   }
 
-  @Test
-  void aDottedVersionKeyIsRejected() {
-    IllegalArgumentException error =
-        Assertions.assertThrows(
-            IllegalArgumentException.class, () -> dump(new DottedVersionKey()));
-    Assertions.assertTrue(error.getMessage().contains("'meta.version'"), error.getMessage());
-  }
-
   // </editor-fold>
 
   // <editor-fold desc="Writing">
+
+  @Test
+  void aDottedVersionKeyIsRejected() {
+    IllegalArgumentException error =
+        Assertions.assertThrows(IllegalArgumentException.class, () -> dump(new DottedVersionKey()));
+    Assertions.assertTrue(error.getMessage().contains("'meta.version'"), error.getMessage());
+  }
 
   @Test
   void theVersionIsWrittenFirst() {
@@ -346,6 +368,10 @@ class TestMigration extends Scenario {
     Assertions.assertEquals(List.of(file("config")), filesIn(dir));
   }
 
+  // </editor-fold>
+
+  // <editor-fold desc="Moving an option between sections">
+
   @Test
   void aCurrentFileWithoutTheVersionGetsItAsANewOption(@TempDir Path dir) throws IOException {
     Path file = write(dir, "config", "v1");
@@ -358,10 +384,6 @@ class TestMigration extends Scenario {
     // nothing was migrated, so nothing was copied
     Assertions.assertEquals(List.of(file("config")), filesIn(dir));
   }
-
-  // </editor-fold>
-
-  // <editor-fold desc="Moving an option between sections">
 
   @Test
   void anOptionIsMovedToAnotherSection() {
@@ -381,6 +403,10 @@ class TestMigration extends Scenario {
     Assertions.assertEquals("passed", load(new SeesKeyResolver(), "v1", settings).seen);
   }
 
+  // </editor-fold>
+
+  // <editor-fold desc="Comments of the version">
+
   @Test
   void aFileWithAMovedOptionIsRewritten(@TempDir Path dir) throws IOException {
     Path file = write(dir, "config", "nested-v1");
@@ -397,36 +423,6 @@ class TestMigration extends Scenario {
     this.resolver.load(read, file);
     Assertions.assertEquals("example.org", read.host);
     Assertions.assertEquals(25565, read.port);
-  }
-
-  // </editor-fold>
-
-  // <editor-fold desc="Comments of the version">
-
-  /**
-   * The comment lines right above the line that writes {@code key}, in a format with comments:
-   * the lines before it that start with the format's comment marker.
-   */
-  private static List<String> commentsAbove(String written, String key) {
-    List<String> lines = written.lines().toList();
-    int at = -1;
-    for (int i = 0; i < lines.size(); i++) {
-      String line = lines.get(i).strip();
-      if (line.startsWith(key) || line.startsWith("\"" + key + "\"")) {
-        at = i;
-        break;
-      }
-    }
-    Assertions.assertNotEquals(-1, at, () -> "no line for " + key + " in:\n" + written);
-    List<String> comments = new ArrayList<>();
-    for (int i = at - 1; i >= 0; i--) {
-      String line = lines.get(i).strip();
-      if (!line.startsWith("#") && !line.startsWith("//")) {
-        break;
-      }
-      comments.addFirst(lines.get(i));
-    }
-    return comments;
   }
 
   @Test

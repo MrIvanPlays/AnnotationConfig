@@ -35,8 +35,8 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
 /**
- * A migration of a TOML file of 3.0.x, which wrote dotted keys as one quoted key. The migrations
- * of every format are the {@code migration} scenarios.
+ * A migration of a TOML file of 3.0.x, which wrote dotted keys as one quoted key. The migrations of
+ * every format are the {@code migration} scenarios.
  */
 class TestTomlMigration {
 
@@ -63,8 +63,7 @@ class TestTomlMigration {
     // TOML's key resolver reads a dotted key as one quoted key first
     MovedSection config = new MovedSection();
     RESOLVER.load(
-        config,
-        new StringReader("'server.host' = \"example.org\"\n'server.port' = 25565\n"));
+        config, new StringReader("'server.host' = \"example.org\"\n'server.port' = 25565\n"));
     Assertions.assertEquals("example.org", config.host);
     Assertions.assertEquals(25565, config.port);
   }

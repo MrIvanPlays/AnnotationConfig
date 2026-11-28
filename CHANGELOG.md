@@ -130,6 +130,42 @@ it (which can throw to reject it). A key that is not a `String` is rejected. `Co
 and its `spliterator()` keeps that order and knows its size, so parallel streams keep it too. As
 with its iterator, the entries can't change the list.
 
+#### `UuidToStringSerializer`
+
+`UuidToStringSerializer` (in `serialization.helpers`) writes a `java.util.UUID` as its text
+(`123e4567-e89b-12d3-a456-426614174000`) and reads it from it. It is not registered by default;
+register it before loading or dumping a config with `UUID` fields:
+
+```java
+SerializerRegistry.INSTANCE.registerSerializer(UUID.class, new UuidToStringSerializer());
+```
+
+- It applies to fields, the elements of arrays and lists, record components and the fields of
+  custom data types. Like any registered serializer, it does not apply to the values of maps, and
+  `.properties` can't write arrays of `UUID`s, as it writes an array of a type with a serializer
+  as a list.
+- Reading ignores case and surrounding spaces. An empty value is no value, and text that is not a
+  UUID in its usual 8-4-4-4-12 form fails loading with a message that says what is expected.
+
+#### `DurationSerializer`
+
+`DurationSerializer` (in `serialization.helpers`) writes a `java.time.Duration` as a whole number
+followed by a unit: `30s`, `5m`, `2h` or `1d`. It is not registered by default; register it before
+loading or dumping a config with `Duration` fields:
+
+```java
+SerializerRegistry.INSTANCE.registerSerializer(
+    Duration.class, new DurationSerializer(ChronoUnit.MINUTES));
+```
+
+- A duration is written in the unit passed to the constructor when it is a whole number of it, and
+  otherwise in the largest smaller unit it is a whole number of: with `MINUTES`, 5 minutes are
+  `5m` and 90 seconds `90s`. A fraction of a second is written in ISO-8601 (`PT1.5S`). Nothing is
+  rounded away.
+- The unit is `SECONDS`, `MINUTES`, `HOURS` or `DAYS`; the constructor rejects any other.
+- Reading accepts every unit, ignoring case, and ISO-8601 durations (`PT1H30M`). An empty value is
+  no value, and anything else fails with a message that says what is expected.
+
 ### Fixes
 
 - `.properties` does not support lists, and writing one already failed. Reading a value with a

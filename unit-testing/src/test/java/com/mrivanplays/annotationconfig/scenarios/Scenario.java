@@ -69,6 +69,27 @@ public abstract class Scenario {
     return new Settings().put(ACDefaultSettings.GENERATE_NEW_OPTIONS, true);
   }
 
+  /**
+   * {@code value} with every number, also in maps and lists, as a {@link BigDecimal}: the parsers
+   * of the formats read the same number as different types.
+   */
+  protected static Object numbersAsDecimals(Object value) {
+    if (value instanceof Number number) {
+      return new BigDecimal(number.toString());
+    }
+    if (value instanceof Map<?, ?> map) {
+      Map<Object, Object> converted = new LinkedHashMap<>();
+      map.forEach((key, entry) -> converted.put(key, numbersAsDecimals(entry)));
+      return converted;
+    }
+    if (value instanceof List<?> list) {
+      List<Object> converted = new ArrayList<>();
+      list.forEach(entry -> converted.add(numbersAsDecimals(entry)));
+      return converted;
+    }
+    return value;
+  }
+
   /** Dumps {@code config} with the resolver's settings. */
   protected String dump(Object config) {
     StringWriter writer = new StringWriter();
@@ -132,26 +153,5 @@ public abstract class Scenario {
   /** Dumps {@code config} and loads what was written into {@code target}. */
   protected <T> T roundTrip(Object config, T target) {
     return this.loadText(target, this.dump(config));
-  }
-
-  /**
-   * {@code value} with every number, also in maps and lists, as a {@link BigDecimal}: the parsers
-   * of the formats read the same number as different types.
-   */
-  protected static Object numbersAsDecimals(Object value) {
-    if (value instanceof Number number) {
-      return new BigDecimal(number.toString());
-    }
-    if (value instanceof Map<?, ?> map) {
-      Map<Object, Object> converted = new LinkedHashMap<>();
-      map.forEach((key, entry) -> converted.put(key, numbersAsDecimals(entry)));
-      return converted;
-    }
-    if (value instanceof List<?> list) {
-      List<Object> converted = new ArrayList<>();
-      list.forEach(entry -> converted.add(numbersAsDecimals(entry)));
-      return converted;
-    }
-    return value;
   }
 }

@@ -83,6 +83,8 @@ class TestSchemaSections extends Scenario {
 
   // <editor-fold desc="Sections: subjects">
 
+  interface Shape {}
+
   static class Sections {
 
     @Comment("Where to connect")
@@ -159,8 +161,6 @@ class TestSchemaSections extends Scenario {
 
     List<Point> points = new ArrayList<>(List.of(new Point(1, 2)));
   }
-
-  interface Shape {}
 
   @Comment("A circle")
   static class Circle implements Shape {

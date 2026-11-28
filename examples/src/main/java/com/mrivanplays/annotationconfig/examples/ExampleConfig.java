@@ -126,6 +126,16 @@ public class ExampleConfig {
     return map;
   }
 
+  /** Where the application stores its data; the config chooses the implementation. */
+  public interface Storage {}
+
+  /**
+   * A reward. Its permitted subclasses are its implementations, so {@link Polymorphic} doesn't list
+   * them; the 'kind' key names them.
+   */
+  @Polymorphic(discriminator = "kind")
+  public sealed interface Reward permits MoneyReward, ItemReward {}
+
   /** A config object: its fields are options of their own, in a section. */
   @Comment("All configurable messages")
   public static final class MessagesSection {
@@ -226,9 +236,6 @@ public class ExampleConfig {
   /** An element of the section object list; see {@link ExampleLoadConfig} for its serializer. */
   public record SectionObject(int aabb, String ccdd) {}
 
-  /** Where the application stores its data; the config chooses the implementation. */
-  public interface Storage {}
-
   /** A storage in a file. */
   public static final class SqliteStorage implements Storage {
 
@@ -246,13 +253,6 @@ public class ExampleConfig {
 
     // getters would go here
   }
-
-  /**
-   * A reward. Its permitted subclasses are its implementations, so {@link Polymorphic} doesn't list
-   * them; the 'kind' key names them.
-   */
-  @Polymorphic(discriminator = "kind")
-  public sealed interface Reward permits MoneyReward, ItemReward {}
 
   /** Named "MoneyReward" in the config, after its simple class name. */
   public record MoneyReward(int amount) implements Reward {}

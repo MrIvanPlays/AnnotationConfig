@@ -54,8 +54,8 @@ import org.junit.jupiter.params.ParameterizedClass;
 import org.junit.jupiter.params.provider.MethodSource;
 
 /**
- * The schema of a config without sections, in every format. Sections, collections and the values
- * of the default serializer are in {@link TestSchemaSections}.
+ * The schema of a config without sections, in every format. Sections, collections and the values of
+ * the default serializer are in {@link TestSchemaSections}.
  */
 @ParameterizedClass(name = "{0}")
 @MethodSource(Sources.ALL)
@@ -90,6 +90,11 @@ class TestSchema extends Scenario {
 
   // <editor-fold desc="Values">
 
+  @SuppressWarnings("unchecked")
+  static Map<String, Object> properties(Map<String, Object> schema) {
+    return (Map<String, Object>) schema.get("properties");
+  }
+
   @Test
   void optionsAreDescribedWithTheirAnnotations() {
     ConfigSchema schema = this.resolver.schema(new Server());
@@ -119,6 +124,8 @@ class TestSchema extends Scenario {
     Assertions.assertEquals(List.of("second", "first"), List.copyOf(properties.keySet()));
   }
 
+  // </editor-fold>
+
   @Test
   void theSchemaIsWrittenToAFile(@TempDir Path dir) throws Exception {
     Path file = dir.resolve("schemas").resolve("server.schema.json");
@@ -126,13 +133,6 @@ class TestSchema extends Scenario {
     schema.write(file);
 
     Assertions.assertEquals(schema.toJson(), Files.readString(file));
-  }
-
-  // </editor-fold>
-
-  @SuppressWarnings("unchecked")
-  static Map<String, Object> properties(Map<String, Object> schema) {
-    return (Map<String, Object>) schema.get("properties");
   }
 
   // <editor-fold desc="Values: subjects">
@@ -155,7 +155,9 @@ class TestSchema extends Scenario {
     @OneOf({"survival", "creative"})
     String mode = "survival";
 
-    @OneOf(value = {"easy", "hard"}, ignoreCase = true)
+    @OneOf(
+        value = {"easy", "hard"},
+        ignoreCase = true)
     String difficulty = "easy";
 
     @Comment("Quotes \"and\" a back\\slash")

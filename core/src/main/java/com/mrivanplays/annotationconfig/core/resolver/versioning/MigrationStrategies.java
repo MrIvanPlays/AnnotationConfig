@@ -32,18 +32,18 @@ import java.util.concurrent.ConcurrentHashMap;
 import org.jspecify.annotations.NullMarked;
 
 /**
- * The registry of the {@link MigrationStrategy migration strategies} of config classes that have
- * a {@link com.mrivanplays.annotationconfig.core.annotations.ConfigVersion}.
+ * The registry of the {@link MigrationStrategy migration strategies} of config classes that have a
+ * {@link com.mrivanplays.annotationconfig.core.annotations.ConfigVersion}.
  *
  * <p>Strategies are registered for the class that carries the annotation, one per version they
  * migrate from. Loading a file of version 1 into a class of version 3 uses the strategy from
  * version 1, then the one from the version that strategy migrates to, until version 3 is reached.
  *
  * <p>Register the strategies of a class before the first config of it is loaded. A class without
- * any strategy reads an older file without migrating it, and the file can then be replaced
- * without the migration: a dump, or a load with {@code GENERATE_NEW_OPTIONS} that adds a missing
- * option, writes the current version with only the values that were read, and makes no backup.
- * Later loads count the file as current, so the strategies are never applied to it.
+ * any strategy reads an older file without migrating it, and the file can then be replaced without
+ * the migration: a dump, or a load with {@code GENERATE_NEW_OPTIONS} that adds a missing option,
+ * writes the current version with only the values that were read, and makes no backup. Later loads
+ * count the file as current, so the strategies are never applied to it.
  *
  * <p>The registry is safe to use from several threads: every method is atomic, and a load uses the
  * strategies that were registered when it started.
@@ -137,8 +137,8 @@ public enum MigrationStrategies {
    * Returns the strategies registered for {@code configClass}, by the version they migrate from.
    *
    * @param configClass the class the strategies are registered for
-   * @return the strategies, ordered by the version they migrate from; one snapshot of the
-   *     registry, which can't be modified
+   * @return the strategies, ordered by the version they migrate from; one snapshot of the registry,
+   *     which can't be modified
    */
   public Map<MigrationVersionRange, MigrationStrategy> getStrategiesFor(Class<?> configClass) {
     Objects.requireNonNull(configClass, "configClass");

@@ -39,22 +39,22 @@ import java.lang.annotation.Target;
  * <p>When a file of an older version is loaded, the {@link
  * com.mrivanplays.annotationconfig.core.resolver.versioning.MigrationStrategy migration strategies}
  * registered in {@link
- * com.mrivanplays.annotationconfig.core.resolver.versioning.MigrationStrategies} for the class
- * that carries this annotation change the values read from the file, one step after another, until
- * they are of this version; then the fields are set from them. A file loaded from a path is then
+ * com.mrivanplays.annotationconfig.core.resolver.versioning.MigrationStrategies} for the class that
+ * carries this annotation change the values read from the file, one step after another, until they
+ * are of this version; then the fields are set from them. A file loaded from a path is then
  * rewritten in the current version, after the old file is copied to {@code <name>.v<version>.bak}
  * next to it. Loading from a reader or a map migrates the values without writing anything.
  *
  * <p>If no strategy is registered for the class at all, an older file is read as it is, without
- * migrating, copying or rewriting it, and a warning is logged through {@link System.Logger}
- * ({@code com.mrivanplays.annotationconfig.migration}) on every load. So register the strategies
- * before the first load: a dump, or a load that writes missing options with {@code
- * GENERATE_NEW_OPTIONS}, would replace such a file in the current version without migrating it
- * or backing it up, and the strategies would never be applied to it.
+ * migrating, copying or rewriting it, and a warning is logged through {@link System.Logger} ({@code
+ * com.mrivanplays.annotationconfig.migration}) on every load. So register the strategies before the
+ * first load: a dump, or a load that writes missing options with {@code GENERATE_NEW_OPTIONS},
+ * would replace such a file in the current version without migrating it or backing it up, and the
+ * strategies would never be applied to it.
  *
  * <p>Loading fails, and the file is left untouched, if the file is of a newer version than the
- * class, if strategies are registered but none continues the chain at a version on the way, or if
- * a strategy fails.
+ * class, if strategies are registered but none continues the chain at a version on the way, or if a
+ * strategy fails.
  *
  * <p>Only the class of the config is versioned: the annotation has no effect on {@link
  * ConfigObject} sections. Subclasses inherit it.

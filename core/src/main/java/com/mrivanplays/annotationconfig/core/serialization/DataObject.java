@@ -158,6 +158,85 @@ public final class DataObject {
   }
 
   /**
+   * Removes {@code value}, which {@code keyResolver} read for {@code key}, from {@code values}:
+   * from the key {@code key} itself if the resolver reads a dotted key as one key and the value is
+   * stored that way, and otherwise from the sections the parts of the key name. Sections left empty
+   * are removed.
+   *
+   * @throws IllegalArgumentException if the value is in neither place, as for a key resolver that
+   *     stores values another way
+   */
+  @SuppressWarnings("unchecked")
+  private static void removeRead(
+      String key, Object value, Map<String, Object> values, KeyResolver keyResolver) {
+    if (values.get(key) == value && readsWholeKey(key, keyResolver)) {
+      values.remove(key);
+      return;
+    }
+    // the maps from the top down to the one that holds the last part, and the parts of the key
+    List<Map<String, Object>> maps = new ArrayList<>();
+    List<String> parts = new ArrayList<>();
+    Map<String, Object> current = values;
+    int start = 0;
+    int end = key.indexOf('.');
+    while (end != -1) {
+      String part = key.substring(start, end);
+      if (!(current.get(part) instanceof Map<?, ?> next)) {
+        throw cannotRemove(key);
+      }
+      maps.add(current);
+      parts.add(part);
+      current = (Map<String, Object>) next;
+      start = end + 1;
+      end = key.indexOf('.', start);
+    }
+    String last = key.substring(start);
+    if (current.get(last) != value) {
+      throw cannotRemove(key);
+    }
+    current.remove(last);
+    // the sections on the way held the key, so the ones that are empty now were emptied by it
+    for (int i = maps.size() - 1; i >= 0 && current.isEmpty(); i--) {
+      current = maps.get(i);
+      current.remove(parts.get(i));
+    }
+  }
+
+  /** Whether {@code keyResolver} reads {@code key} as one key of the top level. */
+  private static boolean readsWholeKey(String key, KeyResolver keyResolver) {
+    if (key.indexOf('.') == -1) {
+      return true;
+    }
+    Object probe = new Object();
+    Map<String, Object> probed = new HashMap<>();
+    probed.put(key, probe);
+    try {
+      return keyResolver.unbox(key, probed) == probe;
+    } catch (RuntimeException e) {
+      return false;
+    }
+  }
+
+  private static IllegalArgumentException cannotRemove(String key) {
+    return new IllegalArgumentException(
+        "The key resolver read '"
+            + key
+            + "' from neither the key itself nor the sections its parts name, so it can't be"
+            + " moved");
+  }
+
+  /**
+   * {@code true}, {@code yes} and {@code on}, in any case, are {@code true}; anything else is
+   * {@code false}, as {@code Boolean.parseBoolean} reads it. YAML already reads {@code yes} and
+   * {@code on} as booleans; this lets the other formats read them too.
+   */
+  static boolean parseBoolean(String text) {
+    return text.equalsIgnoreCase("true")
+        || text.equalsIgnoreCase("yes")
+        || text.equalsIgnoreCase("on");
+  }
+
+  /**
    * The entries of the map this data object holds, or {@code null} for a single value. An immutable
    * data object wraps its map here, on first use: the values are wrapped lazily too, so this costs
    * one map of this level, not a copy of everything below it.
@@ -336,10 +415,10 @@ public final class DataObject {
   /**
    * Moves the value of the key {@code from} to the key {@code to}, both read and written the way
    * {@code keyResolver} reads and writes the keys of options, so that a migration of a config can
-   * move an option between sections in any format. Pass the key resolver the values were read
-   * with: in a {@link com.mrivanplays.annotationconfig.core.resolver.versioning.MigrationStrategy
-   * MigrationStrategy}, the one it gets. It is {@link KeyResolver#DEFAULT} for {@code
-   * .properties}, which keeps {@code server.port} as one key, and {@link
+   * move an option between sections in any format. Pass the key resolver the values were read with:
+   * in a {@link com.mrivanplays.annotationconfig.core.resolver.versioning.MigrationStrategy
+   * MigrationStrategy}, the one it gets. It is {@link KeyResolver#DEFAULT} for {@code .properties},
+   * which keeps {@code server.port} as one key, and {@link
    * com.mrivanplays.annotationconfig.core.resolver.key.DottedResolver DottedResolver} for YAML and
    * JSON, which read it as the key {@code port} of the section {@code server}.
    *
@@ -348,8 +427,8 @@ public final class DataObject {
    * key that holds {@code null} counts as missing, as key resolvers read it the same way, and so
    * does a key whose section is a value ({@code server: 5} for {@code server.port}).
    *
-   * <p>The values are copied, moved and wrapped again: data objects got from this one before are
-   * no longer part of it once a value was moved.
+   * <p>The values are copied, moved and wrapped again: data objects got from this one before are no
+   * longer part of it once a value was moved.
    *
    * @param from the key whose value to move, not empty
    * @param to the key to move the value to, not empty
@@ -357,8 +436,8 @@ public final class DataObject {
    * @return whether {@code from} had a value
    * @throws UnsupportedOperationException if this data object is immutable
    * @throws IllegalArgumentException if {@code from} or {@code to} is empty, checked first, if this
-   *     data object holds a single value, or if {@code keyResolver} can't write {@code to}, e.g.
-   *     as a part of it is a value and not a section; nothing is changed then
+   *     data object holds a single value, or if {@code keyResolver} can't write {@code to}, e.g. as
+   *     a part of it is a value and not a section; nothing is changed then
    * @since 3.1.0
    */
   public boolean renameDottedKey(String from, String to, KeyResolver keyResolver) {
@@ -394,74 +473,6 @@ public final class DataObject {
     entries.clear();
     entries.putAll(wrap(values, false));
     return true;
-  }
-
-  /**
-   * Removes {@code value}, which {@code keyResolver} read for {@code key}, from {@code values}:
-   * from the key {@code key} itself if the resolver reads a dotted key as one key and the value is
-   * stored that way, and otherwise from the sections the parts of the key name. Sections left
-   * empty are removed.
-   *
-   * @throws IllegalArgumentException if the value is in neither place, as for a key resolver that
-   *     stores values another way
-   */
-  @SuppressWarnings("unchecked")
-  private static void removeRead(
-      String key, Object value, Map<String, Object> values, KeyResolver keyResolver) {
-    if (values.get(key) == value && readsWholeKey(key, keyResolver)) {
-      values.remove(key);
-      return;
-    }
-    // the maps from the top down to the one that holds the last part, and the parts of the key
-    List<Map<String, Object>> maps = new ArrayList<>();
-    List<String> parts = new ArrayList<>();
-    Map<String, Object> current = values;
-    int start = 0;
-    int end = key.indexOf('.');
-    while (end != -1) {
-      String part = key.substring(start, end);
-      if (!(current.get(part) instanceof Map<?, ?> next)) {
-        throw cannotRemove(key);
-      }
-      maps.add(current);
-      parts.add(part);
-      current = (Map<String, Object>) next;
-      start = end + 1;
-      end = key.indexOf('.', start);
-    }
-    String last = key.substring(start);
-    if (current.get(last) != value) {
-      throw cannotRemove(key);
-    }
-    current.remove(last);
-    // the sections on the way held the key, so the ones that are empty now were emptied by it
-    for (int i = maps.size() - 1; i >= 0 && current.isEmpty(); i--) {
-      current = maps.get(i);
-      current.remove(parts.get(i));
-    }
-  }
-
-  /** Whether {@code keyResolver} reads {@code key} as one key of the top level. */
-  private static boolean readsWholeKey(String key, KeyResolver keyResolver) {
-    if (key.indexOf('.') == -1) {
-      return true;
-    }
-    Object probe = new Object();
-    Map<String, Object> probed = new HashMap<>();
-    probed.put(key, probe);
-    try {
-      return keyResolver.unbox(key, probed) == probe;
-    } catch (RuntimeException e) {
-      return false;
-    }
-  }
-
-  private static IllegalArgumentException cannotRemove(String key) {
-    return new IllegalArgumentException(
-        "The key resolver read '"
-            + key
-            + "' from neither the key itself nor the sections its parts name, so it can't be"
-            + " moved");
   }
 
   /**
@@ -589,7 +600,7 @@ public final class DataObject {
    */
   private Object number(Class<?> type) {
     Object data = this.data;
-    Object number = data == null ? null : DefaultSerializer.forcePrimitive(data, type);
+    Object number = data == null ? null : DefaultSerializer.readScalar(data, type);
     if (number == null) {
       throw new NumberFormatException("Expected a number, got: " + data);
     }
@@ -609,17 +620,6 @@ public final class DataObject {
       return bool;
     }
     return parseBoolean(getAsString());
-  }
-
-  /**
-   * {@code true}, {@code yes} and {@code on}, in any case, are {@code true}; anything else is
-   * {@code false}, as {@code Boolean.parseBoolean} reads it. YAML already reads {@code yes} and
-   * {@code on} as booleans; this lets the other formats read them too.
-   */
-  static boolean parseBoolean(String text) {
-    return text.equalsIgnoreCase("true")
-        || text.equalsIgnoreCase("yes")
-        || text.equalsIgnoreCase("on");
   }
 
   /**

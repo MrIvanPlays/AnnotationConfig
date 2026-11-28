@@ -92,8 +92,7 @@ class TestSectionObjectList {
   @Test
   void streamFollowsInsertionOrder() {
     SectionObjectList<SerializedObject> list = new Subject().list;
-    Assertions.assertEquals(
-        List.of("foo", "bar"), list.stream().map(Map.Entry::getKey).toList());
+    Assertions.assertEquals(List.of("foo", "bar"), list.stream().map(Map.Entry::getKey).toList());
     Assertions.assertEquals(
         List.of("foo", "bar"), list.stream().parallel().map(Map.Entry::getKey).toList());
     Assertions.assertEquals(2, list.stream().count());

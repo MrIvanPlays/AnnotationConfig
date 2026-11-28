@@ -151,8 +151,8 @@ public final class MapUtils {
 
   /**
    * Copies {@code map} and every map and list in it, at any depth, into maps and lists that can't
-   * be modified, in their iteration order. Every other value, {@code null} included, is replaced
-   * by what {@code values} returns for it, which can throw to reject it.
+   * be modified, in their iteration order. Every other value, {@code null} included, is replaced by
+   * what {@code values} returns for it, which can throw to reject it.
    *
    * <p>Unlike {@link #deepCopyWithStringKeys(Map)}, keys are not turned into text: a map with a key
    * that is not a {@code String} is rejected.

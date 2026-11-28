@@ -32,8 +32,8 @@ import java.nio.file.Path;
 
 /**
  * Writes the JSON Schema of {@link ExampleConfig} to {@code
- * examples/application-config.schema.json}. An editor that knows it completes and checks the
- * config while it is edited: in VS Code, a {@code "$schema"} key in a JSON file, a {@code #
+ * examples/application-config.schema.json}. An editor that knows it completes and checks the config
+ * while it is edited: in VS Code, a {@code "$schema"} key in a JSON file, a {@code #
  * yaml-language-server: $schema=...} comment in a YAML file (with the YAML extension), or a {@code
  * #:schema ...} comment in a TOML file (with Even Better TOML).
  */

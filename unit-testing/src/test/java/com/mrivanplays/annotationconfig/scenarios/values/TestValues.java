@@ -234,6 +234,16 @@ class TestValues extends Scenario {
 
   // <editor-fold desc="Numbers: subjects">
 
+  enum Mode {
+    fastMode,
+    SPECIAL {
+      @Override
+      public String toString() {
+        return "something else";
+      }
+    }
+  }
+
   static class Numbers {
 
     public byte b = 1;
@@ -265,16 +275,16 @@ class TestValues extends Scenario {
     }
   }
 
+  // </editor-fold>
+
+  // <editor-fold desc="Text: subjects">
+
   static class Floating {
 
     public double decimal = 0;
     public float single = 0;
     public int whole = 0;
   }
-
-  // </editor-fold>
-
-  // <editor-fold desc="Text: subjects">
 
   static class EmptyValues {
 
@@ -306,23 +316,13 @@ class TestValues extends Scenario {
     @Multiline public String tricky = "\"\"\" quotes \\ backslash\r\nend\"";
   }
 
-  static class MultilineNumber {
-
-    @Multiline public int number = 1;
-  }
-
   // </editor-fold>
 
   // <editor-fold desc="Booleans and enums: subjects">
 
-  enum Mode {
-    fastMode,
-    SPECIAL {
-      @Override
-      public String toString() {
-        return "something else";
-      }
-    }
+  static class MultilineNumber {
+
+    @Multiline public int number = 1;
   }
 
   static class Choices {

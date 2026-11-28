@@ -46,8 +46,8 @@ import org.jspecify.annotations.Nullable;
 /**
  * Represents a resolver of configurations.
  *
- * <p>Should be used for implementing new configuration types: a new type is a resolver created
- * with {@link #newBuilder()}, given the {@link ValueWriter} and {@link ValueReader} of the format.
+ * <p>Should be used for implementing new configuration types: a new type is a resolver created with
+ * {@link #newBuilder()}, given the {@link ValueWriter} and {@link ValueReader} of the format.
  *
  * <p>This interface is not meant to be implemented: create resolvers only with {@link
  * #newBuilder()}. Methods may be added to it in any version, also in a patch release, without a

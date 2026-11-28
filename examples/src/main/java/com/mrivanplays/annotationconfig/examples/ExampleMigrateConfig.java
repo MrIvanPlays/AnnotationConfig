@@ -29,8 +29,8 @@ import com.mrivanplays.annotationconfig.yaml.YamlConfig;
 import java.io.File;
 
 /**
- * Registers the migrations of {@link ExampleVersionedConfig}, then loads it, or writes the
- * defaults if there is no file yet.
+ * Registers the migrations of {@link ExampleVersionedConfig}, then loads it, or writes the defaults
+ * if there is no file yet.
  *
  * <p>A file of an older version is migrated when it is loaded: it is copied to {@code
  * versioned-config.yaml.v<version>.bak} next to it, then rewritten in the current version.

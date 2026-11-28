@@ -35,8 +35,8 @@ import org.junit.jupiter.params.ParameterizedClass;
 import org.junit.jupiter.params.provider.MethodSource;
 
 /**
- * {@code @Min} and {@code @Max} on the element types of lists, maps and record components, in
- * every format with sections.
+ * {@code @Min} and {@code @Max} on the element types of lists, maps and record components, in every
+ * format with sections.
  */
 @ParameterizedClass(name = "{0}")
 @MethodSource(Sources.WITH_SECTIONS)

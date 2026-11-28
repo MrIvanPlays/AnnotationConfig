@@ -74,8 +74,7 @@ class TestMinMax {
   @Test
   void theElementsOfAListAreChecked() {
     Assertions.assertEquals(
-        List.of(1, 2),
-        ((Ports) deserialize(Ports.class, Map.of("ports", List.of(1, 2)))).ports);
+        List.of(1, 2), ((Ports) deserialize(Ports.class, Map.of("ports", List.of(1, 2)))).ports);
     IllegalArgumentException error =
         Assertions.assertThrows(
             IllegalArgumentException.class,
@@ -117,5 +116,4 @@ class TestMinMax {
 
     OnTheList() {}
   }
-
 }

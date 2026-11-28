@@ -57,12 +57,12 @@ import org.yaml.snakeyaml.Yaml;
  * each scenario in that format.
  *
  * <p>The scenario classes are {@code @ParameterizedClass}es that run once per format having the
- * features they need: their {@code @MethodSource} is one of the static methods here, such as
- * {@link #withSections()}. A new format is a constant here, with its features, and the texts of the
+ * features they need: their {@code @MethodSource} is one of the static methods here, such as {@link
+ * #withSections()}. A new format is a constant here, with its features, and the texts of the
  * scenarios it runs.
  *
- * <p>The texts of a topic in one format are the resource {@code scenarios/<topic>.<extension>}:
- * the inputs its scenarios load and the exact outputs they expect from {@code dump}. Each text is a
+ * <p>The texts of a topic in one format are the resource {@code scenarios/<topic>.<extension>}: the
+ * inputs its scenarios load and the exact outputs they expect from {@code dump}. Each text is a
  * section that starts with a line {@code # --- <name>} ({@code // --- <name>} in JSON and JSON5)
  * and ends with a blank line, which is not part of the text. JSON5 reads JSON, so a JSON5 scenario
  * without a section in {@code .json5} uses the {@code .json} one; outputs differ, so each has its
@@ -72,27 +72,47 @@ import org.yaml.snakeyaml.Yaml;
  */
 public enum Format {
   PROPERTIES(
-      "properties", PropertyConfig.class, "getConfigResolver",
-      Feature.COMMENTS, Feature.GENERATES_NEW_OPTIONS, Feature.SPECIAL_FLOATS),
+      "properties",
+      PropertyConfig.class,
+      "getConfigResolver",
+      Feature.COMMENTS,
+      Feature.GENERATES_NEW_OPTIONS,
+      Feature.SPECIAL_FLOATS),
   YAML(
-      "yml", YamlConfig.class, "getConfigResolver",
-      Feature.SECTIONS, Feature.COMMENTS, Feature.GENERATES_NEW_OPTIONS, Feature.NULLS,
-      Feature.BIG_INTEGERS, Feature.SPECIAL_FLOATS),
+      "yml",
+      YamlConfig.class,
+      "getConfigResolver",
+      Feature.SECTIONS,
+      Feature.COMMENTS,
+      Feature.GENERATES_NEW_OPTIONS,
+      Feature.NULLS,
+      Feature.BIG_INTEGERS,
+      Feature.SPECIAL_FLOATS),
   JSON(
-      "json", JsonConfig.class, "getConfigResolver",
-      Feature.SECTIONS, Feature.GENERATES_NEW_OPTIONS, Feature.NULLS, Feature.BIG_INTEGERS),
+      "json",
+      JsonConfig.class,
+      "getConfigResolver",
+      Feature.SECTIONS,
+      Feature.GENERATES_NEW_OPTIONS,
+      Feature.NULLS,
+      Feature.BIG_INTEGERS),
   JSON5(
-      "json5", JsonConfig.class, "getJson5ConfigResolver",
-      Feature.SECTIONS, Feature.COMMENTS, Feature.GENERATES_NEW_OPTIONS, Feature.NULLS,
-      Feature.BIG_INTEGERS, Feature.SPECIAL_FLOATS),
+      "json5",
+      JsonConfig.class,
+      "getJson5ConfigResolver",
+      Feature.SECTIONS,
+      Feature.COMMENTS,
+      Feature.GENERATES_NEW_OPTIONS,
+      Feature.NULLS,
+      Feature.BIG_INTEGERS,
+      Feature.SPECIAL_FLOATS),
   TOML(
-      "toml", TomlConfig.class, "getConfigResolver",
-      Feature.SECTIONS, Feature.COMMENTS, Feature.SPECIAL_FLOATS);
-
-  private final String extension;
-  private final Class<?> entryPoint;
-  private final String resolverGetter;
-  private final Set<Feature> features;
+      "toml",
+      TomlConfig.class,
+      "getConfigResolver",
+      Feature.SECTIONS,
+      Feature.COMMENTS,
+      Feature.SPECIAL_FLOATS);
 
   /** The sections of each resource read so far, by {@code <topic>.<extension>}. */
   private static final Map<String, Map<String, String>> SECTIONS = new ConcurrentHashMap<>();
@@ -100,27 +120,16 @@ public enum Format {
   /** The sections of each file recorded so far, by {@code <topic>.<extension>}. */
   private static final Map<String, Map<String, String>> RECORDED = new LinkedHashMap<>();
 
+  private final String extension;
+  private final Class<?> entryPoint;
+  private final String resolverGetter;
+  private final Set<Feature> features;
+
   Format(String extension, Class<?> entryPoint, String resolverGetter, Feature... features) {
     this.extension = extension;
     this.entryPoint = entryPoint;
     this.resolverGetter = resolverGetter;
     this.features = features.length == 0 ? Set.of() : EnumSet.copyOf(Arrays.asList(features));
-  }
-
-  /** What a format may or may not support; scenarios run only for the formats with theirs. */
-  public enum Feature {
-    /** Nested sections: {@code @ConfigObject}, maps, objects and records. */
-    SECTIONS,
-    /** Comments are written. */
-    COMMENTS,
-    /** {@code GENERATE_NEW_OPTIONS} is on by default; TOML keeps it off. */
-    GENERATES_NEW_OPTIONS,
-    /** {@code null} can be written, e.g. as an element of an array. */
-    NULLS,
-    /** Integers beyond 64 bits are written as numbers, not as strings. */
-    BIG_INTEGERS,
-    /** NaN and the infinities are written as numbers. */
-    SPECIAL_FLOATS
   }
 
   /** The formats having every one of {@code features}. */
@@ -156,6 +165,96 @@ public enum Format {
   /** The formats that write NaN and the infinities; a {@code @MethodSource} of the scenarios. */
   public static Stream<Format> withSpecialFloats() {
     return having(Feature.SPECIAL_FLOATS);
+  }
+
+  /** The line that starts a section, followed by its name, in a file with {@code extension}. */
+  private static String marker(String extension) {
+    return extension.startsWith("json") ? "// --- " : "# --- ";
+  }
+
+  /** The sections of resource {@code scenarios/<topic>.<extension>} by name; empty if none. */
+  private static Map<String, String> sections(String topic, String extension) {
+    return SECTIONS.computeIfAbsent(
+        topic + "." + extension,
+        file -> {
+          String path = "scenarios/" + file;
+          try (InputStream in = Format.class.getClassLoader().getResourceAsStream(path)) {
+            return in == null
+                ? Map.of()
+                : parseSections(
+                    path, new String(in.readAllBytes(), StandardCharsets.UTF_8), marker(extension));
+          } catch (IOException e) {
+            throw new UncheckedIOException(e);
+          }
+        });
+  }
+
+  /**
+   * Splits {@code text} into its sections. Each starts with a line of {@code marker} and its name,
+   * and ends with the blank line that separates it from the next one, which is not part of it.
+   */
+  static Map<String, String> parseSections(String path, String text, String marker) {
+    Map<String, String> sections = new LinkedHashMap<>();
+    String name = null;
+    int start = 0;
+    int line = 0;
+    while (line < text.length()) {
+      int next = text.indexOf('\n', line) + 1;
+      if (next == 0) {
+        next = text.length();
+      }
+      if (text.startsWith(marker, line)) {
+        if (name != null) {
+          addSection(sections, path, name, text.substring(start, line));
+        }
+        name = text.substring(line + marker.length(), next).strip();
+        start = next;
+      } else if (name == null) {
+        throw new AssertionError(path + ": text before the first '" + marker + "<name>' line");
+      }
+      line = next;
+    }
+    if (name != null) {
+      addSection(sections, path, name, text.substring(start));
+    }
+    return sections;
+  }
+
+  private static void addSection(
+      Map<String, String> sections, String path, String name, String text) {
+    if (!text.endsWith("\n")) {
+      throw new AssertionError(path + ": section " + name + " doesn't end with a blank line");
+    }
+    if (sections.put(name, text.substring(0, text.length() - 1)) != null) {
+      throw new AssertionError(path + ": section " + name + " appears twice");
+    }
+  }
+
+  /** {@code sections} as the text of a resource, the reverse of {@link #parseSections}. */
+  static String joinSections(Map<String, String> sections, String marker) {
+    StringBuilder text = new StringBuilder();
+    sections.forEach((name, section) ->
+        text.append(marker).append(name).append('\n').append(section).append('\n'));
+    return text.toString();
+  }
+
+  /**
+   * Writes {@code directory/<topic>.<extension>}: the resource with the section {@code name} set to
+   * {@code actual}, and every section recorded before in this run. Review it there, then copy it to
+   * the resources.
+   */
+  private static synchronized void record(
+      Path directory, String topic, String extension, String name, String actual) {
+    String file = topic + "." + extension;
+    Map<String, String> sections =
+        RECORDED.computeIfAbsent(file, _ -> new LinkedHashMap<>(sections(topic, extension)));
+    sections.put(name, actual);
+    try {
+      Files.createDirectories(directory);
+      Files.writeString(directory.resolve(file), joinSections(sections, marker(extension)));
+    } catch (IOException e) {
+      throw new UncheckedIOException(e);
+    }
   }
 
   /** Whether the format has every one of {@code features}. */
@@ -266,94 +365,19 @@ public enum Format {
         "section " + name + " of scenarios/" + topic + "." + this.extension);
   }
 
-  /** The line that starts a section, followed by its name, in a file with {@code extension}. */
-  private static String marker(String extension) {
-    return extension.startsWith("json") ? "// --- " : "# --- ";
-  }
-
-  /** The sections of resource {@code scenarios/<topic>.<extension>} by name; empty if none. */
-  private static Map<String, String> sections(String topic, String extension) {
-    return SECTIONS.computeIfAbsent(
-        topic + "." + extension,
-        file -> {
-          String path = "scenarios/" + file;
-          try (InputStream in = Format.class.getClassLoader().getResourceAsStream(path)) {
-            return in == null
-                ? Map.of()
-                : parseSections(
-                    path, new String(in.readAllBytes(), StandardCharsets.UTF_8), marker(extension));
-          } catch (IOException e) {
-            throw new UncheckedIOException(e);
-          }
-        });
-  }
-
-  /**
-   * Splits {@code text} into its sections. Each starts with a line of {@code marker} and its name,
-   * and ends with the blank line that separates it from the next one, which is not part of it.
-   */
-  static Map<String, String> parseSections(String path, String text, String marker) {
-    Map<String, String> sections = new LinkedHashMap<>();
-    String name = null;
-    int start = 0;
-    int line = 0;
-    while (line < text.length()) {
-      int next = text.indexOf('\n', line) + 1;
-      if (next == 0) {
-        next = text.length();
-      }
-      if (text.startsWith(marker, line)) {
-        if (name != null) {
-          addSection(sections, path, name, text.substring(start, line));
-        }
-        name = text.substring(line + marker.length(), next).strip();
-        start = next;
-      } else if (name == null) {
-        throw new AssertionError(path + ": text before the first '" + marker + "<name>' line");
-      }
-      line = next;
-    }
-    if (name != null) {
-      addSection(sections, path, name, text.substring(start));
-    }
-    return sections;
-  }
-
-  private static void addSection(
-      Map<String, String> sections, String path, String name, String text) {
-    if (!text.endsWith("\n")) {
-      throw new AssertionError(path + ": section " + name + " doesn't end with a blank line");
-    }
-    if (sections.put(name, text.substring(0, text.length() - 1)) != null) {
-      throw new AssertionError(path + ": section " + name + " appears twice");
-    }
-  }
-
-  /** {@code sections} as the text of a resource, the reverse of {@link #parseSections}. */
-  static String joinSections(Map<String, String> sections, String marker) {
-    StringBuilder text = new StringBuilder();
-    sections.forEach(
-        (name, section) ->
-            text.append(marker).append(name).append('\n').append(section).append('\n'));
-    return text.toString();
-  }
-
-  /**
-   * Writes {@code directory/<topic>.<extension>}: the resource with the section {@code name} set to
-   * {@code actual}, and every section recorded before in this run. Review it there, then copy it
-   * to the resources.
-   */
-  private static synchronized void record(
-      Path directory, String topic, String extension, String name, String actual) {
-    String file = topic + "." + extension;
-    Map<String, String> sections =
-        RECORDED.computeIfAbsent(file, _ -> new LinkedHashMap<>(sections(topic, extension)));
-    sections.put(name, actual);
-    try {
-      Files.createDirectories(directory);
-      Files.writeString(directory.resolve(file), joinSections(sections, marker(extension)));
-    } catch (IOException e) {
-      throw new UncheckedIOException(e);
-    }
+  /** What a format may or may not support; scenarios run only for the formats with theirs. */
+  public enum Feature {
+    /** Nested sections: {@code @ConfigObject}, maps, objects and records. */
+    SECTIONS,
+    /** Comments are written. */
+    COMMENTS,
+    /** {@code GENERATE_NEW_OPTIONS} is on by default; TOML keeps it off. */
+    GENERATES_NEW_OPTIONS,
+    /** {@code null} can be written, e.g. as an element of an array. */
+    NULLS,
+    /** Integers beyond 64 bits are written as numbers, not as strings. */
+    BIG_INTEGERS,
+    /** NaN and the infinities are written as numbers. */
+    SPECIAL_FLOATS
   }
 }

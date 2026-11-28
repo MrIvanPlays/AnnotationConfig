@@ -43,8 +43,7 @@ class TestPolymorphicChecks {
   }
 
   private static String rejected(Object config) {
-    return Assertions.assertThrows(IllegalArgumentException.class, () -> dump(config))
-        .getMessage();
+    return Assertions.assertThrows(IllegalArgumentException.class, () -> dump(config)).getMessage();
   }
 
   private static void assertRejected(Object config, String... parts) {
@@ -223,8 +222,7 @@ class TestPolymorphicChecks {
 
   static class NoSubtypes {
 
-    @Polymorphic
-    Base value = new A();
+    @Polymorphic Base value = new A();
   }
 
   static class UnsealedPermitted {
@@ -240,9 +238,7 @@ class TestPolymorphicChecks {
 
   static class IgnoredInvalid {
 
-    @Ignore
-    @Polymorphic
-    Base ignored = new A();
+    @Ignore @Polymorphic Base ignored = new A();
 
     int value = 1;
   }

@@ -127,7 +127,9 @@ class TestOneOf extends Scenario {
 
   static class Difficulty {
 
-    @OneOf(value = {"easy", "hard"}, ignoreCase = true)
+    @OneOf(
+        value = {"easy", "hard"},
+        ignoreCase = true)
     String difficulty = "easy";
   }
 

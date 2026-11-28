@@ -128,9 +128,9 @@ public final class SectionObjectList<T> implements Iterable<Entry<String, T>> {
 
   /**
    * Returns a sequential {@link Stream} of the keys and values held in this {@code
-   * SectionObjectList}, in the order they were added. Its entries can't change the list, and
-   * {@link #update(String, Object) updating} the list while the stream runs makes it throw a
-   * {@link java.util.ConcurrentModificationException}.
+   * SectionObjectList}, in the order they were added. Its entries can't change the list, and {@link
+   * #update(String, Object) updating} the list while the stream runs makes it throw a {@link
+   * java.util.ConcurrentModificationException}.
    *
    * @return stream
    * @since 3.1.1

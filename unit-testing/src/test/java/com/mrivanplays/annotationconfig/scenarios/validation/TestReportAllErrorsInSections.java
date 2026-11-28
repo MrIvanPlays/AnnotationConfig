@@ -49,8 +49,7 @@ class TestReportAllErrorsInSections extends Scenario {
   private List<String> keys(Object config, String input) {
     ConfigLoadException e =
         Assertions.assertThrows(
-            ConfigLoadException.class,
-            () -> load(config, input, TestReportAllErrors.reportAll()));
+            ConfigLoadException.class, () -> load(config, input, TestReportAllErrors.reportAll()));
     return TestReportAllErrors.keys(e);
   }
 
@@ -77,6 +76,8 @@ class TestReportAllErrorsInSections extends Scenario {
 
   // <editor-fold desc="Sections: subjects">
 
+  interface Shape {}
+
   static class Network {
 
     @ConfigObject Limits limits = new Limits();
@@ -102,8 +103,6 @@ class TestReportAllErrorsInSections extends Scenario {
 
     int retries = 1;
   }
-
-  interface Shape {}
 
   static class Circle implements Shape {
 

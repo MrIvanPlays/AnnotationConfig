@@ -67,11 +67,16 @@ class TestConfigSchema {
     ConfigSchema schema =
         new ConfigSchema(
             map(
-                "int", 1,
-                "float", 0.1f,
-                "double", 2.5,
-                "decimal", new BigDecimal("0.10000000000000000001"),
-                "big", new BigInteger("123456789012345678901234567890")));
+                "int",
+                1,
+                "float",
+                0.1f,
+                "double",
+                2.5,
+                "decimal",
+                new BigDecimal("0.10000000000000000001"),
+                "big",
+                new BigInteger("123456789012345678901234567890")));
 
     Assertions.assertEquals(
         """

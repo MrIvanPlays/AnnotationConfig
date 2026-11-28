@@ -33,8 +33,8 @@ import org.jspecify.annotations.NullMarked;
 import org.jspecify.annotations.Nullable;
 
 /**
- * Walks the element types of a field's type next to its value, for annotations put on element
- * types ({@code List<@Max(...) Integer>}, {@code Map<@OneOf(...) String, Integer>}, nested types,
+ * Walks the element types of a field's type next to its value, for annotations put on element types
+ * ({@code List<@Max(...) Integer>}, {@code Map<@OneOf(...) String, Integer>}, nested types,
  * wildcard bounds and arrays).
  *
  * @hidden
@@ -44,13 +44,6 @@ final class ElementTypes {
 
   private ElementTypes() {
     throw new IllegalStateException("Instantiation of utility-type class");
-  }
-
-  /** Checks one element whose type carries an annotation; {@code where} names it. */
-  @FunctionalInterface
-  interface ElementCheck {
-
-    void check(AnnotatedType type, Object element, String where);
   }
 
   /** Whether an element type of {@code type}, at any depth, is {@code annotated}. */
@@ -131,5 +124,12 @@ final class ElementTypes {
       check.check(checked, element, where);
     }
     forEachAnnotated(checked, element, where, annotated, check);
+  }
+
+  /** Checks one element whose type carries an annotation; {@code where} names it. */
+  @FunctionalInterface
+  interface ElementCheck {
+
+    void check(AnnotatedType type, Object element, String where);
   }
 }

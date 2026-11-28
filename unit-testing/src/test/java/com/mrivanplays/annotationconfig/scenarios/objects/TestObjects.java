@@ -164,8 +164,7 @@ class TestObjects extends Scenario {
 
     public Map<String, Object> map = map();
     // maps that hold only maps
-    public Map<String, Object> tablesOnly =
-        Map.of("inner", Map.of("deeper", Map.of("value", 2)));
+    public Map<String, Object> tablesOnly = Map.of("inner", Map.of("deeper", Map.of("value", 2)));
 
     // linked maps, so that the written order is the insertion order
     static Map<String, Object> map() {

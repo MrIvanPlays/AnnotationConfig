@@ -55,7 +55,6 @@ public final class FieldInfo {
   // @Polymorphic on the field, else on the declaration of its type; null on a List or array field,
   // whose elements DefaultSerializer reads. Checked on first use, see polymorphic()
   @Nullable private final Polymorphic polymorphic;
-  @Nullable private volatile PolymorphicInfo polymorphicInfo;
   private final boolean rawConfig;
   private final boolean isStatic;
   @Nullable private final Min min;
@@ -70,6 +69,7 @@ public final class FieldInfo {
   private final AnnotationAccessor accessor;
   // without placeholders: the placeholders that are registered can change between dumps
   private final List<String> comments;
+  @Nullable private volatile PolymorphicInfo polymorphicInfo;
   // set once the field is accessible; written by any thread, as setAccessible may be repeated
   private volatile boolean accessible;
 

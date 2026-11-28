@@ -83,6 +83,81 @@ public final class ConfigSchema {
     throw new IllegalArgumentException("Not a JSON value: " + value.getClass().getName());
   }
 
+  private static void writeValue(StringBuilder json, @Nullable Object value, String indent) {
+    switch (value) {
+      case null -> json.append("null");
+      case String string -> writeString(json, string);
+      case Boolean bool -> json.append(bool);
+      // JSON has no NaN or infinities
+      case Double d when !Double.isFinite(d) -> json.append("null");
+      case Float f when !Float.isFinite(f) -> json.append("null");
+      // the float's shortest decimal form: 0.1f is 0.1, not 0.10000000149011612
+      case Float f -> json.append(new BigDecimal(Float.toString(f)));
+      case Number number -> json.append(number);
+      case Map<?, ?> map -> writeMap(json, map, indent);
+      case List<?> list -> writeList(json, list, indent);
+      default -> throw new IllegalStateException("Not a JSON value: " + value.getClass());
+    }
+  }
+
+  private static void writeMap(StringBuilder json, Map<?, ?> map, String indent) {
+    if (map.isEmpty()) {
+      json.append("{}");
+      return;
+    }
+    String inner = indent + "  ";
+    json.append('{');
+    boolean first = true;
+    for (Map.Entry<?, ?> entry : map.entrySet()) {
+      json.append(first ? "\n" : ",\n").append(inner);
+      first = false;
+      writeString(json, (String) entry.getKey());
+      json.append(": ");
+      writeValue(json, entry.getValue(), inner);
+    }
+    json.append('\n').append(indent).append('}');
+  }
+
+  private static void writeList(StringBuilder json, List<?> list, String indent) {
+    if (list.isEmpty()) {
+      json.append("[]");
+      return;
+    }
+    String inner = indent + "  ";
+    json.append('[');
+    boolean first = true;
+    for (Object element : list) {
+      json.append(first ? "\n" : ",\n").append(inner);
+      first = false;
+      writeValue(json, element, inner);
+    }
+    json.append('\n').append(indent).append(']');
+  }
+
+  private static void writeString(StringBuilder json, String string) {
+    json.append('"');
+    for (int i = 0; i < string.length(); i++) {
+      char c = string.charAt(i);
+      switch (c) {
+        case '"' -> json.append("\\\"");
+        case '\\' -> json.append("\\\\");
+        case '\n' -> json.append("\\n");
+        case '\r' -> json.append("\\r");
+        case '\t' -> json.append("\\t");
+        case '\b' -> json.append("\\b");
+        case '\f' -> json.append("\\f");
+        default -> {
+          if (c < 0x20) {
+            json.append(String.format("\\u%04x", (int) c));
+          } else {
+            json.append(c);
+          }
+        }
+      }
+    }
+    json.append('"');
+  }
+
   /**
    * The schema as maps, lists, strings, numbers and booleans, in the order it is written.
    *
@@ -183,81 +258,6 @@ public final class ConfigSchema {
       return;
     }
     this.write(path);
-  }
-
-  private static void writeValue(StringBuilder json, @Nullable Object value, String indent) {
-    switch (value) {
-      case null -> json.append("null");
-      case String string -> writeString(json, string);
-      case Boolean bool -> json.append(bool);
-      // JSON has no NaN or infinities
-      case Double d when !Double.isFinite(d) -> json.append("null");
-      case Float f when !Float.isFinite(f) -> json.append("null");
-      // the float's shortest decimal form: 0.1f is 0.1, not 0.10000000149011612
-      case Float f -> json.append(new BigDecimal(Float.toString(f)));
-      case Number number -> json.append(number);
-      case Map<?, ?> map -> writeMap(json, map, indent);
-      case List<?> list -> writeList(json, list, indent);
-      default -> throw new IllegalStateException("Not a JSON value: " + value.getClass());
-    }
-  }
-
-  private static void writeMap(StringBuilder json, Map<?, ?> map, String indent) {
-    if (map.isEmpty()) {
-      json.append("{}");
-      return;
-    }
-    String inner = indent + "  ";
-    json.append('{');
-    boolean first = true;
-    for (Map.Entry<?, ?> entry : map.entrySet()) {
-      json.append(first ? "\n" : ",\n").append(inner);
-      first = false;
-      writeString(json, (String) entry.getKey());
-      json.append(": ");
-      writeValue(json, entry.getValue(), inner);
-    }
-    json.append('\n').append(indent).append('}');
-  }
-
-  private static void writeList(StringBuilder json, List<?> list, String indent) {
-    if (list.isEmpty()) {
-      json.append("[]");
-      return;
-    }
-    String inner = indent + "  ";
-    json.append('[');
-    boolean first = true;
-    for (Object element : list) {
-      json.append(first ? "\n" : ",\n").append(inner);
-      first = false;
-      writeValue(json, element, inner);
-    }
-    json.append('\n').append(indent).append(']');
-  }
-
-  private static void writeString(StringBuilder json, String string) {
-    json.append('"');
-    for (int i = 0; i < string.length(); i++) {
-      char c = string.charAt(i);
-      switch (c) {
-        case '"' -> json.append("\\\"");
-        case '\\' -> json.append("\\\\");
-        case '\n' -> json.append("\\n");
-        case '\r' -> json.append("\\r");
-        case '\t' -> json.append("\\t");
-        case '\b' -> json.append("\\b");
-        case '\f' -> json.append("\\f");
-        default -> {
-          if (c < 0x20) {
-            json.append(String.format("\\u%04x", (int) c));
-          } else {
-            json.append(c);
-          }
-        }
-      }
-    }
-    json.append('"');
   }
 
   @Override

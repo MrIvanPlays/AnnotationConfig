@@ -46,8 +46,7 @@ class TestDataObjectRenameKey {
     DataObject data = of("port", 25565, "motd", "Hello");
     Assertions.assertTrue(data.renameKey("port", "server-port"));
     // the renamed key comes last
-    Assertions.assertEquals(
-        List.of("motd", "server-port"), List.copyOf(data.getAsMap().keySet()));
+    Assertions.assertEquals(List.of("motd", "server-port"), List.copyOf(data.getAsMap().keySet()));
     Assertions.assertEquals(25565, data.get("server-port").getAsInt());
     Assertions.assertFalse(data.has("port"));
   }

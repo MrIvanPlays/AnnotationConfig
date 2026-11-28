@@ -75,8 +75,8 @@ public interface ValueWriter {
   }
 
   /**
-   * The comment that references the JSON Schema {@code schema} in a file of this format, written
-   * as its first line when {@link ACDefaultSettings#SCHEMA_REFERENCE} is set: {@code #
+   * The comment that references the JSON Schema {@code schema} in a file of this format, written as
+   * its first line when {@link ACDefaultSettings#SCHEMA_REFERENCE} is set: {@code #
    * yaml-language-server: $schema=config.schema.json} in YAML, for example. AnnotationConfig ends
    * the line.
    *

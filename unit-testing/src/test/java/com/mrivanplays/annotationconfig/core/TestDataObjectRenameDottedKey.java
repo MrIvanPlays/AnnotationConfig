@@ -77,8 +77,7 @@ class TestDataObjectRenameDottedKey {
     DataObject data = of("server", map("host", "example.org", "port", 25565));
     Assertions.assertTrue(data.renameDottedKey("server.port", "network.port", DOTTED));
     Assertions.assertEquals(
-        map("server", map("host", "example.org"), "network", map("port", 25565)),
-        data.getAsMap());
+        map("server", map("host", "example.org"), "network", map("port", 25565)), data.getAsMap());
   }
 
   @Test
@@ -121,8 +120,7 @@ class TestDataObjectRenameDottedKey {
   @Test
   void aDottedKeyReadAsOneKeyIsMovedAsOne() {
     DataObject data = of("server.host", "example.org", "server.port", 25565);
-    Assertions.assertTrue(
-        data.renameDottedKey("server.port", "network.port", KeyResolver.DEFAULT));
+    Assertions.assertTrue(data.renameDottedKey("server.port", "network.port", KeyResolver.DEFAULT));
     Assertions.assertEquals(
         map("server.host", "example.org", "network.port", 25565), data.getAsMap());
   }

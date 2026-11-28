@@ -14,8 +14,16 @@ special = 'special'
 decimal = %s
 single = %s
 
+# --- durations-read
+timeout = '2H'
+retry = '1d'
+precise = 'PT1H30M'
+
 # --- empty-string
 plain = ''
+
+# --- empty-uuid
+id = ''
 
 # --- empty-values
 number = ''
@@ -40,6 +48,9 @@ huge = '123456789012345678901234567890'
 
 # --- exponent
 whole = 2.0e9
+
+# --- invalid-uuid
+id = 'not-a-uuid'
 
 # --- multiline
 text = """
@@ -108,4 +119,23 @@ character = 'x'
 
 # --- unknown-enum
 mode = 'nope'
+
+# --- durations
+timeout = '5m'
+
+retry = '90s'
+
+precise = 'PT1.5S'
+
+# --- uuids
+id = '123e4567-e89b-12d3-a456-426614174000'
+
+# --- uuid-elements
+ids = ['00000000-0000-0000-0000-000000000001', 'f47ac10b-58cc-4372-a567-0e02b2c3d479']
+
+list = ['123e4567-e89b-12d3-a456-426614174000', 'f47ac10b-58cc-4372-a567-0e02b2c3d479']
+
+[owner]
+name = 'admin'
+id = '00000000-0000-0000-0000-000000000001'
 

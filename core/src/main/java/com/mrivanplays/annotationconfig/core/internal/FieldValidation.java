@@ -33,9 +33,9 @@ import org.jspecify.annotations.NullMarked;
 import org.jspecify.annotations.Nullable;
 
 /**
- * Checks a read value against the {@code @Min}, {@code @Max} and {@code @OneOf} annotations and
- * the validators of the custom annotations of its field. Used for the fields of a config and its
- * config objects, the fields of custom data types and the components of records alike.
+ * Checks a read value against the {@code @Min}, {@code @Max} and {@code @OneOf} annotations and the
+ * validators of the custom annotations of its field. Used for the fields of a config and its config
+ * objects, the fields of custom data types and the components of records alike.
  *
  * @hidden
  */

@@ -40,8 +40,8 @@ import org.jspecify.annotations.NullMarked;
  * timeout: 30
  * }</pre>
  *
- * <p>Version 2 moved the host and the port into the section {@code network}, and version 3 made
- * the timeout a duration ({@code "30s"}).
+ * <p>Version 2 moved the host and the port into the section {@code network}, and version 3 made the
+ * timeout a duration ({@code "30s"}).
  */
 @SuppressWarnings({"FieldMayBeFinal", "FieldCanBeLocal", "unused"})
 @ConfigVersion(

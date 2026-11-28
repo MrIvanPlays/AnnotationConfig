@@ -44,6 +44,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -71,26 +72,6 @@ final class DefaultSerializer implements FieldTypeSerializer<Object> {
 
   // records whose unsupported annotations have been reported, so it happens once per record
   private static final Set<Class<?>> NAGGED_RECORDS = ConcurrentHashMap.newKeySet();
-
-  /** isPrimitiveClass depends only on the class, so it is computed once per class. */
-  private static final ClassValue<Boolean> PRIMITIVE_CLASS =
-      new ClassValue<>() {
-        @Override
-        protected Boolean computeValue(Class<?> valClass) {
-          return valClass.isPrimitive()
-              || valClass.isAssignableFrom(String.class)
-              || valClass.isAssignableFrom(Boolean.class)
-              || valClass.isAssignableFrom(Byte.class)
-              || valClass.isAssignableFrom(Character.class)
-              || valClass.isAssignableFrom(Double.class)
-              || valClass.isAssignableFrom(Float.class)
-              || valClass.isAssignableFrom(Integer.class)
-              || valClass.isAssignableFrom(Short.class)
-              || valClass.isAssignableFrom(Long.class)
-              || valClass.isAssignableFrom(BigDecimal.class)
-              || valClass.isAssignableFrom(BigInteger.class);
-        }
-      };
 
   private DefaultSerializer() {}
 
@@ -205,25 +186,24 @@ final class DefaultSerializer implements FieldTypeSerializer<Object> {
     toSerialize.add(serialized.isSingleValue() ? serialized.getAsObject() : serialized.getAsMap());
   }
 
-  static @Nullable Object forcePrimitive(Object val, Class<?> fieldType) {
-    Function<Object, ?> mapper = PrimitiveSerializers.getMapper(fieldType);
-    if (mapper != null) {
-      return mapper.apply(val);
-    }
-    return val;
+  /**
+   * {@code value}, read for a field of {@code type}, converted to {@code type} by its {@link
+   * Scalars scalar} reader; kept as it is for a type without one ({@code Object}, {@code Number},
+   * ...).
+   */
+  static @Nullable Object readScalar(Object value, Class<?> type) {
+    Function<Object, ?> reader = Scalars.reader(type);
+    return reader != null ? reader.apply(value) : value;
   }
 
-  private static boolean isPrimitive(Object value) {
-    return isPrimitive(value, true);
+  /** Whether {@code raw}, read for an element or value of {@code type}, is a scalar to convert. */
+  private static boolean readsAsScalar(Object raw, Class<?> type) {
+    return Scalars.isType(type) && Scalars.isType(raw.getClass());
   }
 
-  private static boolean isPrimitive(Object value, boolean checkMap) {
-    Class<?> valClass = value.getClass();
-    return isPrimitiveClass(valClass) || (checkMap && value instanceof Map);
-  }
-
-  private static boolean isPrimitiveClass(Class<?> valClass) {
-    return PRIMITIVE_CLASS.get(valClass);
+  /** Whether {@code value} is handed to the writers as it is: a scalar, or a map. */
+  private static boolean writesAsIs(Object value) {
+    return value instanceof Map || Scalars.isType(value.getClass());
   }
 
   private static Object deserializeEnum(Class<?> enumType, String value) {
@@ -271,47 +251,6 @@ final class DefaultSerializer implements FieldTypeSerializer<Object> {
     return Object.class;
   }
 
-  /**
-   * Converts the values of {@code map}, read for a {@code Map<K, V>} field, to {@code V}: numbers
-   * and text to its type, lists and maps by their own type arguments. A value that can't be
-   * converted is kept as it was read, as all values were before 3.1.0.
-   */
-  private void convertMapValues(Map<String, Object> map, SerializationContext<?> context) {
-    if (!(context.getGenericType() instanceof ParameterizedType parameterized)
-        || parameterized.getActualTypeArguments().length != 2) {
-      return;
-    }
-    Type valueType = parameterized.getActualTypeArguments()[1];
-    Class<?> valueClass = rawClass(valueType);
-    if (valueClass == Object.class) {
-      return;
-    }
-    boolean primitive = isPrimitiveClass(valueClass);
-    boolean container =
-        List.class.isAssignableFrom(valueClass) || Map.class.isAssignableFrom(valueClass);
-    if (!primitive && !container) {
-      // other objects are not supported as values of maps
-      return;
-    }
-    SerializationContext<Object> valueContext =
-        SerializationContext.of(
-            valueClass, valueType, context.getAnnotatedConfig(), context.getSettings());
-    for (Map.Entry<String, Object> entry : map.entrySet()) {
-      Object value = entry.getValue();
-      try {
-        if (primitive && value != null && isPrimitive(value, false)) {
-          entry.setValue(forcePrimitive(value, valueClass));
-        } else if (container && (value instanceof List || value instanceof Map)) {
-          entry.setValue(
-              this.deserialize(
-                  new DataObject(value, true), valueContext, AnnotationAccessor.EMPTY));
-        }
-      } catch (RuntimeException e) {
-        // kept as read
-      }
-    }
-  }
-
   // getActualTypeArguments() is not always a Class: List<List<String>>, List<? extends Foo>, ...
   private static Class<?> rawClass(Type type) {
     if (type instanceof Class<?> clazz) {
@@ -351,8 +290,9 @@ final class DefaultSerializer implements FieldTypeSerializer<Object> {
     return Collections.singletonList(source);
   }
 
-  private static boolean isPrimitiveArray(Class<?> type) {
-    return type.isArray() && PrimitiveSerializers.getMapper(type.getComponentType()) != null;
+  /** Whether {@code type} is an array of a scalar type, which is read and written as a whole. */
+  private static boolean isScalarArray(Class<?> type) {
+    return type.isArray() && Scalars.reader(type.getComponentType()) != null;
   }
 
   private static Object castArray(Class<?> arrayType, Object source) {
@@ -361,7 +301,7 @@ final class DefaultSerializer implements FieldTypeSerializer<Object> {
     }
     Class<?> component = arrayType.getComponentType();
     // looked up once per array
-    Function<Object, ?> mapper = PrimitiveSerializers.getMapper(component);
+    Function<Object, ?> mapper = Scalars.reader(component);
     if (mapper == null) {
       mapper = Function.identity();
     }
@@ -387,6 +327,85 @@ final class DefaultSerializer implements FieldTypeSerializer<Object> {
     return result;
   }
 
+  /**
+   * Puts the value component {@code f} keeps when it has no value of its own: its value in the
+   * record the field held (the context's default value, or the field of the annotated config the
+   * context names). Without such a record the component is {@code null}; if the annotated config
+   * has no such field, nothing is put.
+   */
+  private static void putComponentDefault(
+      Map<String, Object> deserialized, Field f, SerializationContext<Object> context) {
+    Optional<Object> recordDefault = context.getDefaultValue();
+    if (recordDefault.isPresent()) {
+      try {
+        deserialized.put(f.getName(), f.get(recordDefault.get()));
+      } catch (IllegalAccessException e) {
+        throw new IllegalArgumentException(INACCESSIBLE, e);
+      }
+      return;
+    }
+    Object annotatedConfig = context.getAnnotatedConfig();
+    if (annotatedConfig != null && context.getName().isPresent()) {
+      // also a field the config's class inherits; no such field: nothing is put
+      FieldInfo parentField = tryFindField(annotatedConfig, context.getName().get());
+      if (parentField != null) {
+        try {
+          Object defValue = parentField.ensureAccessible().get(annotatedConfig);
+          // without a record to take the value from, the component is null
+          deserialized.put(f.getName(), defValue != null ? f.get(defValue) : null);
+        } catch (IllegalAccessException e) {
+          deserialized.put(f.getName(), null);
+          LOGGER.log(
+              System.Logger.Level.ERROR, "Field became inaccessible, will be set to null", e);
+        }
+      }
+    } else {
+      // again, set null (unfortunately)
+      deserialized.put(f.getName(), null);
+    }
+  }
+
+  /**
+   * Converts the values of {@code map}, read for a {@code Map<K, V>} field, to {@code V}: numbers
+   * and text to its type, lists and maps by their own type arguments. A value that can't be
+   * converted is kept as it was read, as all values were before 3.1.0.
+   */
+  private void convertMapValues(Map<String, Object> map, SerializationContext<?> context) {
+    if (!(context.getGenericType() instanceof ParameterizedType parameterized)
+        || parameterized.getActualTypeArguments().length != 2) {
+      return;
+    }
+    Type valueType = parameterized.getActualTypeArguments()[1];
+    Class<?> valueClass = rawClass(valueType);
+    if (valueClass == Object.class) {
+      return;
+    }
+    boolean scalar = Scalars.isType(valueClass);
+    boolean container =
+        List.class.isAssignableFrom(valueClass) || Map.class.isAssignableFrom(valueClass);
+    if (!scalar && !container) {
+      // other objects are not supported as values of maps
+      return;
+    }
+    SerializationContext<Object> valueContext =
+        SerializationContext.of(
+            valueClass, valueType, context.getAnnotatedConfig(), context.getSettings());
+    for (Map.Entry<String, Object> entry : map.entrySet()) {
+      Object value = entry.getValue();
+      try {
+        if (scalar && value != null && readsAsScalar(value, valueClass)) {
+          entry.setValue(readScalar(value, valueClass));
+        } else if (container && (value instanceof List || value instanceof Map)) {
+          entry.setValue(
+              this.deserialize(
+                  new DataObject(value, true), valueContext, AnnotationAccessor.EMPTY));
+        }
+      } catch (RuntimeException e) {
+        // kept as read
+      }
+    }
+  }
+
   @Override
   public Object deserialize(
       @NonNull DataObject data,
@@ -409,16 +428,9 @@ final class DefaultSerializer implements FieldTypeSerializer<Object> {
     if (data.isSingleValue() && dataRaw == null) {
       return null;
     }
-    if (!fieldType.isEnum()) {
-      if (data.isSingleValue()
-          && isPrimitive(dataRaw)
-          && dataRaw.getClass().isAssignableFrom(fieldType)) {
-        return forcePrimitive(dataRaw, fieldType);
-      }
-
-      if (data.isSingleValue() && isPrimitiveClass(fieldType)) {
-        return forcePrimitive(dataRaw, fieldType);
-      }
+    // also Object, Number, ...: they have no reader, so they get the value as read
+    if (data.isSingleValue() && !fieldType.isEnum() && Scalars.isType(fieldType)) {
+      return readScalar(dataRaw, fieldType);
     }
     if (fieldType.isAssignableFrom(DataObject.class)) {
       return data;
@@ -426,7 +438,7 @@ final class DefaultSerializer implements FieldTypeSerializer<Object> {
     SerializerRegistry serializerRegistry = SerializerRegistry.INSTANCE;
     if (data.isSingleValue() && fieldType.isArray()) {
       Class<?> type = fieldType.getComponentType();
-      if (dataRaw.getClass().isArray() && isPrimitiveArray(fieldType)) {
+      if (dataRaw.getClass().isArray() && isScalarArray(fieldType)) {
         return castArray(fieldType, dataRaw);
       }
       // SnakeYAML (and others) return a list instead of an array for all types
@@ -441,8 +453,8 @@ final class DefaultSerializer implements FieldTypeSerializer<Object> {
       AnnotationAccessor elementAnnotations = elementAnnotations(annotations);
       for (int i = 0; i < read.size(); i++) {
         Object o = read.get(i);
-        if (o != null && isPrimitive(o, false) && isPrimitiveClass(type)) {
-          Array.set(arr, i, forcePrimitive(o, type));
+        if (o != null && readsAsScalar(o, type)) {
+          Array.set(arr, i, readScalar(o, type));
         } else {
           Object deserialized =
               serializer.deserialize(
@@ -470,9 +482,9 @@ final class DefaultSerializer implements FieldTypeSerializer<Object> {
         for (Object o : read) {
           if (o == null) {
             ret.add(null);
-          } else if (isPrimitive(o, false) && isPrimitiveClass(neededType)) {
+          } else if (readsAsScalar(o, neededType)) {
             // e.g. snakeyaml reads small numbers as Integer even for a List<Long>
-            ret.add(forcePrimitive(o, neededType));
+            ret.add(readScalar(o, neededType));
           } else {
             ret.add(
                 serializer.deserialize(
@@ -494,8 +506,8 @@ final class DefaultSerializer implements FieldTypeSerializer<Object> {
                 + listValueNeeded.getSimpleName()
                 + "[]");
       }
-      if (isPrimitiveClass(listValueNeeded)) {
-        return Collections.singletonList(forcePrimitive(dataRaw, listValueNeeded));
+      if (Scalars.isType(listValueNeeded)) {
+        return Collections.singletonList(readScalar(dataRaw, listValueNeeded));
       } else {
         throw new IllegalArgumentException(
             "Can't read " + data + " as a list of the non-primitive " + listValueNeeded.getName());
@@ -692,44 +704,6 @@ final class DefaultSerializer implements FieldTypeSerializer<Object> {
     }
   }
 
-  /**
-   * Puts the value component {@code f} keeps when it has no value of its own: its value in the
-   * record the field held (the context's default value, or the field of the annotated config the
-   * context names). Without such a record the component is {@code null}; if the annotated config
-   * has no such field, nothing is put.
-   */
-  private static void putComponentDefault(
-      Map<String, Object> deserialized, Field f, SerializationContext<Object> context) {
-    Optional<Object> recordDefault = context.getDefaultValue();
-    if (recordDefault.isPresent()) {
-      try {
-        deserialized.put(f.getName(), f.get(recordDefault.get()));
-      } catch (IllegalAccessException e) {
-        throw new IllegalArgumentException(INACCESSIBLE, e);
-      }
-      return;
-    }
-    Object annotatedConfig = context.getAnnotatedConfig();
-    if (annotatedConfig != null && context.getName().isPresent()) {
-      // also a field the config's class inherits; no such field: nothing is put
-      FieldInfo parentField = tryFindField(annotatedConfig, context.getName().get());
-      if (parentField != null) {
-        try {
-          Object defValue = parentField.ensureAccessible().get(annotatedConfig);
-          // without a record to take the value from, the component is null
-          deserialized.put(f.getName(), defValue != null ? f.get(defValue) : null);
-        } catch (IllegalAccessException e) {
-          deserialized.put(f.getName(), null);
-          LOGGER.log(
-              System.Logger.Level.ERROR, "Field became inaccessible, will be set to null", e);
-        }
-      }
-    } else {
-      // again, set null (unfortunately)
-      deserialized.put(f.getName(), null);
-    }
-  }
-
   private Object tryGetFieldTypeInstance(Class<?> fieldType, SerializationContext<Object> context) {
     Object current = currentValue(context);
     return current != null ? current : ClassInfo.newInstance(fieldType);
@@ -781,7 +755,7 @@ final class DefaultSerializer implements FieldTypeSerializer<Object> {
       @NonNull Object value,
       @NonNull SerializationContext<Object> context,
       @NonNull AnnotationAccessor annotations) {
-    if (isPrimitive(value)) {
+    if (writesAsIs(value)) {
       return new DataObject(value);
     }
     if (value instanceof DataObject data) {
@@ -815,7 +789,7 @@ final class DefaultSerializer implements FieldTypeSerializer<Object> {
           if (val == null) {
             // kept, as in arrays; it threw a NullPointerException
             toSerialize.add(null);
-          } else if (isPrimitive(val)) {
+          } else if (writesAsIs(val)) {
             // BigDecimal and BigInteger are kept as they are: every writer writes them exactly
             toSerialize.add(val);
           } else {
@@ -827,7 +801,7 @@ final class DefaultSerializer implements FieldTypeSerializer<Object> {
       }
     }
     if (fieldType.isArray()) {
-      if (isPrimitiveArray(fieldType)) {
+      if (isScalarArray(fieldType)) {
         return new DataObject(value);
       }
       Class<?> type = fieldType.getComponentType();
@@ -946,50 +920,72 @@ final class DefaultSerializer implements FieldTypeSerializer<Object> {
     }
   }
 
-  private static final class PrimitiveSerializers {
+  /**
+   * The scalar types: text, booleans, characters and numbers. Their values are handed to the
+   * writers as they are, as every writer writes them itself (BigDecimal and BigInteger exactly),
+   * and a value read for one of them is converted by its reader. Any other type, such as {@code
+   * UUID} or {@code Duration}, needs a serializer in {@link SerializerRegistry}.
+   *
+   * <p>A field of a supertype of a scalar type ({@code Object}, {@code Number}, {@code
+   * CharSequence}, {@code Comparable}, ...) counts as scalar too, see {@link #isType}: it has no
+   * reader, so it gets the value as read.
+   */
+  private static final class Scalars {
 
     // only written during class initialisation, which the JVM makes thread safe
-    private static final Map<Class<?>, Function<Object, ?>> SERIALIZERS = new HashMap<>();
+    private static final Map<Class<?>, Function<Object, ?>> READERS = new HashMap<>();
+
+    // the boxed classes, which are the classes of the values
+    private static final Set<Class<?>> VALUE_CLASSES = new HashSet<>();
+
+    // computed once per class
+    private static final ClassValue<Boolean> TYPES =
+        new ClassValue<>() {
+          @Override
+          protected Boolean computeValue(Class<?> type) {
+            if (type.isPrimitive()) {
+              return true;
+            }
+            for (Class<?> valueClass : VALUE_CLASSES) {
+              if (type.isAssignableFrom(valueClass)) {
+                return true;
+              }
+            }
+            return false;
+          }
+        };
 
     static {
       // not parseNonEmpty: that reads "" as no value, which suits numbers but makes an empty
       // string impossible to configure
-      registerSerializer(String.class, o -> o == null ? null : String.valueOf(o));
+      register(String.class, null, o -> o == null ? null : String.valueOf(o));
 
-      Function<Object, Byte> byteSerializer = stripDot(Byte.class, Byte::parseByte);
-      registerSerializer(byte.class, byteSerializer);
-      registerSerializer(Byte.class, byteSerializer);
+      register(Byte.class, byte.class, stripDot(Byte.class, Byte::parseByte));
 
       // Gson and Jackson's TOML parser read decimals as BigDecimal. Its doubleValue() and
       // floatValue() are correctly rounded (since Java 21), so they give what parsing its text
       // gives, without building the text. Other numbers, e.g. a Float, still go through their
       // text, so that 3.11f is read as 3.11 and not as 3.109999895095825.
       Function<Object, Double> parseDouble = parseNonEmpty(Double.class, Double::parseDouble);
-      Function<Object, Double> doubleSerializer =
-          o -> o instanceof BigDecimal decimal ? decimal.doubleValue() : parseDouble.apply(o);
-      registerSerializer(double.class, doubleSerializer);
-      registerSerializer(Double.class, doubleSerializer);
+      register(
+          Double.class,
+          double.class,
+          o -> o instanceof BigDecimal decimal ? decimal.doubleValue() : parseDouble.apply(o));
 
       Function<Object, Float> parseFloat = parseNonEmpty(Float.class, Float::parseFloat);
-      Function<Object, Float> floatSerializer =
-          o -> o instanceof BigDecimal decimal ? decimal.floatValue() : parseFloat.apply(o);
-      registerSerializer(float.class, floatSerializer);
-      registerSerializer(Float.class, floatSerializer);
+      register(
+          Float.class,
+          float.class,
+          o -> o instanceof BigDecimal decimal ? decimal.floatValue() : parseFloat.apply(o));
 
-      Function<Object, Integer> intSerializer = stripDot(Integer.class, Integer::parseInt);
-      registerSerializer(int.class, intSerializer);
-      registerSerializer(Integer.class, intSerializer);
-
-      Function<Object, Short> shortSerializer = stripDot(Short.class, Short::parseShort);
-      registerSerializer(short.class, shortSerializer);
-      registerSerializer(Short.class, shortSerializer);
-
-      Function<Object, Long> longSerializer = stripDot(Long.class, Long::parseLong);
-      registerSerializer(long.class, longSerializer);
-      registerSerializer(Long.class, longSerializer);
+      register(Integer.class, int.class, stripDot(Integer.class, Integer::parseInt));
+      register(Short.class, short.class, stripDot(Short.class, Short::parseShort));
+      register(Long.class, long.class, stripDot(Long.class, Long::parseLong));
 
       // text formats store chars as one character strings
-      Function<Object, Character> charSerializer =
+      register(
+          Character.class,
+          char.class,
           o -> {
             if (o == null) {
               return null;
@@ -1003,19 +999,39 @@ final class DefaultSerializer implements FieldTypeSerializer<Object> {
                   "Invalid input: expected a character, got the string: " + text);
             }
             return text.charAt(0);
-          };
-      registerSerializer(char.class, charSerializer);
-      registerSerializer(Character.class, charSerializer);
+          });
 
       // true, yes and on are true, as YAML 1.1 reads them; anything else is false
-      Function<Object, Boolean> boolSerializer =
-          parseNonEmpty(Boolean.class, DataObject::parseBoolean);
-      registerSerializer(boolean.class, boolSerializer);
-      registerSerializer(Boolean.class, boolSerializer);
+      register(
+          Boolean.class, boolean.class, parseNonEmpty(Boolean.class, DataObject::parseBoolean));
 
       // parsed directly, going through double / long lost precision and overflowed past 2^63
-      registerSerializer(BigDecimal.class, parseNonEmpty(BigDecimal.class, BigDecimal::new));
-      registerSerializer(BigInteger.class, stripDot(BigInteger.class, BigInteger::new));
+      register(BigDecimal.class, null, parseNonEmpty(BigDecimal.class, BigDecimal::new));
+      register(BigInteger.class, null, stripDot(BigInteger.class, BigInteger::new));
+    }
+
+    /** The reader of the scalar type {@code type}; {@code null} if it is none. */
+    static @Nullable Function<Object, ?> reader(Class<?> type) {
+      return READERS.get(type);
+    }
+
+    /**
+     * Whether {@code type} is a scalar type, primitive or boxed, or a supertype of one. Values of
+     * other types are written by their serializer, and a value read for a field of another type is
+     * converted by its serializer.
+     */
+    static boolean isType(Class<?> type) {
+      return TYPES.get(type);
+    }
+
+    /** Registers {@code reader} for {@code type} and for its primitive type, if it has one. */
+    private static <T> void register(
+        Class<T> type, @Nullable Class<?> primitive, Function<Object, T> reader) {
+      VALUE_CLASSES.add(type);
+      READERS.put(type, reader);
+      if (primitive != null) {
+        READERS.put(primitive, reader);
+      }
     }
 
     /** Parses the text of a value; {@code null} and an empty text are no value. */
@@ -1048,14 +1064,6 @@ final class DefaultSerializer implements FieldTypeSerializer<Object> {
             int dot = s.indexOf('.');
             return finish.apply(dot == -1 ? s : s.substring(0, dot));
           });
-    }
-
-    static Function<Object, ?> getMapper(Class<?> type) {
-      return SERIALIZERS.get(type);
-    }
-
-    private static <T> void registerSerializer(Class<T> type, Function<Object, T> mapper) {
-      SERIALIZERS.put(type, mapper);
     }
   }
 }

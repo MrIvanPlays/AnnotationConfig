@@ -31,13 +31,13 @@ import org.jspecify.annotations.NullMarked;
  * One step of the migration of a config file to a newer version: it changes the values read from
  * the file before the fields of the config are set from them.
  *
- * <p>It gets every value of the file, without the version, as a mutable {@link DataObject}, and
- * the {@link KeyResolver} the config is read with (its {@code KEY_RESOLVER} setting), and returns
- * the values of the newer version: the same data object changed, or a new one. Keys are the keys
- * of the file as the format read them: sections are nested data objects in YAML, JSON and TOML,
- * while {@code .properties} keeps dotted keys such as {@code server.port} flat. Pass the key
- * resolver to {@link DataObject#renameDottedKey(String, String, KeyResolver)} to move an option
- * the same way in every format:
+ * <p>It gets every value of the file, without the version, as a mutable {@link DataObject}, and the
+ * {@link KeyResolver} the config is read with (its {@code KEY_RESOLVER} setting), and returns the
+ * values of the newer version: the same data object changed, or a new one. Keys are the keys of the
+ * file as the format read them: sections are nested data objects in YAML, JSON and TOML, while
+ * {@code .properties} keeps dotted keys such as {@code server.port} flat. Pass the key resolver to
+ * {@link DataObject#renameDottedKey(String, String, KeyResolver)} to move an option the same way in
+ * every format:
  *
  * <pre>{@code
  * (values, keyResolver) -> {

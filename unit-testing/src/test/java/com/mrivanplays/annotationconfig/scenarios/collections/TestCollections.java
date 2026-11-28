@@ -31,6 +31,7 @@ import com.mrivanplays.annotationconfig.scenarios.Format;
 import com.mrivanplays.annotationconfig.scenarios.Scenario;
 import com.mrivanplays.annotationconfig.scenarios.Sources;
 import java.math.BigDecimal;
+import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.LinkedHashMap;
@@ -92,8 +93,7 @@ class TestCollections extends Scenario {
     Assertions.assertArrayEquals(new int[] {1, 2}, read.numbers);
     Assertions.assertArrayEquals(new double[] {1.1, 2.2}, read.doubles);
     Assertions.assertArrayEquals(
-        new BigDecimal[] {new BigDecimal("1111.2222"), new BigDecimal("3333.4444")},
-        read.decimals);
+        new BigDecimal[] {new BigDecimal("1111.2222"), new BigDecimal("3333.4444")}, read.decimals);
     Assertions.assertArrayEquals(new Item[] {new Item("a", 1), new Item("b", 2)}, read.items);
     Assertions.assertEquals(List.of("Hello", "bla bla"), read.names);
     Assertions.assertEquals(List.of(new Item("c", 3)), read.itemList);
@@ -123,8 +123,7 @@ class TestCollections extends Scenario {
 
   @Test
   void aSingleValueIsReadAsAListOfIt() {
-    Assertions.assertEquals(
-        List.of("aabb"), load(new SingleValueList(), "single-value-list").foo);
+    Assertions.assertEquals(List.of("aabb"), load(new SingleValueList(), "single-value-list").foo);
   }
 
   @Test
@@ -144,6 +143,26 @@ class TestCollections extends Scenario {
     Assertions.assertEquals(Integer.class, ((Object) config.groups.get("odd").get(0)).getClass());
     // a value that can't be converted is kept as read, as it was before 3.1.0
     Assertions.assertEquals("many", ((Map<?, ?>) config.amounts).get("x"));
+  }
+
+  @Test
+  void everyScalarTypeIsReadBackInEveryPlace() {
+    // each parser reads numbers as types of its own, which each place converts
+    Scalars read = roundTrip(new Scalars(), Scalars.empty());
+    Scalars expected = new Scalars();
+    Assertions.assertArrayEquals(expected.bytes, read.bytes);
+    Assertions.assertArrayEquals(expected.shorts, read.shorts);
+    Assertions.assertArrayEquals(expected.longs, read.longs);
+    Assertions.assertArrayEquals(expected.floats, read.floats);
+    Assertions.assertArrayEquals(expected.chars, read.chars);
+    Assertions.assertArrayEquals(expected.booleans, read.booleans);
+    Assertions.assertArrayEquals(expected.boxed, read.boxed);
+    Assertions.assertEquals(expected.list, read.list);
+    Assertions.assertEquals(expected.integers, read.integers);
+    Assertions.assertEquals(expected.characters, read.characters);
+    Assertions.assertEquals(expected.map, read.map);
+    Assertions.assertEquals(Long.class, ((Object) read.map.get("a")).getClass());
+    Assertions.assertEquals(expected.record, read.record);
   }
 
   // </editor-fold>
@@ -245,6 +264,44 @@ class TestCollections extends Scenario {
     public Map<String, Long> counts;
     public Map<String, List<Integer>> groups;
     public Map<String, Integer> amounts;
+  }
+
+  record ScalarRecord(
+      byte b, short s, int i, long l, float f, double d, char c, boolean z, BigDecimal decimal) {}
+
+  static class Scalars {
+
+    public byte[] bytes = {1, -2};
+    public short[] shorts = {300, -300};
+    public long[] longs = {9_007_199_254_740_993L, -1};
+    public float[] floats = {3.11f, -0.5f};
+    public char[] chars = {'a', '#'};
+    public boolean[] booleans = {true, false};
+    public BigInteger[] boxed = {BigInteger.ONE, new BigInteger("-12345678901234567890")};
+    public List<Double> list = List.of(2.5, -1e300);
+    public List<Long> integers = List.of(1L, 9_007_199_254_740_993L);
+    public List<Character> characters = List.of('x', 'y');
+    public Map<String, Long> map = Map.of("a", 1L, "b", 9_007_199_254_740_993L);
+    public ScalarRecord record =
+        new ScalarRecord(
+            (byte) 1, (short) 2, 3, 4_000_000_000L, 0.25f, 0.1, 'q', true, new BigDecimal("1.5"));
+
+    static Scalars empty() {
+      Scalars scalars = new Scalars();
+      scalars.bytes = null;
+      scalars.shorts = null;
+      scalars.longs = null;
+      scalars.floats = null;
+      scalars.chars = null;
+      scalars.booleans = null;
+      scalars.boxed = null;
+      scalars.list = null;
+      scalars.integers = null;
+      scalars.characters = null;
+      scalars.map = null;
+      scalars.record = null;
+      return scalars;
+    }
   }
 
   // </editor-fold>
