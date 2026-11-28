@@ -109,8 +109,17 @@ public enum SerializerRegistry {
     Objects.requireNonNull(serialize, "serialize");
     this.registerSerializer(
         serializedType,
-        FieldTypeSerializer.<T>functional(
-            (data, _, _) -> deserialize.apply(data), (value, _, _) -> serialize.apply(value)));
+        new ContextFreeFieldTypeSerializer<T>() {
+          @Override
+          public @Nullable T deserializeSimple(DataObject data) {
+            return deserialize.apply(data);
+          }
+
+          @Override
+          public DataObject serializeSimple(T value) {
+            return serialize.apply(value);
+          }
+        });
   }
 
   // The default serializer with the caller's context, so the settings, the generic type and the

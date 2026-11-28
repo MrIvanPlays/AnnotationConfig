@@ -73,7 +73,8 @@ import org.jspecify.annotations.Nullable;
  * @param <E> enum class
  */
 @NullMarked
-public final class AdvancedEnumSerializer<E extends Enum<E>> implements FieldTypeSerializer<E> {
+public final class AdvancedEnumSerializer<E extends Enum<E>>
+    implements ContextFreeFieldTypeSerializer<E> {
 
   /** The default matches condition. */
   public static final BiPredicate<Integer, List<String>> DEFAULT_MATCHES_CONDITION =
@@ -132,14 +133,6 @@ public final class AdvancedEnumSerializer<E extends Enum<E>> implements FieldTyp
     return val.indexOf(c) != -1;
   }
 
-  /** {@inheritDoc} */
-  @Override
-  @Nullable
-  public E deserialize(
-      DataObject data, SerializationContext<E> context, AnnotationAccessor annotations) {
-    return this.deserializeSimple(data);
-  }
-
   /**
    * Tries to deserialize the inputted {@link DataObject data object} into an {@link Enum enum
    * constant}. If no match is found, returns {@code null}.
@@ -149,6 +142,7 @@ public final class AdvancedEnumSerializer<E extends Enum<E>> implements FieldTyp
    * @since 3.1.0
    */
   @Nullable
+  @Override
   public E deserializeSimple(@Nullable DataObject data) {
     if (data == null || data.getAsObject() == null) {
       return null;
@@ -295,13 +289,6 @@ public final class AdvancedEnumSerializer<E extends Enum<E>> implements FieldTyp
     return parts;
   }
 
-  /** {@inheritDoc} */
-  @Override
-  public DataObject serialize(
-      E value, SerializationContext<E> context, AnnotationAccessor annotations) {
-    return this.serializeSimple(value);
-  }
-
   /**
    * Serializes the specified {@link Enum enum constant} in a config user-friendly way, by replacing
    * underscores with spaces, and lowercase.
@@ -310,6 +297,7 @@ public final class AdvancedEnumSerializer<E extends Enum<E>> implements FieldTyp
    * @return {@link DataObject data object}
    * @since 3.1.0
    */
+  @Override
   public DataObject serializeSimple(E value) {
     return new DataObject(value.name().toLowerCase(Locale.ROOT).replace("_", " "));
   }

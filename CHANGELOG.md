@@ -166,6 +166,34 @@ SerializerRegistry.INSTANCE.registerSerializer(
 - Reading accepts every unit, ignoring case, and ISO-8601 durations (`PT1H30M`). An empty value is
   no value, and anything else fails with a message that says what is expected.
 
+#### `ContextFreeFieldTypeSerializer`
+
+`ContextFreeFieldTypeSerializer` is a `FieldTypeSerializer` that reads and writes a value from the
+value alone. Implement `deserializeSimple(DataObject)` and `serializeSimple(T)`; its
+`deserialize` and `serialize` call them and ignore the `SerializationContext` and the
+`AnnotationAccessor`:
+
+```java
+public final class PointSerializer implements ContextFreeFieldTypeSerializer<Point> {
+
+  @Override
+  public Point deserializeSimple(DataObject data) {
+    return Point.parse(data.getAsString());
+  }
+
+  @Override
+  public DataObject serializeSimple(Point value) {
+    return new DataObject(value.x() + ":" + value.y());
+  }
+}
+```
+
+- `FieldTypeSerializer#isContextFree()` tells whether a serializer is one: `true` for a
+  `ContextFreeFieldTypeSerializer`, `false` by default. AnnotationConfig doesn't use it.
+- `AdvancedEnumSerializer`, `UuidToStringSerializer`, `DurationSerializer` and the serializers that
+  `SerializerRegistry#registerSimpleSerializer` registers are context-free.
+  `AdvancedEnumSerializer`'s `deserializeSimple` and `serializeSimple` are the ones it had.
+
 ### Fixes
 
 - `.properties` does not support lists, and writing one already failed. Reading a value with a

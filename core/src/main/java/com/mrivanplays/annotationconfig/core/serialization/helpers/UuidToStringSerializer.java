@@ -22,10 +22,9 @@
 
 package com.mrivanplays.annotationconfig.core.serialization.helpers;
 
-import com.mrivanplays.annotationconfig.core.serialization.AnnotationAccessor;
+import com.mrivanplays.annotationconfig.core.serialization.ContextFreeFieldTypeSerializer;
 import com.mrivanplays.annotationconfig.core.serialization.DataObject;
 import com.mrivanplays.annotationconfig.core.serialization.FieldTypeSerializer;
-import com.mrivanplays.annotationconfig.core.serialization.SerializationContext;
 import com.mrivanplays.annotationconfig.core.serialization.SerializerRegistry;
 import java.util.UUID;
 import org.jspecify.annotations.NullMarked;
@@ -50,7 +49,7 @@ import org.jspecify.annotations.Nullable;
  * @since 3.1.1
  */
 @NullMarked
-public final class UuidToStringSerializer implements FieldTypeSerializer<UUID> {
+public final class UuidToStringSerializer implements ContextFreeFieldTypeSerializer<UUID> {
 
   /** Creates a UUID serializer. */
   public UuidToStringSerializer() {}
@@ -65,8 +64,7 @@ public final class UuidToStringSerializer implements FieldTypeSerializer<UUID> {
   }
 
   @Override
-  public @Nullable UUID deserialize(
-      DataObject data, SerializationContext<UUID> context, AnnotationAccessor annotations) {
+  public @Nullable UUID deserializeSimple(DataObject data) {
     if (data.isEmpty() || !data.isSingleValue()) {
       throw new IllegalArgumentException("Illegal UUID to deserialize " + data);
     }
@@ -86,8 +84,7 @@ public final class UuidToStringSerializer implements FieldTypeSerializer<UUID> {
   }
 
   @Override
-  public DataObject serialize(
-      UUID value, SerializationContext<UUID> context, AnnotationAccessor annotations) {
+  public DataObject serializeSimple(UUID value) {
     return new DataObject(value.toString());
   }
 }

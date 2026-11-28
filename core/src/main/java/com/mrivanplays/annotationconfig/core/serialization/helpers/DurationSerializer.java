@@ -22,10 +22,9 @@
 
 package com.mrivanplays.annotationconfig.core.serialization.helpers;
 
-import com.mrivanplays.annotationconfig.core.serialization.AnnotationAccessor;
+import com.mrivanplays.annotationconfig.core.serialization.ContextFreeFieldTypeSerializer;
 import com.mrivanplays.annotationconfig.core.serialization.DataObject;
 import com.mrivanplays.annotationconfig.core.serialization.FieldTypeSerializer;
-import com.mrivanplays.annotationconfig.core.serialization.SerializationContext;
 import com.mrivanplays.annotationconfig.core.serialization.SerializerRegistry;
 import java.time.Duration;
 import java.time.format.DateTimeParseException;
@@ -64,7 +63,7 @@ import org.jspecify.annotations.Nullable;
  * @since 3.1.1
  */
 @NullMarked
-public final class DurationSerializer implements FieldTypeSerializer<Duration> {
+public final class DurationSerializer implements ContextFreeFieldTypeSerializer<Duration> {
 
   // largest first: a duration is written in the first one, from the configured unit on, that it
   // is a whole number of
@@ -111,8 +110,7 @@ public final class DurationSerializer implements FieldTypeSerializer<Duration> {
   }
 
   @Override
-  public @Nullable Duration deserialize(
-      DataObject data, SerializationContext<Duration> context, AnnotationAccessor annotations) {
+  public @Nullable Duration deserializeSimple(DataObject data) {
     if (data.isEmpty() || !data.isSingleValue()) {
       throw new IllegalArgumentException("Illegal duration to deserialize " + data);
     }
@@ -141,8 +139,7 @@ public final class DurationSerializer implements FieldTypeSerializer<Duration> {
   }
 
   @Override
-  public DataObject serialize(
-      Duration value, SerializationContext<Duration> context, AnnotationAccessor annotations) {
+  public DataObject serializeSimple(Duration value) {
     if (value.getNano() != 0) {
       // no unit holds it exactly
       return new DataObject(value.toString());

@@ -132,4 +132,18 @@ public interface FieldTypeSerializer<T> {
       serializeAsFunction() {
     return this::serialize;
   }
+
+  /**
+   * Returns whether this serializer (de)serializes a value from the value alone, without using the
+   * {@link SerializationContext} and the {@link AnnotationAccessor} it is passed. AnnotationConfig
+   * doesn't use it; it is for code that handles serializers.
+   *
+   * @return {@code true} if this serializer doesn't use the context or the annotations, {@code
+   *     false} if it may use them
+   * @see ContextFreeFieldTypeSerializer
+   * @since 3.1.1
+   */
+  default boolean isContextFree() {
+    return false;
+  }
 }
