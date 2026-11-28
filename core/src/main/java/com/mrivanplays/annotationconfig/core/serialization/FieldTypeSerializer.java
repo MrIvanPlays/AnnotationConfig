@@ -51,7 +51,7 @@ public interface FieldTypeSerializer<T> {
    * @return new field type serializer
    */
   static <T> FieldTypeSerializer<T> functional(
-      TriFunction<DataObject, SerializationContext<T>, AnnotationAccessor, T> deserialize,
+      TriFunction<DataObject, SerializationContext<T>, AnnotationAccessor, @Nullable T> deserialize,
       TriFunction<T, SerializationContext<T>, AnnotationAccessor, DataObject> serialize) {
     Objects.requireNonNull(deserialize, "deserialize");
     Objects.requireNonNull(serialize, "serialize");
@@ -64,7 +64,7 @@ public interface FieldTypeSerializer<T> {
       }
 
       @Override
-      public TriFunction<DataObject, SerializationContext<T>, AnnotationAccessor, T>
+      public TriFunction<DataObject, SerializationContext<T>, AnnotationAccessor, @Nullable T>
           deserializeAsFunction() {
         return deserialize;
       }
@@ -72,7 +72,6 @@ public interface FieldTypeSerializer<T> {
       @Override
       public DataObject serialize(
           T value, SerializationContext<T> context, AnnotationAccessor annotations) {
-        //noinspection DataFlowIssue
         return serialize.apply(value, context, annotations);
       }
 
@@ -104,7 +103,7 @@ public interface FieldTypeSerializer<T> {
    *
    * @return tri function of the deserialize method
    */
-  default TriFunction<DataObject, SerializationContext<T>, AnnotationAccessor, T>
+  default TriFunction<DataObject, SerializationContext<T>, AnnotationAccessor, @Nullable T>
       deserializeAsFunction() {
     return this::deserialize;
   }

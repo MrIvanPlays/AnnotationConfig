@@ -31,7 +31,8 @@ import com.mrivanplays.annotationconfig.core.serialization.SerializerRegistry;
 import com.mrivanplays.annotationconfig.core.serialization.helpers.DurationSerializer;
 import com.mrivanplays.annotationconfig.core.serialization.helpers.UuidToStringSerializer;
 import java.time.temporal.ChronoUnit;
-import org.jspecify.annotations.Nullable;
+import java.util.Objects;
+import org.jspecify.annotations.NullMarked;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
@@ -39,12 +40,15 @@ class TestContextFreeFieldTypeSerializer {
 
   @Test
   void deserializeAndSerializeCallTheSimpleMethods() {
-    FieldTypeSerializer<Point> serializer = new PointSerializer();
+    ContextFreeFieldTypeSerializer<Point> serializer = new PointSerializer();
     // the context is not used, so null works
     Point point = serializer.deserialize(new DataObject("1:2"), null, AnnotationAccessor.EMPTY);
     Assertions.assertEquals(new Point(1, 2), point);
     Assertions.assertEquals(
-        "1:2", serializer.serialize(point, null, AnnotationAccessor.EMPTY).getAsString());
+        "1:2",
+        serializer
+            .serialize(Objects.requireNonNull(point), null, AnnotationAccessor.EMPTY)
+            .getAsString());
   }
 
   @Test
@@ -94,10 +98,11 @@ class TestContextFreeFieldTypeSerializer {
     }
   }
 
+  @NullMarked
   private static final class PointSerializer implements ContextFreeFieldTypeSerializer<Point> {
 
     @Override
-    public @Nullable Point deserializeSimple(DataObject data) {
+    public Point deserializeSimple(DataObject data) {
       return Point.parse(data.getAsString());
     }
 

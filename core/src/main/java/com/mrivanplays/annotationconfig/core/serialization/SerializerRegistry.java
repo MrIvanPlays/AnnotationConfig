@@ -102,14 +102,14 @@ public enum SerializerRegistry {
    */
   public <T> void registerSimpleSerializer(
       Class<T> serializedType,
-      Function<DataObject, T> deserialize,
+      Function<DataObject, @Nullable T> deserialize,
       Function<T, DataObject> serialize) {
     Objects.requireNonNull(serializedType, "serializedType");
     Objects.requireNonNull(deserialize, "deserialize");
     Objects.requireNonNull(serialize, "serialize");
     this.registerSerializer(
         serializedType,
-        new ContextFreeFieldTypeSerializer<T>() {
+        new ContextFreeFieldTypeSerializer<>() {
           @Override
           public @Nullable T deserializeSimple(DataObject data) {
             return deserialize.apply(data);

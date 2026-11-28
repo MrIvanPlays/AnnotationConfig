@@ -22,6 +22,7 @@
 
 package com.mrivanplays.annotationconfig.core.serialization;
 
+import java.util.function.Function;
 import org.jspecify.annotations.NullMarked;
 import org.jspecify.annotations.Nullable;
 
@@ -40,6 +41,31 @@ import org.jspecify.annotations.Nullable;
 public interface ContextFreeFieldTypeSerializer<T> extends FieldTypeSerializer<T> {
 
   /**
+   * Creates a new {@link ContextFreeFieldTypeSerializer} from 2 {@link Function functions}.
+   *
+   * @param deserialize deserialize method (see {@link
+   *     ContextFreeFieldTypeSerializer#deserializeSimple(DataObject)})
+   * @param serialize serialize method (see {@link
+   *     ContextFreeFieldTypeSerializer#serializeSimple(Object)}
+   * @param <T> type of which this serializer is being registered.
+   * @return new context free field type serializer
+   */
+  static <T> ContextFreeFieldTypeSerializer<T> functional(
+      Function<DataObject, @Nullable T> deserialize, Function<T, DataObject> serialize) {
+    return new ContextFreeFieldTypeSerializer<T>() {
+      @Override
+      public @Nullable T deserializeSimple(DataObject data) {
+        return deserialize.apply(data);
+      }
+
+      @Override
+      public DataObject serializeSimple(T value) {
+        return serialize.apply(value);
+      }
+    };
+  }
+
+  /**
    * Deserializes the provided data.
    *
    * @param data the data we received from the config, never {@code null}
@@ -47,6 +73,15 @@ public interface ContextFreeFieldTypeSerializer<T> extends FieldTypeSerializer<T
    * @since 3.1.1
    */
   @Nullable T deserializeSimple(DataObject data);
+
+  /**
+   * Returns {@link #deserializeSimple(DataObject)} as a {@link Function}.
+   *
+   * @return function of deserialize method
+   */
+  default Function<DataObject, @Nullable T> deserializeSimpleAsFunction() {
+    return this::deserializeSimple;
+  }
 
   /**
    * Serializes the provided value.
@@ -59,6 +94,15 @@ public interface ContextFreeFieldTypeSerializer<T> extends FieldTypeSerializer<T
   DataObject serializeSimple(T value);
 
   /**
+   * Returns {@link #serializeSimple(Object)} as a {@link Function}.
+   *
+   * @return function of serialize method
+   */
+  default Function<T, DataObject> serializeSimpleAsFunction() {
+    return this::serializeSimple;
+  }
+
+  /**
    * Calls {@link #deserializeSimple(DataObject)} with the data, ignoring the context and the
    * annotations.
    *
@@ -69,7 +113,9 @@ public interface ContextFreeFieldTypeSerializer<T> extends FieldTypeSerializer<T
    */
   @Override
   default @Nullable T deserialize(
-      DataObject data, SerializationContext<T> context, AnnotationAccessor annotations) {
+      DataObject data,
+      @Nullable SerializationContext<T> context,
+      @Nullable AnnotationAccessor annotations) {
     return this.deserializeSimple(data);
   }
 
@@ -84,7 +130,9 @@ public interface ContextFreeFieldTypeSerializer<T> extends FieldTypeSerializer<T
    */
   @Override
   default DataObject serialize(
-      T value, SerializationContext<T> context, AnnotationAccessor annotations) {
+      T value,
+      @Nullable SerializationContext<T> context,
+      @Nullable AnnotationAccessor annotations) {
     return this.serializeSimple(value);
   }
 

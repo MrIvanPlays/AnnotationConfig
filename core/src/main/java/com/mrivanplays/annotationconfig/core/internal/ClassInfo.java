@@ -169,7 +169,7 @@ public final class ClassInfo {
    * The annotation holders {@code AnnotatedConfigResolver} iterates over: the commented classes,
    * then the fields. Computed once per combination of settings; the returned set can't be modified.
    */
-  public Set<AnnotationHolder> holders(
+  Set<AnnotationHolder> holders(
       boolean findParentFields, boolean reverseFields, boolean findStaticFields) {
     int index = (findParentFields ? 1 : 0) | (reverseFields ? 2 : 0) | (findStaticFields ? 4 : 0);
     Set<AnnotationHolder> cached = this.holders.get(index);
