@@ -28,6 +28,9 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Objects;
+import java.util.Spliterator;
+import java.util.stream.Stream;
+import java.util.stream.StreamSupport;
 import org.jspecify.annotations.NullMarked;
 import org.jspecify.annotations.Nullable;
 
@@ -106,6 +109,34 @@ public final class SectionObjectList<T> implements Iterable<Entry<String, T>> {
   public Iterator<Entry<String, T>> iterator() {
     // immutable since 3.1.0
     return Collections.unmodifiableMap(this.values).entrySet().iterator();
+  }
+
+  /**
+   * Returns a {@link Spliterator} over the keys and values held in this {@code SectionObjectList},
+   * in the order they were added. Like the {@link #iterator() iterator}, its entries can't change
+   * the list. It is {@link Spliterator#ORDERED ordered} and knows its size; {@link #update(String,
+   * Object) updating} the list while it is used makes it throw a {@link
+   * java.util.ConcurrentModificationException}.
+   *
+   * @return spliterator
+   * @since 3.1.1
+   */
+  @Override
+  public Spliterator<Entry<String, T>> spliterator() {
+    return Collections.unmodifiableMap(this.values).entrySet().spliterator();
+  }
+
+  /**
+   * Returns a sequential {@link Stream} of the keys and values held in this {@code
+   * SectionObjectList}, in the order they were added. Its entries can't change the list, and
+   * {@link #update(String, Object) updating} the list while the stream runs makes it throw a
+   * {@link java.util.ConcurrentModificationException}.
+   *
+   * @return stream
+   * @since 3.1.1
+   */
+  public Stream<Entry<String, T>> stream() {
+    return StreamSupport.stream(this.spliterator(), false);
   }
 
   /**

@@ -124,6 +124,12 @@ resolver.loadOrDump(
 depth, into ones that can't be modified, replacing every other value by what `values` returns for
 it (which can throw to reject it). A key that is not a `String` is rejected. `ConfigSchema` uses it.
 
+#### `SectionObjectList#stream`
+
+`SectionObjectList` (YAML) has a `stream()` of its keys and values, in the order they were added,
+and its `spliterator()` keeps that order and knows its size, so parallel streams keep it too. As
+with its iterator, the entries can't change the list.
+
 ### Fixes
 
 - `.properties` does not support lists, and writing one already failed. Reading a value with a

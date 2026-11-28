@@ -28,7 +28,10 @@ import com.mrivanplays.annotationconfig.core.utils.TypeToken;
 import java.io.StringReader;
 import java.io.StringWriter;
 import java.lang.reflect.Type;
+import java.util.ConcurrentModificationException;
+import java.util.List;
 import java.util.Map;
+import java.util.Spliterator;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeAll;
@@ -84,6 +87,42 @@ class TestSectionObjectList {
     Assertions.assertEquals("dolor", serialized.get("baz").getBaz());
     Assertions.assertEquals(69, serialized.get("foo").getFoo());
     Assertions.assertEquals("sit", serialized.get("foo").getBaz());
+  }
+
+  @Test
+  void streamFollowsInsertionOrder() {
+    SectionObjectList<SerializedObject> list = new Subject().list;
+    Assertions.assertEquals(
+        List.of("foo", "bar"), list.stream().map(Map.Entry::getKey).toList());
+    Assertions.assertEquals(
+        List.of("foo", "bar"), list.stream().parallel().map(Map.Entry::getKey).toList());
+    Assertions.assertEquals(2, list.stream().count());
+  }
+
+  @Test
+  void spliteratorIsOrderedAndSized() {
+    Spliterator<Map.Entry<String, SerializedObject>> spliterator = new Subject().list.spliterator();
+    Assertions.assertTrue(spliterator.hasCharacteristics(Spliterator.ORDERED));
+    Assertions.assertTrue(spliterator.hasCharacteristics(Spliterator.SIZED));
+    Assertions.assertEquals(2, spliterator.estimateSize());
+  }
+
+  @Test
+  void streamEntriesCantChangeTheList() {
+    SectionObjectList<SerializedObject> list = new Subject().list;
+    Map.Entry<String, SerializedObject> entry = list.stream().findFirst().orElseThrow();
+    Assertions.assertThrows(
+        UnsupportedOperationException.class,
+        () -> entry.setValue(new SerializedObject(3, "dolor")));
+    Assertions.assertEquals(1, list.get("foo").getFoo());
+  }
+
+  @Test
+  void updatingWhileStreamingFails() {
+    SectionObjectList<SerializedObject> list = new Subject().list;
+    Assertions.assertThrows(
+        ConcurrentModificationException.class,
+        () -> list.stream().forEach(_ -> list.update("baz", new SerializedObject(3, "dolor"))));
   }
 
   static class SerializedObject {
