@@ -52,6 +52,12 @@ whole = 2.0e9
 # --- invalid-uuid
 id = 'not-a-uuid'
 
+# --- empty-uri
+uri = ''
+
+# --- invalid-uri
+uri = 'http://exa mple.com'
+
 # --- multiline
 text = """
 first line
@@ -138,4 +144,14 @@ list = ['123e4567-e89b-12d3-a456-426614174000', 'f47ac10b-58cc-4372-a567-0e02b2c
 [owner]
 name = 'admin'
 id = '00000000-0000-0000-0000-000000000001'
+
+# --- uri-elements
+list = ['https://example.com/path?query=1#top', 'docs/index.html']
+
+[link]
+name = 'contact'
+uri = 'mailto:admin@example.com'
+
+# --- uris
+uri = 'https://example.com/path?query=1#top'
 

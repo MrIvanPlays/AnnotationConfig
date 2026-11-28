@@ -29,6 +29,7 @@ import com.mrivanplays.annotationconfig.core.serialization.DataObject;
 import com.mrivanplays.annotationconfig.core.serialization.FieldTypeSerializer;
 import com.mrivanplays.annotationconfig.core.serialization.SerializerRegistry;
 import com.mrivanplays.annotationconfig.core.serialization.helpers.DurationSerializer;
+import com.mrivanplays.annotationconfig.core.serialization.helpers.UriToStringSerializer;
 import com.mrivanplays.annotationconfig.core.serialization.helpers.UuidToStringSerializer;
 import java.time.temporal.ChronoUnit;
 import java.util.Objects;
@@ -55,6 +56,7 @@ class TestContextFreeFieldTypeSerializer {
   void contextFreeSerializersSayTheyAre() {
     Assertions.assertTrue(new PointSerializer().isContextFree());
     Assertions.assertTrue(new UuidToStringSerializer().isContextFree());
+    Assertions.assertTrue(new UriToStringSerializer().isContextFree());
     Assertions.assertTrue(new DurationSerializer(ChronoUnit.SECONDS).isContextFree());
     Assertions.assertTrue(AdvancedEnumSerializer.forEnum(Mode.class).isContextFree());
   }

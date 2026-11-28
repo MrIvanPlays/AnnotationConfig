@@ -46,6 +46,12 @@
 // --- invalid-uuid
 {"id": "not-a-uuid"}
 
+// --- empty-uri
+{"uri": ""}
+
+// --- invalid-uri
+{"uri": "http://exa mple.com"}
+
 // --- multiline
 {
   "text": "first line\nsecond line\n",
@@ -131,5 +137,22 @@
     "name": "admin",
     "id": "00000000-0000-0000-0000-000000000001"
   }
+}
+
+// --- uri-elements
+{
+  "list": [
+    "https://example.com/path?query=1#top",
+    "docs/index.html"
+  ],
+  "link": {
+    "name": "contact",
+    "uri": "mailto:admin@example.com"
+  }
+}
+
+// --- uris
+{
+  "uri": "https://example.com/path?query=1#top"
 }
 

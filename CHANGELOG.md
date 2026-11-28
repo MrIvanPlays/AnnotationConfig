@@ -194,6 +194,33 @@ SerializerRegistry.INSTANCE.registerSerializer(
 - Reading accepts every unit, ignoring case, and ISO-8601 durations (`PT1H30M`). An empty value is
   no value, and anything else fails with a message that says what is expected.
 
+#### `UriToStringSerializer`
+
+`UriToStringSerializer` (in `serialization.helpers`) writes a `java.net.URI` as its text
+(`https://example.com/path`) and reads it from it. It is not registered by default; register it
+before loading or dumping a config with `URI` fields:
+
+```java
+SerializerRegistry.INSTANCE.registerSerializer(URI.class, new UriToStringSerializer());
+```
+
+To accept only some schemes, pass a predicate of the scheme:
+
+```java
+SerializerRegistry.INSTANCE.registerSerializer(
+    URI.class, new UriToStringSerializer(Set.of("http", "https")::contains));
+```
+
+- It applies where `UuidToStringSerializer` does: fields, the elements of arrays and lists, record
+  components and the fields of custom data types, not the values of maps.
+- Reading ignores surrounding spaces. An empty value is no value, and text that is not a URI
+  fails loading with the reason, such as `Invalid URI 'http://exa mple.com': Illegal character in
+  authority`.
+- Without a predicate, every URI is read, also relative ones (`docs/index.html`). With one, the
+  predicate gets the scheme in lower case, as schemes ignore case (`HTTPS://...` is `https`), and a
+  URI without a scheme or with one the predicate rejects fails loading.
+- Writing doesn't check the predicate.
+
 #### `ContextFreeFieldTypeSerializer`
 
 `ContextFreeFieldTypeSerializer` is a `FieldTypeSerializer` that reads and writes a value from the
@@ -218,8 +245,9 @@ public final class PointSerializer implements ContextFreeFieldTypeSerializer<Poi
 
 - `FieldTypeSerializer#isContextFree()` tells whether a serializer is one: `true` for a
   `ContextFreeFieldTypeSerializer`, `false` by default. AnnotationConfig doesn't use it.
-- `AdvancedEnumSerializer`, `UuidToStringSerializer`, `DurationSerializer` and the serializers that
-  `SerializerRegistry#registerSimpleSerializer` registers are context-free.
+- `AdvancedEnumSerializer`, `UuidToStringSerializer`, `DurationSerializer`, `UriToStringSerializer`
+  and the serializers that `SerializerRegistry#registerSimpleSerializer` registers are
+  context-free.
   `AdvancedEnumSerializer`'s `deserializeSimple` and `serializeSimple` are the ones it had.
 
 ### Fixes

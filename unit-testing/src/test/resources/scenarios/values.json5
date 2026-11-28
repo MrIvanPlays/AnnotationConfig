@@ -94,3 +94,20 @@
   }
 }
 
+// --- uri-elements
+{
+  list: [
+    "https://example.com/path?query=1#top",
+    "docs/index.html"
+  ],
+  link: {
+    name: "contact",
+    uri: "mailto:admin@example.com"
+  }
+}
+
+// --- uris
+{
+  uri: "https://example.com/path?query=1#top"
+}
+
