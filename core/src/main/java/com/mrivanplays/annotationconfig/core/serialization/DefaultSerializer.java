@@ -47,6 +47,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.StringJoiner;
@@ -139,10 +140,10 @@ final class DefaultSerializer implements FieldTypeSerializer<Object> {
     if (isListOrArray(type)) {
       return null;
     }
-    Optional<Polymorphic> onField = annotations.getAnnotation(Polymorphic.class);
-    return onField.isPresent()
-        ? PolymorphicInfo.of(onField.get(), type)
-        : PolymorphicInfo.ofType(type);
+    return annotations
+        .getAnnotation(Polymorphic.class)
+        .map(polymorphic -> PolymorphicInfo.of(polymorphic, type))
+        .orElseGet(() -> PolymorphicInfo.ofType(type));
   }
 
   /**
@@ -196,10 +197,8 @@ final class DefaultSerializer implements FieldTypeSerializer<Object> {
       Object val,
       AnnotationAccessor annotations) {
     DataObject serialized = serializer.serialize(val, serializationContext, annotations);
-    if (serialized == null) {
-      throw new NullPointerException(
-          "Expected DataObject, but got null ; Serialized type: " + neededType.getName());
-    }
+    Objects.requireNonNull(
+        serialized, "Expected DataObject, but got null ; Serialized type: " + neededType.getName());
     if (serialized.isEmpty()) {
       return;
     }
@@ -262,7 +261,7 @@ final class DefaultSerializer implements FieldTypeSerializer<Object> {
   }
 
   /**
-   * Element type of a {@code List<X>} field with its own type arguments, so that the elements of a
+   * Element type of {@code List<X>} field with its own type arguments, so that the elements of a
    * {@code List<List<Integer>>} are read as lists of integers; {@code Object} when the list is raw.
    */
   private static Type listElementGenericType(SerializationContext<?> context) {
@@ -721,8 +720,8 @@ final class DefaultSerializer implements FieldTypeSerializer<Object> {
           deserialized.put(f.getName(), defValue != null ? f.get(defValue) : null);
         } catch (IllegalAccessException e) {
           deserialized.put(f.getName(), null);
-          new IllegalArgumentException("Field became inaccessible, will be set to null", e)
-              .printStackTrace();
+          LOGGER.log(
+              System.Logger.Level.ERROR, "Field became inaccessible, will be set to null", e);
         }
       }
     } else {
@@ -931,13 +930,12 @@ final class DefaultSerializer implements FieldTypeSerializer<Object> {
                     context.getAnnotatedConfig(),
                     context.getSettings()),
                 info.accessor());
-        if (serialized == null) {
-          throw new NullPointerException(
-              "Expected DataObject, but got null ; Field: "
-                  + desField.getName()
-                  + " ; Field type: "
-                  + desField.getType().getName());
-        }
+        Objects.requireNonNull(
+            serialized,
+            "Expected DataObject, but got null ; Field: "
+                + desField.getName()
+                + " ; Field type: "
+                + desField.getType().getName());
         if (serialized.isEmpty()) {
           continue;
         }
