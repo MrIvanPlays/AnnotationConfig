@@ -35,6 +35,7 @@ import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
 import java.lang.reflect.Type;
 import java.util.List;
+import java.util.Set;
 import org.jspecify.annotations.NullMarked;
 import org.jspecify.annotations.Nullable;
 
@@ -79,7 +80,7 @@ public final class FieldInfo {
     this.genericType = field.getGenericType();
     this.ignored = AnnotationUtils.isIgnored(field);
     Class<?> type = field.getType();
-    if (type.isArray() || List.class.isAssignableFrom(type)) {
+    if (type.isArray() || List.class.isAssignableFrom(type) || Set.class.isAssignableFrom(type)) {
       this.polymorphic = null;
     } else {
       Polymorphic polymorphic = field.getDeclaredAnnotation(Polymorphic.class);

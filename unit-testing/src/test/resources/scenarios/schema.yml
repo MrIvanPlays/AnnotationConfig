@@ -359,6 +359,17 @@
         3
       ]
     },
+    "tags": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "uniqueItems": true,
+      "default": [
+        "a",
+        "b"
+      ]
+    },
     "grid": {
       "type": "array",
       "items": {

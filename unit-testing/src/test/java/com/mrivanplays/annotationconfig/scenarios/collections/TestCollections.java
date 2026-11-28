@@ -34,9 +34,15 @@ import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.EnumSet;
 import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
+import java.util.SortedSet;
+import java.util.TreeSet;
+import java.util.concurrent.CopyOnWriteArraySet;
 import java.util.concurrent.TimeUnit;
 import org.jspecify.annotations.NullMarked;
 import org.junit.jupiter.api.Assertions;
@@ -163,6 +169,60 @@ class TestCollections extends Scenario {
     Assertions.assertEquals(expected.map, read.map);
     Assertions.assertEquals(Long.class, ((Object) read.map.get("a")).getClass());
     Assertions.assertEquals(expected.record, read.record);
+  }
+
+  // </editor-fold>
+
+  // <editor-fold desc="Sets">
+
+  @Test
+  void setsAreWrittenAsListsAndReadBack() {
+    final String written = assertDump("sets", new Sets());
+    Sets read = new Sets();
+    read.names = Set.of("other");
+    read.sorted = new TreeSet<>();
+    read.units = EnumSet.noneOf(TimeUnit.class);
+    read.items = Set.of();
+    read.groups = Map.of();
+    read.empty = Set.of("not", "empty");
+    loadText(read, written);
+    // in the order of the file
+    Assertions.assertEquals(LinkedHashSet.class, read.names.getClass());
+    Assertions.assertEquals(List.of("b", "a"), List.copyOf(read.names));
+    Assertions.assertEquals(TreeSet.class, read.sorted.getClass());
+    Assertions.assertEquals(List.of(1, 2, 3), List.copyOf(read.sorted));
+    Assertions.assertEquals(EnumSet.of(TimeUnit.SECONDS, TimeUnit.MINUTES), read.units);
+    Assertions.assertEquals(Set.of(new Item("a", 1)), read.items);
+    Assertions.assertEquals(Map.of("odd", Set.of(1L, 3L)), read.groups);
+    Assertions.assertEquals(Long.class, read.groups.get("odd").iterator().next().getClass());
+    Assertions.assertEquals(Set.of(), read.empty);
+  }
+
+  @Test
+  void setsLoadAndReadARepeatedElementOnce() {
+    Sets config = load(new Sets(), "sets-read");
+    Assertions.assertEquals(List.of("y", "x"), List.copyOf(config.names));
+    Assertions.assertEquals(List.of(4, 5), List.copyOf(config.sorted));
+    // enum elements, read case-insensitively
+    Assertions.assertEquals(EnumSet.of(TimeUnit.MINUTES, TimeUnit.HOURS), config.units);
+    Assertions.assertEquals(Set.of(new Item("x", 7)), config.items);
+    Assertions.assertEquals(Map.of("even", Set.of(2L)), config.groups);
+    Assertions.assertEquals(Set.of("now"), config.empty);
+  }
+
+  @Test
+  void aSingleValueIsReadAsASetOfIt() {
+    SingleValueSet config = load(new SingleValueSet(), "single-value-list");
+    Assertions.assertEquals(LinkedHashSet.class, config.foo.getClass());
+    Assertions.assertEquals(Set.of("aabb"), config.foo);
+  }
+
+  @Test
+  void aSetTypeThatIsNotCreatedIsRejected() {
+    String message = rejected(new UnsupportedSet(), "single-value-list");
+    Assertions.assertTrue(
+        message.contains("'foo': Can't read a " + CopyOnWriteArraySet.class.getName()), message);
+    Assertions.assertTrue(message.contains("declare the field as a Set"), message);
   }
 
   // </editor-fold>
@@ -302,6 +362,30 @@ class TestCollections extends Scenario {
       scalars.record = null;
       return scalars;
     }
+  }
+
+  // </editor-fold>
+
+  // <editor-fold desc="Sets: subjects">
+
+  static class Sets {
+
+    public Set<String> names = new LinkedHashSet<>(List.of("b", "a"));
+    public SortedSet<Integer> sorted = new TreeSet<>(List.of(3, 1, 2));
+    public EnumSet<TimeUnit> units = EnumSet.of(TimeUnit.SECONDS, TimeUnit.MINUTES);
+    public Set<Item> items = Set.of(new Item("a", 1));
+    public Map<String, Set<Long>> groups = Map.of("odd", new LinkedHashSet<>(List.of(1L, 3L)));
+    public Set<String> empty = Set.of();
+  }
+
+  static class SingleValueSet {
+
+    public Set<String> foo;
+  }
+
+  static class UnsupportedSet {
+
+    public CopyOnWriteArraySet<String> foo;
   }
 
   // </editor-fold>

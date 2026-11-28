@@ -42,9 +42,12 @@ import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Collections;
+import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -52,6 +55,7 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.StringJoiner;
+import java.util.TreeSet;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Function;
 import org.jspecify.annotations.NonNull;
@@ -108,7 +112,58 @@ final class DefaultSerializer implements FieldTypeSerializer<Object> {
   }
 
   private static boolean isListOrArray(Class<?> type) {
-    return type.isArray() || List.class.isAssignableFrom(type);
+    return type.isArray() || List.class.isAssignableFrom(type) || isSet(type);
+  }
+
+  /** Whether {@code type} is a {@code Set}, which is read from a list and written as one. */
+  private static boolean isSet(Class<?> type) {
+    return Set.class.isAssignableFrom(type);
+  }
+
+  /**
+   * The elements read for a field of the set type {@code setType}, in a set of that type: a {@code
+   * LinkedHashSet}, which keeps the order of the file, for {@code Set}, {@code HashSet} and {@code
+   * LinkedHashSet}, an {@code EnumSet} for an {@code EnumSet}, and a {@code TreeSet} for a {@code
+   * SortedSet}, {@code NavigableSet} or {@code TreeSet}. A repeated element is read once.
+   */
+  private static Set<Object> toSet(
+      Class<?> setType, List<Object> elements, SerializationContext<?> context) {
+    try {
+      if (setType.isAssignableFrom(LinkedHashSet.class)) {
+        return new LinkedHashSet<>(elements);
+      }
+      if (EnumSet.class.isAssignableFrom(setType)) {
+        Class<?> elementType = listElementType(context);
+        if (!elementType.isEnum()) {
+          throw new IllegalArgumentException(
+              keyPrefix(context) + "Can't read an EnumSet of " + elementType.getName());
+        }
+        EnumSet set = EnumSet.noneOf((Class<Enum>) elementType);
+        set.addAll(elements);
+        return set;
+      }
+      if (setType.isAssignableFrom(TreeSet.class)) {
+        return new TreeSet<>(elements);
+      }
+    } catch (NullPointerException | ClassCastException e) {
+      // a null element, or elements that are not comparable
+      throw new IllegalArgumentException(
+          keyPrefix(context)
+              + "Can't read "
+              + elements
+              + " as a "
+              + setType.getSimpleName()
+              + (e instanceof NullPointerException
+                  ? ": it can't hold null"
+                  : ": its elements are not comparable"),
+          e);
+    }
+    throw new IllegalArgumentException(
+        keyPrefix(context)
+            + "Can't read a "
+            + setType.getName()
+            + "; declare the field as a Set, HashSet, LinkedHashSet, SortedSet, NavigableSet,"
+            + " TreeSet or EnumSet");
   }
 
   /**
@@ -382,7 +437,9 @@ final class DefaultSerializer implements FieldTypeSerializer<Object> {
     }
     boolean scalar = Scalars.isType(valueClass);
     boolean container =
-        List.class.isAssignableFrom(valueClass) || Map.class.isAssignableFrom(valueClass);
+        List.class.isAssignableFrom(valueClass)
+            || isSet(valueClass)
+            || Map.class.isAssignableFrom(valueClass);
     if (!scalar && !container) {
       // other objects are not supported as values of maps
       return;
@@ -467,7 +524,7 @@ final class DefaultSerializer implements FieldTypeSerializer<Object> {
     if (data.isSingleValue() && dataRaw instanceof List) {
       List<Object> read = (List<Object>) dataRaw;
       if (read.isEmpty()) {
-        return new ArrayList<>();
+        return isSet(fieldType) ? toSet(fieldType, List.of(), context) : new ArrayList<>();
       } else {
         List<Object> ret = new ArrayList<>(read.size());
         Class<?> neededType = listElementType(context);
@@ -491,26 +548,34 @@ final class DefaultSerializer implements FieldTypeSerializer<Object> {
                     new DataObject(o, true), serializationContext, elementAnnotations));
           }
         }
-        return ret;
+        return isSet(fieldType) ? toSet(fieldType, ret, context) : ret;
       }
     }
-    // a single value read for a list field is read as a list with that one element
-    if (data.isSingleValue() && fieldType.isAssignableFrom(List.class)) {
+    // a single value read for a list or set field is read as one with that one element
+    if (data.isSingleValue() && (fieldType.isAssignableFrom(List.class) || isSet(fieldType))) {
       Class<?> listValueNeeded = listElementType(context);
       if (dataRaw.getClass().isArray()) {
         // Of the built-in formats only .properties reads arrays (a value with a comma), and it
         // writes no lists. The array used to become one element, "[Ljava.lang.Object;@...".
         throw new IllegalArgumentException(
             keyPrefix(context)
-                + ".properties does not support lists; use an array, such as "
+                + ".properties does not support "
+                + (isSet(fieldType) ? "sets" : "lists")
+                + "; use an array, such as "
                 + listValueNeeded.getSimpleName()
                 + "[]");
       }
       if (Scalars.isType(listValueNeeded)) {
-        return Collections.singletonList(readScalar(dataRaw, listValueNeeded));
+        List<Object> one = Collections.singletonList(readScalar(dataRaw, listValueNeeded));
+        return isSet(fieldType) ? toSet(fieldType, one, context) : one;
       } else {
         throw new IllegalArgumentException(
-            "Can't read " + data + " as a list of the non-primitive " + listValueNeeded.getName());
+            "Can't read "
+                + data
+                + " as a "
+                + (isSet(fieldType) ? "set" : "list")
+                + " of the non-primitive "
+                + listValueNeeded.getName());
       }
     }
     if (checkPolymorphic) {
@@ -771,10 +836,11 @@ final class DefaultSerializer implements FieldTypeSerializer<Object> {
               : value.toString());
     }
     SerializerRegistry serializerRegistry = SerializerRegistry.INSTANCE;
-    if (value instanceof List<?> list) {
-      List<Object> values = (List<Object>) list;
+    if (value instanceof List<?> || value instanceof Set<?>) {
+      // a set is written as a list, in its iteration order
+      Collection<Object> values = (Collection<Object>) value;
       if (values.isEmpty()) {
-        return new DataObject(values);
+        return new DataObject(values instanceof List ? values : new ArrayList<>());
       } else {
         List<Object> toSerialize = new ArrayList<>(values.size());
         Class<?> neededType = listElementType(context);

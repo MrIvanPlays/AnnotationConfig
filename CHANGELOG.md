@@ -118,6 +118,34 @@ resolver.loadOrDump(
 - `ValueWriter` has two new default methods for this, `schemaComment(String)` and
   `writesSchemaKey()`, so a custom format can reference a schema too.
 
+#### `Set` fields
+
+Options, and the fields of custom data types and record components, can be `Set`s. A set is
+written as a list, in its iteration order, and read from one:
+
+```java
+private Set<String> admins = new LinkedHashSet<>(List.of("ivan"));
+private EnumSet<TimeUnit> units = EnumSet.of(TimeUnit.SECONDS);
+```
+
+- The field's type decides the set it gets: a `LinkedHashSet`, which keeps the order of the file,
+  for `Set`, `HashSet` and `LinkedHashSet`, an `EnumSet` for `EnumSet`, and a `TreeSet` for
+  `SortedSet`, `NavigableSet` and `TreeSet`. Loading a set of any other type fails with a message
+  naming these.
+- An element written twice is read once. A single value is read as a set with that one element,
+  as it is for lists.
+- Elements are read like the elements of lists: each with its type's serializer, scalars converted
+  to the element type, enums ignoring case. `@Min`, `@Max`, `@OneOf` and `@Polymorphic` apply to
+  the elements as they do in lists (`Set<@Max(maxInt = 10) Integer>`), and so do sets as values of
+  maps (`Map<String, Set<Long>>`).
+- A `null` element fails to load into an `EnumSet` or `TreeSet`, which can't hold it, and so do
+  elements of a `TreeSet` that are not comparable.
+- `ConfigResolver#schema` describes a set as an array with `"uniqueItems": true`.
+- `.properties` does not support sets, as it does not support lists.
+
+Sets failed before: writing one with `Can't serialize a java.util.LinkedHashSet: it has no
+fields`, reading one with `Can not set java.util.Set field ... to java.util.ArrayList`.
+
 #### `MapUtils#unmodifiableDeepCopy`
 
 `MapUtils.unmodifiableDeepCopy(map, values)` copies a map and every map and list in it, at any

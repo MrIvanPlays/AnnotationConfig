@@ -130,3 +130,33 @@
   ]
 }
 
+// --- sets
+{
+  names: [
+    "b",
+    "a"
+  ],
+  sorted: [
+    1,
+    2,
+    3
+  ],
+  units: [
+    "seconds",
+    "minutes"
+  ],
+  items: [
+    {
+      name: "a",
+      amount: 1
+    }
+  ],
+  groups: {
+    odd: [
+      1,
+      3
+    ]
+  },
+  empty: []
+}
+

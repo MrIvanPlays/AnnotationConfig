@@ -397,9 +397,11 @@ final class SchemaGenerator {
 
   /** The schema of the value of a field that isn't a section, with its default. */
   private Map<String, Object> fieldSchema(FieldInfo info, @Nullable Object written) {
-    // on a list or array field, @Polymorphic is the elements'
+    // on a list, set or array field, @Polymorphic is the elements'
     Polymorphic elements =
-        info.type().isArray() || List.class.isAssignableFrom(info.type())
+        info.type().isArray()
+                || List.class.isAssignableFrom(info.type())
+                || Set.class.isAssignableFrom(info.type())
             ? info.field().getDeclaredAnnotation(Polymorphic.class)
             : null;
     return this.valueSchema(info.field().getAnnotatedType(), written, elements);
@@ -474,6 +476,10 @@ final class SchemaGenerator {
               ? this.elementSchema(
                   parameterized.getAnnotatedActualTypeArguments()[0], elementPolymorphic)
               : new LinkedHashMap<>());
+      if (Set.class.isAssignableFrom(raw)) {
+        // written without repeated elements, and a repeated one is read once
+        node.put("uniqueItems", true);
+      }
       return withDefault(node, written);
     }
     if (Map.class.isAssignableFrom(raw)) {

@@ -33,8 +33,10 @@ import com.mrivanplays.annotationconfig.scenarios.Sources;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Objects;
+import java.util.Set;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
@@ -223,6 +225,13 @@ class TestPolymorphic extends Scenario {
         List.of(new ParallelStrategy(2)), load(new Tasks(), "tasks-read").strategies);
   }
 
+  @Test
+  void anAnnotationOnASetFieldAppliesToTheElements() {
+    assertOutput("tasks", dump(new TaskSet()));
+    Assertions.assertEquals(
+        Set.of(new ParallelStrategy(2)), load(new TaskSet(), "tasks-read").strategies);
+  }
+
   // </editor-fold>
 
   // <editor-fold desc="A @Polymorphic field: subjects">
@@ -342,6 +351,16 @@ class TestPolymorphic extends Scenario {
       @Polymorphic.Subtype(name = "parallel", type = ParallelStrategy.class)
     })
     List<ExecutionStrategy> strategies = List.of(new SequentialStrategy(), new ParallelStrategy());
+  }
+
+  static class TaskSet {
+
+    @Polymorphic({
+      @Polymorphic.Subtype(name = "sequential", type = SequentialStrategy.class),
+      @Polymorphic.Subtype(name = "parallel", type = ParallelStrategy.class)
+    })
+    Set<ExecutionStrategy> strategies =
+        new LinkedHashSet<>(List.of(new SequentialStrategy(), new ParallelStrategy()));
   }
 
   record Circle(double radius) implements Shape {}

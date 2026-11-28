@@ -72,6 +72,9 @@ Java 25, Maven multi-module build.
   `ClassInfo` reads the class, so an invalid one on an ignored field breaks nothing. On a `List`
   or array field, the annotation applies to the elements: reading passes the elements only the
   field's `@Polymorphic` (writing already passed them all its annotations).
+- `Set`s are read like lists and then put in a set of the field's type (`DefaultSerializer#toSet`),
+  and written as lists. Where a `List` field is special (`@Polymorphic` on the elements in
+  `FieldInfo`, `SchemaGenerator` and `DefaultSerializer#isListOrArray`), a `Set` field is too.
 - Records are created with their canonical constructor, found by and filled in the order of
   `Class#getRecordComponents()`; constructor parameter names are not used, as tools like
   obfuscators strip them.

@@ -35,8 +35,10 @@ import com.mrivanplays.annotationconfig.scenarios.Scenario;
 import com.mrivanplays.annotationconfig.scenarios.Sources;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedClass;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -124,6 +126,8 @@ class TestSchemaSections extends Scenario {
     Map<String, List<String>> groups = new LinkedHashMap<>(Map.of("admins", List.of("ivan")));
 
     List<? extends @Min(minLong = 0) Long> wildcard = new ArrayList<>(List.of(3L));
+
+    Set<String> tags = new LinkedHashSet<>(List.of("a", "b"));
 
     String[][] grid = {{"a", "b"}};
 
